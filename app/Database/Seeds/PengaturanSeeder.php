@@ -9,19 +9,17 @@ class PengaturanSeeder extends Seeder
     public function run()
     {
         $data = [
-            'judul'            => 'SIMEDIS',
-            'judul_app'        => 'MEDKIT 3',
-            'alamat'           => 'Perum Mutiara Pandanaran Blok D11, Mangunharjo, Tembalang, Semarang',
-            'deskripsi'        => 'Sistem Informasi Manajemen Rumah Sakit',
-            'kota'             => 'Jakarta',
-            'url'              => 'http://localhost/medkit3-v2',
-            'theme'            => 'admin-lte-3',
+            'judul'            => 'KOPMENSA',
+            'judul_app'        => 'KOPMENSA POS',
+            'alamat'           => 'Jl. Raya No. 1',
+            'deskripsi'        => 'sistem informasi manajemen penjualan',
+            'kota'             => 'semarang',
+            'url'              => 'http://localhost/p54-kopmensa',
+            'theme'            => 'quirk',
             'pagination_limit' => 10,
             'favicon'          => 'favicon.ico',
             'logo'            => 'logo.png',
             'logo_header'     => 'logo_header.png',
-            'apt_apa'         => 'APA123456',
-            'apt_sipa'        => 'SIPA123456',
             'ppn'             => 11,
         ];
 
