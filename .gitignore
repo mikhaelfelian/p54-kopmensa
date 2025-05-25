@@ -82,16 +82,8 @@ tests/coverage*
 phpunit
 
 #-------------------------
-# Composer
-#-------------------------
-vendor/
-
-#-------------------------
 # IDE / Development Files
 #-------------------------
-
-# Modules Testing
-_modules/*
 
 # phpenv local config
 .php-version
@@ -102,9 +94,7 @@ _modules/*
 
 # NetBeans
 /nbproject/
-/build/
 /nbbuild/
-/dist/
 /nbdist/
 /nbactions.xml
 /nb-configuration.xml
@@ -117,10 +107,6 @@ _modules/*
 *.sublime-workspace
 *.sublime-project
 .phpintel
-/api/
 
 # Visual Studio Code
 .vscode/
-
-/results/
-/phpunit*.xml
