@@ -12,6 +12,8 @@ use CodeIgniter\Filters\InvalidChars;
 use CodeIgniter\Filters\PageCache;
 use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
+use App\Filters\AuthFilter;
+use App\Filters\DisableSessionFilter;
 
 class Filters extends BaseFilters
 {
@@ -26,7 +28,7 @@ class Filters extends BaseFilters
      */
     public array $aliases = [
         'csrf'          => CSRF::class,
-        'toolbar'       => DebugToolbar::class,
+        // 'toolbar'       => DebugToolbar::class,
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
@@ -34,6 +36,8 @@ class Filters extends BaseFilters
         'forcehttps'    => ForceHTTPS::class,
         'pagecache'     => PageCache::class,
         'performance'   => PerformanceMetrics::class,
+        'auth'          => AuthFilter::class,
+        'disableSession' => DisableSessionFilter::class,
     ];
 
     /**
@@ -57,7 +61,7 @@ class Filters extends BaseFilters
         'after' => [
             'pagecache',   // Web Page Caching
             'performance', // Performance Metrics
-            'toolbar',     // Debug Toolbar
+            // 'toolbar',     // Debug Toolbar
         ],
     ];
 
@@ -69,13 +73,10 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            // 'honeypot',
-            // 'csrf',
-            // 'invalidchars',
+            'csrf' => ['except' => ['publik/*']]
         ],
         'after' => [
-            // 'honeypot',
-            // 'secureheaders',
+            // 'toolbar',
         ],
     ];
 
