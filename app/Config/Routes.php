@@ -5,7 +5,7 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', to: 'Home::index');
+$routes->get('/', to: 'Auth::login');
 
 // Auth routes
 $routes->group('auth', function ($routes) {
