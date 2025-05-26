@@ -1,132 +1,96 @@
 # Kopmensa POS
 
-**Kopmensa POS** adalah sistem aplikasi Point of Sale (POS) dan manajemen inventori berbasis web dan Android, dirancang khusus untuk kebutuhan **Koperasi Konsumen Syariah RSI Sultan Agung (Kopmensa)**. Aplikasi ini mengelola transaksi penjualan ritel, grosir, serta aktivitas gudang dan keuangan koperasi dengan efisien dan terstruktur.
+**Kopmensa POS** is a web and Android-based Point of Sale (POS) and inventory management system specifically designed for **Koperasi Konsumen Syariah RSI Sultan Agung (Kopmensa)**. This application efficiently manages retail and wholesale sales transactions, warehouse operations, and cooperative financial activities in a structured manner.
 
----
-
-## 🔧 Teknologi yang Digunakan
-
+## 🔧 Technologies Used
 * Backend: [CodeIgniter 4](https://codeigniter.com/)
 * Database: MySQL
-* Aplikasi Android Kasir: Java/Kotlin (Android Studio)
-* Aplikasi Android Anggota: Java/Kotlin (Android Studio)
+* Android Cashier App: Java/Kotlin (Android Studio)
+* Android Member App: Java/Kotlin (Android Studio)
 
----
+## 🧩 Main Features
 
-## 🧩 Fitur Utama
-
-### 📦 Modul Inventori & POS
+### 📦 Inventory & POS Module
 
 #### Master Data:
+* Products
+* Units
+* Brands
+* Categories
+* Warehouses
+* Users
+* Employees
+* Payment Platforms
 
-* Barang
-* Satuan
-* Merek
-* Kategori
-* Gudang
-* User
-* Karyawan
-* Platform Pembayaran
+#### Cashier:
+* Sales
+* Sales Summary
+* Cashier Cash
+* Receipt List
 
-#### Kasir:
+#### Sales:
+* Wholesale Sales
+* Credit Sales (Accounts Receivable)
+* Sales Returns
+* Sales by Date
+* Customer Management
+* Payment Recording
 
-* Penjualan
-* Rekap Penjualan
-* Kas Kasir
-* Daftar Nota
+#### Warehouse:
+* Warehouse List
+* Stock Transfers & Mutations
+* Warehouse User Management
 
-#### Penjualan:
+#### Reports:
+* Expenses
+* Revenues
+* Stock Adjustments
+* Profit and Loss Reports
+* Cash Flow Reports
 
-* Penjualan Grosir
-* Penjualan Tempo (Hutang)
-* Retur Penjualan
-* Penjualan per Tanggal
-* Manajemen Customer
-* Pencatatan Pembayaran
+#### Settings:
+* Price Types (retail, wholesale, etc.)
+* Transaction Documents & Tax
 
-#### Gudang:
+## 📊 Retail Manager Access
+* Dashboard showing daily and monthly revenue (filterable)
+* Sales charts by hour, day, and month
+* Top-selling products daily and monthly
+* Products with low sales
+* Sales amount per outlet
+* Export all data to file formats (.csv/.xlsx)
+* Management of:
+  * Member Purchase Limits
+  * Member Data
+  * Shopping Vouchers
 
-* Daftar Gudang
-* Transfer & Mutasi Stok
-* Pengaturan User Gudang
+## 📱 Android Cashier Application
+* Cashier Login
+* Direct Sales Transactions
+* Self-Service Sales (notifications from members)
+* Barcode scanning from member's phone to record transactions
+* Shift Management (logout closes the shift)
+* Sales & Cash Reports
+* Automatic Logout
+* Shift Closure feature (locks login after shift closure)
 
-#### Laporan:
+## 👤 Android Member Application
+* Login via Google or user account
+* Transaction & Debt History
+* View Purchase Limits
+* Self-Service Shopping (generates transactions directly to cashier)
+* Profile Management (update email, photo, etc.)
 
-* Pengeluaran
-* Pendapatan
-* Penyesuaian Stok
-* Laporan Laba Rugi
-* Laporan Arus Kas
-
-#### Pengaturan:
-
-* Jenis Harga (eceran, grosir, dsb.)
-* Dokumen Transaksi & Pajak
-
----
-
-## 📊 Akses Manajer Retail
-
-* Dashboard pendapatan harian & bulanan (dapat difilter)
-* Grafik penjualan per jam, harian, bulanan
-* Produk terlaris harian & bulanan
-* Produk dengan penjualan rendah
-* Nominal penjualan per outlet
-* Ekspor semua data ke format file (.csv/.xlsx)
-* Manajemen:
-
-  * Limit Belanja Anggota
-  * Data Anggota
-  * Voucher Belanja
-
----
-
-## 📱 Aplikasi Kasir Android
-
-* Login Kasir
-* Transaksi Penjualan langsung
-* Transaksi Penjualan Mandiri (dari notifikasi anggota)
-* Scan Barcode dari HP Anggota
-* Manajemen Shift (logout = tutup shift)
-* Laporan Penjualan & Kas
-* Logout otomatis
-* Fitur tutup shift (lock login setelah shift ditutup)
-
----
-
-## 👤 Aplikasi Android Anggota Koperasi
-
-* Login via Google atau akun manual
-* Riwayat Transaksi & Hutang
-* Melihat Limit Belanja
-* Belanja Mandiri (generate transaksi langsung ke kasir)
-* Manajemen Profil (ganti email, foto, dll)
-
----
-
-## 🧑‍💻 Kontributor
-
+## 🧑‍💻 Contributors
 * [Mikhael Felian](https://github.com/mikhaelfelian)
 * Alfian Hari
 
----
+## 🏗️ Development Status
+🚧 This project is under active development. Contributions for feature enhancements, reports, and system integrations are welcome.
 
-## 🏗️ Status Pengembangan
+## 🤝 Contribution
+If you are interested in contributing or collaborating on this project, please fork the repository and submit a pull request. All feedback and contributions are highly appreciated!
 
-🚧 Proyek ini masih dalam tahap pengembangan aktif. Kontribusi terbuka untuk peningkatan modul, laporan, dan integrasi sistem lainnya.
-
----
-
-## 🤝 Kontribusi
-
-Jika kamu tertarik untuk berkontribusi atau melakukan kolaborasi dalam pengembangan proyek ini, silakan fork repository ini dan kirimkan pull request. Setiap masukan sangat dihargai!
-
----
-
-## 📬 Kontak
-
-Untuk pertanyaan lebih lanjut atau kolaborasi:
-
+## 📬 Contact
+For further inquiries or collaboration:
 ✉️ **[mikhaelfelian@gmail.com](mailto:mikhaelfelian@gmail.com)**
-
----
