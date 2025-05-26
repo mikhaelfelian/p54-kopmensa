@@ -7,7 +7,7 @@
     <meta name="author" content="">
     <!--<link rel="shortcut icon" href="../images/favicon.png" type="image/png">-->
 
-    <title>Quirk Responsive Admin Templates</title>
+    <title><?php echo $Pengaturan->judul_app ?? 'Kopmensa POS' ?><?php echo ' | '.$Pengaturan->judul ?? '' ?></title>
 
     <link rel="stylesheet" href="<?php echo base_url('/public/assets/theme/quirk/lib/Hover/hover.css')?>">
     <link rel="stylesheet" href="<?php echo base_url('/public/assets/theme/quirk/lib/fontawesome/css/font-awesome.css')?>">
