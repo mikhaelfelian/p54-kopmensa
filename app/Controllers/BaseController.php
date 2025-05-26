@@ -61,11 +61,14 @@ abstract class BaseController extends Controller
 
     protected $theDate;
     protected $theTime;
+    protected $pengaturan;
+    protected $theme;
 
     public function __construct()
     {
         $this->theDate = new Time();
         $this->theTime = Time::now('Asia/Jakarta');
+        $this->theme = new \App\Models\PengaturanThemeModel();
     }
 
     /**
