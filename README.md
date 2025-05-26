@@ -60,9 +60,9 @@
 * Sales amount per outlet
 * Export all data to file formats (.csv/.xlsx)
 * Management of:
-  * Member Purchase Limits
-  * Member Data
-  * Shopping Vouchers
+  - Member Purchase Limits
+  - Member Data
+  - Shopping Vouchers
 
 ## 📱 Android Cashier Application
 * Cashier Login
