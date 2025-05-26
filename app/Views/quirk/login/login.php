@@ -5,61 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
-    <!--<link rel="shortcut icon" href="../images/favicon.png" type="image/png">-->
 
-    <title>Quirk Responsive Admin Templates</title>
+    <title><?= $Pengaturan->judul_app ?? 'Kopmensa POS' ?></title>
 
-    <link rel="stylesheet" href="../lib/fontawesome/css/font-awesome.css">
+    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/quirk/lib/fontawesome/css/font-awesome.css') ?>">
+    <link rel="stylesheet" href="<?= base_url('/public/assets/theme/quirk/css/quirk.css') ?>">
 
-    <link rel="stylesheet" href="../css/quirk.css">
-
-    <script src="../lib/modernizr/modernizr.js"></script>
+    <script src="<?= base_url('/public/assets/theme/quirk/lib/modernizr/modernizr.js') ?>"></script>
+    <!-- reCAPTCHA v3 -->
+    <script src="https://www.google.com/recaptcha/api.js?render=<?= model('ReCaptchaModel')->getSiteKey() ?>"></script>
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
-  <script src="../lib/html5shiv/html5shiv.js"></script>
-  <script src="../lib/respond/respond.src.js"></script>
-  <![endif]-->
+    <script src="<?= base_url('/public/assets/theme/quirk/lib/html5shiv/html5shiv.js') ?>"></script>
+    <script src="<?= base_url('/public/assets/theme/quirk/lib/respond/respond.src.js') ?>"></script>
+    <![endif]-->
 </head>
 
 <body class="signwrapper">
-
     <div class="sign-overlay"></div>
     <div class="signpanel"></div>
 
     <div class="panel signin">
         <div class="panel-heading">
-            <h1>Quirk</h1>
+            <h1><?= $Pengaturan->judul_app ?? 'Kopmensa POS' ?></h1>
             <h4 class="panel-title">Welcome! Please signin.</h4>
         </div>
         <div class="panel-body">
-            <button class="btn btn-primary btn-quirk btn-fb btn-block">Connect with Facebook</button>
-            <div class="or">or</div>
-            <form action="index.html">
+            <?= form_open('auth/login', ['id' => 'loginForm']) ?>
                 <div class="form-group mb10">
                     <div class="input-group">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
-                        <input type="text" class="form-control" placeholder="Enter Username">
+                        <?= form_input([
+                            'type' => 'text',
+                            'name' => 'username',
+                            'class' => 'form-control',
+                            'placeholder' => 'Enter Username'
+                        ]) ?>
                     </div>
                 </div>
                 <div class="form-group nomargin">
                     <div class="input-group">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
-                        <input type="text" class="form-control" placeholder="Enter Password">
+                        <?= form_input([
+                            'type' => 'password',
+                            'name' => 'password',
+                            'class' => 'form-control',
+                            'placeholder' => 'Enter Password'
+                        ]) ?>
                     </div>
                 </div>
-                <div><a href="" class="forgot">Forgot password?</a></div>
+                <div><a href="<?= base_url('auth/forgot-password') ?>" class="forgot">Forgot password?</a></div>
+                <!-- Hidden input for reCAPTCHA token -->
+                <input type="hidden" name="recaptcha_token" id="recaptcha_token">
                 <div class="form-group">
-                    <button class="btn btn-success btn-quirk btn-block">Sign In</button>
+                    <button type="submit" class="btn btn-success btn-quirk btn-block">Sign In</button>
                 </div>
-            </form>
+            <?= form_close() ?>
+            
             <hr class="invisible">
             <div class="form-group">
-                <a href="signup.html"
-                    class="btn btn-default btn-quirk btn-stroke btn-stroke-thin btn-block btn-sign">Not a member? Sign
-                    up now!</a>
+                <a href="<?= base_url('auth/register') ?>" class="btn btn-default btn-quirk btn-stroke btn-stroke-thin btn-block btn-sign">
+                    Not a member? Sign up now!
+                </a>
             </div>
         </div>
     </div><!-- panel -->
-</body>
 
+    <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        grecaptcha.ready(function() {
+            grecaptcha.execute('<?= model('ReCaptchaModel')->getSiteKey() ?>', {action: 'login'})
+            .then(function(token) {
+                document.getElementById('recaptcha_token').value = token;
+                document.getElementById('loginForm').submit();
+            });
+        });
+    });
+    </script>
+</body>
 </html>
