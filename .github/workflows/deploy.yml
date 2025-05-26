@@ -1,0 +1,50 @@
+name: Deploy to Development
+   
+on:
+  push:
+    branches:
+      - main  # Sesuaikan dengan branch utama
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup SSH Connection
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy Code to cPanel
+      run: |
+        ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+          cd ${{ secrets.DEPLOY_PATH }} &&
+          git pull origin main &&
+          exit"
+
+    - name: Notify Deployment Completion to GitHub
+      run: |
+        echo "Starting to create issue comment..."
+        response=$(curl -X POST \
+          -H "Authorization: token ${{ secrets.TOKENS }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -d '{
+                "body": "🚀 **Deployment Completed to Development Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [View on Development](http://app.serbanekabadi.com)\n\n✅ **Deployment to development server is complete. Please check the result.**" 
+              }' \
+          https://api.github.com/repos/${{ github.repository }}/issues/1/comments)
+        
+        echo "API response from comment creation: $response"
+
+        echo "Starting to assign assignee..."
+        assign_response=$(curl -X PATCH \
+          -H "Authorization: token ${{ secrets.TOKENS }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -d '{
+                "assignees": ["alfianharisusatya"]
+              }' \
+          https://api.github.com/repos/${{ github.repository }}/issues/1)
+
+        echo "API response from assignee assignment: $assign_response"
