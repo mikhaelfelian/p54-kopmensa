@@ -20,6 +20,14 @@ class Migration_2025_05_26_001_create_tbl_pengaturan_api extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
+            'created_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
+            'updated_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
             'id_pengaturan' => [
                 'type'       => 'INT',
                 'constraint' => 11,
@@ -42,15 +50,7 @@ class Migration_2025_05_26_001_create_tbl_pengaturan_api extends Migration
                 'type'       => 'ENUM',
                 'constraint' => ['0', '1'],
                 'default'    => '1',
-            ],
-            'created_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
-            'updated_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
-            ],
+            ]
         ]);
 
         $this->forge->addKey('id', true);
