@@ -32,7 +32,7 @@ jobs:
           -H "Authorization: token ${{ secrets.TOKENS }}" \
           -H "Accept: application/vnd.github.v3+json" \
           -d '{
-                "body": "🚀 **Deployment Completed to Development Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [View on Development](http://app.serbanekabadi.com)\n\n✅ **Deployment to development server is complete. Please check the result.**" 
+                "body": "🚀 **Deployment Completed to Developments Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [View on Development](http://app.serbanekabadi.com)\n\n✅ **Deployment to development server is complete. Please check the result.**" 
               }' \
           https://api.github.com/repos/${{ github.repository }}/issues/1/comments)
         
