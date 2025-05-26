@@ -19,17 +19,19 @@ class PengaturanApiSeeder extends Seeder
                 'nama'          => 'Recaptcha 3',
                 'pub_key'       => null,
                 'priv_key'      => null,
-                'status'        => '1'
+                'status'        => '1',
+                'created_at'    => date('Y-m-d H:i:s')
             ],
             [
                 'id_pengaturan' => 1, // Assuming this ID exists in tbl_pengaturan
                 'nama'          => 'Chat GPT',
                 'pub_key'       => null,
                 'priv_key'      => null,
-                'status'        => '1'
+                'status'        => '1',
+                'created_at'    => date('Y-m-d H:i:s')
             ]
         ];
 
         $this->db->table('tbl_pengaturan_api')->insertBatch($data);
     }
-} 
+}
