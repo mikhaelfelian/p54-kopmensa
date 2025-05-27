@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  deploy_and_notify:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -24,98 +24,30 @@ jobs:
             git pull origin main &&
             exit"
 
-      - name: Notify Deployment Completion to GitHub
-        run: |
-          echo "Starting to create issue comment..."
-          response=$(curl -X POST \
-            -H "Authorization: token ${{ secrets.TOKENS }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d '{
-                  "body": "**Berhasil Deploy ke Development Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [Lihat](http://dev.kopmensa.com)\n\nSilahkan lihat di server."
-                }' \
-            https://api.github.com/repos/${{ github.repository }}/issues/1/comments)
-
-          echo "API response from comment creation: $response"
-
-          echo "Starting to assign assignee..."
-          assign_response=$(curl -X PATCH \
-            -H "Authorization: token ${{ secrets.TOKENS }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d '{
-                  "assignees": ["alfianharisusatya"]
-                }' \
-            https://api.github.com/repos/${{ github.repository }}/issues/1)
-
-          echo "API response from assignee assignment: $assign_response"
-
-      - name: Notify to Telegram (after deploy)
+      - name: Notify to Telegram After Deploy
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          # Fungsi escape karakter untuk MarkdownV2 Telegram
           escape_markdown_v2() {
             echo "$1" | sed -e 's/\\/\\\\/g' \
-                            -e 's/\./\\./g' \
-                            -e 's/-/\\-/g' \
-                            -e 's/!/\\!/g' \
+                            -e 's/_/\\_/g' \
+                            -e 's/\*/\\*/g' \
                             -e 's/\[/\\[/g' \
                             -e 's/\]/\\]/g' \
                             -e 's/(/\\(/g' \
                             -e 's/)/\\)/g' \
-                            -e 's/_/\\_/g' \
-                            -e 's/\*/\\*/g' \
                             -e 's/`/\\`/g' \
                             -e 's/>/\\>/g' \
                             -e 's/#/\\#/g' \
                             -e 's/\+/\\+/g' \
-                            -e 's/=/\\=/g' \
-                            -e 's/{/\\{/g' \
-                            -e 's/}/\\}/g' \
-                            -e 's/\|/\\|/g' \
-                            -e 's/:/\\:/g'
-          }
-
-          ESCAPED_REPO=$(escape_markdown_v2 "${{ github.repository }}")
-          ESCAPED_ACTOR=$(escape_markdown_v2 "${{ github.actor }}")
-          ESCAPED_COMMIT_URL=$(escape_markdown_v2 "${{ github.event.head_commit.url }}")
-          ESCAPED_SHA=$(escape_markdown_v2 "${{ github.sha }}")
-
-          MESSAGE="✅ *Deploy ke Development Server Selesai*\n\nRepo: \`$ESCAPED_REPO\`\nActor: \`$ESCAPED_ACTOR\`\nCommit: \`$ESCAPED_SHA\`\n[Lihat Commit]($ESCAPED_COMMIT_URL)\n[💻 Akses Dev](http://dev.kopmensa.com)"
-
-          response=$(curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
-            -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d text="$MESSAGE" \
-            -d parse_mode=MarkdownV2)
-
-          echo "Response Telegram API (Deploy): $response"
-
-      - name: Notify Commit (sebelum deploy)
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          # Fungsi escape karakter untuk MarkdownV2 Telegram
-          escape_markdown_v2() {
-            echo "$1" | sed -e 's/\\/\\\\/g' \
-                            -e 's/\./\\./g' \
                             -e 's/-/\\-/g' \
-                            -e 's/!/\\!/g' \
-                            -e 's/\[/\\[/g' \
-                            -e 's/\]/\\]/g' \
-                            -e 's/(/\\(/g' \
-                            -e 's/)/\\)/g' \
-                            -e 's/_/\\_/g' \
-                            -e 's/\*/\\*/g' \
-                            -e 's/`/\\`/g' \
-                            -e 's/>/\\>/g' \
-                            -e 's/#/\\#/g' \
-                            -e 's/\+/\\+/g' \
                             -e 's/=/\\=/g' \
+                            -e 's/\|/\\|/g' \
                             -e 's/{/\\{/g' \
                             -e 's/}/\\}/g' \
-                            -e 's/\|/\\|/g' \
-                            -e 's/:/\\:/g'
+                            -e 's/\./\\./g' \
+                            -e 's/!/\\!/g'
           }
 
           FULL_MESSAGE="${{ github.event.head_commit.message }}"
@@ -132,11 +64,35 @@ jobs:
           ESCAPED_ACTOR=$(escape_markdown_v2 "${{ github.actor }}")
           ESCAPED_COMMIT_URL=$(escape_markdown_v2 "${{ github.event.head_commit.url }}")
 
-          MESSAGE="*Notifikasi Commit dari \`$ESCAPED_REPO\`*\n\nContributor: \`$ESCAPED_ACTOR\`\nJudul: \`$ESCAPED_TITLE\`\nDeskripsi:\n\`\`\`\n$ESCAPED_DESCRIPTION\n\`\`\`\n[Lihat Commit]($ESCAPED_COMMIT_URL)"
+          MESSAGE="*✅ Berhasil Deploy ke Server Development*\n\n*Repo:* \`$ESCAPED_REPO\`\n*Contributor:* \`$ESCAPED_ACTOR\`\n*Judul Commit:* \`$ESCAPED_TITLE\`\n*Deskripsi:*\n\`\`\`\n$ESCAPED_DESCRIPTION\n\`\`\`\n[Lihat Commit]($ESCAPED_COMMIT_URL)"
 
           response=$(curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
             -d text="$MESSAGE" \
             -d parse_mode=MarkdownV2)
 
-          echo "Response Telegram API (Commit): $response"
+          echo "Telegram Response: $response"
+
+      - name: Notify Deployment Completion to GitHub Issue
+        run: |
+          echo "Starting to create issue comment..."
+          response=$(curl -X POST \
+            -H "Authorization: token ${{ secrets.TOKENS }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{
+                  "body": "**✅ Berhasil Deploy ke Development Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [Lihat](http://dev.kopmensa.com)\n\nSilahkan lihat di server."
+                }' \
+            https://api.github.com/repos/${{ github.repository }}/issues/1/comments)
+
+          echo "API response from comment creation: $response"
+
+          echo "Starting to assign assignee..."
+          assign_response=$(curl -X PATCH \
+            -H "Authorization: token ${{ secrets.TOKENS }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{
+                  "assignees": ["alfianharisusatya"]
+                }' \
+            https://api.github.com/repos/${{ github.repository }}/issues/1)
+
+          echo "API response from assignee assignment: $assign_response"
