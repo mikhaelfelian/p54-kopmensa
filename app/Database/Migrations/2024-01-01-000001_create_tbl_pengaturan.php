@@ -32,7 +32,7 @@ class CreatePengaturanTable extends Migration
             ],
             'alamat' => [
                 'type'    => 'TEXT',
-                'null'    => true,
+                'null'    => true, 
             ],
             'deskripsi' => [
                 'type'    => 'TEXT',
