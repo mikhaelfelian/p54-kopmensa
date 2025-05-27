@@ -58,8 +58,8 @@ class Auth extends BaseController
         $recaptchaResponse = $this->request->getVar('recaptcha_response');
         
         $recaptcha = $this->recaptcha->setExpectedHostname($_SERVER['SERVER_NAME'])
-                                    ->setScoreThreshold(config('Recaptcha')->score)
-                                    ->verify($recaptchaResponse, $_SERVER['REMOTE_ADDR']);
+                                     ->setScoreThreshold(config('Recaptcha')->score)
+                                     ->verify($recaptchaResponse, $_SERVER['REMOTE_ADDR']);
 
         if (!$recaptcha->isSuccess()) {
             session()->setFlashdata('toastr', [
