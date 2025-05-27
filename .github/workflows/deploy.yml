@@ -24,23 +24,17 @@ jobs:
             git pull origin main &&
             exit"
 
-      - name: Notify to Telegram After Deploy
+      - name: Send Telegram Notification
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_COMMIT_URL: ${{ github.event.head_commit.url }}
-          GITHUB_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
-          TITLE=$(echo "$GITHUB_COMMIT_MESSAGE" | head -n1)
-          DESCRIPTION=$(echo "$GITHUB_COMMIT_MESSAGE" | tail -n +2)
-          if [ -z "$DESCRIPTION" ]; then
-            DESCRIPTION="(Tidak ada deskripsi)"
-          fi
-
-          MESSAGE="✅ *Berhasil Deploy ke Server Development*\n\nRepo: \`$GITHUB_REPOSITORY\`\nContributor: \`$GITHUB_ACTOR\`\nJudul Commit: \`$TITLE\`\nDeskripsi:\n\`\`\`\n$DESCRIPTION\n\`\`\`\n[Lihat Commit]($GITHUB_COMMIT_URL)"
-
+          MESSAGE="🚀 *Notifikasi commit dari \`$REPO\`*\n\n👤 Contributor: \`$ACTOR\`\n📝 Pesan: \`$COMMIT_MSG\`\n🔗 [Lihat Commit]($COMMIT_URL)"
+          
           curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
             -d text="$MESSAGE" \
