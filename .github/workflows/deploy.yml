@@ -33,7 +33,11 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
-          MESSAGE="🚀 *Notifikasi commit dari \`$REPO\`*\n\n👤 Contributor: \`$ACTOR\`\n📝 Pesan: \`$COMMIT_MSG\`\n🔗 [Lihat Commit]($COMMIT_URL)"
+          MESSAGE="🚀 Notifikasi commit dari \`$REPO\`
+
+👤 Contributor: \`$ACTOR\`
+📝 Pesan: \`$COMMIT_MSG\`
+🔗 [Lihat Commit]($COMMIT_URL)"
           
           curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
