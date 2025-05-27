@@ -37,11 +37,23 @@ jobs:
             DESCRIPTION="(Tidak ada deskripsi)"
           fi
 
-          MESSAGE="✅ *Berhasil Deploy ke Server Development*\n\n*Repo:* \`${{ github.repository }}\`\n*Contributor:* \`${{ github.actor }}\`\n*Judul Commit:* \`${TITLE}\`\n*Deskripsi:*\n\`\`\`\n${DESCRIPTION}\n\`\`\`\n[Lihat Commit](${{ github.event.head_commit.url }})"
+          MESSAGE=$(cat <<EOF
+✅ *Berhasil Deploy ke Server Development*
+
+*Repo:* \`${{ github.repository }}\`
+*Contributor:* \`${{ github.actor }}\`
+*Judul Commit:* \`${TITLE}\`
+*Deskripsi:*
+\`\`\`
+${DESCRIPTION}
+\`\`\`
+[Lihat Commit](${{ github.event.head_commit.url }})
+EOF
+)
 
           response=$(curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d text="$MESSAGE" \
+            -d "text=$MESSAGE" \
             -d parse_mode=Markdown)
 
           echo "Telegram Response: $response"
@@ -53,7 +65,7 @@ jobs:
             -H "Authorization: token ${{ secrets.TOKENS }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -d '{
-                  "body": "**Berhasil Deploy ke Development Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [Lihat](http://dev.kopmensa.com)\n\nSilahkan lihat di server."
+                  "body": "**✅ Berhasil Deploy ke Development Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [Lihat](http://dev.kopmensa.com)\n\nSilahkan lihat di server."
                 }' \
             https://api.github.com/repos/${{ github.repository }}/issues/1/comments)
 
