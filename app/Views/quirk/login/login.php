@@ -31,7 +31,7 @@
             <h4 class="panel-title">Welcome! Please signin.</h4>
         </div>
         <div class="panel-body">
-            <?= form_open('auth/login', ['id' => 'loginForm']) ?>
+            <?= form_open(base_url('auth/cek_login'), ['id' => 'loginForm']) ?>
                 <div class="form-group mb10">
                     <div class="input-group">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
