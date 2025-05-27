@@ -14,6 +14,28 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          escape_markdown_v2() {
+            echo "$1" | sed -e 's/\\/\\\\/g' \
+                            -e 's/\./\\./g' \
+                            -e 's/-/\\-/g' \
+                            -e 's/!/\\!/g' \
+                            -e 's/\[/\\[/g' \
+                            -e 's/\]/\\]/g' \
+                            -e 's/(/\\(/g' \
+                            -e 's/)/\\)/g' \
+                            -e 's/_/\\_/g' \
+                            -e 's/\*/\\*/g' \
+                            -e 's/`/\\`/g' \
+                            -e 's/>/\\>/g' \
+                            -e 's/#/\\#/g' \
+                            -e 's/\+/\\+/g' \
+                            -e 's/=/\\=/g' \
+                            -e 's/{/\\{/g' \
+                            -e 's/}/\\}/g' \
+                            -e 's/\|/\\|/g' \
+                            -e 's/:/\\:/g'
+          }
+
           FULL_MESSAGE="${{ github.event.head_commit.message }}"
           TITLE=$(echo "$FULL_MESSAGE" | head -n1)
           DESCRIPTION=$(echo "$FULL_MESSAGE" | tail -n +2)
@@ -22,7 +44,13 @@ jobs:
             DESCRIPTION="(Tidak ada deskripsi)"
           fi
 
-          MESSAGE="*Notifikasi commit dari \`${{ github.repository }}\`*\n\n- Contributor: \`${{ github.actor }}\`\n- Judul: \`$TITLE\`\n- Deskripsi:\n\`\`\`\n$DESCRIPTION\n\`\`\`\n- [Lihat Commit](${{ github.event.head_commit.url }})"
+          ESCAPED_TITLE=$(escape_markdown_v2 "$TITLE")
+          ESCAPED_DESCRIPTION=$(escape_markdown_v2 "$DESCRIPTION")
+          ESCAPED_REPO=$(escape_markdown_v2 "${{ github.repository }}")
+          ESCAPED_ACTOR=$(escape_markdown_v2 "${{ github.actor }}")
+          ESCAPED_COMMIT_URL=$(escape_markdown_v2 "${{ github.event.head_commit.url }}")
+
+          MESSAGE="*Notifikasi commit dari \`$ESCAPED_REPO\`*\n\n- Contributor: \`$ESCAPED_ACTOR\`\n- Judul: \`$ESCAPED_TITLE\`\n- Deskripsi:\n\`\`\`\n$ESCAPED_DESCRIPTION\n\`\`\`\n- [Lihat Commit]($ESCAPED_COMMIT_URL)"
 
           curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
             -d chat_id=$TELEGRAM_CHAT_ID \
@@ -58,7 +86,7 @@ jobs:
                   "body": "**Berhasil Deploy ke Development Server**:\n- **Branch**: main\n- **Last Commit**: '${{ github.sha }}'\n- **Link**: [Lihat](http://dev.kopmensa.com)\n\nSilahkan lihat di server."
                 }' \
             https://api.github.com/repos/${{ github.repository }}/issues/1/comments)
-          
+
           echo "API response from comment creation: $response"
 
           echo "Starting to assign assignee..."
