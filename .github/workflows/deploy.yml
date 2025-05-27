@@ -51,7 +51,7 @@ jobs:
           ESCAPED_ACTOR=$(escape_markdown_v2 "${{ github.actor }}")
           ESCAPED_COMMIT_URL=$(escape_markdown_v2 "${{ github.event.head_commit.url }}")
 
-          MESSAGE="*Notifikasi commit dari \`$ESCAPED_REPO\`*\n\n- Contributor: \`$ESCAPED_ACTOR\`\n- Judul: \`$ESCAPED_TITLE\`\n- Deskripsi:\n\`\`\`\n$ESCAPED_DESCRIPTION\n\`\`\`\n- [Lihat Commit]($ESCAPED_COMMIT_URL)"
+          MESSAGE="*Notifikasi commit dari \`$ESCAPED_REPO\`*\n\nContributor: \`$ESCAPED_ACTOR\`\nJudul: \`$ESCAPED_TITLE\`\nDeskripsi:\n\`\`\`\n$ESCAPED_DESCRIPTION\n\`\`\`\n[Lihat Commit]($ESCAPED_COMMIT_URL)"
 
           response=$(curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
