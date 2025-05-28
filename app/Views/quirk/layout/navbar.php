@@ -1,36 +1,47 @@
-<div class="logopanel">
-    <h2><a href="<?= base_url() ?>"><?= $Pengaturan->judul_app ?></a></h2>
+<!-- ################## LEFT PANEL PROFILE ################## -->
+<div class="media leftpanel-profile">
+    <div class="media-left">
+        <a href="#">
+            <img src="<?php echo base_url('public/assets/theme/quirk/images/photos/loggeduser.png') ?>" alt=""
+                class="media-object img-circle">
+        </a>
+    </div>
+    <div class="media-body">
+        <h4 class="media-heading">Elen Adarna <a data-toggle="collapse" data-target="#loguserinfo" class="pull-right"><i
+                    class="fa fa-angle-down"></i></a></h4>
+        <span>Software Engineer</span>
+    </div>
 </div>
+<!-- leftpanel-profile -->
 
-<div class="headerbar">
-    <a id="menuToggle" class="menutoggle"><i class="fa fa-bars"></i></a>
-
-    <div class="searchpanel">
-        <div class="input-group">
-            <input type="text" class="form-control" placeholder="Search for...">
-            <span class="input-group-btn">
-                <button class="btn btn-default" type="button"><i class="fa fa-search"></i></button>
-            </span>
-        </div>
-    </div>
-
-    <div class="header-right">
-        <ul class="headermenu">
-            <li>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-logged" data-toggle="dropdown">
-                        <img src="<?= base_url('public/assets/theme/quirk/images/photos/loggeduser.png') ?>" alt="" />
-                        <?= $user->username ?? 'User' ?>
-                        <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu pull-right">
-                        <li><a href="<?= base_url('profile') ?>"><i class="fa fa-user"></i> My Profile</a></li>
-                        <li><a href="<?= base_url('settings') ?>"><i class="fa fa-cog"></i> Account Settings</a></li>
-                        <li><a href="<?= base_url('help') ?>"><i class="fa fa-question-circle"></i> Help</a></li>
-                        <li><a href="<?= base_url('auth/logout') ?>"><i class="fa fa-sign-out"></i> Log Out</a></li>
-                    </ul>
-                </div>
-            </li>
-        </ul>
-    </div>
-</div> 
+<div class="leftpanel-userinfo collapse" id="loguserinfo">
+    <h5 class="sidebar-title">Address</h5>
+    <address>
+        4975 Cambridge Road
+        Miami Gardens, FL 33056
+    </address>
+    <h5 class="sidebar-title">Contact</h5>
+    <ul class="list-group">
+        <li class="list-group-item">
+            <label class="pull-left">Email</label>
+            <span class="pull-right">me@themepixels.com</span>
+        </li>
+        <li class="list-group-item">
+            <label class="pull-left">Home</label>
+            <span class="pull-right">(032) 1234 567</span>
+        </li>
+        <li class="list-group-item">
+            <label class="pull-left">Mobile</label>
+            <span class="pull-right">+63012 3456 789</span>
+        </li>
+        <li class="list-group-item">
+            <label class="pull-left">Social</label>
+            <div class="social-icons pull-right">
+                <a href="#"><i class="fa fa-facebook-official"></i></a>
+                <a href="#"><i class="fa fa-twitter"></i></a>
+                <a href="#"><i class="fa fa-pinterest"></i></a>
+            </div>
+        </li>
+    </ul>
+</div>
+<!-- leftpanel-userinfo -->
