@@ -5,22 +5,6 @@
     <div class="contentpanel">
         <div class="row">
             <div class="col-md-9 col-lg-8 dash-left">
-                <div class="panel panel-announcement">
-                    <ul class="panel-options">
-                        <li><a><i class="fa fa-refresh"></i></a></li>
-                        <li><a class="panel-remove"><i class="fa fa-remove"></i></a></li>
-                    </ul>
-                    <div class="panel-heading">
-                        <h4 class="panel-title">Latest Announcement</h4>
-                    </div>
-                    <div class="panel-body">
-                        <h2>A new admin template has been released by <span class="text-primary">ThemePixels</span> with
-                            a name <span class="text-success">Quirk</span> is now live and available for purchase!</h2>
-                        <h4>Explore this new template and see the beauty of Quirk! <a href="">Take a Tour!</a>
-                        </h4>
-                    </div>
-                </div><!-- panel -->
-
                 <div class="panel panel-site-traffic">
                     <div class="panel-heading">
                         <ul class="panel-options">
