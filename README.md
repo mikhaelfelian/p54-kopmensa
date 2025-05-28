@@ -94,5 +94,3 @@ If you are interested in contributing or collaborating on this project, please f
 ## 📬 Contact
 For further inquiries or collaboration:
 ✉️ **[mikhaelfelian@gmail.com](mailto:mikhaelfelian@gmail.com)**
-
-COBA NOTIF SU ASU, COBA SU Su
