@@ -13,6 +13,6 @@ class Home extends BaseController
             'total_users'   => 1
         ];
 
-        return view($this->theme->getThemePath() . '/index', $data);
+        return view($this->theme->getThemePath() . '/layout/main', $data);
     }
 }

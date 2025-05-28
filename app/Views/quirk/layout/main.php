@@ -68,7 +68,7 @@
   <div class="headerpanel">
 
     <div class="logopanel">
-      <h2><a href="index.html">Quirk</a></h2>
+      <h2><a href="index.html"><?= $Pengaturan->judul_app ?></a></h2>
     </div><!-- logopanel -->
 
     <div class="headerbar">
