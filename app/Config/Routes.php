@@ -6,7 +6,7 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', to: 'Auth::login');
-$routes->get('/dashboard', 'Home::index', ['namespace' => 'App\Controllers']);
+$routes->get('/dashboard', 'Home::index', ['namespace' => 'App\Controllers', 'filter' => 'auth']);
 
 // Auth routes
 $routes->group('auth', ['namespace' => 'App\Controllers'], function ($routes) {
