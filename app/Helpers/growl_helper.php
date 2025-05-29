@@ -2,53 +2,49 @@
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * Date: 2025-05-28
- * This file represents the growl notification helper.
+ * This file represents the growl notification helper (now using Gritter for Quirk theme).
  */
 
 if (!function_exists('growl_show')) {
     /**
-     * Show growl notification
+     * Show Gritter notification (Quirk style)
      * 
      * @param string $message Message to display
-     * @param string $type Type of notification (success, error, warning, info)
+     * @param string $type Type of notification (success, danger, warning, info)
      * @param string $title Optional title
-     * @return string JavaScript code for growl
+     * @return string JavaScript code for Gritter
      */
     function growl_show($message = null, $type = "success", $title = "") 
     {
         if ($message) {
-            $growl = "<!-- Growl JS Tampil disini -->";
+            // Map type to icon/class
+            $iconClass = 'info-circle primary';
+            switch ($type) {
+                case 'success':
+                    $iconClass = 'check-circle success';
+                    break;
+                case 'danger':
+                case 'error':
+                    $iconClass = 'times-circle danger';
+                    break;
+                case 'warning':
+                    $iconClass = 'exclamation-circle warning';
+                    break;
+                case 'info':
+                default:
+                    $iconClass = 'info-circle primary';
+                    break;
+            }
+            $growl = "<!-- Gritter JS Notification -->";
             $growl .= "<script>
-                $.growl({
-                    message: '" . $message . "',
-                    title: '" . $title . "',
-                    type: '" . $type . "',
-                    delay: 5000,
-                    allow_dismiss: true,
-                    offset: {
-                        x: 20,
-                        y: 85
-                    },
-                    spacing: 10,
-                    z_index: 1031,
-                    animate: {
-                        enter: 'animated fadeInRight',
-                        exit: 'animated fadeOutRight'
-                    },
-                    icon_type: 'class',
-                    template: '<div data-growl=\"container\" class=\"alert\" role=\"alert\">' +
-                        '<button type=\"button\" class=\"close\" data-growl=\"dismiss\">' +
-                        '<span aria-hidden=\"true\">&times;</span>' +
-                        '<span class=\"sr-only\">Close</span>' +
-                        '</button>' +
-                        '<span data-growl=\"icon\"></span>' +
-                        '<span data-growl=\"title\"></span>' +
-                        '<span data-growl=\"message\"></span>' +
-                        '<a href=\"#\" class=\"alert-link\" data-growl=\"url\"></a>' +
-                        '</div>'
+                $.gritter.add({
+                    title: '" . addslashes($title) . "',
+                    text: '" . addslashes($message) . "',
+                    class_name: 'with-icon " . $iconClass . "',
+                    time: 5000,
+                    sticky: false
                 });
             </script>";
-
             return $growl;
         }
     }
@@ -62,7 +58,7 @@ if (!function_exists('growl_success')) {
 
 if (!function_exists('growl_error')) {
     function growl_error($message, $title = "") {
-        return growl_show($message, "error", $title);
+        return growl_show($message, "danger", $title);
     }
 }
 
