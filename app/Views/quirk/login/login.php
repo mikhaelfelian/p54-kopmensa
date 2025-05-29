@@ -19,6 +19,27 @@
     <script src="<?= base_url('/public/assets/theme/quirk/lib/modernizr/modernizr.js') ?>"></script>
     <!-- reCAPTCHA v3 -->
     <script src="https://www.google.com/recaptcha/api.js?render=<?= model('ReCaptchaModel')->getSiteKey() ?>"></script>
+    <style>
+    /* Style for loading indicator */
+    .loading {
+        position: relative;
+        pointer-events: none;
+    }
+    .loading:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.8) url('<?= base_url('public/assets/img/loading.gif') ?>') center no-repeat;
+        z-index: 2;
+    }
+    /* Style for reCAPTCHA badge */
+    .grecaptcha-badge {
+        bottom: 60px !important;
+    }
+    </style>
     <!-- jQuery -->
     <script src="<?= base_url('/public/assets/theme/quirk/lib/jquery/jquery.js') ?>"></script>
     <!-- Toastr JS -->
@@ -48,7 +69,8 @@
                         'type' => 'text',
                         'name' => 'username',
                         'class' => 'form-control',
-                        'placeholder' => 'Enter Username'
+                        'placeholder' => 'Enter Username',
+                        'required' => true
                     ]) ?>
                 </div>
             </div>
@@ -59,15 +81,19 @@
                         'type' => 'password',
                         'name' => 'password',
                         'class' => 'form-control',
-                        'placeholder' => 'Enter Password'
+                        'placeholder' => 'Enter Password',
+                        'required' => true
                     ]) ?>
                 </div>
             </div>
             <div><a href="<?= base_url('auth/forgot-password') ?>" class="forgot">Forgot password?</a></div>
             <!-- Hidden input for reCAPTCHA token -->
-            <input type="hidden" name="recaptcha_token" id="recaptcha_token">
+            <input type="hidden" name="recaptcha_response" id="recaptchaResponse">
             <div class="form-group">
-                <button type="submit" class="btn btn-success btn-quirk btn-block">Sign In</button>
+                <button type="submit" class="btn btn-success btn-quirk btn-block" id="submitBtn">
+                    <span>Sign In</span>
+                    <i class="fa fa-spinner fa-spin d-none"></i>
+                </button>
             </div>
             <?= form_close() ?>
 
@@ -78,26 +104,58 @@
                     Not a member? Sign up now!
                 </a>
             </div>
+
+            <!-- reCAPTCHA info -->
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    This site is protected by reCAPTCHA and the Google
+                    <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+                    <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+                </small>
+            </div>
         </div>
-    </div><!-- panel -->
+    </div>
+    <!-- panel -->
+
     <script>
-        // // Handle form submission
-        // document.getElementById('loginForm').addEventListener('submit', function (e) {
-        //     e.preventDefault();
-        //     grecaptcha.ready(function () {
-        //         grecaptcha.execute('<?= model('ReCaptchaModel')->getSiteKey() ?>', { action: 'login' })
-        //             .then(function (token) {
-        //                 document.getElementById('recaptcha_token').value = token;
+    grecaptcha.ready(function() {
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = submitBtn.querySelector('span');
+        const btnLoader = submitBtn.querySelector('i');
 
-        //                 // Show loading notification using toastr
-        //                 toastr.info('Please wait while we verify your credentials...', 'Processing');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.classList.add('d-none');
+            btnLoader.classList.remove('d-none');
+            form.classList.add('loading');
 
-        //                 // Submit the form
-        //                 document.getElementById('loginForm').submit();
-        //             });
-        //     });
-        // });
+            // Execute reCAPTCHAapp/Models/ReCaptchaModel.php
+            grecaptcha.execute('<?= model('ReCaptchaModel')->getSiteKey() ?>', {action: 'login'})
+                .then(function(token) {
+                    // Add token to form
+                    document.getElementById('recaptchaResponse').value = token;
+                    // Submit form
+                    form.submit();
+                })
+                .catch(function(error) {
+                    // Handle error
+                    console.error('reCAPTCHA error:', error);
+                    toastr.error('Error verifying reCAPTCHA. Please try again.');
+                    
+                    // Reset loading state
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('d-none');
+                    btnLoader.classList.add('d-none');
+                    form.classList.remove('loading');
+                });
+        });
+    });
     </script>
+
     <?php
     // Show toastr notification from flashdata if available
     if ($flash = session()->getFlashdata('toastr')) {
