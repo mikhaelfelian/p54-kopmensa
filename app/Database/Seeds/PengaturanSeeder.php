@@ -9,8 +9,8 @@ class PengaturanSeeder extends Seeder
     public function run()
     {
         $data = [
-            'judul'            => 'KOPMENSA',
-            'judul_app'        => 'KOPMENSA POS',
+            'judul'            => 'KOPMENSA POS',
+            'judul_app'        => 'KOPMENSA',
             'alamat'           => 'Jl. Raya No. 1',
             'deskripsi'        => 'sistem informasi manajemen penjualan',
             'kota'             => 'semarang',
