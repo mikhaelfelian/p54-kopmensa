@@ -205,13 +205,13 @@
                                 <h4 class="panel-title">Total Earnings</h4>
                             </div>
                             <div class="panel-body">
-                                <h3 class="earning-amount">$1,543.03</h3>
+                                <h3 class="earning-amount">Rp 1.543.030</h3>
                                 <h4 class="earning-today">Today's Earnings</h4>
 
                                 <ul class="list-group">
-                                    <li class="list-group-item">This Week <span class="pull-right">$12,320.34</span>
+                                    <li class="list-group-item">This Week <span class="pull-right">Rp 12.320.340</span>
                                     </li>
-                                    <li class="list-group-item">This Month <span class="pull-right">$37,520.34</span>
+                                    <li class="list-group-item">This Month <span class="pull-right">Rp 37.520.340</span>
                                     </li>
                                 </ul>
                                 <hr class="invisible">
