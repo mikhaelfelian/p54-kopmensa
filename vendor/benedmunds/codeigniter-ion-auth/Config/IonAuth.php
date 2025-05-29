@@ -147,19 +147,19 @@ class IonAuth extends \CodeIgniter\Config\BaseConfig
 	public $adminEmail               = 'admin@kopmensa.com'; // Admin Email, admin@example.com
 	public $defaultGroup             = 'members';           // Default group, use name
 	public $adminGroup               = 'admin';             // Default administrators group, use name
-	public $identity                 = 'email';             /* You can use any unique column in your table as identity column.
+	public $identity                 = 'username';          /* You can use any unique column in your table as identity column.
 																	IMPORTANT: If you are changing it from the default (email),
 																				update the UNIQUE constraint in your DB */
-	public $minPasswordLength        = 8;                   // Minimum Required Length of Password (not enforced by lib - see note above)
+	public $minPasswordLength        = 6;                   // Minimum Required Length of Password (not enforced by lib - see note above)
 	public $emailActivation          = false;               // Email Activation for registration
 	public $manualActivation         = false;               // Manual Activation for registration
 	public $rememberUsers            = true;                // Allow users to be remembered and enable auto-login
 	public $userExpire               = 86500;               // How long to remember the user (seconds). Set to zero for no expiration
 	public $userExtendonLogin        = false;               // Extend the users cookies every time they auto-login
-	public $trackLoginAttempts       = true;                // Track the number of failed login attempts for each user or ip.
+	public $trackLoginAttempts       = false;                // Track the number of failed login attempts for each user or ip.
 	public $trackLoginIpAddress      = true;                // Track login attempts by IP Address, if false will track based on identity. (Default: true)
 	public $maximumLoginAttempts     = 3;                   // The maximum number of failed login attempts.
-	public $lockoutTime              = 600;                 /* The number of seconds to lockout an account due to exceeded attempts
+	public $lockoutTime              = 86500;                 /* The number of seconds to lockout an account due to exceeded attempts
 																	You should not use a value below 60 (1 minute) */
 	public $forgotPasswordExpiration = 1800;                /* The number of seconds after which a forgot password request will expire. If set to 0, forgot password requests will not expire.
 																	30 minutes to 1 hour are good values (enough for a user to receive the email and reset its password)
