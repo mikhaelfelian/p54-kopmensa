@@ -58,65 +58,68 @@ class Auth extends BaseController
         $recaptchaResponse = $this->request->getVar('recaptcha_response');
         
         $recaptcha = $this->recaptcha->setExpectedHostname($_SERVER['SERVER_NAME'])
+                                     ->setScoreThreshold(0.5)
                                      ->verify($recaptchaResponse, $_SERVER['REMOTE_ADDR']);
 
-        if (!$recaptcha->isSuccess()) {
-            return redirect()->back()->with('toastr', ['type' => 'error', 'message' => 'Captcha tidak valid. Silakan coba lagi.']);
-        }
+        pre($recaptcha);
+
+        // if (!$recaptcha->isSuccess()) {
+        //     return redirect()->back()->with('toastr', ['type' => 'error', 'message' => 'Captcha tidak valid. Silakan coba lagi.']);
+        // }
         
-        $aturan = [
-            config('Security')->tokenName => 'required',
-            'user' => [
-                'rules'  => 'required|min_length[3]',
-                'errors' => [
-                    'required'   => 'ID Pengguna tidak boleh kosong',
-                    'min_length' => 'Kolom {field} minimal 3 huruf',
-                ]
-            ],
-            'pass' => [
-                'rules'  => 'required',
-                'errors' => [
-                    'required' => 'Kata sandi tidak boleh kosong',
-                ]
-            ],
-            'recaptcha_response' => 'required'
-        ];
+        // $aturan = [
+        //     config('Security')->tokenName => 'required',
+        //     'user' => [
+        //         'rules'  => 'required|min_length[3]',
+        //         'errors' => [
+        //             'required'   => 'ID Pengguna tidak boleh kosong',
+        //             'min_length' => 'Kolom {field} minimal 3 huruf',
+        //         ]
+        //     ],
+        //     'pass' => [
+        //         'rules'  => 'required',
+        //         'errors' => [
+        //             'required' => 'Kata sandi tidak boleh kosong',
+        //         ]
+        //     ],
+        //     'recaptcha_response' => 'required'
+        // ];
         
-        $validasi->setRules($aturan);
+        // $validasi->setRules($aturan);
 
-        if (!$this->validate($aturan)) {
-            $errors = $validasi->getErrors();
-            $error_message = implode('<br>', $errors);
-            session()->setFlashdata('toastr', ['type' => 'error', 'message' => $error_message]);
-            return redirect()->back();
-        }
+        // if (!$this->validate($aturan)) {
+        //     $errors = $validasi->getErrors();
+        //     $error_message = implode('<br>', $errors);
+        //     session()->setFlashdata('toastr', ['type' => 'error', 'message' => $error_message]);
+        //     return redirect()->back();
+        // }
 
-        $cek = $this->ionAuth->usernameCheck($user);
+        // $cek = $this->ionAuth->usernameCheck($user);
         
-        if (!$cek) {
-            session()->setFlashdata('toastr', [
-                'type' => 'error',
-                'message' => 'ID Pengguna atau Kata Sandi salah!'
-            ]);
-            return redirect()->back();
-        }
+        // if (!$cek) {
+        //     session()->setFlashdata('toastr', [
+        //         'type' => 'error',
+        //         'message' => 'ID Pengguna atau Kata Sandi salah!'
+        //     ]);
+        //     return redirect()->back();
+        // }
 
-        $inget_ya = ($inga == '1' ? TRUE : FALSE);
-        $login = $this->ionAuth->login($user, $pass, $inget_ya);
+        // $inget_ya   = ($inga == '1' ? TRUE : FALSE);
+        // $login      = $this->ionAuth->login($user, $pass, $inget_ya);
 
-        if (!$login) {
-            session()->setFlashdata('toastr', [
-                'type' => 'error',
-                'message' => 'ID Pengguna atau Kata Sandi salah!'
-            ]);
-            return redirect()->back();
-        }
+        // if (!$login) {
+        //     session()->setFlashdata('toastr', [
+        //         'type' => 'error',
+        //         'message' => 'ID Pengguna atau Kata Sandi salah!'
+        //     ]);
+        //     return redirect()->back();
+        // }
 
-        session()->setFlashdata('toastr', [
-            'type' => 'success',
-            'message' => 'Login berhasil!'
-        ]);
-        return redirect()->to('/dashboard');
+        // session()->setFlashdata('toastr', [
+        //     'type' => 'success',
+        //     'message' => 'Login berhasil!'
+        // ]);
+        // return redirect()->to('/dashboard');
     }
 
     public function logout()
