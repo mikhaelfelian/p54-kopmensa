@@ -33,7 +33,7 @@ jobs:
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           COMMIT_URL: ${{ github.event.head_commit.url }}
         run: |
-          MESSAGE=$(printf "*KOPMENSA :*\n\`%s\`\n\n*Contributor:*\n\`%s\`\n*Pesan:*\n\`%s\`\n[LIHAT](%s)" "$REPO" "$ACTOR" "$COMMIT_MSG" "$COMMIT_URL")
+          MESSAGE=$(printf "*KOPMENSA :*\n\`%s\`\n\n*Contributor:*\n\`%s\`\n*Message:*\n\`%s\`\n[VIEW](%s)" "$REPO" "$ACTOR" "$COMMIT_MSG" "$COMMIT_URL")
 
           curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
