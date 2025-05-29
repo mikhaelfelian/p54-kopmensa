@@ -61,11 +61,7 @@ class Auth extends BaseController
                                      ->verify($recaptchaResponse, $_SERVER['REMOTE_ADDR']);
 
         if (!$recaptcha->isSuccess()) {
-            session()->setFlashdata('toastr', [
-                'type' => 'error',
-                'message' => 'reCAPTCHA verification failed'
-            ]);
-            return redirect()->back();
+            return redirect()->back()->with('toastr', ['type' => 'error', 'message' => 'Captcha tidak valid. Silakan coba lagi.']);
         }
         
         $aturan = [
