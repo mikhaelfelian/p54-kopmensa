@@ -9,9 +9,8 @@
             <li class="tooltips active" data-toggle="tooltip" title="Main Menu"><a data-toggle="tab"
                     data-target="#mainmenu"><i class="tooltips fa fa-ellipsis-h"></i></a>
             <li class="tooltips" data-toggle="tooltip" title="Settings"><a data-toggle="tab" data-target="#settings"><i
-                        class="fa fa-cog"></i></a></li>
-            <li class="tooltips" data-toggle="tooltip" title="Log Out"><a href="signin.html"><i
-                        class="fa fa-sign-out"></i></a></li>
+                            class="fa fa-cog"></i></a></li>
+        <li class="tooltips" data-toggle="tooltip" title="Log Out"><?= anchor('auth/logout', '<i class="fa fa-sign-out"></i>') ?></li>
         </ul>
 
         <div class="tab-content">
