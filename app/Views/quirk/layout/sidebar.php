@@ -2,7 +2,7 @@
     <div class="leftpanelinner">
 
         <!-- NAVBAR PROFILE -->
-        <?=$this->include('quirk/layout/navbar') ?>
+        <?= $this->include('quirk/layout/navbar') ?>
         <!-- END NAVBAR -->
 
         <ul class="nav nav-tabs nav-justified nav-sidebar">
@@ -17,7 +17,6 @@
         <div class="tab-content">
             <!-- ################# MAIN MENU ################### -->
             <div class="tab-pane active" id="mainmenu">
-
                 <h5 class="sidebar-title">MASTER DATA</h5>
                 <ul class="nav nav-pills nav-stacked nav-quirk">
                     <li class="nav-parent">
@@ -49,7 +48,33 @@
                         </ul>
                     </li>
                 </ul>
-            </div><!-- tab-pane -->
+
+                <h5 class="sidebar-title">Pengaturan</h5>
+                <ul class="nav nav-pills nav-stacked nav-quirk">
+                    <li class="nav-parent">
+                        <a href=""><i class="fa fa-cogs"></i> <span>Aplikasi</span></a>
+                        <ul class="children">
+                            <li><a href="<?= base_url('pengaturan') ?>">Pengaturan</a></li>
+                            <li><a href="<?= base_url('identitas') ?>">Identitas</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-parent">
+                        <a href=""><i class="fa fa-plug"></i> <span>Api</span></a>
+                        <ul class="children">
+                            <li><a href="<?= base_url('api-key') ?>">API Key</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-parent">
+                        <a href=""><i class="fa fa-users"></i> <span>Pengguna</span></a>
+                        <ul class="children">
+                            <li><a href="<?= base_url('user') ?>">User</a></li>
+                            <li><a href="<?= base_url('grup') ?>">Grup</a></li>
+                            <li><a href="<?= base_url('permission') ?>">Permission</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <!-- tab-pane -->
             <!-- ######################## EMAIL MENU ##################### -->
             <div class="tab-pane" id="emailmenu">
                 <div class="sidebar-btn-wrapper">
