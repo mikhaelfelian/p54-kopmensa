@@ -43,7 +43,7 @@
         <?= $this->renderSection('content') ?>
         <!-- mainpanel -->
     </section>
-
+    
     <script src="<?= base_url('public/assets/theme/quirk/lib/jquery/jquery.js') ?>"></script>
     <script src="<?= base_url('public/assets/theme/quirk/lib/jquery-ui/jquery-ui.js') ?>"></script>
     <script src="<?= base_url('public/assets/theme/quirk/lib/bootstrap/js/bootstrap.js') ?>"></script>
