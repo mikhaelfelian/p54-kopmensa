@@ -10,7 +10,7 @@
                     data-target="#mainmenu"><i class="tooltips fa fa-ellipsis-h"></i></a>
             <li class="tooltips" data-toggle="tooltip" title="Settings"><a data-toggle="tab" data-target="#settings"><i
                             class="fa fa-cog"></i></a></li>
-        <li class="tooltips" data-toggle="tooltip" title="Log Out"><?= anchor('auth/logout', '<i class="fa fa-sign-out"></i>') ?></li>
+        <li class="tooltips" data-toggle="tooltip" title="Log Out"><?= anchor('auth/logout', '<i class="fa fa-sign-out"></i>', ['onclick' => 'return confirm("Apakah anda yakin ingin logout?")']) ?></li>
         </ul>
 
         <div class="tab-content">

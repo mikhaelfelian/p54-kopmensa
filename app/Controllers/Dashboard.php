@@ -12,8 +12,7 @@ class Dashboard extends BaseController
 {
     protected $medTransModel;
 
-    public function __construct()
-    {
+    public function __construct(){
     }
     public function index()
     {        

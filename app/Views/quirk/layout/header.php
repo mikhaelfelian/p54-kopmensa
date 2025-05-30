@@ -181,7 +181,7 @@
                             </li>
                             <li><a href="#"><i class="glyphicon glyphicon-cog"></i> Account Settings</a></li>
                             <li><a href="#"><i class="glyphicon glyphicon-question-sign"></i> Help</a></li>
-                            <li><a href="signin.html"><i class="glyphicon glyphicon-log-out"></i> Log Out</a>
+                            <li><a href="<?= base_url('auth/logout') ?>" onclick="return confirm('Apakah anda yakin ingin logout?')"><i class="glyphicon glyphicon-log-out"></i> Log Out</a>
                             </li>
                         </ul>
                     </div>
