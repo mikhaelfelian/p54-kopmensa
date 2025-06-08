@@ -554,7 +554,6 @@
     </div>-->
 
             <div class="contentpanel">
-
                 <div class="row">
                     <div class="col-md-9 col-lg-8 dash-left">
                         <div class="panel panel-announcement">
@@ -1117,9 +1116,11 @@
                     </div><!-- col-md-3 -->
                 </div><!-- row -->
 
-            </div><!-- contentpanel -->
+            </div>
+            <!-- contentpanel -->
 
-        </div><!-- mainpanel -->
+        </div>
+        <!-- mainpanel -->
 
     </section>
 
