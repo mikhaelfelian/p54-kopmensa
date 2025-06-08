@@ -20,3 +20,8 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], function ($routes) {
 $routes->get('/dashboard', 'Dashboard::index', ['namespace' => 'App\Controllers', 'filter' => 'auth']);
 
 
+$routes->group('users/modules', ['namespace' => 'App\Controllers\Pengaturan', 'filter' => 'auth'], function ($routes) {
+    $routes->get('/', 'Modules::index');
+});
+
+
