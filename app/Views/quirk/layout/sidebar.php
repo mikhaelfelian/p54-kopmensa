@@ -69,6 +69,7 @@
                             <li><a href="<?= base_url('user') ?>">User</a></li>
                             <li><a href="<?= base_url('grup') ?>">Grup</a></li>
                             <li><a href="<?= base_url('permission') ?>">Permission</a></li>
+                            <li><a href="<?= base_url('users/modules') ?>">Module</a></li>
                         </ul>
                     </li>
                 </ul>
