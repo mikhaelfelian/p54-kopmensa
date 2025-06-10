@@ -97,14 +97,6 @@
             </div>
             <?= form_close() ?>
 
-            <hr class="invisible">
-            <div class="form-group">
-                <a href="<?= base_url('auth/register') ?>"
-                    class="btn btn-default btn-quirk btn-stroke btn-stroke-thin btn-block btn-sign">
-                    Not a member? Sign up now!
-                </a>
-            </div>
-
             <!-- reCAPTCHA info -->
             <div class="text-center mt-3">
                 <small class="text-muted">
