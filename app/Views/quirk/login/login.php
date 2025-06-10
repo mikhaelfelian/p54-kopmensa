@@ -58,7 +58,7 @@
     <div class="panel signin">
         <div class="panel-heading">
             <h1><?= $Pengaturan->judul_app ?? 'Kopmensa POS' ?></h1>
-            <h4 class="panel-title">Welcome! Please signin.</h4>
+            <h4 class="panel-title">Selamat Datang! Silakan masuk.</h4>
         </div>
         <div class="panel-body">
             <?= form_open(base_url('auth/cek_login'), ['id' => 'loginForm']) ?>
