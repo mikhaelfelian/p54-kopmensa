@@ -25,5 +25,5 @@ class Dashboard extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/dashboard', $data);
-    }
+    } 
 } 
