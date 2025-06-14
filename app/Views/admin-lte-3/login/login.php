@@ -46,7 +46,7 @@
         <!-- /.login-logo -->
         <div class="card card-outline card-success">
             <div class="card-header text-center">
-                <img src="<?= base_url($Pengaturan->logo_header) ?>" alt="Logo" class="img-fluid"
+                <img src="<?= !empty($Pengaturan->logo_header) ? base_url($Pengaturan->logo_header) : base_url('public/assets/theme/admin-lte-3/dist/img/AdminLTELogo.png') ?>" alt="Logo" class="img-fluid"
                     style="width: 209px; height: 94px; background-color: #fff;">
             </div>
             <div class="card-body">
