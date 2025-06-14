@@ -131,20 +131,11 @@
     <!-- Toastr -->
     <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/toastr/toastr.min.js') ?>"></script>
 
-    <?php if (session('error')): ?>
-        <?= toast_error(session('error')) ?>
-    <?php endif ?>
-
-    <?php if (session('message')): ?>
-        <?= toast_success(session('message')) ?>
-    <?php endif ?>
-
-    <?php if (session('warning')): ?>
-        <?= toast_warning(session('warning')) ?>
-    <?php endif ?>
-
-    <?php if (session('info')): ?>
-        <?= toast_info(session('info')) ?>
+    <?php if (session()->has('toastr')): ?>
+        <?php 
+        $toastr = session('toastr');
+        echo toast_show($toastr['message'], $toastr['type'], 'Login');
+        ?>
     <?php endif ?>
 
     <!-- Add reCAPTCHA script -->

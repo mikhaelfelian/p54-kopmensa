@@ -52,8 +52,8 @@ class Auth extends BaseController
     {
         $validasi = \Config\Services::validation();
         
-        $username = $this->request->getVar('username');
-        $password = $this->request->getVar('password');
+        $username = $this->request->getVar('user');
+        $password = $this->request->getVar('pass');
         $remember = $this->request->getVar('remember');
         
         $recaptchaResponse = $this->request->getVar('recaptcha_response');
