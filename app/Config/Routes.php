@@ -95,6 +95,17 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/trash', 'Supplier::trash');
 });
 
+// Platform Routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+    $routes->get('platform', 'Platform::index');
+    $routes->get('platform/create', 'Platform::create');
+    $routes->post('platform/store', 'Platform::store');
+    $routes->get('platform/edit/(:num)', 'Platform::edit/$1');
+    $routes->post('platform/update/(:num)', 'Platform::update/$1');
+    $routes->get('platform/delete/(:num)', 'Platform::delete/$1');
+    $routes->get('platform/detail/(:num)', 'Platform::detail/$1');
+});
+
 
 
 // User Module Routes
