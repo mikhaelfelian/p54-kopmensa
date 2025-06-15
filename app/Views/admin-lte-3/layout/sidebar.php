@@ -31,9 +31,9 @@
                     </a>
                 </li>
 
-                <!-- Master Data -->
-                <li class="nav-item has-treeview <?= isMenuActive(['merk', 'kategori', 'item', 'satuan']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['merk', 'kategori', 'item', 'satuan']) ? 'active' : '' ?>">
+                <!-- Master Data Katalog -->
+                <li class="nav-item has-treeview <?= isMenuActive(['master/merk', 'master/kategori', 'master/item', 'master/satuan']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['master/merk', 'master/kategori', 'master/item', 'master/satuan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-briefcase"></i>
                         <p>
                             Katalog
@@ -42,32 +42,32 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="<?= base_url('merk') ?>"
-                                class="nav-link <?= isMenuActive('merk') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/merk') ?>"
+                                class="nav-link <?= isMenuActive('master/merk') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-tag nav-icon"></i>
                                 <p>Merk</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('kategori') ?>"
-                                class="nav-link <?= isMenuActive('kategori') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/kategori') ?>"
+                                class="nav-link <?= isMenuActive('master/kategori') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Kategori</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('item') ?>"
-                                class="nav-link <?= isMenuActive('item') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/item') ?>"
+                                class="nav-link <?= isMenuActive('master/item') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-box nav-icon"></i>
                                 <p>Item</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('satuan') ?>"
-                                class="nav-link <?= isMenuActive('satuan') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/satuan') ?>"
+                                class="nav-link <?= isMenuActive('master/satuan') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-ruler nav-icon"></i>
                                 <p>Satuan</p>
