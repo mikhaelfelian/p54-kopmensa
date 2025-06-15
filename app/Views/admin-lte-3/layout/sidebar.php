@@ -57,14 +57,14 @@
                                 <p>Kategori</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a href="<?= base_url('master/item') ?>"
                                 class="nav-link <?= isMenuActive('master/item') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-box nav-icon"></i>
                                 <p>Item</p>
                             </a>
-                        </li>
+                        </li> -->
                         <li class="nav-item">
                             <a href="<?= base_url('master/satuan') ?>"
                                 class="nav-link <?= isMenuActive('master/satuan') ? 'active' : '' ?>">
@@ -77,8 +77,8 @@
                 </li>
 
                 <!-- Outlet -->
-                <li class="nav-item has-treeview <?= isMenuActive(['outlet', 'lokasi']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['outlet', 'lokasi']) ? 'active' : '' ?>">
+                <!-- <li class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/lokasi']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['master/outlet', 'master/lokasi']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-building"></i>
                         <p>
                             Outlet
@@ -87,27 +87,27 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="<?= base_url('outlet') ?>"
-                                class="nav-link <?= isMenuActive('outlet') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/outlet') ?>"
+                                class="nav-link <?= isMenuActive('master/outlet') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-store nav-icon"></i>
                                 <p>Data Outlet</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('lokasi') ?>"
-                                class="nav-link <?= isMenuActive('lokasi') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/lokasi') ?>"
+                                class="nav-link <?= isMenuActive('master/lokasi') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-map-marker-alt nav-icon"></i>
                                 <p>Lokasi</p>
                             </a>
                         </li>
                     </ul>
-                </li>
+                </li> -->
 
                 <!-- Contact -->
-                <li class="nav-item has-treeview <?= isMenuActive(['supplier', 'pelanggan', 'karyawan']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['supplier', 'pelanggan', 'karyawan']) ? 'active' : '' ?>">
+                <li class="nav-item has-treeview <?= isMenuActive(['master/supplier', 'master/pelanggan', 'master/karyawan']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['master/supplier', 'master/pelanggan', 'master/karyawan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-users"></i>
                         <p>
                             Kontak
@@ -116,24 +116,24 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="<?= base_url('supplier') ?>"
-                                class="nav-link <?= isMenuActive('supplier') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/supplier') ?>"
+                                class="nav-link <?= isMenuActive('master/supplier') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-truck nav-icon"></i>
                                 <p>Supplier</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('pelanggan') ?>"
-                                class="nav-link <?= isMenuActive('pelanggan') ? 'active' : '' ?>">
+                        <!-- <li class="nav-item">
+                            <a href="<?= base_url('master/pelanggan') ?>"
+                                class="nav-link <?= isMenuActive('master/pelanggan') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-user-friends nav-icon"></i>
                                 <p>Pelanggan / Anggota</p>
                             </a>
-                        </li>
+                        </li> -->
                         <li class="nav-item">
-                            <a href="<?= base_url('karyawan') ?>"
-                                class="nav-link <?= isMenuActive('karyawan') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/karyawan') ?>"
+                                class="nav-link <?= isMenuActive('master/karyawan') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-user-tie nav-icon"></i>
                                 <p>Karyawan</p>
@@ -143,8 +143,8 @@
                 </li>
 
                 <!-- Payment -->
-                <li class="nav-item has-treeview <?= isMenuActive(['platform', 'bank']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['platform', 'bank']) ? 'active' : '' ?>">
+                <li class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['master/platform', 'master/bank']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-money-bill-wave"></i>
                         <p>
                             Pembayaran
@@ -153,21 +153,21 @@
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="<?= base_url('platform') ?>"
-                                class="nav-link <?= isMenuActive('platform') ? 'active' : '' ?>">
+                            <a href="<?= base_url('master/platform') ?>"
+                                class="nav-link <?= isMenuActive('master/platform') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-credit-card nav-icon"></i>
                                 <p>Platform</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('bank') ?>"
-                                class="nav-link <?= isMenuActive('bank') ? 'active' : '' ?>">
+                        <!-- <li class="nav-item">
+                            <a href="<?= base_url('master/bank') ?>"
+                                class="nav-link <?= isMenuActive('master/bank') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-university nav-icon"></i>
                                 <p>Bank</p>
                             </a>
-                        </li>
+                        </li> -->
                     </ul>
                 </li>
 
