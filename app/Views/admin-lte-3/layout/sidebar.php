@@ -36,7 +36,7 @@
                     <a href="#" class="nav-link <?= isMenuActive(['merk', 'kategori', 'item', 'satuan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-briefcase"></i>
                         <p>
-                            Item
+                            Katalog
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
