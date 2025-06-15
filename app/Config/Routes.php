@@ -20,6 +20,84 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], function ($routes) {
 $routes->get('/dashboard', 'Dashboard::index', ['namespace' => 'App\Controllers', 'filter' => 'auth']);
 
 
+/*****
+ * MASTER ROUTES
+ * These routes handle all master data operations including:
+ * - Gudang (Warehouse management)
+ * - Satuan (Units of measurement)
+ * - Kategori (Categories)
+ * - Merk (Brands)
+ * All routes are protected by auth filter
+ ****/
+
+// Gudang routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
+    $routes->get('gudang', 'Gudang::index');
+    $routes->get('gudang/create', 'Gudang::create');
+    $routes->post('gudang/store', 'Gudang::store');
+    $routes->get('gudang/edit/(:num)', 'Gudang::edit/$1');
+    $routes->post('gudang/update/(:num)', 'Gudang::update/$1');
+    $routes->get('gudang/delete/(:num)', 'Gudang::delete/$1');
+});
+
+// Satuan routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
+    $routes->get('satuan', 'Satuan::index');
+    $routes->get('satuan/create', 'Satuan::create');
+    $routes->post('satuan/store', 'Satuan::store');
+    $routes->get('satuan/edit/(:num)', 'Satuan::edit/$1');
+    $routes->post('satuan/update/(:num)', 'Satuan::update/$1');
+    $routes->get('satuan/delete/(:num)', 'Satuan::delete/$1');
+});
+
+// Kategori routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
+    $routes->get('kategori', 'Kategori::index');
+    $routes->get('kategori/create', 'Kategori::create');
+    $routes->post('kategori/store', 'Kategori::store');
+    $routes->get('kategori/edit/(:num)', 'Kategori::edit/$1');
+    $routes->post('kategori/update/(:num)', 'Kategori::update/$1');
+    $routes->get('kategori/delete/(:num)', 'Kategori::delete/$1');
+});
+
+
+// Merk routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
+    $routes->get('merk', 'Merk::index');
+    $routes->get('merk/create', 'Merk::create');
+    $routes->post('merk/store', 'Merk::store');
+    $routes->get('merk/edit/(:num)', 'Merk::edit/$1');
+    $routes->post('merk/update/(:num)', 'Merk::update/$1');
+    $routes->get('merk/delete/(:num)', 'Merk::delete/$1');
+});
+
+
+// Karyawan Routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+    $routes->get('karyawan', 'Karyawan::index');
+    $routes->get('karyawan/create', 'Karyawan::create');
+    $routes->post('karyawan/store', 'Karyawan::store');
+    $routes->get('karyawan/edit/(:num)', 'Karyawan::edit/$1');
+    $routes->post('karyawan/update/(:num)', 'Karyawan::update/$1');
+    $routes->get('karyawan/delete/(:num)', 'Karyawan::delete/$1');
+    $routes->get('karyawan/detail/(:num)', 'Karyawan::detail/$1');
+});
+
+// Supplier Routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+    $routes->get('supplier', 'Supplier::index');
+    $routes->get('supplier/create', 'Supplier::create');
+    $routes->post('supplier/store', 'Supplier::store');
+    $routes->get('supplier/edit/(:num)', 'Supplier::edit/$1');
+    $routes->post('supplier/update/(:num)', 'Supplier::update/$1');
+    $routes->get('supplier/delete/(:num)', 'Supplier::delete/$1');
+    $routes->get('supplier/detail/(:num)', 'Supplier::detail/$1');
+    $routes->get('supplier/trash', 'Supplier::trash');
+});
+
+
+
+// User Module Routes
 $routes->group('users/modules', ['namespace' => 'App\Controllers\Pengaturan', 'filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Modules::index');
 });
