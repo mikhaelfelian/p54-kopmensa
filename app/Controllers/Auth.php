@@ -72,14 +72,14 @@ class Auth extends BaseController
         }
 
         $rules = [
-            'username' => [
+            'user' => [
                 'rules' => 'required|min_length[3]',
                 'errors' => [
                     'required' => 'Username is required',
                     'min_length' => 'Username must be at least 3 characters'
                 ]
             ],
-            'password' => [
+            'pass' => [
                 'rules' => 'required',
                 'errors' => [
                     'required' => 'Password is required'
