@@ -31,81 +31,141 @@
                     </a>
                 </li>
 
-                <!-- Analyzed data -->
-                <li class="nav-item has-treeview <?= isMenuActive(['serp', 'google', 'instagram', 'maps', 'sentimentanalysis', 'xosint']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['serp', 'google', 'instagram', 'maps', 'sentimentanalysis', 'xosint']) ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-chart-line"></i>
+                <!-- Master Data -->
+                <li class="nav-item has-treeview <?= isMenuActive(['merk', 'kategori', 'item', 'satuan']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['merk', 'kategori', 'item', 'satuan']) ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-briefcase"></i>
                         <p>
-                            Modul Analisis Data
+                            Item
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="<?= base_url('serp/google') ?>"
-                                class="nav-link <?= isMenuActive('serp/google') ? 'active' : '' ?>">
+                            <a href="<?= base_url('merk') ?>"
+                                class="nav-link <?= isMenuActive('merk') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
-                                <i class="fas fa-search nav-icon"></i>
-                                <p>Mesin Pencari</p>
+                                <i class="fas fa-tag nav-icon"></i>
+                                <p>Merk</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('serp/instagram') ?>"
-                                class="nav-link <?= isMenuActive('serp/instagram') ? 'active' : '' ?>">
+                            <a href="<?= base_url('kategori') ?>"
+                                class="nav-link <?= isMenuActive('kategori') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
-                                <i class="fab fa-instagram nav-icon"></i>
-                                <p>Instagram OSINT</p>
+                                <i class="fas fa-list nav-icon"></i>
+                                <p>Kategori</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('serp/xosint') ?>"
-                                class="nav-link <?= isMenuActive('serp/xosint') ? 'active' : '' ?>">
+                            <a href="<?= base_url('item') ?>"
+                                class="nav-link <?= isMenuActive('item') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
-                                <i class="fab fa-twitter nav-icon"></i>
-                                <p>X.com OSINT</p>
+                                <i class="fas fa-box nav-icon"></i>
+                                <p>Item</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('serp/maps') ?>"
-                                class="nav-link <?= isMenuActive('serp/maps') ? 'active' : '' ?>">
+                            <a href="<?= base_url('satuan') ?>"
+                                class="nav-link <?= isMenuActive('satuan') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
-                                <i class="fas fa-map-marked-alt nav-icon"></i>
-                                <p>Lokasi Peta</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('serp/sentiment') ?>"
-                                class="nav-link <?= isMenuActive('serp/sentiment') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-comment-dots nav-icon"></i>
-                                <p>Analisis Sentimen</p>
+                                <i class="fas fa-ruler nav-icon"></i>
+                                <p>Satuan</p>
                             </a>
                         </li>
                     </ul>
                 </li>
-                <li class="nav-item has-treeview <?= isMenuActive(['master', 'satuan']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master', 'satuan']) ? 'active' : '' ?>">
-                        <i class="nav-icon fas fa-map-marker-alt"></i>
+
+                <!-- Outlet -->
+                <li class="nav-item has-treeview <?= isMenuActive(['outlet', 'lokasi']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['outlet', 'lokasi']) ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-building"></i>
                         <p>
-                            Modul Tracking
+                            Outlet
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
                     <ul class="nav nav-treeview">
                         <li class="nav-item">
-                            <a href="<?= base_url('serp') ?>"
-                                class="nav-link <?= isMenuActive('serp') ? 'active' : '' ?>">
+                            <a href="<?= base_url('outlet') ?>"
+                                class="nav-link <?= isMenuActive('outlet') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
-                                <i class="fas fa-search nav-icon"></i>
-                                <p>Lokasi Peta</p>
+                                <i class="fas fa-store nav-icon"></i>
+                                <p>Data Outlet</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('serp') ?>"
-                                class="nav-link <?= isMenuActive('serp') ? 'active' : '' ?>">
+                            <a href="<?= base_url('lokasi') ?>"
+                                class="nav-link <?= isMenuActive('lokasi') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
-                                <i class="fas fa-search nav-icon"></i>
-                                <p>Lokasi Ponsel</p>
+                                <i class="fas fa-map-marker-alt nav-icon"></i>
+                                <p>Lokasi</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Contact -->
+                <li class="nav-item has-treeview <?= isMenuActive(['supplier', 'pelanggan', 'karyawan']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['supplier', 'pelanggan', 'karyawan']) ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-users"></i>
+                        <p>
+                            Kontak
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="<?= base_url('supplier') ?>"
+                                class="nav-link <?= isMenuActive('supplier') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-truck nav-icon"></i>
+                                <p>Supplier</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('pelanggan') ?>"
+                                class="nav-link <?= isMenuActive('pelanggan') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-user-friends nav-icon"></i>
+                                <p>Pelanggan / Anggota</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('karyawan') ?>"
+                                class="nav-link <?= isMenuActive('karyawan') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-user-tie nav-icon"></i>
+                                <p>Karyawan</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Payment -->
+                <li class="nav-item has-treeview <?= isMenuActive(['platform', 'bank']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['platform', 'bank']) ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-money-bill-wave"></i>
+                        <p>
+                            Pembayaran
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="<?= base_url('platform') ?>"
+                                class="nav-link <?= isMenuActive('platform') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-credit-card nav-icon"></i>
+                                <p>Platform</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('bank') ?>"
+                                class="nav-link <?= isMenuActive('bank') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-university nav-icon"></i>
+                                <p>Bank</p>
                             </a>
                         </li>
                     </ul>
