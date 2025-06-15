@@ -26,6 +26,39 @@ class Pager extends BaseConfig
         'default_head'   => 'CodeIgniter\Pager\Views\default_head',
     ];
 
+    
+    /**
+     * Constructor.
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Get database connection
+        $db = \Config\Database::connect();
+
+        // Get theme path from database
+        $theme = $db->table('tbl_pengaturan_theme')
+                   ->where('status', 1)
+                   ->get()
+                   ->getRow();
+
+        // Get pagination limit from pengaturan
+        $pengaturan = $db->table('tbl_pengaturan')
+                        ->where('id', 1)
+                        ->get()
+                        ->getRow();
+
+        // Set pagination template path based on active theme
+        $themePath = $theme ? $theme->path : 'admin-lte-3';
+        $this->templates['adminlte_pagination'] = $themePath . '/layout/pagers/adminlte_pagination';
+
+        // Set per page limit from pengaturan
+        if ($pengaturan && isset($pengaturan->pagination_limit)) {
+            $this->perPage = (int) $pengaturan->pagination_limit;
+        }
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Items Per Page
