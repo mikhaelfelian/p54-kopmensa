@@ -2,6 +2,7 @@
 /**
  * Created by:
  * Mikhael Felian Waskito - mikhaelfelian@gmail.com
+ * GitHub: https://github.com/mikhaelfelian
  * 2025-01-12
  * 
  * Auth Controller
