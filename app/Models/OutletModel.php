@@ -40,4 +40,26 @@ class OutletModel extends Model
     protected $validationMessages   = [];
     protected $skipValidation       = false;
     protected $cleanValidationRules = true;
+
+    /**
+     * Generate unique kode for outlet
+     * Format: OTL-001, OTL-002, etc
+     */
+    public function generateKode()
+    {
+        $prefix = 'OTL-';
+        $lastKode = $this->select('kode')
+                        ->like('kode', $prefix, 'after')
+                        ->orderBy('kode', 'DESC')
+                        ->first();
+
+        if (!$lastKode) {
+            return $prefix . '001';
+        }
+
+        $lastNumber = (int) substr($lastKode['kode'], strlen($prefix));
+        $newNumber = $lastNumber + 1;
+        
+        return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+    }
 } 
