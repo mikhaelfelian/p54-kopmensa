@@ -106,7 +106,18 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('platform/detail/(:num)', 'Platform::detail/$1');
 });
 
-
+// Outlet routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+    $routes->get('outlet', 'Outlet::index');
+    $routes->get('outlet/create', 'Outlet::create');
+    $routes->post('outlet/store', 'Outlet::store');
+    $routes->get('outlet/edit/(:num)', 'Outlet::edit/$1');
+    $routes->post('outlet/update/(:num)', 'Outlet::update/$1');
+    $routes->get('outlet/delete/(:num)', 'Outlet::delete/$1');
+    $routes->get('outlet/trash', 'Outlet::trash');
+    $routes->get('outlet/restore/(:num)', 'Outlet::restore/$1');
+    $routes->get('outlet/delete_permanent/(:num)', 'Outlet::delete_permanent/$1');
+});
 
 // User Module Routes
 $routes->group('users/modules', ['namespace' => 'App\Controllers\Pengaturan', 'filter' => 'auth'], function ($routes) {
