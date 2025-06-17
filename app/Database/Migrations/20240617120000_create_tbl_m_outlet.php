@@ -22,6 +22,11 @@ class CreateTblMOutlet extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true,
             ],
+            'id_user' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'default'    => 0,
+            ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
@@ -33,11 +38,6 @@ class CreateTblMOutlet extends Migration
             'deleted_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
-            ],
-            'id_user' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'default'    => 0,
             ],
             'kode' => [
                 'type'       => 'VARCHAR',
