@@ -77,7 +77,7 @@
                 </li>
 
                 <!-- Outlet -->
-                <!-- <li class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/lokasi']) ? 'menu-open' : '' ?>">
+                <li class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/lokasi']) ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= isMenuActive(['master/outlet', 'master/lokasi']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-building"></i>
                         <p>
@@ -94,16 +94,16 @@
                                 <p>Data Outlet</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a href="<?= base_url('master/lokasi') ?>"
                                 class="nav-link <?= isMenuActive('master/lokasi') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-map-marker-alt nav-icon"></i>
                                 <p>Lokasi</p>
                             </a>
-                        </li>
+                        </li> -->
                     </ul>
-                </li> -->
+                </li>
 
                 <!-- Contact -->
                 <li class="nav-item has-treeview <?= isMenuActive(['master/supplier', 'master/pelanggan', 'master/karyawan']) ? 'menu-open' : '' ?>">
