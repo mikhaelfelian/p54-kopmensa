@@ -57,14 +57,14 @@
                                 <p>Kategori</p>
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
+                        <li class="nav-item">
                             <a href="<?= base_url('master/item') ?>"
                                 class="nav-link <?= isMenuActive('master/item') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-box nav-icon"></i>
                                 <p>Item</p>
                             </a>
-                        </li> -->
+                        </li>
                         <li class="nav-item">
                             <a href="<?= base_url('master/satuan') ?>"
                                 class="nav-link <?= isMenuActive('master/satuan') ? 'active' : '' ?>">

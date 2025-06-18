@@ -52,21 +52,21 @@
                         <?php foreach ($outlet as $key => $row): ?>
                             <tr>
                                 <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
-                                <td><?= $row['kode'] ?></td>
-                                <td><?= $row['nama'] ?></td>
-                                <td><?= $row['deskripsi'] ?></td>
+                                <td><?= $row->kode ?></td>
+                                <td><?= $row->nama ?></td>
+                                <td><?= $row->deskripsi ?></td>
                                 <td>
-                                    <span class="badge badge-<?= ($row['status'] == '1') ? 'success' : 'danger' ?>">
-                                        <?= ($row['status'] == '1') ? 'Aktif' : 'Tidak Aktif' ?>
+                                    <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
+                                        <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
                                     </span>
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="<?= base_url("master/outlet/edit/{$row['id']}") ?>"
+                                        <a href="<?= base_url("master/outlet/edit/{$row->id}") ?>"
                                             class="btn btn-warning btn-sm rounded-0">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="<?= base_url("master/outlet/delete/{$row['id']}") ?>"
+                                        <a href="<?= base_url("master/outlet/delete/{$row->id}") ?>"
                                             class="btn btn-danger btn-sm rounded-0"
                                             onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
                                             <i class="fas fa-trash"></i>

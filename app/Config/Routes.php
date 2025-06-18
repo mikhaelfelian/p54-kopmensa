@@ -119,6 +119,21 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('outlet/delete_permanent/(:num)', 'Outlet::delete_permanent/$1');
 });
 
+// Items routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+    $routes->get('item', 'Item::index');
+    $routes->get('item/create', 'Item::create');
+    $routes->post('item/store', 'Item::store');
+    $routes->get('item/edit/(:num)', 'Item::edit/$1');
+    $routes->post('item/update/(:num)', 'Item::update/$1');
+    $routes->get('item/delete/(:num)', 'Item::delete/$1');
+    $routes->get('item/trash', 'Item::trash');
+    $routes->get('item/restore/(:num)', 'Item::restore/$1');
+    $routes->get('item/delete_permanent/(:num)', 'Item::delete_permanent/$1');
+    $routes->post('item/upload_image', 'Item::upload_image');
+    $routes->post('item/delete_image', 'Item::delete_image');
+});
+
 // User Module Routes
 $routes->group('users/modules', ['namespace' => 'App\Controllers\Pengaturan', 'filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Modules::index');

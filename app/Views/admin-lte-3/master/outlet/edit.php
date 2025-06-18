@@ -6,7 +6,7 @@
             <div class="card-header">
                 <h3 class="card-title">Form Edit Outlet</h3>
             </div>
-            <?= form_open('master/outlet/update/' . $outlet['id']) ?>
+            <?= form_open('master/outlet/update/' . $outlet->id) ?>
             <div class="card-body">
                 <div class="form-group">
                     <label>Nama</label>
@@ -14,7 +14,7 @@
                         'type' => 'text',
                         'name' => 'nama',
                         'class' => 'form-control rounded-0',
-                        'value' => $outlet['nama'],
+                        'value' => $outlet->nama,
                         'placeholder' => 'Nama Outlet'
                     ]) ?>
                 </div>
@@ -23,7 +23,7 @@
                     <?= form_textarea([
                         'name' => 'deskripsi',
                         'class' => 'form-control rounded-0',
-                        'value' => $outlet['deskripsi'],
+                        'value' => $outlet->deskripsi,
                         'placeholder' => 'Deskripsi Outlet'
                     ]) ?>
                 </div>
@@ -31,14 +31,14 @@
                     <label>Status</label>
                     <div class="custom-control custom-radio">
                         <input class="custom-control-input" type="radio" name="status" value="1" id="statusAktif"
-                            <?= ($outlet['status'] == '1') ? 'checked' : '' ?>>
+                            <?= ($outlet->status == '1') ? 'checked' : '' ?>>
                         <label class="custom-control-label" for="statusAktif">
                             Aktif
                         </label>
                     </div>
                     <div class="custom-control custom-radio">
                         <input class="custom-control-input" type="radio" name="status" value="0" id="statusNonaktif"
-                            <?= ($outlet['status'] == '0') ? 'checked' : '' ?>>
+                            <?= ($outlet->status == '0') ? 'checked' : '' ?>>
                         <label class="custom-control-label" for="statusNonaktif">
                             Tidak Aktif
                         </label>

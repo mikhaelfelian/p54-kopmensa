@@ -3,8 +3,8 @@
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * Date: 2025-06-18
  * Github : github.com/mikhaelfelian
- * description : View for displaying deleted outlet data
- * This file represents the Outlet Trash View.
+ * description : View for displaying deleted items
+ * This file represents the View for deleted items.
  */
 ?>
 
@@ -17,7 +17,7 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-6">
-                        <a href="<?= base_url('master/outlet') ?>" class="btn btn-sm btn-secondary rounded-0">
+                        <a href="<?= base_url('master/item') ?>" class="btn btn-sm btn-secondary rounded-0">
                             <i class="fas fa-arrow-left"></i> Kembali
                         </a>
                     </div>
@@ -47,20 +47,30 @@
                         <tr>
                             <th width="50">No</th>
                             <th>Kode</th>
-                            <th>Nama</th>
-                            <th>Deskripsi</th>
+                            <th>Barcode</th>
+                            <th>Nama Item</th>
+                            <th>Kategori</th>
+                            <th>Merk</th>
+                            <th>Harga Beli</th>
+                            <th>Harga Jual</th>
+                            <th>Stok Min</th>
                             <th>Status</th>
                             <th>Dihapus Pada</th>
                             <th width="100">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($outlet as $key => $row): ?>
+                        <?php foreach ($items as $key => $row): ?>
                             <tr>
                                 <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
                                 <td><?= $row->kode ?></td>
-                                <td><?= $row->nama ?></td>
-                                <td><?= $row->deskripsi ?></td>
+                                <td><?= $row->barcode ?></td>
+                                <td><?= $row->item ?></td>
+                                <td><?= $row->nama_kategori ?? $row->id_kategori ?></td>
+                                <td><?= $row->nama_merk ?? $row->id_merk ?></td>
+                                <td><?= number_format($row->harga_beli, 0, ',', '.') ?></td>
+                                <td><?= number_format($row->harga_jual, 0, ',', '.') ?></td>
+                                <td><?= $row->jml_min ?></td>
                                 <td>
                                     <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
                                         <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
@@ -69,12 +79,12 @@
                                 <td><?= date('d/m/Y H:i', strtotime($row->deleted_at)) ?></td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="<?= base_url("master/outlet/restore/{$row->id}") ?>"
+                                        <a href="<?= base_url("master/item/restore/{$row->id}") ?>"
                                             class="btn btn-success btn-sm rounded-0"
                                             onclick="return confirm('Apakah anda yakin ingin mengembalikan data ini?')">
                                             <i class="fas fa-undo"></i>
                                         </a>
-                                        <a href="<?= base_url("master/outlet/delete_permanent/{$row->id}") ?>"
+                                        <a href="<?= base_url("master/item/delete_permanent/{$row->id}") ?>"
                                             class="btn btn-danger btn-sm rounded-0"
                                             onclick="return confirm('Apakah anda yakin ingin menghapus permanen data ini?')">
                                             <i class="fas fa-trash"></i>
@@ -83,9 +93,9 @@
                                 </td>
                             </tr>
                         <?php endforeach ?>
-                        <?php if (empty($outlet)): ?>
+                        <?php if (empty($items)): ?>
                             <tr>
-                                <td colspan="7" class="text-center">Tidak ada data</td>
+                                <td colspan="12" class="text-center">Tidak ada data</td>
                             </tr>
                         <?php endif ?>
                     </tbody>
@@ -95,7 +105,7 @@
             <?php if ($pager): ?>
                 <div class="card-footer clearfix">
                     <div class="float-right">
-                        <?= $pager->links('outlet', 'adminlte_pagination') ?>
+                        <?= $pager->links('items', 'adminlte_pagination') ?>
                     </div>
                 </div>
             <?php endif ?>
