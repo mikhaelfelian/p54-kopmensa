@@ -163,10 +163,10 @@
 </div>
 
 <!-- Dropzone CSS -->
-<link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/dropzone/dropzone.css') ?>">
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css">
 
 <!-- Dropzone JS -->
-<script src="<?= base_url('assets/theme/admin-lte-3/plugins/dropzone/dropzone.js') ?>"></script>
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
 
 <style>
 .dropzone-custom {
@@ -207,7 +207,8 @@ $(document).ready(function() {
         dictFileTooBig: "File terlalu besar ({{filesize}}MB). Maksimal: {{maxFilesize}}MB.",
         dictInvalidFileType: "Tipe file tidak diizinkan.",
         params: {
-            item_id: <?= $item->id ?>
+            item_id: <?= $item->id ?>,
+            '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
         },
         init: function() {
             // Show existing image if available
