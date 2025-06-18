@@ -121,21 +121,6 @@
                         <textarea name="deskripsi" cols="40" rows="3" id="deskripsi" class="form-control rounded-0" placeholder="Isikan deskripsi item / spek produk / dll ..."><?= old('deskripsi') ?></textarea>
                     </div>
                     <div class="form-group">
-                        <label class="control-label">Foto Item</label>
-                        <div id="dropzone" class="dropzone-custom">
-                            <div class="dz-message" data-dz-message>
-                                <div>
-                                    <i class="fa fa-cloud-upload-alt fa-3x mb-2" style="color:#888;"></i>
-                                    <div>Seret dan lepas file di sini atau klik<br>untuk mengunggah</div>
-                                </div>
-                            </div>
-                        </div>
-                        <small class="text-muted d-block mt-2">
-                            * File yang diijinkan: jpg|png|pdf|jpeg|jfif (Maks. 5MB)
-                        </small>
-                        <input type="hidden" name="foto" id="foto_input">
-                    </div>
-                    <div class="form-group">
                         <label class="control-label">Status*</label>                                
                         <div class="custom-control custom-radio">
                             <input type="radio" name="status" value="1" id="statusAktif" class="custom-control-input" <?= old('status') == '1' ? 'checked' : '' ?>>
@@ -161,88 +146,4 @@
         </form>
     </div>
 </div>
-
-<!-- Dropzone CSS -->
-<link rel="stylesheet" href="<?= base_url('assets/theme/admin-lte-3/plugins/dropzone/dropzone.css') ?>">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-<style>
-.dropzone-custom {
-    border: 2px dashed #20b2aa !important;
-    border-radius: 12px;
-    background: #fff;
-    min-height: 180px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 24px 0;
-}
-.dropzone-custom .dz-message {
-    margin: 0;
-    color: #888;
-    font-size: 18px;
-}
-.dropzone-custom .fa-cloud-upload-alt {
-    display: block;
-    margin: 0 auto 8px auto;
-}
-</style>
-
-<!-- Dropzone JS -->
-<script src="<?= base_url('assets/theme/admin-lte-3/plugins/dropzone/dropzone.js') ?>"></script>
-
-<script>
-Dropzone.autoDiscover = false;
-
-$(document).ready(function() {
-    var myDropzone = new Dropzone("#dropzone", {
-        url: "<?= base_url('master/item/upload_image') ?>",
-        paramName: "file",
-        maxFilesize: 5, // MB
-        acceptedFiles: ".jpg,.jpeg,.png,.pdf,.jfif",
-        maxFiles: 1,
-        addRemoveLinks: true,
-        dictDefaultMessage: '',
-        dictRemoveFile: "Hapus",
-        dictFileTooBig: "File terlalu besar ({{filesize}}MB). Maksimal: {{maxFilesize}}MB.",
-        dictInvalidFileType: "Tipe file tidak diizinkan.",
-        init: function() {
-            this.on("success", function(file, response) {
-                if (response.success) {
-                    file.serverFileName = response.filename;
-                    $('#foto_input').val(response.filename);
-                    // Show success message
-                    $(file.previewElement).find('.dz-success-mark').show();
-                } else {
-                    this.removeFile(file);
-                    alert(response.message);
-                }
-            });
-            
-            this.on("removedfile", function(file) {
-                if (file.serverFileName) {
-                    // Delete file from server
-                    $.ajax({
-                        url: "<?= base_url('master/item/delete_image') ?>",
-                        type: "POST",
-                        data: {
-                            filename: file.serverFileName
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#foto_input').val('');
-                            }
-                        }
-                    });
-                }
-            });
-            
-            this.on("error", function(file, errorMessage) {
-                alert(errorMessage);
-            });
-        }
-    });
-});
-</script>
 <?= $this->endSection() ?> 
