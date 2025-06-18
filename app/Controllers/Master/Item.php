@@ -285,7 +285,7 @@ class Item extends BaseController
         // Generate unique filename
         $newName = $file->getRandomName();
 
-        // Determine upload path
+        // Determine upload path - use public/file/item/ directory
         if ($item_id) {
             $uploadPath = FCPATH . 'file/item/' . $item_id . '/';
             $urlPath = base_url('file/item/' . $item_id . '/' . $newName);
@@ -293,6 +293,8 @@ class Item extends BaseController
             $uploadPath = FCPATH . 'file/item/temp/';
             $urlPath = base_url('file/item/temp/' . $newName);
         }
+        
+        // Create directory if it doesn't exist
         if (!is_dir($uploadPath)) {
             mkdir($uploadPath, 0755, true);
         }
