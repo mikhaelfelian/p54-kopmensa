@@ -95,6 +95,20 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/trash', 'Supplier::trash');
 });
 
+// Pelanggan Routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+    $routes->get('customer', 'Pelanggan::index');
+    $routes->get('customer/create', 'Pelanggan::create');
+    $routes->post('customer/store', 'Pelanggan::store');
+    $routes->get('customer/edit/(:num)', 'Pelanggan::edit/$1');
+    $routes->post('customer/update/(:num)', 'Pelanggan::update/$1');
+    $routes->get('customer/delete/(:num)', 'Pelanggan::delete/$1');
+    $routes->get('customer/detail/(:num)', 'Pelanggan::detail/$1');
+    $routes->get('customer/trash', 'Pelanggan::trash');
+    $routes->get('customer/restore/(:num)', 'Pelanggan::restore/$1');
+    $routes->get('customer/delete_permanent/(:num)', 'Pelanggan::delete_permanent/$1');
+});
+
 // Platform Routes
 $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
     $routes->get('platform', 'Platform::index');
