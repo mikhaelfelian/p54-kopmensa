@@ -32,6 +32,7 @@
                 </li>
 
                 <!-- Master Data Katalog -->
+                <li class="nav-header">MASTER DATA</li>
                 <li class="nav-item has-treeview <?= isMenuActive(['master/merk', 'master/kategori', 'master/item', 'master/satuan']) ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= isMenuActive(['master/merk', 'master/kategori', 'master/item', 'master/satuan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-briefcase"></i>
@@ -106,8 +107,8 @@
                 </li>
 
                 <!-- Contact -->
-                <li class="nav-item has-treeview <?= isMenuActive(['master/supplier', 'master/pelanggan', 'master/karyawan']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/supplier', 'master/pelanggan', 'master/karyawan']) ? 'active' : '' ?>">
+                <li class="nav-item has-treeview <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-users"></i>
                         <p>
                             Kontak
@@ -123,14 +124,14 @@
                                 <p>Supplier</p>
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
-                            <a href="<?= base_url('master/pelanggan') ?>"
-                                class="nav-link <?= isMenuActive('master/pelanggan') ? 'active' : '' ?>">
+                        <li class="nav-item">
+                            <a href="<?= base_url('master/customer') ?>"
+                                class="nav-link <?= isMenuActive('master/customer') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-user-friends nav-icon"></i>
                                 <p>Pelanggan / Anggota</p>
                             </a>
-                        </li> -->
+                        </li>
                         <li class="nav-item">
                             <a href="<?= base_url('master/karyawan') ?>"
                                 class="nav-link <?= isMenuActive('master/karyawan') ? 'active' : '' ?>">
@@ -172,6 +173,7 @@
                 </li>
 
                 <!-- Settings -->
+                <li class="nav-header">PENGATURAN</li>
                 <li class="nav-item has-treeview <?= isMenuActive('pengaturan') ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= isMenuActive('pengaturan') ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-cog"></i>
