@@ -65,6 +65,7 @@ class Migration_20250530173000_create_tbl_ion_modules extends Migration
             ],
         ]);
 
+        $this->forge->dropTable('tbl_ion_modules', true);
         $this->forge->addKey('id', true);
         $this->forge->createTable('tbl_ion_modules');
     }
