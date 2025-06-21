@@ -11,15 +11,24 @@ namespace App\Controllers\Gudang;
 
 use App\Controllers\BaseController;
 use App\Models\ItemModel;
+use App\Models\ItemStokModel;
+use App\Models\GudangModel;
+use App\Models\OutletModel;
 
 class Inventori extends BaseController
 {
     protected $itemModel;
+    protected $itemStokModel;
+    protected $gudangModel;
+    protected $outletModel;
 
     public function __construct()
     {
         parent::__construct();
         $this->itemModel = new ItemModel();
+        $this->itemStokModel = new ItemStokModel();
+        $this->gudangModel = new GudangModel();
+        $this->outletModel = new OutletModel();
     }
 
     public function index()
@@ -49,7 +58,13 @@ class Inventori extends BaseController
 
     public function detail($id)
     {
-        $item = $this->itemModel->find($id);
+        $item       = $this->itemModel->find($id);
+        $item_stok = $this->itemStokModel
+            ->select('tbl_m_item_stok.*, tbl_m_outlet.nama')
+            ->join('tbl_m_outlet', 'tbl_m_outlet.id = tbl_m_item_stok.id_outlet')
+            ->where('tbl_m_item_stok.id_item', $id)
+            ->findAll();
+
 
         if (!$item) {
             return redirect()->to(base_url('gudang/stok'))->with('error', 'Item tidak ditemukan.');
@@ -63,6 +78,7 @@ class Inventori extends BaseController
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
             'item'        => $item,
+            'outlets'     => $item_stok,
             'stokData'    => $stokData,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>

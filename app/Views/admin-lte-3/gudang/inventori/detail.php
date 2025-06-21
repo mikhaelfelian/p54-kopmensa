@@ -81,11 +81,12 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php foreach ($outlets as $outlet): ?>
                                 <tr>
-                                    <th>Pojok Seduh</th>
+                                    <th><?= $outlet->nama ?></th>
                                     <th>:</th>
                                     <td class="text-right" style="width: 120px;">
-                                        <input type="text" name="jml[2060]" value="1" id="jml"
+                                        <input type="text" name="jml[<?= $outlet->id_outlet ?>]" value="<?= $outlet->jml ?? 0 ?>" id="jml"
                                             class="form-control rounded-0">
                                     </td>
                                     <td class="text-left">PCS</td>
@@ -93,8 +94,15 @@
                                         <button type="submit" class="btn btn-primary btn-flat"><i
                                                 class="fa fa-save"></i></button>
                                     </td>
-                                    <td class="text-left"><label class="badge badge-success">Utama</label></td>
+                                    <td class="text-left">
+                                        <?php if ($outlet->status == '1'): ?>
+                                            <label class="badge badge-success">Utama</label>
+                                        <?php else: ?>
+                                            <label class="badge badge-secondary">Tidak Aktif</label>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
+                                <?php endforeach; ?>
                             </tbody>
                         </table>
                     </form>
@@ -108,41 +116,20 @@
                 <div class="card-header">
                     <h3 class="card-title">Data Mutasi Stok</h3>
                     <div class="card-tools">
-                        <ul class="pagination pagination-sm float-right">
-                            <ul class="pagination pagination-sm">
-                                <li class="page-item active"><a href="#" class="page-link">1</a></li>
-                                <li class="page-item"><a
-                                        href="https://simrs.esensia.co.id/gudang/data_stok_tambah.php?id=MjcxODMxYTNhYjVhMmE2YjgwOGFmMTVmYTM4YjA0MjU3M2RhNDEyNjI1ZDc1NjkxYzI1YjVmMmJkYWFmYTBkOWVmMjEwMWQ3OTg3MGM4ZWE5NGI0Y2Q2OWNiZmM1MjU0MWMwZDA2NjMxNjdmMjAzNjA4ODBlZDg5NzdkZjI3YzNNa2FidS9XRWpvTHlnQXZ3RkpMSnpmekVndWJId0Uva0V3RWtVb2pJZWtNPQ--&amp;halaman=15"
-                                        class="page-link" data-ci-pagination-page="2">2</a></li>
-                                <li class="page-item"><a
-                                        href="https://simrs.esensia.co.id/gudang/data_stok_tambah.php?id=MjcxODMxYTNhYjVhMmE2YjgwOGFmMTVmYTM4YjA0MjU3M2RhNDEyNjI1ZDc1NjkxYzI1YjVmMmJkYWFmYTBkOWVmMjEwMWQ3OTg3MGM4ZWE5NGI0Y2Q2OWNiZmM1MjU0MWMwZDA2NjMxNjdmMjAzNjA4ODBlZDg5NzdkZjI3YzNNa2FidS9XRWpvTHlnQXZ3RkpMSnpmekVndWJId0Uva0V3RWtVb2pJZWtNPQ--&amp;halaman=30"
-                                        class="page-link" data-ci-pagination-page="3">3</a></li>
-                                <li class="page-item"><a
-                                        href="https://simrs.esensia.co.id/gudang/data_stok_tambah.php?id=MjcxODMxYTNhYjVhMmE2YjgwOGFmMTVmYTM4YjA0MjU3M2RhNDEyNjI1ZDc1NjkxYzI1YjVmMmJkYWFmYTBkOWVmMjEwMWQ3OTg3MGM4ZWE5NGI0Y2Q2OWNiZmM1MjU0MWMwZDA2NjMxNjdmMjAzNjA4ODBlZDg5NzdkZjI3YzNNa2FidS9XRWpvTHlnQXZ3RkpMSnpmekVndWJId0Uva0V3RWtVb2pJZWtNPQ--&amp;halaman=15"
-                                        class="page-link" data-ci-pagination-page="2" rel="next">›</a></li>
-                            </ul>
-                        </ul>
                     </div>
                 </div>
                 <div class="card-body table-responsive">
-                    <table class="table table-responsive">
+                    <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
                                 <th>Gudang</th>
                                 <th class="text-right">Jml</th>
                                 <th>Satuan</th>
                                 <th>Keterangan</th>
-                                <th colspan="2"></th>
+                                <th>Status</th>
+                                <th>Aksi</th>
                             </tr>
                         </thead>
-                        <form method="get" action="https://simrs.esensia.co.id/gudang/data_stok_tambah.php"
-                            autocomplete="off"></form>
-                        <input type="hidden" name="id"
-                            value="MjcxODMxYTNhYjVhMmE2YjgwOGFmMTVmYTM4YjA0MjU3M2RhNDEyNjI1ZDc1NjkxYzI1YjVmMmJkYWFmYTBkOWVmMjEwMWQ3OTg3MGM4ZWE5NGI0Y2Q2OWNiZmM1MjU0MWMwZDA2NjMxNjdmMjAzNjA4ODBlZDg5NzdkZjI3YzNNa2FidS9XRWpvTHlnQXZ3RkpMSnpmekVndWJId0Uva0V3RWtVb2pJZWtNPQ--">
-
-                        <input type="hidden" name="id_produk"
-                            value="YzcyMDJmNzZiNzRjODA4ODA4Nzg1ZDgwYzY3MmE0MjRkZDc4MDAxNGFkODgwM2Q3ZWU4NmM5Y2ZkODQxY2Y3ZmRkNmZlMDkyODVhNjljOWE0OTFlNTE0YmI0YmViYjllZDQxOWI3NWRhNjBkZDM4MmVmZDcwZmIzMGRkYTNkYTFieGF6YWpaU2tzY1JDVjlZOHhmUGp0L2ovVzdVK01pQUEyRkFKTys2ZDFBPQ--">
-
                         <tbody>
                             <tr>
                                 <td>
@@ -181,331 +168,6 @@
                                 </td>
                                 <td><button type="submit" class="btn btn-primary btn-flat rounded-0"><i
                                             class="fa fa-search"></i></button></td>
-                            </tr>
-                        </tbody>
-
-                        <tbody>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>DESI SUCI LESTARI</i></small><br>
-                                    <small><i>06-11-2023 11:32</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Pembelian <a
-                                        href="https://simrs.esensia.co.id/transaksi/trans_beli_det.php?id=YzVhYWQyZTU3ZDUzZGRlMDU4NjcyNzI4MjM1ZmUzMWU1MTBhM2M5YjUyMjcwNTMzNDNmM2I4MzI1YjE4YTg1OWZmMTM1MDM5Y2YwOTczZTlhZTE4NDIxNjMzMjlmYWExNWJmNTY5ZDVhZmQyZDA2NzI2NDI1YzRkYjYxNzk4OGNTMVRMRkh1KzRCUTY5N1MxQm00RDZtWWZNWW02OHI2TmNNem9CcXdOcEFnPQ--"
-                                        target="_blank">02-1040317</a> </td>
-                                <td>
-                                    <label class="badge badge-success">Stok Masuk</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Bawah<br>
-                                    <small><i>RIDA YATUL ARI FADLINA, S. Farm</i></small><br>
-                                    <small><i>15-11-2023 20:21</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    TN. MUHAMMAD TAUFIQY NUR </td>
-                                <td>
-                                    <label class="badge badge-info">Stok Keluar</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Bawah<br>
-                                    <small><i>TIM B</i></small><br>
-                                    <small><i>04-12-2023 15:20</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    0 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Stok Opname 00464 </td>
-                                <td>
-                                    <label class="badge badge-warning">Stok Opname</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Bawah<br>
-                                    <small><i>TIM C</i></small><br>
-                                    <small><i>04-12-2023 15:58</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    0 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Stok Opname 00476 </td>
-                                <td>
-                                    <label class="badge badge-warning">Stok Opname</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>TIM A</i></small><br>
-                                    <small><i>04-12-2023 17:42</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    0 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Stok Opname 00498 </td>
-                                <td>
-                                    <label class="badge badge-warning">Stok Opname</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>DESI SUCI LESTARI</i></small><br>
-                                    <small><i>07-12-2023 09:14</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Pembelian <a
-                                        href="https://simrs.esensia.co.id/transaksi/trans_beli_det.php?id=MDFmNGExZjEzMTQzMWUwYzM1ZDQ4OTYzNzA4MDEzYTBkM2ZhYjExMDMwZDgxZDE5MWI4NmQyYzlmM2E4NTIyMDBmM2YzNzdiMzM5OTZmYTc5NzVmZmFlMjMzNTcwNTRmODExOWNjZDczZmIzZTJlNDVlNzQ0NzEyZDJlYzU2MmNPZEo3eDVnN2ZhZ2xEODFiTUZyRmRjRjhvdTZpaWJVSmpsMlBSd0lmSGhzPQ--"
-                                        target="_blank">02-1043703</a> </td>
-                                <td>
-                                    <label class="badge badge-success">Stok Masuk</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Bawah<br>
-                                    <small><i>RIDA YATUL ARI FADLINA, S. Farm</i></small><br>
-                                    <small><i>13-12-2023 19:34</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    TN. MUHAMMAD TAUFIQY NUR </td>
-                                <td>
-                                    <label class="badge badge-info">Stok Keluar</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>DESI SUCI LESTARI</i></small><br>
-                                    <small><i>23-12-2023 08:58</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Pembelian <a
-                                        href="https://simrs.esensia.co.id/transaksi/trans_beli_det.php?id=N2EyZTNjODZiZGQ3ODMzZWI0MTkzNWY4OTAzNjAwMzUwYjk2ZjY3MjhmMTc1MWJkYTcwNmI3ZTM5MGNhOGMxNDFjZTY3ODIzYzkzM2FkNmViZWNlMjk3ODY3Zjg4YmJjYjQzYTE5YzI2YjUwZGYyNGYzOWNhZDU1OGUwMDYyNWZkTlhWSUljNGhMRzk3UGxrU0pkdHBmSkUza3U0b2haZ25MMjh1OXM0T0kwPQ--"
-                                        target="_blank">02-1045476</a> </td>
-                                <td>
-                                    <label class="badge badge-success">Stok Masuk</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Bawah<br>
-                                    <small><i>NOVIA IKA WULANDARI, S.M</i></small><br>
-                                    <small><i>17-01-2024 20:23</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    TN. MUHAMMAD TAUFIQY NUR </td>
-                                <td>
-                                    <label class="badge badge-info">Stok Keluar</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>DESI SUCI LESTARI</i></small><br>
-                                    <small><i>29-01-2024 10:17</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Pembelian <a
-                                        href="https://simrs.esensia.co.id/transaksi/trans_beli_det.php?id=NDAzODM2M2U3ZDdmZTNkMjIyNTE0N2U0YmY3YWM0NmQwZGY3NjRlYmJkOTNiZGFhNTJlMjdkM2M1NDQwNGQ0NmZjMDMyMTI3ZWNkNzdmMjcxZjdjYmU3MDQxMDViZDhkMTE4Yzk1Mzg2NTllZjIxZjc3OTIzMTYwMzRhOTQ2MjM2THNGcDdWUll0Q2JqTFREWE1xNnRHZ2lUMlUvNGdGVktYWVZJUmt6b1lvPQ--"
-                                        target="_blank">02-1049071</a> </td>
-                                <td>
-                                    <label class="badge badge-success">Stok Masuk</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>NARULITA NOOR WIDYA, S.E</i></small><br>
-                                    <small><i>03-02-2024 09:01</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Mutasi stok antar gudang [<a
-                                        href="https://simrs.esensia.co.id/gudang/trans_mutasi_det.php?id=MjgxMDcwMjc2MWVkN2E2MGQwZGMzMDkzMmQzNDVjODlmOGIzMWVkMDNkOTllYTNlNWEzODUzMzZjYjA2OGZlZDUxZmVmODRiMWNmOGM3NDljZmQ2MWMzYTM3ZThmMWJhNTI0YjQ3NzhmNzNkMjgzZDI5YmFlZGRmYzM3OGZlMDNyTnhJeXI4blJZbnM3YWdYaWVBNlVhdFdGdjlsVk12Z1gwVzR6enZndThnPQ--">#00116</a>]
-                                </td>
-                                <td>
-                                    <label class="badge badge-warning">Mutasi</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Bawah<br>
-                                    <small><i>TIM A</i></small><br>
-                                    <small><i>05-03-2024 09:37</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Stok Opname 00510 </td>
-                                <td>
-                                    <label class="badge badge-warning">Stok Opname</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>TIM C</i></small><br>
-                                    <small><i>05-03-2024 09:56</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    0 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Stok Opname 00513 </td>
-                                <td>
-                                    <label class="badge badge-warning">Stok Opname</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Bawah<br>
-                                    <small><i>JUNITA PUTRI SONITA</i></small><br>
-                                    <small><i>06-04-2024 20:54</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    TN. MUHAMMAD TAUFIQY NUR </td>
-                                <td>
-                                    <label class="badge badge-info">Stok Keluar</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="width: 350px;">
-                                    Gd. Atas<br>
-                                    <small><i>DESI SUCI LESTARI</i></small><br>
-                                    <small><i>19-04-2024 17:25</i></small>
-                                </td>
-                                <td style="width: 100px;" class="text-right">
-                                    1 </td>
-                                <td style="width: 150px;">
-                                </td>
-                                <td style="width: 600px;">
-                                    Pembelian <a
-                                        href="https://simrs.esensia.co.id/transaksi/trans_beli_det.php?id=OGZjYTU2YzFiNmQ5MTVjMjI4MTgyM2IxNDI0M2FmMTkxMDVkYjA5YTJlYjI2MDQ4YWIwNGIwZTQwNWRlNTc4NzFmNWI2NDY0YmNkMGQ5NTJjMmE2NzQ1MGZiODNmYjVlOTU0ZTE1ZGY2YTAyYWIxN2NlNjk0ZGU3NzE4MjBlMTJOQzdGSjlieW8xNHUzSmtiNzMyTHVYc2VEVG8zcUQ0ZUtabEM1WnRheEljPQ--"
-                                        target="_blank">02-1058817</a><br><small><i>[2K80YDA]</i></small> </td>
-                                <td>
-                                    <label class="badge badge-success">Stok Masuk</label>
-                                </td>
-                                <td>
-                                    <!--<label class="label label-default" ><i class="fa fa-remove"></i> Hapus</label>-->
-                                </td>
-                            </tr>
-                            <!-- <tr>
-                                            <th colspan="4" class="text-right">Total Stok Opname</th>
-                                            <td class="text-right">3</td>
-                                            <td colspan="4" class="text-left"></td>
-                                        </tr> -->
-                            <tr>
-                                <th colspan="4" class="text-right">Total Stok Masuk</th>
-                                <td class="text-right">3</td>
-                                <td colspan="4" class="text-left"></td>
-                            </tr>
-                            <tr>
-                                <th colspan="4" class="text-right">Total Transfer Stok</th>
-                                <td class="text-right">2</td>
-                                <td colspan="4" class="text-left"></td>
-                            </tr>
-                            <tr>
-                                <th colspan="4" class="text-right">Total Stok Keluar</th>
-                                <td class="text-right">2</td>
-                                <td colspan="4" class="text-left"></td>
-                            </tr>
-                            <tr>
-                                <th colspan="4" class="text-right">Sisa Stok</th>
-                                <td class="text-right">1</td>
-                                <td colspan="4" class="text-left"></td>
                             </tr>
                         </tbody>
                     </table>
