@@ -57,7 +57,7 @@ class OutletModel extends Model
             return $prefix . '001';
         }
 
-        $lastNumber = (int) substr($lastKode['kode'], strlen($prefix));
+        $lastNumber = (int) substr($lastKode->kode, strlen($prefix));
         $newNumber = $lastNumber + 1;
         
         return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
