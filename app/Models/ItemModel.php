@@ -63,7 +63,7 @@ class ItemModel extends Model
             ->first();
 
         if ($lastCode) {
-            $lastNumber = (int) substr($lastCode['kode'], 4); // Remove 'ITM-' prefix
+            $lastNumber = (int) substr($lastCode->kode, 4); // Remove 'ITM-' prefix
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
