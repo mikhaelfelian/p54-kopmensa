@@ -205,6 +205,32 @@ class Item extends BaseController
         return view($this->theme->getThemePath() . '/master/item/edit', $data);
     }
 
+    public function edit_upload($id)
+    {
+        $data = [
+            'title'         => 'Form Item',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'validation'    => $this->validation,
+            'item'          => $this->itemModel->find($id),
+            'kategori'      => $this->kategoriModel->findAll(),
+            'merk'          => $this->merkModel->findAll(),
+            'breadcrumbs'   => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/item') . '">Item</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            '
+        ];
+
+        if (empty($data['item'])) {
+            return redirect()->to(base_url('master/item'))
+                ->with('error', 'Data item tidak ditemukan');
+        }
+
+        return view($this->theme->getThemePath() . '/master/item/edit_upload', $data);
+    }
+
     public function update($id)
     {
         $item           = $this->request->getVar('item');
@@ -256,7 +282,6 @@ class Item extends BaseController
                 'tipe'        => $tipe,
                 'status'      => $status,
                 'status_stok' => $status_stok,
-                'foto'        => $this->request->getVar('foto'),
             ];
 
             if (!$this->itemModel->update($id, $data)) {
@@ -294,8 +319,8 @@ class Item extends BaseController
         $item_id = $this->request->getVar('item_id');
 
         if ($file && $file->isValid() && !$file->hasMoved()) {
-            $newName = $file->getRandomName();
-            $uploadDir = $item_id ? '../public/file/item/' . $item_id . '/' : '../public/file/item/temp/';
+            $newName    = $file->getRandomName();
+            $uploadDir  = $item_id ? '../public/file/item/' . $item_id . '/' : '../public/file/item/temp/';
             $uploadPath = FCPATH . $uploadDir;
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0777, true);

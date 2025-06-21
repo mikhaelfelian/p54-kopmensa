@@ -101,6 +101,10 @@
                                                 class="btn btn-warning btn-sm rounded-0">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            <a href="<?= base_url("master/item/upload/{$row->id}") ?>"
+                                                class="btn btn-info btn-sm rounded-0">
+                                                <i class="fas fa-upload"></i>
+                                            </a>
                                             <a href="<?= base_url("master/item/delete/{$row->id}") ?>"
                                                 class="btn btn-danger btn-sm rounded-0"
                                                 onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
