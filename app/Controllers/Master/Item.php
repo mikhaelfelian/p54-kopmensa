@@ -22,6 +22,7 @@ class Item extends BaseController
     protected $pengaturan;
     protected $ionAuth;
     protected $validation;
+    protected $db;
 
     public function __construct()
     {
@@ -29,6 +30,7 @@ class Item extends BaseController
         $this->kategoriModel = new KategoriModel();
         $this->merkModel = new MerkModel();
         $this->validation = \Config\Services::validation();
+        $this->db = \Config\Database::connect();
     }
 
     public function index()
@@ -109,17 +111,17 @@ class Item extends BaseController
 
         // Validation rules
         $rules = [
+            'csrf_test_name' => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'CSRF token tidak valid'
+                ]
+            ],
             'item' => [
                 'rules' => 'required|max_length[128]',
                 'errors' => [
                     'required' => 'Nama item harus diisi',
                     'max_length' => 'Nama item maksimal 128 karakter'
-                ]
-            ],
-            env('security.tokenName', 'csrf_test_name') => [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'CSRF token tidak valid'
                 ]
             ]
         ];
@@ -129,41 +131,50 @@ class Item extends BaseController
                 ->withInput()
                 ->with('error', 'Validasi gagal');
         }
+        
+        try {
+            $data = [
+                'kode'        => $this->itemModel->generateKode(),
+                'barcode'     => $barcode,
+                'item'        => $item,
+                'deskripsi'   => $deskripsi,
+                'id_kategori' => $id_kategori,
+                'id_merk'     => $id_merk,
+                'jml_min'     => $jml_min,
+                'harga_beli'  => $harga_beli,
+                'harga_jual'  => $harga_jual,
+                'tipe'        => $tipe,
+                'status'      => $status,
+                'id_user'     => $id_user,
+                'foto'        => null
+            ];
 
-        $data = [
-            'kode'        => $this->itemModel->generateKode(),
-            'barcode'     => $barcode,
-            'item'        => $item,
-            'deskripsi'   => $deskripsi,
-            'id_kategori' => $id_kategori,
-            'id_merk'     => $id_merk,
-            'jml_min'     => $jml_min,
-            'harga_beli'  => $harga_beli,
-            'harga_jual'  => $harga_jual,
-            'foto'        => $foto,
-            'tipe'        => $tipe,
-            'status'      => $status,
-            'id_user'     => $id_user
-        ];
+            $this->db->transStart();
+            $this->itemModel->insert($data);
+            $newItemId = $this->itemModel->getInsertID();
+            $tempFotoPath = $this->request->getVar('foto');
 
-        if ($this->itemModel->insert($data)) {
-            $item_id = $this->itemModel->getInsertID();
-            // If there is a foto uploaded in temp, move it to the new item folder
-            if ($foto && file_exists(FCPATH . 'file/item/temp/' . $foto)) {
-                $newDir = FCPATH . 'file/item/' . $item_id . '/';
-                if (!is_dir($newDir)) {
-                    mkdir($newDir, 0755, true);
+            if (!empty($tempFotoPath) && strpos($tempFotoPath, 'file/item/temp/') === 0) {
+                $fileName = basename($tempFotoPath);
+                $finalDir = 'file/item/' . $newItemId . '/';
+                $finalPath = $finalDir . $fileName;
+                $finalFullPath = FCPATH . $finalDir;
+                if (!is_dir($finalFullPath)) {
+                    mkdir($finalFullPath, 0777, true);
                 }
-                rename(FCPATH . 'file/item/temp/' . $foto, $newDir . $foto);
-                // Optionally, remove temp folder if empty
+                if (file_exists(FCPATH . $tempFotoPath) && rename(FCPATH . $tempFotoPath, FCPATH . $finalPath)) {
+                    $this->itemModel->update($newItemId, ['foto' => $finalPath]);
+                }
             }
-            return redirect()->to(base_url('master/item'))
-                ->with('success', 'Data item berhasil ditambahkan');
-        }
+            $this->db->transComplete();
 
-        return redirect()->back()
-            ->with('error', 'Gagal menambahkan data item')
-            ->withInput();
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Gagal menambahkan data item karena kegagalan transaksi.');
+            }
+            return redirect()->to(base_url('master/item'))->with('success', 'Data item berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+        }
     }
 
     public function edit($id)
@@ -194,140 +205,127 @@ class Item extends BaseController
 
     public function update($id)
     {
-        $item       = $this->request->getVar('item');
-        $barcode    = $this->request->getVar('barcode');
-        $deskripsi  = $this->request->getVar('deskripsi');
-        $id_kategori = $this->request->getVar('id_kategori');
-        $id_merk    = $this->request->getVar('id_merk');
-        $jml_min    = $this->request->getVar('jml_min') ?? 0;
-        $harga_beli = $this->request->getVar('harga_beli') ?? 0;
-        $harga_jual = $this->request->getVar('harga_jual') ?? 0;
-        $tipe       = $this->request->getVar('tipe') ?? '1';
-        $status     = $this->request->getVar('status') ?? '1';
-        $foto       = $this->request->getVar('foto') ?? null;
+        $item           = $this->request->getVar('item');
+        $barcode        = $this->request->getVar('barcode');
+        $deskripsi      = $this->request->getVar('deskripsi');
+        $id_kategori    = $this->request->getVar('id_kategori');
+        $id_merk        = $this->request->getVar('id_merk');
+        $jml_min        = $this->request->getVar('jml_min') ?? 0;
+        $harga_beli     = $this->request->getVar('harga_beli') ?? 0;
+        $harga_jual     = $this->request->getVar('harga_jual') ?? 0;
+        $tipe           = $this->request->getVar('tipe') ?? '1';
+        $status         = $this->request->getVar('status') ?? '1';
+        $status_stok    = $this->request->getVar('status_stok') ?? '1';
 
-        // Validation rules
-        $rules = [
-            'item' => [
-                'rules' => 'required|max_length[128]',
-                'errors' => [
-                    'required' => 'Nama item harus diisi',
-                    'max_length' => 'Nama item maksimal 128 karakter'
-                ]
-            ],
-            env('security.tokenName', 'csrf_test_name') => [
+        // // Validation rules
+        // $rules = [
+        //     csrf_token() => [
+        //         'rules' => 'required',
+        //         'errors' => [
+        //             'required' => 'CSRF token tidak valid'
+        //         ]
+        //     ],
+        //     'item' => [
+        //         'rules' => 'required|max_length[128]',
+        //         'errors' => [
+        //             'required' => 'Nama item harus diisi',
+        //             'max_length' => 'Nama item maksimal 128 karakter'
+        //         ]
+        //     ]
+        // ];
+
+        // if (!$this->validate($rules)) {
+        //     return redirect()->back()
+        //         ->withInput()
+        //         ->with('validation_errors', $this->validator->getErrors())
+        //         ->with('error', 'Validasi gagal. Silakan periksa kembali input Anda.');
+        // }
+
+        try {
+            $data = [
+                'barcode'     => $barcode,
+                'item'        => $item,
+                'deskripsi'   => $deskripsi,
+                'id_kategori' => $id_kategori,
+                'id_merk'     => $id_merk,
+                'jml_min'     => $jml_min,
+                'harga_beli'  => $harga_beli,
+                'harga_jual'  => $harga_jual,
+                'tipe'        => $tipe,
+                'status'      => $status,
+                'status_stok' => $status_stok,
+            ];
+
+            if (!$this->itemModel->update($id, $data)) {
+                throw new \Exception('Gagal mengubah data item');
+            }
+
+            return redirect()->to(base_url('master/item'))
+                ->with('success', 'Data item berhasil diubah');
+
+        } catch (\Exception $e) {            
+            // return redirect()->back()
+            //     ->withInput()
+            //     ->with('error', ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengubah data item');
+        }
+    }
+
+    public function upload_image()
+    {
+        // CSRF validation
+        if (!$this->validate([
+            csrf_token() => [
                 'rules' => 'required',
                 'errors' => [
                     'required' => 'CSRF token tidak valid'
                 ]
             ]
-        ];
-
-        if (!$this->validate($rules)) {
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Validasi gagal');
+        ])) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'CSRF token tidak valid'
+            ]);
         }
 
-        $data = [
-            'barcode'     => $barcode,
-            'item'        => $item,
-            'deskripsi'   => $deskripsi,
-            'id_kategori' => $id_kategori,
-            'id_merk'     => $id_merk,
-            'jml_min'     => $jml_min,
-            'harga_beli'  => $harga_beli,
-            'harga_jual'  => $harga_jual,
-            'foto'        => $foto,
-            'tipe'        => $tipe,
-            'status'      => $status
-        ];
-
-        if ($this->itemModel->update($id, $data)) {
-            return redirect()->to(base_url('master/item'))
-                ->with('success', 'Data item berhasil diubah');
-        }
-
-        return redirect()->back()
-            ->with('error', 'Gagal mengubah data item')
-            ->withInput();
-    }
-
-    public function upload_image()
-    {
         $file = $this->request->getFile('file');
         $item_id = $this->request->getVar('item_id');
 
-        if (!$file->isValid() || $file->hasMoved()) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'File tidak valid'
-            ]);
+        if ($file && $file->isValid() && !$file->hasMoved()) {
+            $newName = $file->getRandomName();
+            $uploadDir = $item_id ? 'public/file/item/' . $item_id . '/' : 'public/file/item/temp/';
+            $uploadPath = FCPATH . $uploadDir;
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0777, true);
+            }
+            if ($file->move($uploadPath, $newName)) {
+                $relativePath = $uploadDir . $newName;
+                if ($item_id) {
+                    $currentItem = $this->itemModel->find($item_id);
+                    if ($currentItem && !empty($currentItem->foto) && file_exists(FCPATH . $currentItem->foto)) {
+                        unlink(FCPATH . $currentItem->foto);
+                    }
+                    $this->itemModel->update($item_id, ['foto' => $relativePath]);
+                }
+                return $this->response->setJSON(['success' => true, 'filename' => $relativePath]);
+            }
         }
-
-        // Validate file type
-        $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-        if (!in_array($file->getMimeType(), $allowedTypes)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tipe file tidak diizinkan. Hanya JPG, PNG, dan GIF yang diizinkan.'
-            ]);
-        }
-
-        // Validate file size (max 2MB)
-        if ($file->getSize() > 2 * 1024 * 1024) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Ukuran file terlalu besar. Maksimal 2MB.'
-            ]);
-        }
-
-        // Generate unique filename
-        $newName = $file->getRandomName();
-
-        // Determine upload path - use public/file/item/ directory
-        if ($item_id) {
-            $uploadPath = FCPATH . 'file/item/' . $item_id . '/';
-            $urlPath = base_url('file/item/' . $item_id . '/' . $newName);
-        } else {
-            $uploadPath = FCPATH . 'file/item/temp/';
-            $urlPath = base_url('file/item/temp/' . $newName);
-        }
-        
-        // Create directory if it doesn't exist
-        if (!is_dir($uploadPath)) {
-            mkdir($uploadPath, 0755, true);
-        }
-
-        if ($file->move($uploadPath, $newName)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'filename' => $newName,
-                'url' => $urlPath
-            ]);
-        }
-
-        return $this->response->setJSON([
-            'success' => false,
-            'message' => 'Gagal mengupload file'
-        ]);
+        return $this->response->setJSON(['success' => false, 'message' => 'Gagal mengunggah file.']);
     }
 
     public function delete_image()
     {
         $filename = $this->request->getVar('filename');
-        
+        $item_id = $this->request->getVar('item_id');
         if ($filename) {
-            $filePath = FCPATH . 'uploads/items/' . $filename;
+            $filePath = FCPATH . $filename;
             if (file_exists($filePath)) {
                 unlink($filePath);
             }
+            if ($item_id) {
+                $this->itemModel->update($item_id, ['foto' => null]);
+            }
         }
-
-        return $this->response->setJSON([
-            'success' => true,
-            'message' => 'File berhasil dihapus'
-        ]);
+        return $this->response->setJSON(['success' => true]);
     }
 
     public function trash()
