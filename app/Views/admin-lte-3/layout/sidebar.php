@@ -171,6 +171,36 @@
                         </li> -->
                     </ul>
                 </li>
+                
+                <!-- Warehouse -->
+                <li class="nav-header">GUDANG</li>
+                <li class="nav-item has-treeview <?= isMenuActive('gudang') ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive('gudang') ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-warehouse"></i>
+                        <p>
+                            Gudang
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="<?= base_url('gudang/transfer') ?>"
+                                class="nav-link <?= isMenuActive('gudang/transfer') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-exchange-alt nav-icon"></i>
+                                <p>Transfer</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('gudang/inventory') ?>"
+                                class="nav-link <?= isMenuActive('gudang/inventory') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-clipboard-list nav-icon"></i>
+                                <p>Inventory</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
 
                 <!-- Settings -->
                 <li class="nav-header">PENGATURAN</li>

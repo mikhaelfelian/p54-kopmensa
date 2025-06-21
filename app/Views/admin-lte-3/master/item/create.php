@@ -13,20 +13,12 @@
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-md-6">
-        <form action="<?= base_url('master/item/store') ?>" method="post" accept-charset="utf-8">
-            <?= csrf_field() ?>
-            <div class="card card-default">
+        <?= form_open('master/item/store', ['method' => 'post', 'accept-charset' => 'utf-8']) ?>
+            <div class="card card-default rounded-0">
                 <div class="card-header">
                     <h3 class="card-title">Data Item</h3>
-                    <div class="card-tools"></div>
                 </div>
                 <div class="card-body">
-                    
-                    <input type="hidden" name="id" value="">
-                    <input type="hidden" name="route" value="">
-                    <input type="hidden" name="id_item" value="">
-                    <input type="hidden" name="status_item" value="">
-
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -34,7 +26,7 @@
                                 <select name="id_kategori" class="form-control rounded-0">
                                     <option value="">-[Kategori]-</option>
                                     <?php foreach ($kategori as $k) : ?>
-                                        <option value="<?= $k['id'] ?>" <?= old('id_kategori') == $k['id'] ? 'selected' : '' ?>><?= $k['nama'] ?></option>
+                                        <option value="<?= $k->id ?>" <?= old('id_kategori') == $k->id ? 'selected' : '' ?>><?= $k->kategori ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -45,7 +37,7 @@
                                 <select name="id_merk" class="form-control rounded-0">
                                     <option value="">-[Merk]-</option>
                                     <?php foreach ($merk as $m) : ?>
-                                        <option value="<?= $m['id'] ?>" <?= old('id_merk') == $m['id'] ? 'selected' : '' ?>><?= $m['nama'] ?></option>
+                                        <option value="<?= $m->id ?>" <?= old('id_merk') == $m->id ? 'selected' : '' ?>><?= $m->merk ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -55,19 +47,19 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="control-label">SKU</label>
-                                <input type="text" name="kode" value="" id="kode" class="form-control rounded-0" placeholder="Isikan SKU ..." readonly>
+                                <?= form_input(['name' => 'kode', 'id' => 'kode', 'class' => 'form-control rounded-0', 'placeholder' => 'Isikan SKU ...', 'readonly' => 'readonly']) ?>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="control-label">Barcode</label>
-                                <input type="text" name="barcode" value="<?= old('barcode') ?>" id="barcode" class="form-control rounded-0" placeholder="Isikan barcode ...">
+                                <?= form_input(['name' => 'barcode', 'id' => 'barcode', 'class' => 'form-control rounded-0', 'placeholder' => 'Isikan barcode ...', 'value' => old('barcode')]) ?>
                             </div>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="control-label">Item*</label>
-                        <input type="text" name="item" value="<?= old('item') ?>" id="item" class="form-control rounded-0 <?= ($validation->hasError('item')) ? 'is-invalid' : '' ?>" placeholder="Isikan nama item / produk ..." required>
+                        <?= form_input(['name' => 'item', 'id' => 'item', 'class' => 'form-control rounded-0 ' . ($validation->hasError('item') ? 'is-invalid' : ''), 'placeholder' => 'Isikan nama item / produk ...', 'required' => 'required', 'value' => old('item')]) ?>
                         <?php if ($validation->hasError('item')) : ?>
                             <div class="invalid-feedback">
                                 <?= $validation->getError('item') ?>
@@ -82,7 +74,7 @@
                                     <div class="input-group-append">
                                         <span class="input-group-text">Rp. </span>
                                     </div>
-                                    <input type="text" name="harga_beli" value="<?= old('harga_beli') ?>" id="harga_beli" class="form-control rounded-0">
+                                    <?= form_input(['name' => 'harga_beli', 'id' => 'harga_beli', 'class' => 'form-control rounded-0', 'value' => old('harga_beli')]) ?>
                                 </div>
                             </div>
                         </div>
@@ -93,7 +85,7 @@
                                     <div class="input-group-append">
                                         <span class="input-group-text">Rp. </span>
                                     </div>
-                                    <input type="text" name="harga_jual" value="<?= old('harga_jual') ?>" id="harga_jual" class="form-control rounded-0">
+                                    <?= form_input(['name' => 'harga_jual', 'id' => 'harga_jual', 'class' => 'form-control rounded-0', 'value' => old('harga_jual')]) ?>
                                 </div>
                             </div>
                         </div>
@@ -102,7 +94,7 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="control-label">Stok Minimum</label>
-                                <input type="number" name="jml_min" value="<?= old('jml_min') ?>" id="jml_min" class="form-control rounded-0" placeholder="Stok minimum ...">
+                                <?= form_input(['type' => 'number', 'name' => 'jml_min', 'id' => 'jml_min', 'class' => 'form-control rounded-0', 'placeholder' => 'Stok minimum ...', 'value' => old('jml_min')]) ?>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -118,7 +110,7 @@
                     </div>
                     <div class="form-group">
                         <label class="control-label">Deskripsi</label>
-                        <textarea name="deskripsi" cols="40" rows="3" id="deskripsi" class="form-control rounded-0" placeholder="Isikan deskripsi item / spek produk / dll ..."><?= old('deskripsi') ?></textarea>
+                        <?= form_textarea(['name' => 'deskripsi', 'id' => 'deskripsi', 'class' => 'form-control rounded-0', 'placeholder' => 'Isikan deskripsi item / spek produk / dll ...', 'value' => old('deskripsi'), 'rows' => '3']) ?>
                     </div>
                     <div class="form-group">
                         <label class="control-label">Status*</label>                                
@@ -131,6 +123,7 @@
                             <label for="statusNonAktif" class="custom-control-label">Non - Aktif</label>
                         </div>
                     </div>
+                    <?= form_hidden(['name' => 'foto', 'id' => 'foto_input']) ?>
                 </div>
                 <div class="card-footer">
                     <div class="row">
@@ -143,7 +136,30 @@
                     </div>                            
                 </div>
             </div>
-        </form>
+        <?= form_close() ?>
+    </div>
+    <div class="col-md-6">
+        <div class="card card-default rounded-0">
+            <div class="card-header">
+                <h3 class="card-title">Foto Produk</h3>
+            </div>
+            <div class="card-body">
+                <div id="dropzone" class="dropzone-custom">
+                    <div class="dz-message" data-dz-message>
+                        <div>
+                            <i class="fa fa-cloud-upload-alt fa-3x mb-2" style="color:#888;"></i>
+                            <div>Seret dan lepas file di sini atau klik<br>untuk mengunggah</div>
+                        </div>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2">* File yang diijinkan: jpg|png|jpeg|gif|webp (Maks. 5MB)</small>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Dropzone CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css">
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+
 <?= $this->endSection() ?> 

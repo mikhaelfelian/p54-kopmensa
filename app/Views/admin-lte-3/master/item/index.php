@@ -69,7 +69,7 @@
                                     <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
                                     <td>
                                         <?php if (!empty($row->foto)): ?>
-                                            <img src="<?= base_url('file/item/' . $row->id . '/' . $row->foto) ?>" 
+                                            <img src="<?= base_url($row->foto) ?>" 
                                                  alt="<?= $row->item ?>" 
                                                  class="img-thumbnail" 
                                                  style="width: 50px; height: 50px; object-fit: cover;"
