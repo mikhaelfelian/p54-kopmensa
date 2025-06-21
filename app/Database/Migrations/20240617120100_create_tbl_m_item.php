@@ -123,6 +123,13 @@ class CreateTblMItem extends Migration
                 'default'    => '0',
                 'comment'    => 'Status soft delete',
             ],
+            'status_stok' => [
+                'type'       => 'ENUM',
+                'constraint' => ['0', '1'],
+                'null'       => true,
+                'default'    => '1',
+                'comment'    => 'Status stockable 1=stockable',
+            ],
         ]);
 
         $this->forge->addKey('id', true);
