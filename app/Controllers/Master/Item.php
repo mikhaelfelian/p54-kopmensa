@@ -45,14 +45,14 @@ class Item extends BaseController
         $trashCount = (clone $this->itemModel)->where('status_hps', '1')->countAllResults();
 
         // Now filter only active items for the main list
-        $this->itemModel->where('status_hps', '0');
+        $this->itemModel->where('tbl_m_item.status_hps', '0');
 
         if ($keyword) {
             $this->itemModel->groupStart()
-                ->like('item', $keyword)
-                ->orLike('kode', $keyword)
-                ->orLike('barcode', $keyword)
-                ->orLike('deskripsi', $keyword)
+                ->like('tbl_m_item.item', $keyword)
+                ->orLike('tbl_m_item.kode', $keyword)
+                ->orLike('tbl_m_item.barcode', $keyword)
+                ->orLike('tbl_m_item.deskripsi', $keyword)
                 ->groupEnd();
         }
 

@@ -31,19 +31,16 @@
                 </div>
             </div>
             <div class="card-body table-responsive">
-                <table class="table table-striped">
+            <table class="table table-striped">
                     <thead>
                         <tr>
-                            <th width="50">No</th>
+                            <th width="50" class="text-center">No.</th>
                             <th width="80">Foto</th>
-                            <th>Kode</th>
-                            <th>Barcode</th>
-                            <th>Nama Item</th>
                             <th>Kategori</th>
                             <th>Merk</th>
-                            <th>Harga Beli</th>
-                            <th>Harga Jual</th>
-                            <th>Stok Min</th>
+                            <th>Item</th>
+                            <th class="text-right">Harga Beli</th>
+                            <th class="text-center">Stok Min</th>
                             <th>Status</th>
                             <th width="100">Aksi</th>
                         </tr>
@@ -56,7 +53,7 @@
                         <?php else: ?>
                             <?php foreach ($items as $key => $row): ?>
                                 <tr>
-                                    <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
+                                    <td class="text-center"><?= (($currentPage - 1) * $perPage) + $key + 1 ?>.</td>
                                     <td>
                                         <?php if (!empty($row->foto)): ?>
                                             <img src="<?= base_url($row->foto) ?>" 
@@ -72,14 +69,23 @@
                                             </div>
                                         <?php endif; ?>
                                     </td>
-                                    <td><?= $row->kode ?></td>
-                                    <td><?= $row->barcode ?></td>
-                                    <td><?= $row->item ?></td>
-                                    <td><?= $row->id_kategori ?></td>
-                                    <td><?= $row->id_merk ?></td>
-                                    <td><?= format_angka($row->harga_beli) ?></td>
-                                    <td><?= format_angka($row->harga_jual) ?></td>
-                                    <td><?= $row->jml_min ?></td>
+                                    <td><?= $row->kategori ?></td>
+                                    <td><?= $row->merk ?></td>
+                                    <td>
+                                        <?= $row->kode ?>
+                                        <?= br() ?>
+                                        <?= $row->item ?>
+                                        <?= br() ?>
+                                        <small><b>Rp. <?= format_angka($row->harga_jual) ?></b></small>
+                                        <?php if (!empty($row->deskripsi)): ?>
+                                            <?= br() ?>
+                                            <small><i>(<?= strtolower($row->deskripsi) ?>)</i></small>
+                                        <?php endif; ?>
+                                        <?= br() ?>
+                                        <small><i><?= $row->barcode ?></i></small>
+                                    </td>
+                                    <td class="text-right"><?= format_angka($row->harga_beli) ?></td>
+                                    <td class="text-center"><?= $row->jml_min ?></td>
                                     <td>
                                         <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
                                             <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
@@ -88,9 +94,7 @@
                                     <td>
                                         <div class="btn-group">
                                             <a href="<?= base_url("gudang/stok/detail/{$row->id}") ?>"
-                                                class="btn btn-info btn-sm rounded-0"
-                                                data-toggle="tooltip"
-                                                title="Lihat Detail">
+                                                class="btn btn-info btn-sm rounded-0">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         </div>
