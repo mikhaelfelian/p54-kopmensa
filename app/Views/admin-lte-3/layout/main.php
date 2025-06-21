@@ -53,7 +53,11 @@ if (!isset($Pengaturan)) {
 
     <!-- jQuery UI -->
     <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>">
-    <meta name="<?= csrf_token() ?>" content="<?= csrf_hash() ?>" />
+
+    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/JAutonumber/autonumeric.js') ?>"></script>
+    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.js') ?>"></script>
+    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/moment/moment.min.js') ?>"></script>
+    <link href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>" rel="stylesheet">
 </head>
 
 <body class="hold-transition sidebar-mini">
