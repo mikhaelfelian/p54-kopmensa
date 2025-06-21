@@ -77,41 +77,52 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="inputEmail3">Harga Beli</label>
+                            <label for="harga_beli">Harga Beli</label>
                             <div class="input-group mb-3">
                                 <div class="input-group-append">
                                     <span class="input-group-text">Rp. </span>
                                 </div>
-                                <?= form_input(['id'=>'harga','name' => 'harga_beli', 'value' => old('harga_beli', $item->harga_beli ?? ''), 'id' => 'harga_beli', 'class' => 'form-control rounded-0']) ?>
+                                <?= form_input(['name' => 'harga_beli', 'value' => old('harga_beli', (float)$item->harga_beli ?? ''), 'id' => 'harga', 'class' => 'form-control rounded-0']) ?>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="inputEmail3">Harga Jual</label>
+                            <label for="harga_jual">Harga Jual</label>
                             <div class="input-group mb-3">
                                 <div class="input-group-append">
                                     <span class="input-group-text">Rp. </span>
                                 </div>
-                                <?= form_input(['id'=>'harga','name' => 'harga_jual', 'value' => old('harga_jual', $item->harga_jual ?? ''), 'id' => 'harga_jual', 'class' => 'form-control rounded-0']) ?>
+                                <?= form_input(['name' => 'harga_jual', 'value' => old('harga_jual', (float)$item->harga_jual ?? ''), 'id' => 'harga', 'class' => 'form-control rounded-0']) ?>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label class="control-label">Stok Minimum</label>
                             <?= form_input(['type' => 'number', 'name' => 'jml_min', 'value' => old('jml_min', $item->jml_min ?? ''), 'id' => 'jml_min', 'class' => 'form-control rounded-0', 'placeholder' => 'Stok minimum ...']) ?>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="form-group">
                             <label class="control-label">Tipe</label>
                             <select name="tipe" class="form-control rounded-0">
                                 <option value="1" <?= old('tipe', $item->tipe) == '1' ? 'selected' : '' ?>>Item</option>
                                 <option value="2" <?= old('tipe', $item->tipe) == '2' ? 'selected' : '' ?>>Jasa</option>
                                 <option value="3" <?= old('tipe', $item->tipe) == '3' ? 'selected' : '' ?>>Paket</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="control-label">Satuan</label>
+                            <select name="satuan" class="form-control rounded-0">
+                                <option value="">-[Pilih Satuan]-</option>
+                                <?php foreach ($satuan as $s): ?>
+                                    <option value="<?= $s->id ?>" <?= old('satuan', $item->id_satuan) == $s->id ? 'selected' : '' ?>><?= $s->satuanBesar ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                     </div>
@@ -123,8 +134,8 @@
                 <div class="form-group">
                     <label class="control-label">Stockable*</label>
                     <div class="custom-control custom-radio">
-                        <input type="radio" name="status_stok" value="1" id="statusStokAktif" class="custom-control-input"
-                            <?= old('status_stok', $item->status_stok) == '1' ? 'checked' : '' ?>>
+                        <input type="radio" name="status_stok" value="1" id="statusStokAktif"
+                            class="custom-control-input" <?= old('status_stok', $item->status_stok) == '1' ? 'checked' : '' ?>>
                         <label for="statusStokAktif" class="custom-control-label">Stockable</label>
                     </div>
                     <div class="custom-control custom-radio">
@@ -166,5 +177,10 @@
     </div>
 </div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("input[id=harga]").autoNumeric({aSep: '.', aDec: ',', aPad: false});
+    });
+</script>
+
 <?= $this->endSection() ?>

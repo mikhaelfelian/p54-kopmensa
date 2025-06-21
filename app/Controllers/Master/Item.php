@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\ItemModel;
 use App\Models\KategoriModel;
 use App\Models\MerkModel;
+use App\Models\SatuanModel;
 
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
@@ -26,11 +27,12 @@ class Item extends BaseController
 
     public function __construct()
     {
-        $this->itemModel = new ItemModel();
+        $this->itemModel     = new ItemModel();
         $this->kategoriModel = new KategoriModel();
-        $this->merkModel = new MerkModel();
-        $this->validation = \Config\Services::validation();
-        $this->db = \Config\Database::connect();
+        $this->merkModel     = new MerkModel();
+        $this->satuanModel   = new SatuanModel();
+        $this->validation    = \Config\Services::validation();
+        $this->db            = \Config\Database::connect();
     }
 
     public function index()
@@ -58,7 +60,7 @@ class Item extends BaseController
             'title'         => 'Data Item',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'items'         => $this->itemModel->paginate($perPage, 'items'),
+            'items'         => $this->itemModel->getItemsWithRelations($perPage, $keyword),
             'pager'         => $this->itemModel->pager,
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
@@ -189,6 +191,7 @@ class Item extends BaseController
             'item'          => $this->itemModel->find($id),
             'kategori'      => $this->kategoriModel->findAll(),
             'merk'          => $this->merkModel->findAll(),
+            'satuan'        => $this->satuanModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -215,6 +218,7 @@ class Item extends BaseController
             'item'          => $this->itemModel->find($id),
             'kategori'      => $this->kategoriModel->findAll(),
             'merk'          => $this->merkModel->findAll(),
+            'satuan'        => $this->satuanModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -233,11 +237,12 @@ class Item extends BaseController
 
     public function update($id)
     {
-        $item           = $this->request->getVar('item');
+        $id_kategori    = $this->request->getVar('id_kategori') ?? 0;
+        $id_merk        = $this->request->getVar('id_merk') ?? 0;
+        $id_satuan      = $this->request->getVar('satuan') ?? 0;
         $barcode        = $this->request->getVar('barcode');
+        $item           = $this->request->getVar('item');
         $deskripsi      = $this->request->getVar('deskripsi');
-        $id_kategori    = $this->request->getVar('id_kategori');
-        $id_merk        = $this->request->getVar('id_merk');
         $jml_min        = $this->request->getVar('jml_min') ?? 0;
         $harga_beli     = $this->request->getVar('harga_beli') ?? 0;
         $harga_jual     = $this->request->getVar('harga_jual') ?? 0;
@@ -271,11 +276,12 @@ class Item extends BaseController
 
         try {
             $data = [
+                'id_kategori' => $id_kategori,
+                'id_merk'     => $id_merk,
+                'id_satuan'   => $id_satuan,
                 'barcode'     => $barcode,
                 'item'        => $item,
                 'deskripsi'   => $deskripsi,
-                'id_kategori' => $id_kategori,
-                'id_merk'     => $id_merk,
                 'jml_min'     => $jml_min,
                 'harga_beli'  => format_angka_db($harga_beli),
                 'harga_jual'  => format_angka_db($harga_jual),
@@ -292,9 +298,9 @@ class Item extends BaseController
                 ->with('success', 'Data item berhasil diubah');
 
         } catch (\Exception $e) {            
-            // return redirect()->back()
-            //     ->withInput()
-            //     ->with('error', ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengubah data item');
+            return redirect()->back()
+                ->withInput()
+                ->with('error', ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengubah data item');
         }
     }
 
@@ -315,8 +321,8 @@ class Item extends BaseController
             ]);
         }
 
-        $file = $this->request->getFile('file');
-        $item_id = $this->request->getVar('item_id');
+        $file       = $this->request->getFile('file');
+        $item_id    = $this->request->getVar('item_id');
 
         if ($file && $file->isValid() && !$file->hasMoved()) {
             $newName    = $file->getRandomName();

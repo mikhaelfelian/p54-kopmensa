@@ -70,7 +70,7 @@
                                 <div class="input-group-append">
                                     <span class="input-group-text">Rp. </span>
                                 </div>
-                                <input type="text" value="<?= old('harga_beli', $item->harga_beli ?? '') ?>" class="form-control rounded-0" readonly>
+                                <input type="text" id="harga" value="<?= old('harga_beli', (float)$item->harga_beli ?? '') ?>" class="form-control rounded-0" readonly>
                             </div>
                         </div>
                     </div>
@@ -81,7 +81,7 @@
                                 <div class="input-group-append">
                                     <span class="input-group-text">Rp. </span>
                                 </div>
-                                <input type="text" value="<?= old('harga_jual', $item->harga_jual ?? '') ?>" class="form-control rounded-0" readonly>
+                                <input type="text" id="harga" value="<?= old('harga_jual', (float)$item->harga_jual ?? '') ?>" class="form-control rounded-0" readonly>
                             </div>
                         </div>
                     </div>

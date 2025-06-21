@@ -40,7 +40,7 @@
                                 <label class="control-label">Satuan</label>
                                 <select class="form-control rounded-0" disabled>
                                     <option value="">- Pilih -</option>
-                                    <option value="<?= $item->satuan_id ?? '' ?>" selected=""><?= $item->satuan ?? '' ?></option>
+                                    <option value="<?= $item->id_satuan ?? '' ?>" selected=""><?= $item->id_satuan ?? 'PCS' ?></option>
                                 </select>
                             </div>
                         </div>
