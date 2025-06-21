@@ -154,7 +154,7 @@
                             class="btn btn-primary btn-flat">« Kembali</button>
                     </div>
                     <div class="col-lg-6 text-right">
-                        <button type="button" onclick="submitForm()" class="btn btn-primary btn-flat"><i class="fa fa-save"
+                        <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save"
                                 aria-hidden="true"></i> Simpan</button>
                     </div>
                 </div>
