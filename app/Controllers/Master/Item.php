@@ -106,12 +106,13 @@ class Item extends BaseController
         $harga_jual = $this->request->getVar('harga_jual') ?? 0;
         $tipe       = $this->request->getVar('tipe') ?? '1';
         $status     = $this->request->getVar('status') ?? '1';
+        $status_stok = $this->request->getVar('status_stok') ?? '0';
         $id_user    = $this->ionAuth->user()->row()->id ?? 0;
         $foto       = $this->request->getVar('foto') ?? null;
 
         // Validation rules
         $rules = [
-            'csrf_test_name' => [
+            env('security.tokenName', 'csrf_test_name') => [
                 'rules' => 'required',
                 'errors' => [
                     'required' => 'CSRF token tidak valid'
@@ -141,10 +142,11 @@ class Item extends BaseController
                 'id_kategori' => $id_kategori,
                 'id_merk'     => $id_merk,
                 'jml_min'     => $jml_min,
-                'harga_beli'  => $harga_beli,
-                'harga_jual'  => $harga_jual,
+                'harga_beli'  => format_angka_db($harga_beli),
+                'harga_jual'  => format_angka_db($harga_jual),
                 'tipe'        => $tipe,
                 'status'      => $status,
+                'status_stok' => $status_stok,
                 'id_user'     => $id_user,
                 'foto'        => null
             ];
@@ -171,7 +173,7 @@ class Item extends BaseController
             if ($this->db->transStatus() === false) {
                 throw new \Exception('Gagal menambahkan data item karena kegagalan transaksi.');
             }
-            return redirect()->to(base_url('master/item'))->with('success', 'Data item berhasil ditambahkan');
+            return redirect()->to(base_url('master/item/edit/' . $newItemId))->with('success', 'Data item berhasil ditambahkan');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
@@ -215,31 +217,31 @@ class Item extends BaseController
         $harga_jual     = $this->request->getVar('harga_jual') ?? 0;
         $tipe           = $this->request->getVar('tipe') ?? '1';
         $status         = $this->request->getVar('status') ?? '1';
-        $status_stok    = $this->request->getVar('status_stok') ?? '1';
+        $status_stok    = $this->request->getVar('status_stok') ?? '0';
 
-        // // Validation rules
-        // $rules = [
-        //     csrf_token() => [
-        //         'rules' => 'required',
-        //         'errors' => [
-        //             'required' => 'CSRF token tidak valid'
-        //         ]
-        //     ],
-        //     'item' => [
-        //         'rules' => 'required|max_length[128]',
-        //         'errors' => [
-        //             'required' => 'Nama item harus diisi',
-        //             'max_length' => 'Nama item maksimal 128 karakter'
-        //         ]
-        //     ]
-        // ];
+        // Validation rules
+        $rules = [
+            csrf_token() => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'CSRF token tidak valid'
+                ]
+            ],
+            'item' => [
+                'rules' => 'required|max_length[128]',
+                'errors' => [
+                    'required' => 'Nama item harus diisi',
+                    'max_length' => 'Nama item maksimal 128 karakter'
+                ]
+            ]
+        ];
 
-        // if (!$this->validate($rules)) {
-        //     return redirect()->back()
-        //         ->withInput()
-        //         ->with('validation_errors', $this->validator->getErrors())
-        //         ->with('error', 'Validasi gagal. Silakan periksa kembali input Anda.');
-        // }
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('validation_errors', $this->validator->getErrors())
+                ->with('error', 'Validasi gagal. Silakan periksa kembali input Anda.');
+        }
 
         try {
             $data = [
@@ -249,11 +251,12 @@ class Item extends BaseController
                 'id_kategori' => $id_kategori,
                 'id_merk'     => $id_merk,
                 'jml_min'     => $jml_min,
-                'harga_beli'  => $harga_beli,
-                'harga_jual'  => $harga_jual,
+                'harga_beli'  => format_angka_db($harga_beli),
+                'harga_jual'  => format_angka_db($harga_jual),
                 'tipe'        => $tipe,
                 'status'      => $status,
                 'status_stok' => $status_stok,
+                'foto'        => $this->request->getVar('foto'),
             ];
 
             if (!$this->itemModel->update($id, $data)) {
@@ -292,7 +295,7 @@ class Item extends BaseController
 
         if ($file && $file->isValid() && !$file->hasMoved()) {
             $newName = $file->getRandomName();
-            $uploadDir = $item_id ? 'public/file/item/' . $item_id . '/' : 'public/file/item/temp/';
+            $uploadDir = $item_id ? '../public/file/item/' . $item_id . '/' : '../public/file/item/temp/';
             $uploadPath = FCPATH . $uploadDir;
             if (!is_dir($uploadPath)) {
                 mkdir($uploadPath, 0777, true);
@@ -301,8 +304,8 @@ class Item extends BaseController
                 $relativePath = $uploadDir . $newName;
                 if ($item_id) {
                     $currentItem = $this->itemModel->find($item_id);
-                    if ($currentItem && !empty($currentItem->foto) && file_exists(FCPATH . $currentItem->foto)) {
-                        unlink(FCPATH . $currentItem->foto);
+                    if ($currentItem && !empty($currentItem->foto) && file_exists(realpath($currentItem->foto))) {
+                        unlink(realpath($currentItem->foto));
                     }
                     $this->itemModel->update($item_id, ['foto' => $relativePath]);
                 }

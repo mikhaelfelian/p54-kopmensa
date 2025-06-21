@@ -192,11 +192,27 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('gudang/inventory') ?>"
-                                class="nav-link <?= isMenuActive('gudang/inventory') ? 'active' : '' ?>">
+                            <a href="<?= base_url('gudang/stok') ?>"
+                                class="nav-link <?= isMenuActive('gudang/stok') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-clipboard-list nav-icon"></i>
                                 <p>Inventory</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('gudang/opname') ?>"
+                                class="nav-link <?= isMenuActive('gudang/opname') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-boxes nav-icon"></i>
+                                <p>Opname</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('gudang/stock-opname') ?>"
+                                class="nav-link <?= isMenuActive('gudang/stock-opname') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-clipboard-check nav-icon"></i>
+                                <p>Stock Opname</p>
                             </a>
                         </li>
                     </ul>

@@ -139,22 +139,7 @@
         <?= form_close() ?>
     </div>
     <div class="col-md-6">
-        <div class="card card-default rounded-0">
-            <div class="card-header">
-                <h3 class="card-title">Foto Produk</h3>
-            </div>
-            <div class="card-body">
-                <div id="dropzone" class="dropzone-custom">
-                    <div class="dz-message" data-dz-message>
-                        <div>
-                            <i class="fa fa-cloud-upload-alt fa-3x mb-2" style="color:#888;"></i>
-                            <div>Seret dan lepas file di sini atau klik<br>untuk mengunggah</div>
-                        </div>
-                    </div>
-                </div>
-                <small class="text-muted d-block mt-2">* File yang diijinkan: jpg|png|jpeg|gif|webp (Maks. 5MB)</small>
-            </div>
-        </div>
+        
     </div>
 </div>
 

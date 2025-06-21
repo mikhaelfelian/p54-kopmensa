@@ -87,7 +87,7 @@
                                     <td><?= $row->item ?></td>
                                     <td><?= $row->id_kategori ?></td>
                                     <td><?= $row->id_merk ?></td>
-                                    <td><?= number_format($row->harga_beli, 0, ',', '.') ?></td>
+                                    <td><?= format_angka($row->harga_beli) ?></td>
                                     <td><?= number_format($row->harga_jual, 0, ',', '.') ?></td>
                                     <td><?= $row->jml_min ?></td>
                                     <td>
