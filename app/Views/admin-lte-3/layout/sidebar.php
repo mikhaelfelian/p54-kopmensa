@@ -196,7 +196,7 @@
                                 class="nav-link <?= isMenuActive('gudang/stok') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-clipboard-list nav-icon"></i>
-                                <p>Inventory</p>
+                                <p>Inventori</p>
                             </a>
                         </li>
                         <li class="nav-item">

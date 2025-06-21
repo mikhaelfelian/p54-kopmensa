@@ -34,6 +34,7 @@ class ItemModel extends Model
         'foto',
         'tipe',
         'status',
+        'status_stok',
         'status_hps'
     ];
 
@@ -70,5 +71,29 @@ class ItemModel extends Model
         }
 
         return 'ITM-' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get all stockable items with pagination
+     *
+     * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
+     * Date: 2024-07-15
+     * Github : github.com/mikhaelfelian
+     * description : This function retrieves all items that are marked as stockable.
+     * This file represents the ItemModel.
+     */
+    public function itemStockable($perPage = 10, $keyword = null)
+    {
+        $builder = $this->where('status_stok', '1');
+
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('item', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('barcode', $keyword)
+                ->groupEnd();
+        }
+
+        return $builder->paginate($perPage, 'items');
     }
 } 

@@ -12,78 +12,109 @@
 
 <?= $this->section('content') ?>
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-12">
         <div class="card card-default">
             <div class="card-header">
-                <h3 class="card-title">Data Item Stockable</h3>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Foto</th>
-                                <th>SKU</th>
-                                <th>Barcode</th>
-                                <th>Item</th>
-                                <th>Kategori</th>
-                                <th>Merk</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($items)): ?>
-                                <tr>
-                                    <td colspan="8" class="text-center">Tidak ada data</td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($items as $key => $row): ?>
-                                    <tr>
-                                        <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
-                                        <td>
-                                            <?php if (!empty($row->foto)): ?>
-                                                <img src="<?= base_url($row->foto) ?>" alt="<?= $row->item ?>" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover;">
-                                            <?php else: ?>
-                                                <div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;"><i class="fas fa-image text-muted"></i></div>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td><?= $row->kode ?></td>
-                                        <td><?= $row->barcode ?></td>
-                                        <td><?= $row->item ?></td>
-                                        <td><?= $row->id_kategori ?></td>
-                                        <td><?= $row->id_merk ?></td>
-                                        <td class="text-center">
-                                            <a href="<?= base_url('gudang/stok/' . url_title($row->item, '-', true) . '/' . $row->id) ?>" class="btn btn-sm btn-info" data-toggle="tooltip" title="Lihat Stok"><i class="fas fa-eye"></i></a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                <div class="row">
+                    <div class="col-md-6">
+                        <form action="<?= base_url('gudang/stok') ?>" method="get">
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="keyword" class="form-control rounded-0" value="<?= $keyword ?? '' ?>" placeholder="Cari...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-primary rounded-0" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-            <div class="card-footer clearfix">
-                <?= $pager->links('items', 'bootstrap_pagination') ?>
+            <div class="card-body table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th width="50">No</th>
+                            <th width="80">Foto</th>
+                            <th>Kode</th>
+                            <th>Barcode</th>
+                            <th>Nama Item</th>
+                            <th>Kategori</th>
+                            <th>Merk</th>
+                            <th>Harga Beli</th>
+                            <th>Harga Jual</th>
+                            <th>Stok Min</th>
+                            <th>Status</th>
+                            <th width="100">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($items)): ?>
+                            <tr>
+                                <td colspan="12" class="text-center">Tidak ada data</td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($items as $key => $row): ?>
+                                <tr>
+                                    <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
+                                    <td>
+                                        <?php if (!empty($row->foto)): ?>
+                                            <img src="<?= base_url($row->foto) ?>" 
+                                                 alt="<?= $row->item ?>" 
+                                                 class="img-thumbnail" 
+                                                 style="width: 50px; height: 50px; object-fit: cover;"
+                                                 data-toggle="tooltip" 
+                                                 title="<?= $row->item ?>">
+                                        <?php else: ?>
+                                            <div class="bg-light d-flex align-items-center justify-content-center" 
+                                                 style="width: 50px; height: 50px;">
+                                                <i class="fas fa-image text-muted"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= $row->kode ?></td>
+                                    <td><?= $row->barcode ?></td>
+                                    <td><?= $row->item ?></td>
+                                    <td><?= $row->id_kategori ?></td>
+                                    <td><?= $row->id_merk ?></td>
+                                    <td><?= format_angka($row->harga_beli) ?></td>
+                                    <td><?= format_angka($row->harga_jual) ?></td>
+                                    <td><?= $row->jml_min ?></td>
+                                    <td>
+                                        <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
+                                            <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="<?= base_url("gudang/stok/detail/{$row->id}") ?>"
+                                                class="btn btn-info btn-sm rounded-0"
+                                                data-toggle="tooltip"
+                                                title="Lihat Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach ?>
+                        <?php endif ?>
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card card-default">
-            <div class="card-header">
-                <h3 class="card-title">Aksi</h3>
-            </div>
-            <div class="card-body">
-                <form action="<?= base_url('gudang/inventori') ?>" method="get">
-                    <div class="input-group">
-                        <input type="text" name="keyword" class="form-control" placeholder="Cari item..." value="<?= $keyword ?? '' ?>">
-                        <div class="input-group-append">
-                            <button type="submit" class="btn btn-primary">Cari</button>
-                        </div>
+            <?php if ($pager): ?>
+                <div class="card-footer clearfix">
+                    <div class="float-right">
+                        <?= $pager->links('items', 'adminlte_pagination') ?>
                     </div>
-                </form>
-            </div>
+                </div>
+            <?php endif ?>
         </div>
     </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    $('[data-toggle="tooltip"]').tooltip();
+});
+</script>
 <?= $this->endSection() ?> 

@@ -153,9 +153,14 @@ $routes->group('users/modules', ['namespace' => 'App\Controllers\Pengaturan', 'f
     $routes->get('/', 'Modules::index');
 });
 
-$routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => 'auth'], function($routes) {
+$routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => 'auth'], static function ($routes) {
+    // Inventori / Stok
     $routes->get('stok', 'Inventori::index');
-    $routes->get('stok/(:segment)/(:num)', 'Inventori::stok/$1/$2');
+    $routes->get('stok/detail/(:num)', 'Inventori::detail/$1');
+});
+
+$routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
+    // ... existing code ...
 });
 
 
