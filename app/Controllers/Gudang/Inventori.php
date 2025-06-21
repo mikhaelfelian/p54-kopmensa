@@ -41,7 +41,7 @@ class Inventori extends BaseController
             'title'       => 'Data Inventori',
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
-            'items'       => $this->itemModel->itemStockable($perPage, $keyword),
+            'items'       => $this->itemModel->getItemStocksWithRelations($perPage, $keyword),
             'pager'       => $this->itemModel->pager,
             'currentPage' => $currentPage,
             'perPage'     => $perPage,
