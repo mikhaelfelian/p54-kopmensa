@@ -110,3 +110,5 @@ phpunit
 
 # Visual Studio Code
 .vscode/
+
+/public/file
