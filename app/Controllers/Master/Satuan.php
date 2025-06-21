@@ -94,10 +94,10 @@ class Satuan extends BaseController
     {
         // Validation rules
         $rules = [
-            env('security.tokenName') => [
+            'csrf_test_name' => [
                 'rules' => 'required',
                 'errors' => [
-                    'required' => env('csrf.name') . ' harus diisi'
+                    'required' => 'CSRF token tidak valid'
                 ]
             ],
             'satuanKecil' => [
@@ -211,10 +211,10 @@ class Satuan extends BaseController
     {
         // Validation rules
         $rules = [
-            env('security.tokenName') => [
+            'csrf_test_name' => [
                 'rules' => 'required',
                 'errors' => [
-                    'required' => env('csrf.name') . ' harus diisi'
+                    'required' => 'CSRF token tidak valid'
                 ]
             ],
             'satuanKecil' => [
