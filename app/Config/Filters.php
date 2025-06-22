@@ -14,6 +14,7 @@ use CodeIgniter\Filters\PerformanceMetrics;
 use CodeIgniter\Filters\SecureHeaders;
 use App\Filters\AuthFilter;
 use App\Filters\DisableSessionFilter;
+use App\Filters\JWTAuthFilter;
 
 class Filters extends BaseFilters
 {
@@ -38,6 +39,7 @@ class Filters extends BaseFilters
         'performance'   => PerformanceMetrics::class,
         'auth'          => AuthFilter::class,
         'disableSession' => DisableSessionFilter::class,
+        'jwtauth'       => JWTAuthFilter::class,
     ];
 
     /**
@@ -73,7 +75,7 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            'csrf' => ['except' => ['publik/*']]
+            'csrf' => ['except' => ['api/*']],
         ],
         'after' => [
             // 'toolbar',
