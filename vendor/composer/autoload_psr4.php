@@ -18,6 +18,7 @@ return array(
     'Matrix\\' => array($vendorDir . '/markbaker/matrix/classes/src'),
     'Laminas\\Escaper\\' => array($vendorDir . '/laminas/laminas-escaper/src'),
     'IonAuth\\' => array($vendorDir . '/benedmunds/codeigniter-ion-auth'),
+    'Firebase\\JWT\\' => array($vendorDir . '/firebase/php-jwt/src'),
     'Faker\\' => array($vendorDir . '/fakerphp/faker/src/Faker'),
     'Config\\' => array($baseDir . '/app/Config'),
     'Composer\\Pcre\\' => array($vendorDir . '/composer/pcre/src'),
