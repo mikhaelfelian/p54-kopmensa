@@ -7,6 +7,9 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', to: 'Auth::login');
 
+// Debug route (remove in production)
+$routes->get('debug/jwt', 'Debug::jwt');
+
 // Auth routes
 $routes->group('auth', ['namespace' => 'App\Controllers'], function ($routes) {
     $routes->get('/', 'Auth::index');
@@ -161,7 +164,16 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
 });
 
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
-    // ... existing code ...
+    // API Authentication routes
+    $routes->group('anggota', function ($routes) {
+        $routes->post('login', 'Anggota\Auth::login');
+    });
+    
+    // Protected API routes (require JWT authentication)
+    $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
+        // Add protected routes here
+        $routes->get('profile', 'Anggota\Auth::profile');
+    });
 });
 
 
