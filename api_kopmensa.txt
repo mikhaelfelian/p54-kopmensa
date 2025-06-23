@@ -60,6 +60,7 @@ Produk
 		"items": [
 			{
 				"created_at": "2025-06-18 23:24:52",
+				"updated_at": "2025-06-21 14:35:19",
 				"merk": "FUJIYAMA",
 				"kategori": "TEST",
 				"kode": "ITM-001",
@@ -69,10 +70,11 @@ Produk
 				"jml_min": 2,
 				"harga_jual": 10560,
 				"harga_beli": 10000,
-				"foto": "../public/file/item/1/1750491319_e0277bac77cf057646a0.jpg"
+				"foto": "http://localhost/p54-kopmensa/public/file/item/1/1750491319_e0277bac77cf057646a0.jpg"
 			},
 			{
 				"created_at": "2025-06-21 10:10:03",
+				"updated_at": "2025-06-21 13:38:25",
 				"merk": "FUJIYAMA",
 				"kategori": "TEST",
 				"kode": "ITM-002",
@@ -82,7 +84,7 @@ Produk
 				"jml_min": 1,
 				"harga_jual": 15678,
 				"harga_beli": 10560,
-				"foto": "../public/file/item/2/1750487905_7070fb9ee0186493761e.png"
+				"foto": "http://localhost/p54-kopmensa/public/file/item/2/1750487905_7070fb9ee0186493761e.png"
 			}
 		]
 	}
@@ -100,9 +102,11 @@ Produk Detail
 		"jml_min": 2,
 		"harga_jual": 10560,
 		"harga_beli": 10000,
-		"foto": "../public/file/item/1/1750491319_e0277bac77cf057646a0.jpg",
+		"foto": "http://localhost/p54-kopmensa/public/file/item/1/1750491319_e0277bac77cf057646a0.jpg",
 		"kategori": "TEST",
-		"merk": "FUJIYAMA"
+		"merk": "FUJIYAMA",
+		"created_at": "2025-06-18 23:24:52",
+		"updated_at": "2025-06-21 14:35:19"
 	}
 
 	
