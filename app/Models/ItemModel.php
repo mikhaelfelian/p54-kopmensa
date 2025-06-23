@@ -126,6 +126,27 @@ public function getItemsWithRelations($perPage = 10, $keyword = null)
     return $builder->paginate($perPage, 'items');
 }
 
+public function getItemsWithRelationsActive($perPage = 10, $keyword = null)
+{
+    $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
+        ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+        ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+        ->where('tbl_m_item.status_hps', '0')
+        ->where('tbl_m_item.status', '1');
+
+    if ($keyword) {
+        $builder->groupStart()
+            ->like('tbl_m_item.item', $keyword)
+            ->orLike('tbl_m_item.kode', $keyword)
+            ->orLike('tbl_m_item.barcode', $keyword)
+            ->orLike('tbl_m_kategori.kategori', $keyword)
+            ->orLike('tbl_m_merk.merk', $keyword)
+            ->groupEnd();
+    }
+
+    return $builder->paginate($perPage, 'items');
+}
+
 /**
  * Get all stockable items with category and brand information
  *

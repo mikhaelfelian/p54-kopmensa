@@ -80,7 +80,7 @@ class Auth extends BaseController
         
         return $this->respond([
             'success' => true,
-            'data' => $user
+            'data'    => $user,
         ]);
     }
 } 

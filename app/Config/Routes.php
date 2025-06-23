@@ -171,9 +171,13 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     
     // Protected API routes (require JWT authentication)
     $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
-        // Add protected routes here
-        $routes->get('profile', 'Anggota\Auth::profile');
-        $routes->get('logout', 'Anggota\Auth::logout');
+        $routes->get('profile', 'Anggota\\Auth::profile');
+        $routes->get('logout', 'Anggota\\Auth::logout');
+    });
+
+    $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\\Controllers\\Api\\Pos'], function ($routes) {
+        $routes->get('produk', 'Produk::index');
+        $routes->get('produk/detail/(:num)', 'Produk::detail/$1');
     });
 });
 
