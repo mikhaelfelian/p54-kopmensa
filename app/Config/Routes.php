@@ -173,6 +173,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
         // Add protected routes here
         $routes->get('profile', 'Anggota\Auth::profile');
+        $routes->get('logout', 'Anggota\Auth::logout');
     });
 });
 
