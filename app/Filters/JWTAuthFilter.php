@@ -22,13 +22,21 @@ class JWTAuthFilter implements FilterInterface
     {
         $header = $request->getHeader('Authorization');
         
-        if (!$header) {
+        // If header is not found, try getting it from the server global
+        if (!$header && function_exists('apache_request_headers')) {
+            $headers = apache_request_headers();
+            if (isset($headers['Authorization'])) {
+                $headerValue = $headers['Authorization'];
+            }
+        }
+        
+        if (!isset($headerValue) && !$header) {
             return service('response')
                 ->setStatusCode(401)
                 ->setJSON(['error' => 'Token tidak ditemukan']);
         }
 
-        $token = str_replace('Bearer ', '', $header->getValue());
+        $token = isset($headerValue) ? str_replace('Bearer ', '', $headerValue) : str_replace('Bearer ', '', $header->getValue());
         
         if (empty($token)) {
             return service('response')
