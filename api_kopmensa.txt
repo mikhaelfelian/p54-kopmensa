@@ -5,18 +5,18 @@ Login :
 	URI 	: <base_url>/api/anggota/profile
 	Method	: POST
 	Body 	: x-www-form-urlencoded
-	user 	: superadmin
-	pass 	: admin1234
+	user 	: <your_username>
+	pass 	: <your_password>
 	
 	Format :
 	{
 		"status": 200,
-		"token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NTA2NDUyMDUsImV4cCI6MTc1MDY0ODgwNSwiZGF0YSI6eyJmaXJzdF9uYW1lIjoiU3VwZXIiLCJ1c2VybmFtZSI6InN1cGVyYWRtaW4iLCJlbWFpbCI6InN1cGVyYWRtaW5AYWRtaW4uY29tIiwidGlwZSI6InN1cGVyYWRtaW4ifX0.s9Ce1kOHA3ceOmSDWXP8Xb5UbaJ1esIkug7py6bQvjY",
+		"token": "<token_value>",
 		"data": {
-			"first_name": "Super",
-			"username": "superadmin",
-			"email": "superadmin@admin.com",
-			"tipe": "superadmin"
+			"first_name": "<your_name>",
+			"username": "<your_username>",
+			"email": "<your_email>",
+			"tipe": "<your_role>"
 		}
 	}
 	
@@ -27,10 +27,10 @@ Profile
 	{
 		"success": true,
 		"data": {
-			"first_name": "Super",
-			"username": "superadmin",
-			"email": "superadmin@admin.com",
-			"tipe": "superadmin"
+			"first_name": "<your_name>",
+			"username": "<your_username>",
+			"email": "<your_email>",
+			"tipe": "<your_role>"
 		}
 	}
 	
