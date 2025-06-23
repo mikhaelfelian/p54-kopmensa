@@ -1,0 +1,46 @@
+Postman collection :
+http://dev.kopmensa.com/Kopmensa_API.postman_collection.json
+
+Login :
+	URI 	: <base_url>/api/anggota/profile
+	Method	: POST
+	Body 	: x-www-form-urlencoded
+	user 	: superadmin
+	pass 	: admin1234
+	
+	Format :
+	{
+		"status": 200,
+		"token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NTA2NDUyMDUsImV4cCI6MTc1MDY0ODgwNSwiZGF0YSI6eyJmaXJzdF9uYW1lIjoiU3VwZXIiLCJ1c2VybmFtZSI6InN1cGVyYWRtaW4iLCJlbWFpbCI6InN1cGVyYWRtaW5AYWRtaW4uY29tIiwidGlwZSI6InN1cGVyYWRtaW4ifX0.s9Ce1kOHA3ceOmSDWXP8Xb5UbaJ1esIkug7py6bQvjY",
+		"data": {
+			"first_name": "Super",
+			"username": "superadmin",
+			"email": "superadmin@admin.com",
+			"tipe": "superadmin"
+		}
+	}
+	
+Profile
+	URI 	: <base_url>/api/anggota/profile
+	Method	: GET
+	Format 	:
+	{
+		"success": true,
+		"data": {
+			"first_name": "Super",
+			"username": "superadmin",
+			"email": "superadmin@admin.com",
+			"tipe": "superadmin"
+		}
+	}
+	
+Logout
+	URI 	: <base_url>/api/anggota/logout
+	Method	: GET
+	Format 	:
+	{
+		"status": 200,
+		"messages": {
+			"success": "User logged out successfully"
+		}
+	}
