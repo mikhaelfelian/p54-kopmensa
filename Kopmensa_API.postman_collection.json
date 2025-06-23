@@ -1,0 +1,164 @@
+{
+	"info": {
+		"_postman_id": "d4e3c2b1-a0f9-8765-4321-fedcba987654",
+		"name": "Kopmensa API (v2)",
+		"description": "A comprehensive Postman collection for all Kopmensa API endpoints, organized by the /api/ route structure.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "api",
+			"item": [
+				{
+					"name": "anggota",
+					"item": [
+						{
+							"name": "Login",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var jsonData = JSON.parse(responseBody);",
+											"if (jsonData.token) {",
+											"    pm.collectionVariables.set(\"jwt_token\", jsonData.token);",
+											"    console.log(\"JWT Token has been saved.\");",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "urlencoded",
+									"urlencoded": [
+										{
+											"key": "user",
+											"value": "superadmin",
+											"description": "Can be username or email",
+											"type": "text"
+										},
+										{
+											"key": "pass",
+											"value": "admin1234",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/anggota/login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"anggota",
+										"login"
+									]
+								},
+								"description": "Authenticates a user and returns a JWT token. The token is automatically saved to the `jwt_token` collection variable."
+							},
+							"response": []
+						},
+						{
+							"name": "Get User Profile",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/anggota/profile",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"anggota",
+										"profile"
+									]
+								},
+								"description": "Retrieves the profile information for the authenticated user. Requires a valid JWT."
+							},
+							"response": []
+						},
+						{
+							"name": "Logout",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwt_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/anggota/logout",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"anggota",
+										"logout"
+									]
+								},
+								"description": "Logs the user out on the server. Requires a valid JWT."
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost/p54-kopmensa",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"description": "This variable is set automatically after a successful login.",
+			"type": "string"
+		}
+	]
+} 
