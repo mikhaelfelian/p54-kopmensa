@@ -44,3 +44,65 @@ Logout
 			"success": "User logged out successfully"
 		}
 	}
+
+Produk
+	URI 	: <base_url>/api/pos/produk
+	Method	: GET
+	Parameters:
+		per_page	: <number> (optional, default: 10)
+		keyword		: <string> (optional, search by item name, code, barcode, category, brand)
+	Format 	:
+	{
+		"total": 2,
+		"current_page": 1,
+		"per_page": 10,
+		"total_page": 1,
+		"items": [
+			{
+				"created_at": "2025-06-18 23:24:52",
+				"merk": "FUJIYAMA",
+				"kategori": "TEST",
+				"kode": "ITM-001",
+				"barcode": "123456",
+				"item": "COMMSCOPE CABLE CAT 6",
+				"deskripsi": "sss",
+				"jml_min": 2,
+				"harga_jual": 10560,
+				"harga_beli": 10000,
+				"foto": "../public/file/item/1/1750491319_e0277bac77cf057646a0.jpg"
+			},
+			{
+				"created_at": "2025-06-21 10:10:03",
+				"merk": "FUJIYAMA",
+				"kategori": "TEST",
+				"kode": "ITM-002",
+				"barcode": "123456",
+				"item": "SHAMPOO SUNSLIK",
+				"deskripsi": "sdsa",
+				"jml_min": 1,
+				"harga_jual": 15678,
+				"harga_beli": 10560,
+				"foto": "../public/file/item/2/1750487905_7070fb9ee0186493761e.png"
+			}
+		]
+	}
+
+Produk Detail
+	URI 	: <base_url>/api/pos/produk/detail/<id>
+	Method	: GET
+	Format 	:
+	{
+		"id": 1,
+		"kode": "ITM-001",
+		"barcode": "123456",
+		"item": "COMMSCOPE CABLE CAT 6",
+		"deskripsi": "sss",
+		"jml_min": 2,
+		"harga_jual": 10560,
+		"harga_beli": 10000,
+		"foto": "../public/file/item/1/1750491319_e0277bac77cf057646a0.jpg",
+		"kategori": "TEST",
+		"merk": "FUJIYAMA"
+	}
+
+	
