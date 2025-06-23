@@ -55,11 +55,21 @@ class Auth extends BaseController
 
         return $this->respond([
             'status'   => 200,
-            'messages' => [
-                'success' => 'Login successful',
-            ],
             'token'    => $token,
             'data'     => $payload['data'],
+        ]);
+    }
+
+    public function logout()
+    {
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
+        $ionAuth->logout();
+
+        return $this->respond([
+            'status'   => 200,
+            'messages' => [
+                'success' => 'User logged out successfully',
+            ],
         ]);
     }
 
@@ -70,7 +80,6 @@ class Auth extends BaseController
         
         return $this->respond([
             'success' => true,
-            'message' => 'Profile retrieved successfully',
             'data' => $user
         ]);
     }
