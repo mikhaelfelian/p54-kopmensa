@@ -38,6 +38,7 @@ class Produk extends BaseController
         foreach ($items as $item) {
             $formattedItems[] = [
                 'created_at' => $item->created_at,
+                'updated_at' => $item->updated_at,
                 'merk'       => $item->merk,
                 'kategori'   => $item->kategori,
                 'kode'       => $item->kode,
