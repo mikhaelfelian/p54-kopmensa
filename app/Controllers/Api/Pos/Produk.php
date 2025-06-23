@@ -47,7 +47,7 @@ class Produk extends BaseController
                 'jml_min'    => (int) $item->jml_min,
                 'harga_jual' => (float) $item->harga_jual,
                 'harga_beli' => (float) $item->harga_beli,
-                'foto'       => $item->foto,
+                'foto'       => $item->foto ? base_url($item->foto) : null,
             ];
         }
 
