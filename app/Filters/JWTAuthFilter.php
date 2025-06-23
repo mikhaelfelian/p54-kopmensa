@@ -1,4 +1,11 @@
 <?php
+/**
+ * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
+ * Date: 2025-06-22
+ * Github : github.com/mikhaelfelian
+ * description : JWT Authentication filter for API endpoints
+ * This file represents the Filter class for JWT Authentication.
+ */
 
 namespace App\Filters;
 
@@ -9,13 +16,6 @@ use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 use Config\JWT as JWTConfig;
 
-/**
- * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
- * Date: 2025-06-22
- * Github : github.com/mikhaelfelian
- * description : JWT Authentication filter for API endpoints
- * This file represents the Filter class for JWT Authentication.
- */
 class JWTAuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
@@ -54,7 +54,7 @@ class JWTAuthFilter implements FilterInterface
         } catch (\Exception $e) {
             return service('response')
                 ->setStatusCode(401)
-                ->setJSON(['error' => 'Token tidak valid atau expired']);
+                ->setJSON(['error' => 'Token expired']);
         }
     }
 
