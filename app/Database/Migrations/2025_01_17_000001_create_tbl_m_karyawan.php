@@ -28,12 +28,6 @@ class CreateTblMKaryawan extends Migration
                 'null'       => true,
                 'default'    => 0,
             ],
-            'id_poli' => [
-                'type'       => 'INT',
-                'constraint' => 4,
-                'null'       => true,
-                'default'    => 0,
-            ],
             'id_user_group' => [
                 'type'       => 'INT',
                 'constraint' => 4,
@@ -54,21 +48,6 @@ class CreateTblMKaryawan extends Migration
                 'null'       => true,
             ],
             'nik' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-            ],
-            'sip' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-            ],
-            'str' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-            ],
-            'no_ijin' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
                 'null'       => true,
@@ -159,12 +138,7 @@ class CreateTblMKaryawan extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'null'       => true,
-                'comment'    => '1=perawat\r\n2=dokter\r\n3=kasir\r\n4=analis\r\n5=radiografer\r\n6=farmasi',
-            ],
-            'status_aps' => [
-                'type'       => 'ENUM',
-                'constraint' => ['0', '1'],
-                'null'       => true,
+                'comment'    => '1 = kasir\r\n2 = supervisor / kepala toko\r\n3 = gudang / stocker\r\n4 = admin penjualan\r\n5 = purchasing\r\n6 = owner / manajer',
             ],
         ]);
 
@@ -176,4 +150,4 @@ class CreateTblMKaryawan extends Migration
     {
         $this->forge->dropTable('tbl_m_karyawan');
     }
-} 
+}
