@@ -49,6 +49,9 @@ class Pelanggan extends BaseController
             $query->where('tipe', $selectedTipe);
         }
 
+        // Filter by status_hps = '0' (not deleted)
+        $query->where('status_hps', '0');
+
         // Get total records for pagination
         $total = $query->countAllResults(false);
 
@@ -75,7 +78,7 @@ class Pelanggan extends BaseController
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item active">Pelanggan</li>
             ',
-            'trashCount'     => $this->pelangganModel->onlyDeleted()->countAllResults()
+            'trashCount'     => $this->pelangganModel->where('status_hps', '1')->countAllResults()
         ];
 
         return $this->view($this->theme->getThemePath() . '/master/pelanggan/index', $data);
@@ -270,7 +273,8 @@ class Pelanggan extends BaseController
         $currentPage = $this->request->getVar('page_pelanggan') ?? 1;
         $perPage = $this->pengaturan->pagination_limit ?? 10;
 
-        $query = $this->pelangganModel->onlyDeleted();
+        // Start with the model query
+        $query = $this->pelangganModel;
 
         // Filter by name/code
         $search = $this->request->getVar('search');
@@ -281,6 +285,10 @@ class Pelanggan extends BaseController
                 ->groupEnd();
         }
 
+        // Filter by status_hps = '1' (deleted)
+        $query->where('status_hps', '1');
+
+        // Get total records for pagination
         $total = $query->countAllResults(false);
 
         $data = [

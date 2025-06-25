@@ -17,17 +17,13 @@
                 <a href="<?= base_url('master/customer/create') ?>" class="btn btn-sm btn-primary rounded-0">
                     <i class="fas fa-plus"></i> Tambah Data
                 </a>
+                <a href="<?= base_url('master/customer/trash') ?>" class="btn btn-sm btn-danger rounded-0">
+                    <i class="fas fa-trash"></i> Sampah (<?= $trashCount ?>)
+                </a>
                 <a href="<?= base_url('master/customer/export') ?>?<?= $_SERVER['QUERY_STRING'] ?>"
                     class="btn btn-sm btn-success rounded-0">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </a>
-            </div>
-            <div class="col-md-6 text-right">
-                <?php if ($trashCount > 0): ?>
-                    <a href="<?= base_url('master/customer/trash') ?>" class="btn btn-sm btn-danger rounded-0">
-                        <i class="fas fa-trash"></i> Arsip (<?= $trashCount ?>)
-                    </a>
-                <?php endif ?>
             </div>
         </div>
     </div>

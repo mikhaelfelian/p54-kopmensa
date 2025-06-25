@@ -28,16 +28,15 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <?= form_open('master/customer/trash', ['method' => 'get']) ?>
+        <?= form_open('master/customer', ['method' => 'get']) ?>
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th width="5%">No</th>
-                        <th width="10%">Kode</th>
-                        <th width="35%">Nama</th>
-                        <th width="15%" class="text-center">Tipe</th>
-                        <th width="15%" class="text-center">Status</th>
-                        <th width="20%" class="text-center">Aksi</th>
+                        <th>No</th>
+                        <th class="text-left">Kode</th>
+                        <th class="text-left">Nama</th>
+                        <th class="text-left">Alamat</th>
+                        <th class="text-center">Aksi</th>
                     </tr>
                     <tr>
                         <th></th>
@@ -50,55 +49,49 @@
                             ]) ?>
                         </th>
                         <th></th>
-                        <th class="text-center">
-                            <?= form_dropdown(
-                                'tipe',
-                                [
-                                    '' => '- Semua -',
-                                    '1' => 'Anggota',
-                                    '2' => 'Pelanggan'
-                                ],
-                                $selectedTipe ?? '',
-                                'class="form-control form-control-sm rounded-0"'
-                            ) ?>
-                        </th>
                         <th></th>
                         <th class="text-center">
                             <button type="submit" class="btn btn-sm btn-primary rounded-0">
-                                <i class="fas fa-search"></i>
+                                <i class="fas fa-filter"></i>
                             </button>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!empty($pelanggans)): ?>
-                        <?php $no = 1; foreach ($pelanggans as $pelanggan): ?>
+                        <?php
+                        $no = ($perPage * ($currentPage - 1)) + 1;
+                        foreach ($pelanggans as $pelanggan):
+                            ?>
                             <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= esc($pelanggan->kode) ?></td>
-                                <td><?= esc($pelanggan->nama) ?></td>
-                                <td class="text-center"><?= $getTipeLabel($pelanggan->tipe) ?></td>
-                                <td class="text-center"><?= $getStatusLabel($pelanggan->status) ?></td>
-                                <td class="text-center">
+                                <td class="text-center" width="3%"><?= $no++ ?>.</td>
+                                <td width="15%"><?= esc($pelanggan->kode) ?></td>
+                                <td width="40%"><?= esc($pelanggan->nama) ?></td>
+                                <td width="30%"><?= esc($pelanggan->alamat) ?></td>
+                                <td class="text-center" width="12%">
                                     <div class="btn-group">
-                                        <a href="<?= base_url("master/customer/restore/{$pelanggan->id}") ?>"
-                                            class="btn btn-success btn-sm rounded-0" title="Pulihkan">
-                                            <i class="fas fa-trash-restore"></i>
+                                        <a href="<?= base_url("master/customer/detail/{$pelanggan->id}") ?>"
+                                            class="btn btn-info btn-sm rounded-0">
+                                            <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="<?= base_url("master/customer/delete_permanent/{$pelanggan->id}") ?>"
-                                            class="btn btn-danger btn-sm rounded-0" title="Hapus Permanen"
-                                            onclick="return confirm('Data akan dihapus secara permanen. Lanjutkan?')">
+                                        <a href="<?= base_url("master/customer/edit/{$pelanggan->id}") ?>"
+                                            class="btn btn-warning btn-sm rounded-0">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="<?= base_url("master/customer/delete/{$pelanggan->id}") ?>"
+                                            class="btn btn-danger btn-sm rounded-0"
+                                            onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
                                 </td>
                             </tr>
-                        <?php endforeach ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center">Tidak ada data</td>
+                            <td colspan="5" class="text-center">Tidak ada data</td>
                         </tr>
-                    <?php endif ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
             <?= form_close() ?>
