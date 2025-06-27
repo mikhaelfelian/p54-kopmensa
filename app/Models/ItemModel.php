@@ -189,7 +189,6 @@ public function getItemStocksWithRelations($perPage = 10, $keyword = null)
 public function getItemWithRelations($id)
 {
     return $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
-        ->from('tbl_m_item')
         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
         ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
         ->where('tbl_m_item.id', $id)

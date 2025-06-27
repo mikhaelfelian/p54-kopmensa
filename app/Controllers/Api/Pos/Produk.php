@@ -37,6 +37,7 @@ class Produk extends BaseController
         $formattedItems = [];
         foreach ($items as $item) {
             $formattedItems[] = [
+                'id'         => (int) $item->id,
                 'created_at' => $item->created_at,
                 'updated_at' => $item->updated_at,
                 'merk'       => $item->merk,
@@ -81,6 +82,10 @@ class Produk extends BaseController
         // Format the response to match the documentation
         $data = [
             'id'         => (int) $item->id,
+            'created_at' => $item->created_at,
+            'updated_at' => $item->updated_at,
+            'merk'       => $item->merk,
+            'kategori'   => $item->kategori,
             'kode'       => $item->kode,
             'barcode'    => $item->barcode,
             'item'       => $item->item,
@@ -88,9 +93,7 @@ class Produk extends BaseController
             'jml_min'    => (int) $item->jml_min,
             'harga_jual' => (float) $item->harga_jual,
             'harga_beli' => (float) $item->harga_beli,
-            'foto'       => $item->foto,
-            'kategori'   => $item->kategori,
-            'merk'       => $item->merk,
+            'foto'       => $item->foto ? base_url($item->foto) : null,
         ];
 
         return $this->respond($data);
