@@ -161,6 +161,11 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     // Inventori / Stok
     $routes->get('stok', 'Inventori::index');
     $routes->get('stok/detail/(:num)', 'Inventori::detail/$1');
+    
+    // Transfer / Mutasi
+    $routes->get('transfer', 'Transfer::index');
+    $routes->get('transfer/create', 'Transfer::create');
+    $routes->post('transfer/store', 'Transfer::store');
 });
 
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
