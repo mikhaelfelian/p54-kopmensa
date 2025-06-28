@@ -134,4 +134,31 @@ class Transfer extends BaseController
         
         return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
+
+    public function inputItem($id = null)
+    {
+        if (!$id) {
+            return redirect()->to(base_url('gudang/transfer'))->with('error', 'ID transfer tidak ditemukan.');
+        }
+
+        // Get transfer data
+        $transfer = $this->transMutasiModel->find($id);
+        if (!$transfer) {
+            return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
+        }
+
+        $data = [
+            'title'       => 'Input Item Transfer',
+            'Pengaturan'  => $this->pengaturan,
+            'user'        => $this->ionAuth->user()->row(),
+            'transfer'    => $transfer,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('gudang/transfer') . '">Transfer</a></li>
+                <li class="breadcrumb-item active">Input Item</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/gudang/transfer/create_input', $data);
+    }
 } 

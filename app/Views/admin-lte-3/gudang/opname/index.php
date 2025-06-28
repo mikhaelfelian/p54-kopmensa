@@ -87,16 +87,21 @@
                                         <?= $row->keterangan ?? '-' ?>
                                     </td>
                                     <td style="width: 100px;" class="text-left">
-                                        <?php if (isset($user) && $row->id_user == $user->id): ?>
-                                            <a href="<?= base_url("gudang/opname/edit/{$row->id}") ?>" 
-                                               class="btn btn-info btn-flat btn-xs" style="width: 55px;">
-                                                <i class="fa fa-edit"></i> Ubah
+                                        <div class="btn-group">
+                                            <a href="<?= base_url("gudang/opname/detail/{$row->id}") ?>"
+                                                class="btn btn-info btn-sm rounded-0">
+                                                <i class="fas fa-eye"></i>
                                             </a>
-                                        <?php endif; ?>
-                                        <a href="<?= base_url("gudang/opname/detail/{$row->id}") ?>" 
-                                           class="btn btn-warning btn-flat btn-xs" style="width: 55px;">
-                                            <i class="fa fa-eye"></i> Detail
-                                        </a>
+                                            <a href="<?= base_url("gudang/opname/edit/{$row->id}") ?>"
+                                                class="btn btn-warning btn-sm rounded-0">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="<?= base_url("gudang/opname/input/{$row->id}") ?>"
+                                                class="btn btn-success btn-sm rounded-0" data-toggle="tooltip"
+                                                title="Input Item">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach ?>
@@ -116,13 +121,13 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    // Initialize date picker
-    $('#tgl').datepicker({
-        format: 'yyyy-mm-dd',
-        autoclose: true,
-        todayHighlight: true
+    $(document).ready(function () {
+        // Initialize date picker
+        $('#tgl').datepicker({
+            format: 'yyyy-mm-dd',
+            autoclose: true,
+            todayHighlight: true
+        });
     });
-});
 </script>
-<?= $this->endSection() ?> 
+<?= $this->endSection() ?>

@@ -148,6 +148,12 @@
                                                 class="btn btn-warning btn-sm rounded-0">
                                                 <i class="fas fa-edit"></i>
                                             </a>
+                                            <a href="<?= base_url("gudang/transfer/input/{$row->id}") ?>"
+                                                class="btn btn-success btn-sm rounded-0"
+                                                data-toggle="tooltip" 
+                                                title="Input Item">
+                                                <i class="fas fa-plus"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

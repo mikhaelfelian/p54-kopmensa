@@ -166,6 +166,7 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('transfer', 'Transfer::index');
     $routes->get('transfer/create', 'Transfer::create');
     $routes->post('transfer/store', 'Transfer::store');
+    $routes->get('transfer/input/(:num)', 'Transfer::inputItem/$1');
     
     // Opname / Stock Opname
     $routes->get('opname', 'Opname::index');
