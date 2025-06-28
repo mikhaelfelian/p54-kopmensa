@@ -166,6 +166,11 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('transfer', 'Transfer::index');
     $routes->get('transfer/create', 'Transfer::create');
     $routes->post('transfer/store', 'Transfer::store');
+    
+    // Opname / Stock Opname
+    $routes->get('opname', 'Opname::index');
+    $routes->get('opname/create', 'Opname::create');
+    $routes->post('opname/store', 'Opname::store');
 });
 
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
