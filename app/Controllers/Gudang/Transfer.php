@@ -59,7 +59,7 @@ class Transfer extends BaseController
             'title'       => 'Tambah Transfer/Mutasi',
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
-            'gudang'      => $this->gudangModel->where('status', '1')->findAll(),
+            'gudang'      => $this->gudangModel->findAll(),
             'outlet'      => $this->outletModel->where('status', '1')->findAll(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
@@ -83,21 +83,22 @@ class Transfer extends BaseController
 
         // Validate form data
         $rules = [
-            'tgl_masuk' => 'required',
             'tipe' => 'required',
-            'id_gd_asal' => 'required',
+            'id_outlet' => 'required',
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to(base_url('gudang/transfer/create'))
+                ->withInput()
+                ->with('error', 'Validasi gagal! Silakan periksa kembali data yang dimasukkan.');
         }
 
         $data = [
             'id_user'      => $id_user,
-            'tgl_masuk'    => $tgl_masuk,
+            'tgl_masuk'    => tgl_indo_sys($tgl_masuk),
             'tipe'         => $tipe,
-            'id_gd_asal'   => $id_gd_asal,
-            'id_outlet'    => $id_outlet ?: null,
+            'id_gd_asal'   => $id_gd_asal ?: 0,
+            'id_outlet'    => $id_outlet ?: 0,
             'keterangan'   => $keterangan,
             'status_nota'  => '0', // Draft
             'status_terima'=> '0', // Belum
@@ -108,9 +109,12 @@ class Transfer extends BaseController
             // Save to database
             $this->transMutasiModel->insert($data);
             
-            return redirect()->to(base_url('gudang/transfer'))->with('success', 'Data transfer berhasil disimpan.');
+            return redirect()->to(base_url('gudang/transfer'))
+                ->with('success', 'Data transfer berhasil disimpan!');
         } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan data transfer: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal menyimpan data transfer: ' . $e->getMessage());
         }
     }
 

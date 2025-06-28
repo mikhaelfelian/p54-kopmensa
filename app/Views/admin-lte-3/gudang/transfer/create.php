@@ -46,7 +46,8 @@
                     <label for="tipe" class="col-sm-4 col-form-label">Tipe <i class="text-danger">*</i></label>
                     <div class="col-sm-8">
                         <select id="tipe" name="tipe" class="form-control rounded-0">
-                            <option value="1" selected>Pindah Gudang</option>
+                            <option value="0">Pilih</option>
+                            <option value="1">Transfer / Mutasi</option>
                             <option value="2">Stok Masuk</option>
                             <option value="3">Stok Keluar</option>
                         </select>
@@ -187,6 +188,9 @@
             <div class="card-footer">
                 <div class="row">
                     <div class="col-md-6">
+                        <button type="button" class="btn btn-info btn-flat" id="btn_test_toastr">
+                            <i class="fa fa-bell"></i> Test Toastr
+                        </button>
                     </div>
                     <div class="col-md-6 text-right">
                         <button type="button" class="btn btn-primary btn-flat" id="btn_tambah">
@@ -241,6 +245,54 @@
 
 <script>
 $(document).ready(function() {
+    // Toastr configuration
+    toastr.options = {
+        closeButton: true,
+        debug: false,
+        newestOnTop: true,
+        progressBar: true,
+        positionClass: "toast-top-right",
+        preventDuplicates: false,
+        onclick: null,
+        showDuration: "300",
+        hideDuration: "1000",
+        timeOut: "5000",
+        extendedTimeOut: "1000",
+        showEasing: "swing",
+        hideEasing: "linear",
+        showMethod: "fadeIn",
+        hideMethod: "fadeOut"
+    };
+
+    // Flash messages
+    <?php if (session()->getFlashdata('success')): ?>
+        toastr.success('<?= session()->getFlashdata('success') ?>');
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('error')): ?>
+        toastr.error('<?= session()->getFlashdata('error') ?>');
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('warning')): ?>
+        toastr.warning('<?= session()->getFlashdata('warning') ?>');
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('info')): ?>
+        toastr.info('<?= session()->getFlashdata('info') ?>');
+    <?php endif; ?>
+
+    // Custom toastr messages for transfer controller
+    <?php if (session()->getFlashdata('toastr_success')): ?>
+        toastr.success('<?= session()->getFlashdata('toastr_success') ?>');
+    <?php endif; ?>
+
+    <?php if (session()->getFlashdata('toastr_error')): ?>
+        toastr.error('<?= session()->getFlashdata('toastr_error') ?>');
+    <?php endif; ?>
+
+    // Test toastr on page load
+    toastr.info('Transfer create page loaded successfully!');
+
     // Initialize date picker
     $('#tgl').datepicker({
         format: 'dd-mm-yyyy',
@@ -254,14 +306,9 @@ $(document).ready(function() {
         todayHighlight: true
     });
     
-    // Handle form submission
-    $('#form_mutasi').on('submit', function(e) {
-        e.preventDefault();
-        
-        // Add your form validation and submission logic here
-        if (confirm('Simpan data transfer?')) {
-            this.submit();
-        }
+    // Test toastr button
+    $('#btn_test_toastr').on('click', function() {
+        toastr.success('Toastr is working!');
     });
     
     // Handle add item button
