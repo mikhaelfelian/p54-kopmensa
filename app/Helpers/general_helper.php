@@ -113,33 +113,67 @@ if (!function_exists('statusPO')) {
      */
     function statusPO($status)
     {
-        $statuses = [
-            0 => [
-                'label' => 'Draft',
-                'badge' => 'secondary'
-            ],
-            1 => [
-                'label' => 'Proses',
-                'badge' => 'primary'
-            ],
-            3 => [
-                'label' => 'Ditolak',
-                'badge' => 'danger'
-            ],
-            4 => [
-                'label' => 'Disetujui',
-                'badge' => 'warning'
-            ],
-            5 => [
-                'label' => 'Selesai',
-                'badge' => 'success'
-            ]
-        ];
+        switch ($status) {
+            case 0:
+                return [
+                    'label' => 'Draft',
+                    'badge' => 'secondary'
+                ];
+            case 1:
+                return [
+                    'label' => 'Proses',
+                    'badge' => 'primary'
+                ];
+            case 3:
+                return [
+                    'label' => 'Ditolak',
+                    'badge' => 'danger'
+                ];
+            case 4:
+                return [
+                    'label' => 'Disetujui',
+                    'badge' => 'warning'
+                ];
+            case 5:
+                return [
+                    'label' => 'Selesai',
+                    'badge' => 'success'
+                ];
+            default:
+                return [
+                    'label' => 'Unknown',
+                    'badge' => 'secondary'
+                ];
+        }
+    }
+}
 
-        return $statuses[$status] ?? [
-            'label' => 'Unknown',
-            'badge' => 'secondary'
-        ];
+if (!function_exists('statusGd')) {
+    /**
+     * Get warehouse status label and badge
+     * 
+     * @param int $status Status code
+     * @return array Array containing status label and badge class
+     */
+    function statusGd($status)
+    {
+        switch ($status) {
+            case '1':
+                return [
+                    'label' => 'Utama',
+                    'badge' => 'success'
+                ];
+            case '0':
+                return [
+                    'label' => '',
+                    'badge' => 'secondary'
+                ];
+            default:
+                return [
+                    'label' => '',
+                    'badge' => ''
+                ];
+        }
     }
 }
 
