@@ -130,6 +130,13 @@ class CreateTblMItem extends Migration
                 'default'    => '1',
                 'comment'    => 'Status stockable 1=stockable',
             ],
+            'sp' => [
+                'type'       => 'ENUM',
+                'constraint' => ['0', '1'],
+                'null'       => true,
+                'default'    => '0',
+                'comment'    => 'Status processed',
+            ],
         ]);
 
         $this->forge->addKey('id', true);
