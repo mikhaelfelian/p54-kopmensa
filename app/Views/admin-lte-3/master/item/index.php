@@ -26,61 +26,68 @@
                             </a>
                         <?php endif ?>
                     </div>
-                    <div class="col-md-6">
-                        <form action="<?= base_url('master/item') ?>" method="get" class="float-right">
-                            <div class="input-group input-group-sm">
-                                <input type="text" name="keyword" class="form-control rounded-0" value="<?= $keyword ?? '' ?>" placeholder="Cari...">
-                                <div class="input-group-append">
-                                    <button class="btn btn-sm btn-primary rounded-0" type="submit">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
                 </div>
             </div>
             <div class="card-body table-responsive">
+                <?= form_open('master/item', ['method' => 'get']) ?>
                 <table class="table table-striped">
                     <thead>
                         <tr>
                             <th width="50" class="text-center">No.</th>
                             <th width="80">Foto</th>
                             <th>Kategori</th>
-                            <th>Merk</th>
                             <th>Item</th>
                             <th class="text-right">Harga Beli</th>
                             <th class="text-center">Stok Min</th>
-                            <th>Status</th>
-                            <th width="100">Aksi</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($items)): ?>
-                            <tr>
-                                <td colspan="12" class="text-center">Tidak ada data</td>
-                            </tr>
-                        <?php else: ?>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th>
+                                <select name="kategori" class="form-control rounded-0">
+                                    <option value="">- Kategori -</option>
+                                    <?php foreach ($kategori as $kategori): ?>
+                                        <option value="<?= $kategori->id ?>" <?= ($kat == $kategori->id) ? 'selected' : '' ?>>
+                                            <?= $kategori->kategori ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </th>
+                            <th>
+                                <?= form_input([
+                                    'name' => 'keyword',
+                                    'class' => 'form-control rounded-0',
+                                    'placeholder' => 'Isikan Kode / Nama Item ...',
+                                    'value' => esc($keyword)
+                                ]) ?>
+                            </th>
+                            <th></th>
+                            <th></th>
+                            <th>
+                                <button type="submit" class="btn btn-primary rounded-0"><i class="fa fa-search"></i>
+                                    Filter</button>
+                            </th>
+                        </tr>
+                        <?php if (!empty($items)): ?>
                             <?php foreach ($items as $key => $row): ?>
                                 <tr>
                                     <td class="text-center"><?= (($currentPage - 1) * $perPage) + $key + 1 ?>.</td>
                                     <td>
                                         <?php if (!empty($row->foto)): ?>
-                                            <img src="<?= base_url($row->foto) ?>" 
-                                                 alt="<?= $row->item ?>" 
-                                                 class="img-thumbnail" 
-                                                 style="width: 50px; height: 50px; object-fit: cover;"
-                                                 data-toggle="tooltip" 
-                                                 title="<?= $row->item ?>">
+                                            <img src="<?= base_url($row->foto) ?>" alt="<?= $row->item ?>" class="img-thumbnail"
+                                                style="width: 50px; height: 50px; object-fit: cover;" data-toggle="tooltip"
+                                                title="<?= $row->item ?>">
                                         <?php else: ?>
-                                            <div class="bg-light d-flex align-items-center justify-content-center" 
-                                                 style="width: 50px; height: 50px;">
+                                            <div class="bg-light d-flex align-items-center justify-content-center"
+                                                style="width: 50px; height: 50px;">
                                                 <i class="fas fa-image text-muted"></i>
                                             </div>
                                         <?php endif; ?>
                                     </td>
                                     <td><?= $row->kategori ?></td>
-                                    <td><?= $row->merk ?></td>
                                     <td>
                                         <?= $row->kode ?>
                                         <?= br() ?>
@@ -96,11 +103,6 @@
                                     </td>
                                     <td class="text-right"><?= format_angka($row->harga_beli) ?></td>
                                     <td class="text-center"><?= $row->jml_min ?></td>
-                                    <td>
-                                        <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
-                                            <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
-                                        </span>
-                                    </td>
                                     <td>
                                         <div class="btn-group">
                                             <a href="<?= base_url("master/item/edit/{$row->id}") ?>"
@@ -120,9 +122,14 @@
                                     </td>
                                 </tr>
                             <?php endforeach ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="12" class="text-center">Tidak ada data</td>
+                            </tr>
                         <?php endif ?>
                     </tbody>
                 </table>
+                <?= form_close() ?>
             </div>
             <?php if ($pager): ?>
                 <div class="card-footer clearfix">
@@ -136,8 +143,8 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    $('[data-toggle="tooltip"]').tooltip();
-});
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+    });
 </script>
-<?= $this->endSection() ?> 
+<?= $this->endSection() ?>

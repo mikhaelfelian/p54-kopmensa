@@ -37,9 +37,11 @@ class Item extends BaseController
 
     public function index()
     {
-        $currentPage = $this->request->getVar('page_items') ?? 1;
-        $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
+        $curr_page  = $this->request->getVar('page_items') ?? 1;
+        $per_page   = 10;
+        $kat        = $this->request->getVar('kategori');
+        $stok       = $this->request->getVar('stok');
+        $query      = $this->request->getVar('keyword') ?? '';
 
         // Get trash count (use a clone so it doesn't affect the main query)
         $trashCount = (clone $this->itemModel)->where('status_hps', '1')->countAllResults();
@@ -47,12 +49,18 @@ class Item extends BaseController
         // Now filter only active items for the main list
         $this->itemModel->where('tbl_m_item.status_hps', '0');
 
-        if ($keyword) {
+        if ($kat) {
+            $this->itemModel->where('tbl_m_item.id_kategori', $kat);
+        }
+        if ($stok !== null && $stok !== '') {
+            $this->itemModel->where('tbl_m_item.status_stok', $stok);
+        }
+        if ($query) {
             $this->itemModel->groupStart()
-                ->like('tbl_m_item.item', $keyword)
-                ->orLike('tbl_m_item.kode', $keyword)
-                ->orLike('tbl_m_item.barcode', $keyword)
-                ->orLike('tbl_m_item.deskripsi', $keyword)
+                ->like('tbl_m_item.item', $query)
+                ->orLike('tbl_m_item.kode', $query)
+                ->orLike('tbl_m_item.barcode', $query)
+                ->orLike('tbl_m_item.deskripsi', $query)
                 ->groupEnd();
         }
 
@@ -60,12 +68,15 @@ class Item extends BaseController
             'title'         => 'Data Item',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'items'         => $this->itemModel->getItemsWithRelations($perPage, $keyword),
+            'items'         => $this->itemModel->getItemsWithRelations($per_page, $query, $curr_page, $kat, $stok),
             'pager'         => $this->itemModel->pager,
-            'currentPage'   => $currentPage,
-            'perPage'       => $perPage,
-            'keyword'       => $keyword,
+            'currentPage'   => $curr_page,
+            'perPage'       => $per_page,
+            'keyword'       => $query,
+            'kat'           => $kat,
+            'stok'          => $stok,
             'trashCount'    => $trashCount,
+            'kategori'      => $this->kategoriModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>

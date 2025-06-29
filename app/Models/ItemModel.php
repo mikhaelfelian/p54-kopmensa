@@ -127,7 +127,7 @@ class ItemModel extends Model
  * description : This function retrieves all items with their category and brand information using joins.
  * This file represents the ItemModel.
  */
-public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1)
+public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1, $kategori = null, $stok = null)
 {
     $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
@@ -143,6 +143,12 @@ public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1)
             ->orLike('tbl_m_kategori.kategori', $keyword)
             ->orLike('tbl_m_merk.merk', $keyword)
             ->groupEnd();
+    }
+    if ($kategori) {
+        $builder->where('tbl_m_item.id_kategori', $kategori);
+    }
+    if ($stok !== null && $stok !== '') {
+        $builder->where('tbl_m_item.status_stok', $stok);
     }
 
     return $builder->paginate($perPage, 'items', $page);
