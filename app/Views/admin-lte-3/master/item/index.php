@@ -100,6 +100,9 @@
                                         <?php endif; ?>
                                         <?= br() ?>
                                         <small><i><?= $row->barcode ?></i></small>
+                                    <?php $statusInfo = isItemActive($row->status); ?>
+                                    <?= br() ?>
+                                    <span class="badge badge-<?= $statusInfo['badge'] ?>"><?= $statusInfo['label'] ?></span>
                                     </td>
                                     <td class="text-right"><?= format_angka($row->harga_beli) ?></td>
                                     <td class="text-center"><?= $row->jml_min ?></td>
