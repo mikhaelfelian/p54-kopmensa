@@ -192,7 +192,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     });
 });
 
+// untuk test
 $routes->get('home/test', 'Home::test');
+$routes->get('home/test2', 'Home::test2');
 
 
 
