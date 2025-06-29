@@ -78,8 +78,8 @@
                 </li>
 
                 <!-- Outlet -->
-                <li class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/lokasi']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/outlet', 'master/lokasi']) ? 'active' : '' ?>">
+                <li class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-building"></i>
                         <p>
                             Outlet
