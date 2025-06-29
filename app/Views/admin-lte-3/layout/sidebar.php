@@ -95,14 +95,14 @@
                                 <p>Data Outlet</p>
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
-                            <a href="<?= base_url('master/lokasi') ?>"
-                                class="nav-link <?= isMenuActive('master/lokasi') ? 'active' : '' ?>">
+                        <li class="nav-item">
+                            <a href="<?= base_url('master/gudang') ?>"
+                                class="nav-link <?= isMenuActive('master/gudang') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-map-marker-alt nav-icon"></i>
-                                <p>Lokasi</p>
+                                <p>Gudang</p>
                             </a>
-                        </li> -->
+                        </li>
                     </ul>
                 </li>
 
