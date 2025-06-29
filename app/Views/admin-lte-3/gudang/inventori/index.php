@@ -17,40 +17,61 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-6">
-                        <form action="<?= base_url('gudang/stok') ?>" method="get">
-                            <div class="input-group input-group-sm">
-                                <input type="text" name="keyword" class="form-control rounded-0" value="<?= $keyword ?? '' ?>" placeholder="Cari...">
-                                <div class="input-group-append">
-                                    <button class="btn btn-sm btn-primary rounded-0" type="submit">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
+                        <a href="<?= base_url('gudang/stok/create') ?>" class="btn btn-sm btn-primary rounded-0">
+                            <i class="fas fa-plus"></i> Tambah Data
+                        </a>
+                        <?php if (isset($trashCount) && $trashCount > 0): ?>
+                            <a href="<?= base_url('gudang/stok/trash') ?>" class="btn btn-sm btn-danger rounded-0">
+                                <i class="fas fa-trash"></i> Arsip (<?= $trashCount ?>)
+                            </a>
+                        <?php endif ?>
                     </div>
                 </div>
             </div>
             <div class="card-body table-responsive">
-            <table class="table table-striped">
+                <?= form_open('gudang/stok', attributes: ['method' => 'get']) ?>
+                <table class="table table-striped">
                     <thead>
                         <tr>
                             <th width="50" class="text-center">No.</th>
                             <th width="80">Foto</th>
                             <th>Kategori</th>
-                            <th>Merk</th>
                             <th>Item</th>
-                            <th class="text-right">Harga Beli</th>
                             <th class="text-center">Stok Min</th>
-                            <th>Status</th>
                             <th width="100">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($items)): ?>
-                            <tr>
-                                <td colspan="12" class="text-center">Tidak ada data</td>
-                            </tr>
-                        <?php else: ?>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th>
+                                <select name="kategori" class="form-control rounded-0">
+                                    <option value="">- Kategori -</option>
+                                    <?php if (isset($kategori)): ?>
+                                        <?php foreach ($kategori as $kat_item): ?>
+                                            <option value="<?= $kat_item->id ?>" <?= (isset($kat) && $kat == $kat_item->id) ? 'selected' : '' ?>>
+                                                <?= $kat_item->kategori ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </th>
+                            <th>
+                                <?= form_input([
+                                    'name' => 'keyword',
+                                    'class' => 'form-control rounded-0',
+                                    'placeholder' => 'Isikan Kode / Nama Item ...',
+                                    'value' => esc($keyword ?? '')
+                                ]) ?>
+                            </th>
+                            <th></th>
+                            <th>
+                                <button type="submit" class="btn btn-primary rounded-0"><i class="fa fa-search"></i>
+                                    Filter</button>
+                            </th>
+                        </tr>
+                        <?php if (!empty($items)): ?>
                             <?php foreach ($items as $key => $row): ?>
                                 <tr>
                                     <td class="text-center"><?= (($currentPage - 1) * $perPage) + $key + 1 ?>.</td>
@@ -70,7 +91,6 @@
                                         <?php endif; ?>
                                     </td>
                                     <td><?= $row->kategori ?></td>
-                                    <td><?= $row->merk ?></td>
                                     <td>
                                         <?= $row->kode ?>
                                         <?= br() ?>
@@ -83,14 +103,18 @@
                                         <?php endif; ?>
                                         <?= br() ?>
                                         <small><i><?= $row->barcode ?></i></small>
+                                        <?php if (function_exists('isItemActive')): ?>
+                                            <?php $statusInfo = isItemActive($row->status); ?>
+                                            <?= br() ?>
+                                            <span class="badge badge-<?= $statusInfo['badge'] ?>"><?= $statusInfo['label'] ?></span>
+                                        <?php else: ?>
+                                            <?= br() ?>
+                                            <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
+                                                <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
+                                            </span>
+                                        <?php endif; ?>
                                     </td>
-                                    <td class="text-right"><?= format_angka($row->harga_beli) ?></td>
                                     <td class="text-center"><?= $row->jml_min ?></td>
-                                    <td>
-                                        <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
-                                            <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
-                                        </span>
-                                    </td>
                                     <td>
                                         <div class="btn-group">
                                             <a href="<?= base_url("gudang/stok/detail/{$row->id}") ?>"
@@ -101,9 +125,14 @@
                                     </td>
                                 </tr>
                             <?php endforeach ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="12" class="text-center">Tidak ada data</td>
+                            </tr>
                         <?php endif ?>
                     </tbody>
                 </table>
+                <?= form_close() ?>
             </div>
             <?php if ($pager): ?>
                 <div class="card-footer clearfix">
