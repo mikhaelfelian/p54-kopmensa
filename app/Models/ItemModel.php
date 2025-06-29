@@ -52,25 +52,46 @@ class ItemModel extends Model
     protected $cleanValidationRules = true;
 
     /**
-     * Generate unique item code
+     * Generate unique item code based on category, type, and date
+     * Format: <category_id><type><auto_increment><mmyy>
+     * Max 7 characters, all numeric
      * 
+     * @param int $categoryId Category ID
+     * @param string $type Item type
      * @return string
      */
-    public function generateKode()
+    public function generateKode($categoryId = null, $type = null)
     {
+        // Get current month and year (mmyy format)
+        $currentDate = date('my'); // e.g., 0225 for February 2025
+        
+        // Get category ID (1 digit)
+        $categoryCode = $categoryId ? substr($categoryId, -1) : '0';
+        
+        // Get type code (1 digit)
+        $typeCode = $type ? substr($type, 0, 1) : '0';
+        
+        // Get last code for this category and type combination
         $lastCode = $this->select('kode')
             ->where('status_hps', '0')
+            ->where('id_kategori', $categoryId)
+            ->where('tipe', $type)
             ->orderBy('id', 'DESC')
             ->first();
 
         if ($lastCode) {
-            $lastNumber = (int) substr($lastCode->kode, 4); // Remove 'ITM-' prefix
+            // Extract auto increment number from last code
+            $lastNumber = (int) substr($lastCode->kode, -3); // Last 3 digits
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
         }
 
-        return 'ITM-' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        // Format: <category><type><auto_increment><mmyy>
+        // Example: 1025001 (category=1, type=0, auto=25, date=001 for Jan 2025)
+        $autoIncrement = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        
+        return $categoryCode . $typeCode . $autoIncrement . $currentDate;
     }
 
     /**
@@ -82,7 +103,7 @@ class ItemModel extends Model
      * description : This function retrieves all items that are marked as stockable.
      * This file represents the ItemModel.
      */
-    public function itemStockable($perPage = 10, $keyword = null)
+    public function itemStockable($perPage = 10, $keyword = null, $page = 1)
     {
         $builder = $this->where('status_stok', '1');
 
@@ -94,7 +115,7 @@ class ItemModel extends Model
                 ->groupEnd();
         }
 
-        return $builder->paginate($perPage, 'items');
+        return $builder->paginate($perPage, 'items', $page);
     }
 
 /**
@@ -106,33 +127,13 @@ class ItemModel extends Model
  * description : This function retrieves all items with their category and brand information using joins.
  * This file represents the ItemModel.
  */
-public function getItemsWithRelations($perPage = 10, $keyword = null)
-{
-    $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
-        ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
-        ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
-        ->where('tbl_m_item.status_hps', '0');
-
-    if ($keyword) {
-        $builder->groupStart()
-            ->like('tbl_m_item.item', $keyword)
-            ->orLike('tbl_m_item.kode', $keyword)
-            ->orLike('tbl_m_item.barcode', $keyword)
-            ->orLike('tbl_m_kategori.kategori', $keyword)
-            ->orLike('tbl_m_merk.merk', $keyword)
-            ->groupEnd();
-    }
-
-    return $builder->paginate($perPage, 'items');
-}
-
-public function getItemsWithRelationsActive($perPage = 10, $keyword = null)
+public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1)
 {
     $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
         ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
         ->where('tbl_m_item.status_hps', '0')
-        ->where('tbl_m_item.status', '1');
+        ->orderBy('tbl_m_item.id', 'DESC');
 
     if ($keyword) {
         $builder->groupStart()
@@ -144,7 +145,29 @@ public function getItemsWithRelationsActive($perPage = 10, $keyword = null)
             ->groupEnd();
     }
 
-    return $builder->paginate($perPage, 'items');
+    return $builder->paginate($perPage, 'items', $page);
+}
+
+public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $page = 1)
+{
+    $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
+        ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+        ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+        ->where('tbl_m_item.status_hps', '0')
+        ->where('tbl_m_item.status', '1')
+        ->orderBy('tbl_m_item.id', 'DESC');
+
+    if ($keyword) {
+        $builder->groupStart()
+            ->like('tbl_m_item.item', $keyword)
+            ->orLike('tbl_m_item.kode', $keyword)
+            ->orLike('tbl_m_item.barcode', $keyword)
+            ->orLike('tbl_m_kategori.kategori', $keyword)
+            ->orLike('tbl_m_merk.merk', $keyword)
+            ->groupEnd();
+    }
+
+    return $builder->paginate($perPage, 'items', $page);
 }
 
 /**
@@ -156,13 +179,14 @@ public function getItemsWithRelationsActive($perPage = 10, $keyword = null)
  * description : This function retrieves all stockable items with their category and brand information using joins.
  * This file represents the ItemModel.
  */
-public function getItemStocksWithRelations($perPage = 10, $keyword = null)
+public function getItemStocksWithRelations($perPage = 10, $keyword = null, $page = 1)
 {
     $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
         ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
         ->where('tbl_m_item.status_hps', '0')
-        ->where('tbl_m_item.status_stok', '1');
+        ->where('tbl_m_item.status_stok', '1')
+        ->orderBy('tbl_m_item.id', 'DESC');
 
     if ($keyword) {
         $builder->groupStart()
@@ -174,7 +198,7 @@ public function getItemStocksWithRelations($perPage = 10, $keyword = null)
             ->groupEnd();
     }
 
-    return $builder->paginate($perPage, 'items');
+    return $builder->paginate($perPage, 'items', $page);
 }
 
 /**
