@@ -49,8 +49,9 @@ Produk
 	URI 	: <base_url>/api/pos/produk
 	Method	: GET
 	Parameters:
-		per_page	: <number> (optional, default: 10)
+		per_page	: <number> (optional, default: 10, max: 100)
 		keyword		: <string> (optional, search by item name, code, barcode, category, brand)
+		page		: <number> (optional, default: 1, for pagination)
 	Format 	:
 	{
 		"total": 2,
