@@ -29,8 +29,10 @@ class Produk extends BaseController
 
         $perPage = $this->request->getGet('per_page') ?? 10;
         $keyword = $this->request->getGet('keyword') ?? null;
+        $page = $this->request->getGet('page') ?? 1; // Allow any page, default to 1
 
-        $items = $model->getItemsWithRelationsActive($perPage, $keyword);
+        // Get items for the specific page
+        $items = $model->getItemsWithRelationsActive($perPage, $keyword, $page);
         $pager = $model->pager->getDetails('items');
 
         // Transform the data to match the desired format
@@ -55,7 +57,7 @@ class Produk extends BaseController
 
         $data = [
             'total'        => $pager['total'],
-            'current_page' => $pager['currentPage'],
+            'current_page' => (int) $page,
             'per_page'     => $pager['perPage'],
             'total_page'   => $pager['pageCount'],
             'items'        => $formattedItems,
