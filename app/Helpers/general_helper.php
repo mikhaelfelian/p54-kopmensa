@@ -177,76 +177,88 @@ if (!function_exists('statusGd')) {
     }
 }
 
-/**
- * Get status history label with badge
- * 
- * @param string $status Status code
- * @return array Label and badge class
- */
-function statusHist($status)
-{
-    switch ($status) {
-        case '1':
-            return [
-                'label' => 'Stok Masuk Pembelian',
-                'badge' => 'success'
-            ];
-        case '2':
-            return [
-                'label' => 'Stok Masuk',
-                'badge' => 'info'
-            ];
-        case '3':
-            return [
-                'label' => 'Stok Masuk Retur Jual',
-                'badge' => 'primary'
-            ];
-        case '4':
-            return [
-                'label' => 'Stok Keluar Penjualan',
-                'badge' => 'danger'
-            ];
-        case '5':
-            return [
-                'label' => 'Stok Keluar Retur Beli',
-                'badge' => 'warning'
-            ];
-        case '6':
-            return [
-                'label' => 'SO',
-                'badge' => 'dark'
-            ];
-        case '7':
-            return [
-                'label' => 'Stok Keluar',
-                'badge' => 'danger'
-            ];
-        case '8':
-            return [
-                'label' => 'Mutasi Antar Gudang',
-                'badge' => 'secondary'
-            ];
-        default:
-            return [
-                'label' => '-',
-                'badge' => 'secondary'
-            ];
+if (!function_exists('statusHist')) {
+    /**
+     * Get status history label with badge
+     * 
+     * @param string $status Status code
+     * @return array Label and badge class
+     */
+    function statusHist($status)
+    {
+        switch ($status) {
+            case '1':
+                return [
+                    'label' => 'Stok Masuk Pembelian',
+                    'badge' => 'success'
+                ];
+            case '2':
+                return [
+                    'label' => 'Stok Masuk',
+                    'badge' => 'info'
+                ];
+            case '3':
+                return [
+                    'label' => 'Stok Masuk Retur Jual',
+                    'badge' => 'primary'
+                ];
+            case '4':
+                return [
+                    'label' => 'Stok Keluar Penjualan',
+                    'badge' => 'danger'
+                ];
+            case '5':
+                return [
+                    'label' => 'Stok Keluar Retur Beli',
+                    'badge' => 'warning'
+                ];
+            case '6':
+                return [
+                    'label' => 'SO',
+                    'badge' => 'dark'
+                ];
+            case '7':
+                return [
+                    'label' => 'Stok Keluar',
+                    'badge' => 'danger'
+                ];
+            case '8':
+                return [
+                    'label' => 'Mutasi Antar Gudang',
+                    'badge' => 'secondary'
+                ];
+            default:
+                return [
+                    'label' => '-',
+                    'badge' => 'secondary'
+                ];
+        }
     }
 }
 
-function tipeRawat($tipe)
-{
-    switch ($tipe) {
-        case '1':
-            return 'Rawat Jalan';
-        case '2':
-            return 'Rawat Inap';
-        case '3':
-            return 'Laboratorium';
-        case '4':
-            return 'Radiologi';
-        default:
-            return '-';
+if (!function_exists('isItemActive')) {
+    function isItemActive($status)
+    {
+        switch ($status) {
+            case '1':
+                return [
+                    'label' => 'Aktif',
+                    'badge' => 'success'
+                ];
+            case '0':
+                return [
+                    'label' => 'Non Aktif',
+                    'badge' => 'danger'
+                ];
+            default:
+                return [
+                    'label' => '-',
+                    'badge' => 'secondary'
+                ];
+        }
     }
 }
+
+
+
 
