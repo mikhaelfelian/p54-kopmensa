@@ -35,7 +35,8 @@ class ItemModel extends Model
         'tipe',
         'status',
         'status_stok',
-        'status_hps'
+        'status_hps',
+        'sp'
     ];
 
     // Dates
