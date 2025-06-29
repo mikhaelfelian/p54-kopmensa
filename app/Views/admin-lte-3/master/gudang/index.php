@@ -40,7 +40,6 @@
                             <th>Gudang</th>
                             <th>Keterangan</th>
                             <th>Status</th>
-                            <th>Status Gudang</th>
                             <th width="100">Aksi</th>
                         </tr>
                     </thead>
@@ -52,13 +51,9 @@
                                 <td><?= $row->gudang ?></td>
                                 <td><?= $row->keterangan ?></td>
                                 <td>
-                                    <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
-                                        <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge badge-<?= ($row->status_gd == '1') ? 'primary' : 'secondary' ?>">
-                                        <?= ($row->status_gd == '1') ? 'Gudang Utama' : 'Bukan Gudang Utama' ?>
+                                    <?php $statusInfo = statusGd($row->status_gd); ?>
+                                    <span class="badge badge-<?= $statusInfo['badge'] ?>">
+                                        <?= $statusInfo['label'] ?>
                                     </span>
                                 </td>
                                 <td>

@@ -2,7 +2,7 @@
 
 <?= $this->section('content') ?>
 <div class="row">
-    <div class="col-12">
+    <div class="col-md-6">
         <?= form_open('master/gudang/store') ?>
         <div class="card rounded-0">
             <div class="card-header">
