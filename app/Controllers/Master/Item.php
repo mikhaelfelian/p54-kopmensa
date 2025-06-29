@@ -137,7 +137,7 @@ class Item extends BaseController
         
         try {
             $data = [
-                'kode'        => $this->itemModel->generateKode(),
+                'kode'        => $this->itemModel->generateKode($id_kategori, $tipe),
                 'barcode'     => $barcode,
                 'item'        => $item,
                 'deskripsi'   => $deskripsi,
