@@ -100,7 +100,7 @@
                                 class="nav-link <?= isMenuActive('master/gudang') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-map-marker-alt nav-icon"></i>
-                                <p>Gudang</p>
+                                <p>Data Gudang</p>
                             </a>
                         </li>
                     </ul>
@@ -174,8 +174,8 @@
                 
                 <!-- Warehouse -->
                 <li class="nav-header">GUDANG</li>
-                <li class="nav-item has-treeview <?= isMenuActive('gudang') ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive('gudang') ? 'active' : '' ?>">
+                <li class="nav-item has-treeview <?= isMenuActive(['gudang/transfer', 'gudang/stok', 'gudang/opname']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['gudang/transfer', 'gudang/stok', 'gudang/opname']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-warehouse"></i>
                         <p>
                             Gudang
