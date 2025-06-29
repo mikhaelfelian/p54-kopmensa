@@ -166,7 +166,7 @@ if (!function_exists('statusGd')) {
             case '0':
                 return [
                     'label' => '',
-                    'badge' => 'secondary'
+                    'badge' => ''
                 ];
             default:
                 return [
