@@ -47,7 +47,7 @@ class Home extends BaseController
     // Add warehouse and outlet to item stok
     public function test2()
     {
-        echo "<meta http-equiv='refresh' content='7;url=" . base_url('home/test') . "'>";
+        echo "<meta http-equiv='refresh' content='7;url=" . base_url('home/test2') . "'>";
         $items = $this->itemModel->where('sp', '0')->orderBy('id', 'DESC')->limit(500)->findAll();
         
         $output = '';
@@ -66,52 +66,46 @@ class Home extends BaseController
                                              ->get()->getResult();
                 
                 if (!$existingStok) {
-                    foreach ($existingStok as $stok) {
-                        if (!$stok) {
-                            // Insert new item stok record
-                            $itemStokModel->insert([
-                                'id_item'    => $item->id,
-                                'id_gudang'  => $gudang->id,
-                                'jml'        => 0,
-                                'created_at' => date('Y-m-d H:i:s'),
-                                'updated_at' => date('Y-m-d H:i:s')
-                            ]);
-                            
-                            $output .= "Inserted ItemStok for Item ID: " . $item->id . " and Gudang ID: " . $gudang->id . "\n";
-                        }
-                    }
+                    // Insert new item stok record
+                    $itemStokModel->insert([
+                        'id_item'    => $item->id,
+                        'id_gudang'  => $gudang->id,
+                        'jml'        => 0,
+                        'created_at' => date('Y-m-d H:i:s'),
+                        'updated_at' => date('Y-m-d H:i:s'),
+                        'status'     => $gudang->status,
+                    ]);
+                    
+                    $output .= "- Inserted ItemStok for Item ID: " . $item->id . " and Gudang ID: " . $gudang->id . "\n";
                 }
             }
             
-            // Insert from OutletModel into ItemStokModel
-            $outletModel = new \App\Models\OutletModel();
+            // // Insert from OutletModel into ItemStokModel
+            // $outletModel = new \App\Models\OutletModel();
             
-            // Get outlet data
-            $outletData = $outletModel->findAll();
+            // // Get outlet data
+            // $outletData = $outletModel->findAll();
             
-            foreach ($outletData as $outlet) {
-                // Check if item stok already exists for this item and outlet
-                $existingStok = $itemStokModel->where('id_item', $item->id)
-                                             ->where('id_outlet', $outlet->id)
-                                             ->get()->getResult();
+            // foreach ($outletData as $outlet) {
+            //     // Check if item stok already exists for this item and outlet
+            //     $existingStok = $itemStokModel->where('id_item', $item->id)
+            //                                  ->where('id_outlet', $outlet->id)
+            //                                  ->get()->getResult();
                 
-                if (!$existingStok) {
-                    foreach ($existingStok as $stok) {
-                        if (!$stok) {
-                            // Insert new item stok record
-                            $itemStokModel->insert([
-                                'id_item'    => $item->id,
-                                'id_outlet'  => $outlet->id,
-                                'jml'        => 0,
-                                'created_at' => date('Y-m-d H:i:s'),
-                                'updated_at' => date('Y-m-d H:i:s')
-                            ]);
-                            
-                            $output .= "Inserted ItemStok for Item ID: " . $item->id . " and Outlet ID: " . $outlet->id . "\n";
-                        }
-                    }
-                }
-            }
+            //     if (!$existingStok) {
+            //         // Insert new item stok record
+            //         $itemStokModel->insert([
+            //             'id_item'    => $item->id,
+            //             'id_outlet'  => $outlet->id,
+            //             'jml'        => 0,
+            //             'created_at' => date('Y-m-d H:i:s'),
+            //             'updated_at' => date('Y-m-d H:i:s'),
+            //             'status'     => $outlet->status,
+            //         ]);
+                    
+            //         $output .= "- Inserted ItemStok for Item ID: " . $item->id . " and Outlet ID: " . $outlet->id . "\n";
+            //     }
+            // }
             
             // Update the item with sp flag
             $this->itemModel->update($item->id, [
