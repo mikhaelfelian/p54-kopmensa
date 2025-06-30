@@ -28,6 +28,9 @@ class Item extends BaseController
     public function __construct()
     {
         $this->itemModel     = new ItemModel();
+        $this->itemStokModel = new ItemStokModel();
+        $this->gudangModel   = new GudangModel();
+        $this->outletModel   = new OutletModel();
         $this->kategoriModel = new KategoriModel();
         $this->merkModel     = new MerkModel();
         $this->satuanModel   = new SatuanModel();
@@ -166,7 +169,45 @@ class Item extends BaseController
 
             $this->db->transStart();
             $this->itemModel->insert($data);
+
+            // Get the newly inserted item ID
             $newItemId = $this->itemModel->getInsertID();
+
+            // Insert item stock records for all warehouses (gudang)
+            $gudangModel = new \App\Models\GudangModel();
+            $itemStokModel = new \App\Models\ItemStokModel();
+            
+            // Get all active warehouses
+            $gudangData = $gudangModel->where('status', '1')->findAll();
+            
+            foreach ($gudangData as $gudang) {
+                $itemStokModel->insert([
+                    'id_item'    => $newItemId,
+                    'id_gudang'  => $gudang->id,
+                    'jml'        => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                    'status'     => $gudang->status,
+                ]);
+            }
+
+            // Insert item stock records for all outlets
+            $outletModel = new \App\Models\OutletModel();
+            
+            // Get all active outlets
+            $outletData = $outletModel->where('status', '1')->findAll();
+            
+            foreach ($outletData as $outlet) {
+                $itemStokModel->insert([
+                    'id_item'    => $newItemId,
+                    'id_outlet'  => $outlet->id,
+                    'jml'        => 0,
+                    'created_at' => date('Y-m-d H:i:s'),
+                    'updated_at' => date('Y-m-d H:i:s'),
+                    'status'     => $outlet->status,
+                ]);
+            }
+
             $tempFotoPath = $this->request->getVar('foto');
 
             if (!empty($tempFotoPath) && strpos($tempFotoPath, 'file/item/temp/') === 0) {
@@ -181,6 +222,7 @@ class Item extends BaseController
                     $this->itemModel->update($newItemId, ['foto' => $finalPath]);
                 }
             }
+
             $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
