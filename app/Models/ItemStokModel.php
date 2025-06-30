@@ -21,7 +21,6 @@ class ItemStokModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'id_item',
-        'id_satuan',
         'id_gudang',
         'id_outlet',
         'id_user',
