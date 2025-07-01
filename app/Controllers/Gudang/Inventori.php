@@ -60,8 +60,9 @@ class Inventori extends BaseController
     {
         $item       = $this->itemModel->find($id);
         $item_stok = $this->itemStokModel
-            ->select('tbl_m_item_stok.*, tbl_m_outlet.nama')
-            ->join('tbl_m_outlet', 'tbl_m_outlet.id = tbl_m_item_stok.id_outlet')
+            ->select('tbl_m_item_stok.*, tbl_m_outlet.nama as outlet_nama, tbl_m_gudang.gudang as gudang_nama')
+            ->join('tbl_m_outlet', 'tbl_m_outlet.id = tbl_m_item_stok.id_outlet', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'left')
             ->where('tbl_m_item_stok.id_item', $id)
             ->findAll();
 

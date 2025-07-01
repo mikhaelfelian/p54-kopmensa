@@ -83,7 +83,7 @@
                             <tbody>
                                 <?php foreach ($outlets as $outlet): ?>
                                 <tr>
-                                    <th><?= $outlet->nama ?></th>
+                                    <th><?= $outlet->outlet_nama ?? $outlet->gudang_nama ?? $outlet->nama ?></th>
                                     <th>:</th>
                                     <td class="text-right" style="width: 120px;">
                                         <input type="text" name="jml[<?= $outlet->id_outlet ?>]" value="<?= $outlet->jml ?? 0 ?>" id="jml"
