@@ -5,6 +5,8 @@ namespace App\Controllers\Master;
 use App\Controllers\BaseController;
 use App\Models\ItemModel;
 use App\Models\ItemStokModel;
+use App\Models\GudangModel;
+use App\Models\OutletModel;
 use App\Models\KategoriModel;
 use App\Models\MerkModel;
 use App\Models\SatuanModel;
