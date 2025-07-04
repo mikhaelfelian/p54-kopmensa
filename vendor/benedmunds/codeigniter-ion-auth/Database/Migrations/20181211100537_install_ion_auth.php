@@ -175,6 +175,12 @@ class Migration_Install_ion_auth extends \CodeIgniter\Database\Migration
 				'constraint' => '20',
 				'null'       => true,
 			],
+			'profile' => [
+				'type'       => 'VARCHAR',
+				'constraint' => '255',
+				'null'       => true,
+				'comment'    => 'URL or path to user profile photo or data',
+			],
 			'tipe' => [
 				'type'       => 'ENUM',
 				'constraint' => ['1', '2'],
