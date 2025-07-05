@@ -255,7 +255,7 @@ class Item extends BaseController
                 'id_item'    => $item_id,
                 'nama'       => $row['nama'] ?? '',
                 'jml_min'    => $row['jml_min'] ?? 1,
-                'harga'      => str_replace(['.', ','], '', $row['harga'] ?? 0),
+                'harga'      => format_angka_db($row['harga'] ?? 0),
                 'keterangan' => $row['keterangan'] ?? null,
             ]);
         }
