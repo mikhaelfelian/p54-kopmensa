@@ -4,6 +4,7 @@ namespace App\Controllers\Api\Pos;
 
 use App\Controllers\BaseController;
 use App\Models\ItemModel;
+use App\Models\ItemHargaModel;
 use CodeIgniter\API\ResponseTrait;
 
 /**
@@ -26,6 +27,8 @@ class Produk extends BaseController
     public function index()
     {
         $model = new ItemModel();
+        $itemHargaModel = new ItemHargaModel();
+        $selectPrices = 'id, nama, jml_min, CAST(harga AS FLOAT) AS harga';
 
         $perPage = $this->request->getGet('per_page') ?? 10;
         $keyword = $this->request->getGet('keyword') ?? null;
@@ -40,6 +43,8 @@ class Produk extends BaseController
         foreach ($items as $item) {
             $formattedItems[] = [
                 'id'         => (int) $item->id,
+                'id_kategori'=> (int) $item->id_kategori,
+                'id_merk'    => (int) $item->id_merk,
                 'created_at' => $item->created_at,
                 'updated_at' => $item->updated_at,
                 'merk'       => $item->merk,
@@ -52,6 +57,11 @@ class Produk extends BaseController
                 'harga_jual' => (float) $item->harga_jual,
                 'harga_beli' => (float) $item->harga_beli,
                 'foto'       => $item->foto ? base_url($item->foto) : null,
+                'options'    => [
+                    'harga'  => $itemHargaModel->getPricesByItemId($item->id, $selectPrices),
+                    'varian' => null,
+                    'galeri' => null,
+                ],
             ];
         }
 
