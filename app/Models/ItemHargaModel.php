@@ -32,9 +32,10 @@ class ItemHargaModel extends Model
     /**
      * Get prices by item ID
      */
-    public function getPricesByItemId($itemId)
+    public function getPricesByItemId($itemId, $selectFields = '*')
     {
-        return $this->where('id_item', $itemId)
+        return $this->select($selectFields)
+                    ->where('id_item', $itemId)
                     ->orderBy('jml_min', 'ASC')
                     ->findAll();
     }
