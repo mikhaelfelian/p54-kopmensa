@@ -150,6 +150,8 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('item/delete_permanent/(:num)', 'Item::delete_permanent/$1');
     $routes->post('item/upload_image', 'Item::upload_image');
     $routes->post('item/delete_image', 'Item::delete_image');
+    $routes->post('item/store_price/(:num)', 'Item::store_price/$1');
+    $routes->post('item/delete_price/(:num)', 'Item::delete_price/$1');
 });
 
 // User Module Routes
