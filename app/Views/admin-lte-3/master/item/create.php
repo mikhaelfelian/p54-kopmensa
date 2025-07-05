@@ -74,7 +74,7 @@
                                     <div class="input-group-append">
                                         <span class="input-group-text">Rp. </span>
                                     </div>
-                                    <?= form_input(['name' => 'harga_beli', 'id' => 'harga_beli', 'class' => 'form-control rounded-0', 'value' => old('harga_beli')]) ?>
+                                    <?= form_input(['id' => 'harga', 'name' => 'harga_beli', 'class' => 'form-control rounded-0', 'value' => old('harga_beli')]) ?>
                                 </div>
                             </div>
                         </div>
@@ -85,7 +85,7 @@
                                     <div class="input-group-append">
                                         <span class="input-group-text">Rp. </span>
                                     </div>
-                                    <?= form_input(['name' => 'harga_jual', 'id' => 'harga_jual', 'class' => 'form-control rounded-0', 'value' => old('harga_jual')]) ?>
+                                    <?= form_input(['id' => 'harga', 'name' => 'harga_jual', 'class' => 'form-control rounded-0', 'value' => old('harga_jual')]) ?>
                                 </div>
                             </div>
                         </div>
@@ -146,5 +146,11 @@
 <!-- Dropzone CSS & JS -->
 <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css">
 <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("input[id=harga]").autoNumeric({aSep: '.', aDec: ',', aPad: false});
+    });
+</script>
 
 <?= $this->endSection() ?> 
