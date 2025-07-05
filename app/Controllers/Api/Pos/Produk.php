@@ -110,4 +110,20 @@ class Produk extends BaseController
 
         return $this->respond($data);
     }
+
+    public function getCategory()
+    {
+        $kategoriModel = new \App\Models\KategoriModel();
+        $categories = $kategoriModel->findAll();
+        $data = array_map(function($cat) {
+            return [
+                'id' => (int)$cat['id'],
+                'kategori' => $cat['kategori'],
+                'deskripsi' => $cat['deskripsi'] ?? null,
+                'created_at' => $cat['created_at'] ?? null,
+                'updated_at' => $cat['updated_at'] ?? null,
+            ];
+        }, $categories);
+        return $this->respond(['categories' => $data]);
+    }
 } 
