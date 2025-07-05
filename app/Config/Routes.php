@@ -188,9 +188,10 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('logout', 'Anggota\\Auth::logout');
     });
 
-    $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\\Controllers\\Api\\Pos'], function ($routes) {
+    $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {
         $routes->get('produk', 'Produk::index');
         $routes->get('produk/detail/(:num)', 'Produk::detail/$1');
+        $routes->get('produk/category', 'Produk::getCategory');
     });
 });
 
