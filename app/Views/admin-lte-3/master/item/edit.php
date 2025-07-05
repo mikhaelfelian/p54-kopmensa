@@ -224,7 +224,7 @@
                                             <input type="text" name="prices[<?= $priceIndex ?>][keterangan]" value="<?= $price->keterangan ?>" class="form-control rounded-0" placeholder="Keterangan tambahan (opsional)">
                                         </td>
                                         <td class="align-middle text-center">
-                                            <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="deletePriceRow(this, <?= $price->id ?>)" title="Delete">
+                                            <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="return confirm('Hapus data ini?') && deletePriceRow(this, <?= $price->id ?>)" title="Delete">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -264,7 +264,8 @@
                         <div class="col-lg-6">
                         </div>
                         <div class="col-lg-6 text-right">
-                            <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save" aria-hidden="true"></i> Simpan</button>
+                                <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save" aria-hidden="true"></i> Simpan</button>
+
                         </div>
                     </div>
                 </div>
