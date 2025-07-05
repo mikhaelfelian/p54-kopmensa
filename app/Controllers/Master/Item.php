@@ -236,7 +236,32 @@ class Item extends BaseController
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }
+    public function store_price($item_id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed', 'csrfHash' => csrf_hash()]);
+        }
 
+        $prices = $this->request->getPost('prices');
+        if (!is_array($prices) || empty($prices)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'No price data received.', 'csrfHash' => csrf_hash()]);
+        }
+
+        $itemHargaModel = new \App\Models\ItemHargaModel();
+        $itemHargaModel->where('id_item', $item_id)->delete();
+
+        foreach ($prices as $row) {
+            $itemHargaModel->insert([
+                'id_item'    => $item_id,
+                'nama'       => $row['nama'] ?? '',
+                'jml_min'    => $row['jml_min'] ?? 1,
+                'harga'      => str_replace(['.', ','], '', $row['harga'] ?? 0),
+                'keterangan' => $row['keterangan'] ?? null,
+            ]);
+        }
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Harga berhasil disimpan!', 'csrfHash' => csrf_hash()]);
+    }
     public function edit($id)
     {
         $data = [
@@ -497,5 +522,21 @@ class Item extends BaseController
 
         return redirect()->back()
             ->with('error', 'Gagal menghapus permanen data item');
+    }
+
+    public function delete_price($price_id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed', 'csrfHash' => csrf_hash()]);
+        }
+
+        $itemHargaModel = new \App\Models\ItemHargaModel();
+        $deleted = $itemHargaModel->delete($price_id);
+
+        if ($deleted) {
+            return $this->response->setJSON(['success' => true, 'message' => 'Harga berhasil dihapus!', 'csrfHash' => csrf_hash()]);
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus harga.', 'csrfHash' => csrf_hash()]);
+        }
     }
 } 
