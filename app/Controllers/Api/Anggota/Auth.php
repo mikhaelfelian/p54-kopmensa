@@ -48,7 +48,7 @@ class Auth extends BaseController
                 'username'   => $user->username,
                 'email'      => $user->email,
                 'tipe'       => $tipe,
-                'profile'    => $user->profile, // add profile from profile column
+                'profile'    => base_url($user->profile),
             ]
         ];
 
