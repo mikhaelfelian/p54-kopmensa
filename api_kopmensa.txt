@@ -54,38 +54,67 @@ Produk
 		page		: <number> (optional, default: 1, for pagination)
 	Format 	:
 	{
-		"total": 2,
+		"total": 7272,
 		"current_page": 1,
-		"per_page": 10,
-		"total_page": 1,
+		"per_page": 2,
+		"total_page": 3636,
 		"items": [
 			{
-				"created_at": "2025-06-18 23:24:52",
-				"updated_at": "2025-06-21 14:35:19",
-				"merk": "FUJIYAMA",
-				"kategori": "TEST",
-				"kode": "ITM-001",
-				"barcode": "123456",
-				"item": "COMMSCOPE CABLE CAT 6",
-				"deskripsi": "sss",
-				"jml_min": 2,
-				"harga_jual": 10560,
-				"harga_beli": 10000,
-				"foto": "http://localhost/p54-kopmensa/public/file/item/1/1750491319_e0277bac77cf057646a0.jpg"
+				"id": 7293,
+				"id_kategori": 1,
+				"id_merk": 3,
+				"created_at": "2025-07-05 12:06:02",
+				"updated_at": "2025-07-05 12:06:02",
+				"merk": "Mayora",
+				"kategori": "MINUMAN",
+				"kode": "117260725",
+				"barcode": "",
+				"item": "tes coba sku",
+				"deskripsi": "",
+				"jml_min": 1,
+				"harga_jual": 67000,
+				"harga_beli": 50000,
+				"foto": null,
+				"options": {
+					"harga": [],
+					"varian": null,
+					"galeri": null
+				}
 			},
 			{
-				"created_at": "2025-06-21 10:10:03",
-				"updated_at": "2025-06-21 13:38:25",
-				"merk": "FUJIYAMA",
-				"kategori": "TEST",
-				"kode": "ITM-002",
-				"barcode": "123456",
-				"item": "SHAMPOO SUNSLIK",
-				"deskripsi": "sdsa",
+				"id": 7292,
+				"id_kategori": 1,
+				"id_merk": 1,
+				"created_at": "2025-07-05 08:48:48",
+				"updated_at": "2025-07-05 08:49:14",
+				"merk": "Indofood",
+				"kategori": "MINUMAN",
+				"kode": "116260725",
+				"barcode": "",
+				"item": "TEST",
+				"deskripsi": "dsds",
 				"jml_min": 1,
-				"harga_jual": 15678,
-				"harga_beli": 10560,
-				"foto": "http://localhost/p54-kopmensa/public/file/item/2/1750487905_7070fb9ee0186493761e.png"
+				"harga_jual": 50000,
+				"harga_beli": 5000,
+				"foto": null,
+				"options": {
+					"harga": [
+						{
+							"id": "8",
+							"nama": "Anggota",
+							"jml_min": "1",
+							"harga": "6000"
+						},
+						{
+							"id": "9",
+							"nama": "tipe a",
+							"jml_min": "1",
+							"harga": "5500"
+						}
+					],
+					"varian": null,
+					"galeri": null
+				}
 			}
 		]
 	}
@@ -96,18 +125,18 @@ Produk Detail
 	Format 	:
 	{
 		"id": 1,
-		"kode": "ITM-001",
-		"barcode": "123456",
-		"item": "COMMSCOPE CABLE CAT 6",
-		"deskripsi": "sss",
+		"created_at": "2025-06-29 11:47:00",
+		"updated_at": "2025-06-30 07:20:14",
+		"merk": null,
+		"kategori": "MINUMAN",
+		"kode": "116260625",
+		"barcode": "88993351124100",
+		"item": "GF MILK UHT CHOCO MALT 250ML",
+		"deskripsi": "8993351124100",
 		"jml_min": 2,
-		"harga_jual": 10560,
-		"harga_beli": 10000,
-		"foto": "http://localhost/p54-kopmensa/public/file/item/1/1750491319_e0277bac77cf057646a0.jpg",
-		"kategori": "TEST",
-		"merk": "FUJIYAMA",
-		"created_at": "2025-06-18 23:24:52",
-		"updated_at": "2025-06-21 14:35:19"
+		"harga_jual": 8500,
+		"harga_beli": 6803,
+		"foto": null
 	}
 
 Kategori
