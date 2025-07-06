@@ -155,7 +155,7 @@ public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1,
     return $builder->paginate($perPage, 'items', $page);
 }
 
-public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $page = 1)
+public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $page = 1, $kategori = null, $merk = null)
 {
     $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
@@ -172,6 +172,14 @@ public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $pag
             ->orLike('tbl_m_kategori.kategori', $keyword)
             ->orLike('tbl_m_merk.merk', $keyword)
             ->groupEnd();
+    }
+
+    if ($kategori) {
+        $builder->where('tbl_m_item.id_kategori', $kategori);
+    }
+
+    if ($merk) {
+        $builder->where('tbl_m_item.id_merk', $merk);
     }
 
     return $builder->paginate($perPage, 'items', $page);
