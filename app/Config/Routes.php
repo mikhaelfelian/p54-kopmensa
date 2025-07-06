@@ -192,6 +192,10 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('produk', 'Produk::index');
         $routes->get('produk/detail/(:num)', 'Produk::detail/$1');
         $routes->get('produk/category', 'Produk::getCategory');
+        
+        // Merge: Kategori endpoints under api/pos
+        $routes->get('category', 'Kategori::index');
+        $routes->get('category/(:num)', 'Kategori::detail/$1');
     });
 });
 
