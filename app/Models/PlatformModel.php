@@ -22,7 +22,7 @@ class PlatformModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'kode', 'platform', 'keterangan', 'persen', 'status'
+        'id_outlet','kode', 'platform', 'keterangan', 'persen', 'status'
     ];
 
     // Dates
