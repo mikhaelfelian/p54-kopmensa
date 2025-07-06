@@ -26,17 +26,19 @@ class Produk extends BaseController
      */
     public function index()
     {
-        $model = new ItemModel();
-        $itemHargaModel = new ItemHargaModel();
+        $mItem        = new ItemModel();
+        $mItemHarga   = new ItemHargaModel();
         $selectPrices = 'id, nama, jml_min, CAST(harga AS FLOAT) AS harga';
 
-        $perPage = $this->request->getGet('per_page') ?? 10;
-        $keyword = $this->request->getGet('keyword') ?? null;
-        $page = $this->request->getGet('page') ?? 1; // Allow any page, default to 1
+        $perPage    = $this->request->getGet('per_page') ?? 10;
+        $keyword    = $this->request->getGet('keyword') ?? null;
+        $page       = $this->request->getGet('page') ?? 1; // Allow any page, default to 1
+        $categoryId = $this->request->getGet('CategoryId') ?? null;
+        $stok       = $this->request->getGet('stok') ?? null;
 
         // Get items for the specific page
-        $items = $model->getItemsWithRelationsActive($perPage, $keyword, $page);
-        $pager = $model->pager->getDetails('items');
+        $items = $mItem->getItemsWithRelationsActive($perPage, $keyword, $page, $categoryId);
+        $pager = $mItem->pager->getDetails('items');
 
         // Transform the data to match the desired format
         $formattedItems = [];
@@ -58,7 +60,7 @@ class Produk extends BaseController
                 'harga_beli' => (float) $item->harga_beli,
                 'foto'       => $item->foto ? base_url($item->foto) : null,
                 'options'    => [
-                    'harga'  => $itemHargaModel->getPricesByItemId($item->id, $selectPrices),
+                    'harga'  => $mItemHarga->getPricesByItemId($item->id, $selectPrices),
                     'varian' => null,
                     'galeri' => null,
                 ],
@@ -109,21 +111,5 @@ class Produk extends BaseController
         ];
 
         return $this->respond($data);
-    }
-
-    public function getCategory()
-    {
-        $kategoriModel = new \App\Models\KategoriModel();
-        $categories = $kategoriModel->findAll();
-        $data = array_map(function($cat) {
-            return [
-                'id' => (int)$cat['id'],
-                'kategori' => $cat['kategori'],
-                'deskripsi' => $cat['deskripsi'] ?? null,
-                'created_at' => $cat['created_at'] ?? null,
-                'updated_at' => $cat['updated_at'] ?? null,
-            ];
-        }, $categories);
-        return $this->respond(['categories' => $data]);
     }
 } 
