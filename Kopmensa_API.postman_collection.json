@@ -16,7 +16,12 @@
                             "name": "Login",
                             "request": {
                                 "method": "POST",
-                                "header": [],
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/x-www-form-urlencoded"
+                                    }
+                                ],
                                 "url": {
                                     "raw": "{{baseUrl}}/api/anggota/login",
                                     "host": [
@@ -43,7 +48,21 @@
                                         }
                                     ]
                                 }
-                            }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "type": "text/javascript",
+                                        "exec": [
+                                            "let res = pm.response.json();",
+                                            "if (res.token) {",
+                                            "    pm.environment.set(\"jwt_token\", res.token);",
+                                            "}"
+                                        ]
+                                    }
+                                }
+                            ]
                         },
                         {
                             "name": "Profile",
@@ -53,6 +72,11 @@
                                     {
                                         "key": "Authorization",
                                         "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
                                     }
                                 ],
                                 "url": {
@@ -76,6 +100,11 @@
                                     {
                                         "key": "Authorization",
                                         "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
                                     }
                                 ],
                                 "url": {
@@ -104,6 +133,11 @@
                                     {
                                         "key": "Authorization",
                                         "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
                                     }
                                 ],
                                 "url": {
@@ -141,6 +175,11 @@
                                     {
                                         "key": "Authorization",
                                         "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
                                     }
                                 ],
                                 "url": {
@@ -160,41 +199,74 @@
                         },
                         {
                             "name": "Kategori",
-                            "item": [
-                                {
-                                    "name": "Kategori List",
-                                    "request": {
-                                        "method": "GET",
-                                        "header": [
-                                            { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
-                                        ],
-                                        "url": {
-                                            "raw": "{{baseUrl}}/api/pos/category?per_page=10&keyword=&page=1",
-                                            "host": [ "{{baseUrl}}" ],
-                                            "path": [ "api", "pos", "category" ],
-                                            "query": [
-                                                { "key": "per_page", "value": "10" },
-                                                { "key": "keyword", "value": "" },
-                                                { "key": "page", "value": "1" }
-                                            ]
-                                        }
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
                                     }
-                                },
-                                {
-                                    "name": "Kategori Detail",
-                                    "request": {
-                                        "method": "GET",
-                                        "header": [
-                                            { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
-                                        ],
-                                        "url": {
-                                            "raw": "{{baseUrl}}/api/pos/category/1",
-                                            "host": [ "{{baseUrl}}" ],
-                                            "path": [ "api", "pos", "category", "1" ]
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/pos/category?per_page=10&keyword=&page=1",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "pos",
+                                        "category"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "per_page",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "keyword",
+                                            "value": ""
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "1"
                                         }
-                                    }
+                                    ]
                                 }
-                            ]
+                            }
+                        },
+                        {
+                            "name": "Kategori Detail",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/pos/category/52",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "pos",
+                                        "category",
+                                        "52"
+                                    ]
+                                }
+                            }
                         }
                     ]
                 }
