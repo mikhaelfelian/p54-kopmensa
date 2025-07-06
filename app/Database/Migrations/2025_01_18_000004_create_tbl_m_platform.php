@@ -22,6 +22,13 @@ class CreateTblMPlatform extends Migration
                 'unsigned'       => true,
                 'auto_increment' => true
             ],
+            'id_outlet' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => false,
+                'default'    => 0
+            ],
             'created_at' => [
                 'type'    => 'DATETIME',
                 'null'    => true
