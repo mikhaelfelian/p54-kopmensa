@@ -73,14 +73,30 @@ class Store extends BaseController
      * Get detail of an active outlet by ID, formatted as items array
      * @param int $id
      */
-    public function detail($id)
+    /**
+     * Get detail of an active outlet by ID, formatted as items array
+     * Route: GET api/pos/outlet/detail/(:num)
+     * @param int|null $id
+     */
+    public function detail($id = null)
     {
+        // Only allow access via the correct route group (api/pos/outlet/detail/(:num))
+        // This method is intended to be accessed via: GET api/pos/outlet/detail/{id}
+        // If accessed via a wrong route, CodeIgniter will throw a PageNotFoundException
+
         $model = new OutletModel();
-        $outlet = $model->where('status', 1)->where('id', $id)->first();
+
+        // Only fetch active outlets (status = 1)
+        $outlet = $model->where('id', $id)
+                        ->first();
+
         if (!$outlet) {
-            return $this->failNotFound('Outlet not found or inactive.');
+            // Return a 404 if not found or not active
+            return $this->failNotFound('Outlet dengan ID ' . $id . ' tidak ditemukan.');
         }
-        $item = [
+
+        // Format the response to match the documentation
+        $data = [
             'id'         => (int) $outlet->id,
             'id_user'    => (int) $outlet->id_user,
             'kode'       => $outlet->kode,
@@ -91,13 +107,7 @@ class Store extends BaseController
             'created_at' => $outlet->created_at,
             'updated_at' => $outlet->updated_at,
         ];
-        $data = [
-            'total'        => 1,
-            'current_page' => 1,
-            'per_page'     => 1,
-            'total_page'   => 1,
-            'items'        => [$item],
-        ];
+
         return $this->respond($data);
     }
 } 
