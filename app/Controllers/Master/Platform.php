@@ -14,6 +14,7 @@ namespace App\Controllers\Master;
 use App\Controllers\BaseController;
 use App\Models\PlatformModel;
 use App\Models\PengaturanModel;
+use App\Models\OutletModel;
 
 class Platform extends BaseController
 {
@@ -97,8 +98,22 @@ class Platform extends BaseController
      */
     public function store()
     {
+        $id_outlet  = trim($this->request->getPost('id_outlet'));
+        $kode       = strtoupper(trim($this->request->getPost('kode')));
+        $platform   = ucwords(strtolower(trim($this->request->getPost('platform'))));
+        $keterangan = trim($this->request->getPost('keterangan'));
+        $persen     = $this->request->getPost('persen') !== '' ? floatval($this->request->getPost('persen')) : null;
+        $status     = $this->request->getPost('status');
+        
         // Validation rules
         $rules = [
+            'id_outlet' => [
+                'rules'  => 'required|is_natural_no_zero',
+                'errors' => [
+                    'required' => 'Outlet harus dipilih',
+                    'is_natural_no_zero' => 'Outlet tidak valid'
+                ]
+            ],
             'kode' => [
                 'rules'  => 'required|is_unique[tbl_m_platform.kode]',
                 'errors' => [
@@ -141,11 +156,12 @@ class Platform extends BaseController
 
         try {
             $data = [
-                'kode'       => $this->request->getPost('kode'),
-                'platform'   => $this->request->getPost('platform'),
-                'keterangan' => $this->request->getPost('keterangan'),
-                'persen'     => $this->request->getPost('persen') ?: null,
-                'status'     => $this->request->getPost('status')
+                'id_outlet'  => $id_outlet,
+                'kode'       => $kode,
+                'platform'   => $platform,
+                'keterangan' => $keterangan,
+                'persen'     => $persen,
+                'status'     => $status
             ];
 
             if (!$this->platformModel->insert($data)) {
@@ -179,10 +195,15 @@ class Platform extends BaseController
                            ->with('error', 'Data platform tidak ditemukan');
         }
 
+        // Get active outlets for dropdown
+        $outletModel = new OutletModel();
+        $outlets = $outletModel->where('status', '1')->findAll();
+
         $data = [
             'title'       => 'Edit Platform',
             'validation'  => $this->validation,
             'platform'    => $platform,
+            'outlets'     => $outlets,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/platform') . '">Platform</a></li>
@@ -198,6 +219,13 @@ class Platform extends BaseController
      */
     public function update($id = null)
     {
+        $id_outlet  = trim($this->request->getPost('id_outlet'));
+        $kode       = strtoupper(trim($this->request->getPost('kode')));
+        $platform   = ucwords(strtolower(trim($this->request->getPost('platform'))));
+        $keterangan = trim($this->request->getPost('keterangan'));
+        $persen     = $this->request->getPost('persen') !== '' ? floatval($this->request->getPost('persen')) : null;
+        $status     = $this->request->getPost('status');
+
         if (!$id) {
             return redirect()->to('master/platform')
                            ->with('error', 'ID Platform tidak ditemukan');
@@ -247,11 +275,12 @@ class Platform extends BaseController
 
         try {
             $data = [
-                'kode'       => $this->request->getPost('kode'),
-                'platform'   => $this->request->getPost('platform'),
-                'keterangan' => $this->request->getPost('keterangan'),
-                'persen'     => $this->request->getPost('persen') ?: null,
-                'status'     => $this->request->getPost('status')
+                'id_outlet'  => $id_outlet,
+                'kode'       => $kode,
+                'platform'   => $platform,
+                'keterangan' => $keterangan,
+                'persen'     => $persen,
+                'status'     => $status
             ];
 
             if (!$this->platformModel->update($id, $data)) {
