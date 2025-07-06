@@ -20,6 +20,25 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
+                        <!-- Outlet -->
+                        <div class="form-group">
+                            <label>Outlet <span class="text-danger">*</span></label>
+                            <select name="id_outlet"
+                                class="form-control rounded-0 <?= ($validation->hasError('id_outlet') ? 'is-invalid' : '') ?>">
+                                <option value="">Pilih Outlet...</option>
+                                <?php if (isset($outlets) && is_array($outlets)): ?>
+                                    <?php foreach ($outlets as $outlet): ?>
+                                        <option value="<?= $outlet->id ?>" <?= old('id_outlet', $platform->id_outlet ?? '') == $outlet->id ? 'selected' : '' ?>>
+                                            <?= (!empty($outlet->kode) ? '[' . $outlet->kode . '] ' : '') . esc($outlet->nama) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                            <div class="invalid-feedback">
+                                <?= $validation->getError('id_outlet') ?>
+                            </div>
+                        </div>
+                        
                         <!-- Kode -->
                         <div class="form-group">
                             <label>Kode <span class="text-danger">*</span></label>
@@ -119,4 +138,4 @@
         <?= form_close() ?>
     </div>
 </div>
-<?= $this->endSection() ?> 
+<?= $this->endSection() ?>
