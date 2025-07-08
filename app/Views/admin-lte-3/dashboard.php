@@ -652,6 +652,7 @@
 <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/raphael/raphael.min.js') ?>"></script>
 <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-mapael/jquery.mapael.min.js') ?>"></script>
 <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-mapael/maps/usa_states.min.js') ?>"></script>
+
 <!-- ChartJS -->
 <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/chart.js/Chart.min.js') ?>"></script>
 
@@ -659,116 +660,5 @@
 <script src="<?= base_url('public/assets/theme/admin-lte-3/dist/js/demo.js') ?>"></script>
 <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
 <script src="<?= base_url('public/assets/theme/admin-lte-3/dist/js/pages/dashboard2.js') ?>"></script>
-
-<?= $this->section('css') ?>
-<style>
-    .chat-box {
-        padding: 15px;
-    }
-
-    .direct-chat-msg {
-        margin-bottom: 1rem;
-    }
-
-    .direct-chat-text {
-        padding: 0.5rem 1rem;
-        margin: 5px 0;
-        display: inline-block;
-        max-width: 80%;
-    }
-
-    .user-message {
-        text-align: right;
-    }
-
-    .user-message .direct-chat-text {
-        background: #007bff;
-        color: #fff;
-    }
-
-    .loading {
-        text-align: center;
-        padding: 10px;
-    }
-</style>
-<?= $this->endSection() ?>
-
-<?= $this->section('js') ?>
-<script>
-    function sendMessage() {
-        const userInput = $('#user-input');
-        const chatBox = $('#chat-box');
-        const message = userInput.val().trim();
-
-        if (!message) return;
-
-        // Add user message
-        appendMessage(message, true);
-        userInput.val('').focus();
-
-        // Show loading
-        const loadingDiv = $('<div class="loading">').text('ChatGPT sedang mengetik...');
-        chatBox.append(loadingDiv);
-        scrollToBottom();
-
-        // Send to server
-        $.ajax({
-            url: '<?= base_url('chatgpt/send') ?>',
-            type: 'POST',
-            dataType: 'json',
-            data: {
-                message: message
-            },
-            success: function (response) {
-                loadingDiv.remove();
-                if (response.success) {
-                    appendMessage(response.message, false);
-                } else {
-                    appendMessage('Error: ' + response.message, false);
-                    console.error('API Error:', response);
-                }
-            },
-            error: function (xhr, status, error) {
-                loadingDiv.remove();
-                console.error('AJAX Error:', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseText
-                });
-                let errorMsg = 'Error koneksi';
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    errorMsg = response.message || errorMsg;
-                } catch (e) {
-                    errorMsg = xhr.responseText || errorMsg;
-                }
-                appendMessage('Error: ' + errorMsg, false);
-            }
-        });
-    }
-
-    function appendMessage(message, isUser) {
-        const chatBox = $('#chat-box');
-        const messageDiv = $('<div class="direct-chat-msg' + (isUser ? ' user-message' : '') + '">');
-        const textDiv = $('<div class="direct-chat-text rounded-0">').text(message);
-
-        messageDiv.append(textDiv);
-        chatBox.append(messageDiv);
-        scrollToBottom();
-    }
-
-    function scrollToBottom() {
-        const chatBox = $('#chat-box');
-        chatBox.scrollTop(chatBox[0].scrollHeight);
-    }
-
-    // Handle Enter key
-    $('#user-input').keypress(function (e) {
-        if (e.which == 13) {
-            sendMessage();
-        }
-    });
-</script>
-<?= $this->endSection() ?>
 
 <?= $this->endSection() ?>
