@@ -1,6 +1,3 @@
-<?php
-
-?>
 <nav class="main-header navbar navbar-expand navbar-white navbar-light">
     <!-- Left navbar links -->
     <ul class="navbar-nav">
@@ -30,6 +27,7 @@
                         <small>Member since <?= date('d-m-Y', $user->created_on) ?></small>
                     </p>
                 </li>
+                
                 <!-- Menu Footer-->
                 <li class="user-footer">
                     <a href="<?= base_url('auth/profile') ?>" class="btn btn-default btn-flat">Profile</a>
