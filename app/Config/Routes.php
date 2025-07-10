@@ -152,6 +152,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('item/delete_image', 'Item::delete_image');
     $routes->post('item/store_price/(:num)', 'Item::store_price/$1');
     $routes->post('item/delete_price/(:num)', 'Item::delete_price/$1');
+    $routes->post('item/bulk_delete', 'Item::bulk_delete');
 });
 
 // User Module Routes
