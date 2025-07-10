@@ -153,6 +153,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('item/store_price/(:num)', 'Item::store_price/$1');
     $routes->post('item/delete_price/(:num)', 'Item::delete_price/$1');
     $routes->post('item/bulk_delete', 'Item::bulk_delete');
+    $routes->get('item/export_excel', 'Item::export_to_excel');
 });
 
 // User Module Routes
@@ -164,6 +165,7 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     // Inventori / Stok
     $routes->get('stok', 'Inventori::index');
     $routes->get('stok/detail/(:num)', 'Inventori::detail/$1');
+    $routes->get('stok/export_excel', 'Inventori::export_to_excel');
     
     // Transfer / Mutasi
     $routes->get('transfer', 'Transfer::index');
