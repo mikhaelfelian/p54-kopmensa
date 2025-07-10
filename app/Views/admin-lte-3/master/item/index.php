@@ -27,6 +27,9 @@
                         <?php endif ?>
                     </div>
                     <div class="col-md-6 text-right">
+                        <a href="<?= base_url('master/item/export_excel') . '?' . http_build_query($_GET) ?>" class="btn btn-sm btn-success rounded-0">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </a>
                         <button type="button" id="bulk-delete-btn" class="btn btn-sm btn-danger rounded-0" style="display: none;">
                             <i class="fas fa-trash"></i> Hapus Terpilih (<span id="selected-count">0</span>)
                         </button>
