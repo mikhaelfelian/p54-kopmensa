@@ -21,7 +21,7 @@ class PelangganModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'id_user', 'kode', 'nama', 'no_telp', 'alamat', 'kota', 
-        'provinsi', 'tipe', 'status', 'status_hps'
+        'provinsi', 'tipe', 'status', 'status_hps', 'status_blokir', 'limit'
     ];
 
     // Dates
@@ -71,6 +71,22 @@ class PelangganModel extends Model
     public function getStatusLabel($status)
     {
         return $status == '1' ? 'Aktif' : 'Non-Aktif';
+    }
+
+    /**
+     * Get status blokir label
+     */
+    public function getStatusBlokirLabel($status_blokir)
+    {
+        return $status_blokir == '1' ? 'Diblokir' : 'Tidak Diblokir';
+    }
+
+    /**
+     * Get formatted limit
+     */
+    public function getLimitFormatted($limit)
+    {
+        return number_format($limit, 2, ',', '.');
     }
 
     /**
