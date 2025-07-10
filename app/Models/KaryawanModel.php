@@ -22,12 +22,28 @@ class KaryawanModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_user', 'id_poli', 'id_user_group', 'kode', 'nik', 
-        'sip', 'str', 'no_ijin', 'nama_dpn', 'nama', 'nama_blk', 
-        'nama_pgl', 'tmp_lahir', 'tgl_lahir', 'alamat', 
-        'alamat_domisili', 'rt', 'rw', 'kelurahan', 'kecamatan', 
-        'kota', 'jns_klm', 'jabatan', 'no_hp', 'file_foto', 
-        'status', 'status_aps'
+        'id_user',
+        'id_user_group',
+        'kode',
+        'nik',
+        'nama_dpn',
+        'nama',
+        'nama_blk',
+        'nama_pgl',
+        'tmp_lahir',
+        'tgl_lahir',
+        'alamat',
+        'alamat_domisili',
+        'rt',
+        'rw',
+        'kelurahan',
+        'kecamatan',
+        'kota',
+        'jns_klm',
+        'jabatan',
+        'no_hp',
+        'file_foto',
+        'status'
     ];
 
     // Dates
