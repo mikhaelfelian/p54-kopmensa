@@ -46,8 +46,21 @@ class Item extends BaseController
         $curr_page  = $this->request->getVar('page_items') ?? 1;
         $per_page   = 10;
         $kat        = $this->request->getVar('kategori');
+        $merk       = $this->request->getVar('merk');
         $stok       = $this->request->getVar('stok');
         $query      = $this->request->getVar('keyword') ?? '';
+        
+        // Min stock filter
+        $min_stok_operator = $this->request->getVar('min_stok_operator') ?? '';
+        $min_stok_value = $this->request->getVar('min_stok_value') ?? '';
+        
+        // Harga Beli filter
+        $harga_beli_operator = $this->request->getVar('harga_beli_operator') ?? '';
+        $harga_beli_value = $this->request->getVar('harga_beli_value') ?? '';
+        
+        // Harga Jual filter
+        $harga_jual_operator = $this->request->getVar('harga_jual_operator') ?? '';
+        $harga_jual_value = $this->request->getVar('harga_jual_value') ?? '';
 
         // Get trash count (use a clone so it doesn't affect the main query)
         $trashCount = (clone $this->itemModel)->where('status_hps', '1')->countAllResults();
@@ -57,6 +70,9 @@ class Item extends BaseController
 
         if ($kat) {
             $this->itemModel->where('tbl_m_item.id_kategori', $kat);
+        }
+        if ($merk) {
+            $this->itemModel->where('tbl_m_item.id_merk', $merk);
         }
         if ($stok !== null && $stok !== '') {
             $this->itemModel->where('tbl_m_item.status_stok', $stok);
@@ -69,6 +85,21 @@ class Item extends BaseController
                 ->orLike('tbl_m_item.deskripsi', $query)
                 ->groupEnd();
         }
+        
+        // Apply min stock filter
+        if ($min_stok_operator && $min_stok_value !== '') {
+            $this->itemModel->where("tbl_m_item.jml_min {$min_stok_operator}", $min_stok_value);
+        }
+        
+        // Apply harga beli filter
+        if ($harga_beli_operator && $harga_beli_value !== '') {
+            $this->itemModel->where("tbl_m_item.harga_beli {$harga_beli_operator}", format_angka_db($harga_beli_value));
+        }
+        
+        // Apply harga jual filter
+        if ($harga_jual_operator && $harga_jual_value !== '') {
+            $this->itemModel->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
+        }
 
         $data = [
             'title'         => 'Data Item',
@@ -80,9 +111,17 @@ class Item extends BaseController
             'perPage'       => $per_page,
             'keyword'       => $query,
             'kat'           => $kat,
+            'merk'          => $merk,
             'stok'          => $stok,
+            'min_stok_operator' => $min_stok_operator,
+            'min_stok_value' => $min_stok_value,
+            'harga_beli_operator' => $harga_beli_operator,
+            'harga_beli_value' => $harga_beli_value,
+            'harga_jual_operator' => $harga_jual_operator,
+            'harga_jual_value' => $harga_jual_value,
             'trashCount'    => $trashCount,
             'kategori'      => $this->kategoriModel->findAll(),
+            'merk_list'     => $this->merkModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -537,6 +576,53 @@ class Item extends BaseController
             return $this->response->setJSON(['success' => true, 'message' => 'Harga berhasil dihapus!', 'csrfHash' => csrf_hash()]);
         } else {
             return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus harga.', 'csrfHash' => csrf_hash()]);
+        }
+    }
+
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        $itemIds = $this->request->getVar('item_ids');
+        
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Tidak ada item yang dipilih']);
+        }
+
+        try {
+            $this->db->transStart();
+            
+            $data = [
+                'status_hps' => '1',
+                'deleted_at' => date('Y-m-d H:i:s')
+            ];
+
+            $successCount = 0;
+            foreach ($itemIds as $id) {
+                if ($this->itemModel->update($id, $data)) {
+                    $successCount++;
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus item']);
+            }
+
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => "Berhasil menghapus {$successCount} item ke arsip",
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal menghapus item'
+            ]);
         }
     }
 } 
