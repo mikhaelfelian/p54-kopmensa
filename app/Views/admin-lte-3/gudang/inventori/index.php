@@ -20,6 +20,9 @@
                         <a href="<?= base_url('gudang/stok/create') ?>" class="btn btn-sm btn-primary rounded-0">
                             <i class="fas fa-plus"></i> Tambah Data
                         </a>
+                        <a href="<?= base_url('gudang/stok/export_excel') . '?' . http_build_query($_GET) ?>" class="btn btn-sm btn-success rounded-0">
+                            <i class="fas fa-file-excel"></i> Export Excel
+                        </a>
                         <?php if (isset($trashCount) && $trashCount > 0): ?>
                             <a href="<?= base_url('gudang/stok/trash') ?>" class="btn btn-sm btn-danger rounded-0">
                                 <i class="fas fa-trash"></i> Arsip (<?= $trashCount ?>)
@@ -28,8 +31,154 @@
                     </div>
                 </div>
             </div>
-            <div class="card-body table-responsive">
-                <?= form_open('gudang/stok', attributes: ['method' => 'get']) ?>
+            <div class="card-body">
+                <!-- Filter Section -->
+                <div class="card card-outline card-primary mb-3">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-filter"></i> Filter Data
+                        </h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <?= form_open('gudang/stok', ['method' => 'get']) ?>
+                        <div class="row">
+                            <!-- Keyword Search -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Cari Item</label>
+                                    <?= form_input([
+                                        'name' => 'keyword',
+                                        'class' => 'form-control rounded-0',
+                                        'placeholder' => 'Kode / Nama Item / Barcode',
+                                        'value' => esc($keyword ?? '')
+                                    ]) ?>
+                                </div>
+                            </div>
+                            
+                            <!-- Stockable Filter -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Status Stok</label>
+                                    <select name="stok" class="form-control rounded-0">
+                                        <option value="">- Semua -</option>
+                                        <option value="1" <?= (isset($stok) && $stok == '1') ? 'selected' : '' ?>>Stockable</option>
+                                        <option value="0" <?= (isset($stok) && $stok == '0') ? 'selected' : '' ?>>Non Stockable</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Category Filter -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Kategori</label>
+                                    <select name="kategori" class="form-control rounded-0">
+                                        <option value="">- Semua Kategori -</option>
+                                        <?php if (isset($kategori)): ?>
+                                            <?php foreach ($kategori as $kat_item): ?>
+                                                <option value="<?= $kat_item->id ?>" <?= (isset($kat) && $kat == $kat_item->id) ? 'selected' : '' ?>>
+                                                    <?= $kat_item->kategori ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Brand/Merk Filter -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Merk</label>
+                                    <select name="merk" class="form-control rounded-0">
+                                        <option value="">- Semua Merk -</option>
+                                        <?php if (isset($merk_list)): ?>
+                                            <?php foreach ($merk_list as $merk_item): ?>
+                                                <option value="<?= $merk_item->id ?>" <?= (isset($merk) && $merk == $merk_item->id) ? 'selected' : '' ?>>
+                                                    <?= $merk_item->merk ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <!-- Min Stock Filter -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Stok Minimum</label>
+                                    <div class="input-group">
+                                        <select name="min_stok_operator" class="form-control rounded-0" style="max-width: 80px;">
+                                            <option value="">-</option>
+                                            <option value="=" <?= (isset($min_stok_operator) && $min_stok_operator == '=') ? 'selected' : '' ?>>=</option>
+                                            <option value="<=" <?= (isset($min_stok_operator) && $min_stok_operator == '<=') ? 'selected' : '' ?>>≤</option>
+                                            <option value=">=" <?= (isset($min_stok_operator) && $min_stok_operator == '>=') ? 'selected' : '' ?>>≥</option>
+                                            <option value=">" <?= (isset($min_stok_operator) && $min_stok_operator == '>') ? 'selected' : '' ?>>></option>
+                                            <option value="<" <?= (isset($min_stok_operator) && $min_stok_operator == '<') ? 'selected' : '' ?>><</option>
+                                        </select>
+                                        <input type="number" name="min_stok_value" class="form-control rounded-0" placeholder="Nilai" value="<?= esc($min_stok_value ?? '') ?>">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Harga Beli Filter -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Harga Beli</label>
+                                    <div class="input-group">
+                                        <select name="harga_beli_operator" class="form-control rounded-0" style="max-width: 80px;">
+                                            <option value="">-</option>
+                                            <option value="=" <?= (isset($harga_beli_operator) && $harga_beli_operator == '=') ? 'selected' : '' ?>>=</option>
+                                            <option value="<=" <?= (isset($harga_beli_operator) && $harga_beli_operator == '<=') ? 'selected' : '' ?>>≤</option>
+                                            <option value=">=" <?= (isset($harga_beli_operator) && $harga_beli_operator == '>=') ? 'selected' : '' ?>>≥</option>
+                                            <option value=">" <?= (isset($harga_beli_operator) && $harga_beli_operator == '>') ? 'selected' : '' ?>>></option>
+                                            <option value="<" <?= (isset($harga_beli_operator) && $harga_beli_operator == '<') ? 'selected' : '' ?>><</option>
+                                        </select>
+                                        <input type="text" name="harga_beli_value" class="form-control rounded-0" placeholder="Rp 0" value="<?= esc($harga_beli_value ?? '') ?>">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Harga Jual Filter -->
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label>Harga Jual</label>
+                                    <div class="input-group">
+                                        <select name="harga_jual_operator" class="form-control rounded-0" style="max-width: 80px;">
+                                            <option value="">-</option>
+                                            <option value="=" <?= (isset($harga_jual_operator) && $harga_jual_operator == '=') ? 'selected' : '' ?>>=</option>
+                                            <option value="<=" <?= (isset($harga_jual_operator) && $harga_jual_operator == '<=') ? 'selected' : '' ?>>≤</option>
+                                            <option value=">=" <?= (isset($harga_jual_operator) && $harga_jual_operator == '>=') ? 'selected' : '' ?>>≥</option>
+                                            <option value=">" <?= (isset($harga_jual_operator) && $harga_jual_operator == '>') ? 'selected' : '' ?>>></option>
+                                            <option value="<" <?= (isset($harga_jual_operator) && $harga_jual_operator == '<') ? 'selected' : '' ?>><</option>
+                                        </select>
+                                        <input type="text" name="harga_jual_value" class="form-control rounded-0" placeholder="Rp 0" value="<?= esc($harga_jual_value ?? '') ?>">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary rounded-0">
+                                    <i class="fas fa-search"></i> Filter
+                                </button>
+                                <a href="<?= base_url('gudang/stok') ?>" class="btn btn-secondary rounded-0">
+                                    <i class="fas fa-times"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                        <?= form_close() ?>
+                    </div>
+                </div>
+                
+                <!-- Table Section -->
+                <div class="table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -42,35 +191,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <th></th>
-                            <th></th>
-                            <th>
-                                <select name="kategori" class="form-control rounded-0">
-                                    <option value="">- Kategori -</option>
-                                    <?php if (isset($kategori)): ?>
-                                        <?php foreach ($kategori as $kat_item): ?>
-                                            <option value="<?= $kat_item->id ?>" <?= (isset($kat) && $kat == $kat_item->id) ? 'selected' : '' ?>>
-                                                <?= $kat_item->kategori ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </select>
-                            </th>
-                            <th>
-                                <?= form_input([
-                                    'name' => 'keyword',
-                                    'class' => 'form-control rounded-0',
-                                    'placeholder' => 'Isikan Kode / Nama Item ...',
-                                    'value' => esc($keyword ?? '')
-                                ]) ?>
-                            </th>
-                            <th></th>
-                            <th>
-                                <button type="submit" class="btn btn-primary rounded-0"><i class="fa fa-search"></i>
-                                    Filter</button>
-                            </th>
-                        </tr>
                         <?php if (!empty($items)): ?>
                             <?php foreach ($items as $key => $row): ?>
                                 <tr>
@@ -132,7 +252,7 @@
                         <?php endif ?>
                     </tbody>
                 </table>
-                <?= form_close() ?>
+                </div>
             </div>
             <?php if ($pager): ?>
                 <div class="card-footer clearfix">
@@ -148,6 +268,15 @@
 <script>
 $(document).ready(function() {
     $('[data-toggle="tooltip"]').tooltip();
+    
+    // Price input formatting
+    $('input[name="harga_beli_value"], input[name="harga_jual_value"]').on('input', function() {
+        var value = $(this).val().replace(/[^\d]/g, '');
+        if (value !== '') {
+            value = parseInt(value).toLocaleString('id-ID');
+            $(this).val(value);
+        }
+    });
 });
 </script>
 <?= $this->endSection() ?> 
