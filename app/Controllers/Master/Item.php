@@ -625,4 +625,141 @@ class Item extends BaseController
             ]);
         }
     }
+
+    public function export_to_excel()
+    {
+        // Get filter parameters
+        $kat = $this->request->getVar('kategori');
+        $merk = $this->request->getVar('merk');
+        $stok = $this->request->getVar('stok');
+        $query = $this->request->getVar('keyword') ?? '';
+        
+        // Min stock filter
+        $min_stok_operator = $this->request->getVar('min_stok_operator') ?? '';
+        $min_stok_value = $this->request->getVar('min_stok_value') ?? '';
+        
+        // Harga Beli filter
+        $harga_beli_operator = $this->request->getVar('harga_beli_operator') ?? '';
+        $harga_beli_value = $this->request->getVar('harga_beli_value') ?? '';
+        
+        // Harga Jual filter
+        $harga_jual_operator = $this->request->getVar('harga_jual_operator') ?? '';
+        $harga_jual_value = $this->request->getVar('harga_jual_value') ?? '';
+
+        // Apply filters
+        $this->itemModel->where('tbl_m_item.status_hps', '0');
+
+        if ($kat) {
+            $this->itemModel->where('tbl_m_item.id_kategori', $kat);
+        }
+        if ($merk) {
+            $this->itemModel->where('tbl_m_item.id_merk', $merk);
+        }
+        if ($stok !== null && $stok !== '') {
+            $this->itemModel->where('tbl_m_item.status_stok', $stok);
+        }
+        if ($query) {
+            $this->itemModel->groupStart()
+                ->like('tbl_m_item.item', $query)
+                ->orLike('tbl_m_item.kode', $query)
+                ->orLike('tbl_m_item.barcode', $query)
+                ->orLike('tbl_m_item.deskripsi', $query)
+                ->groupEnd();
+        }
+        
+        // Apply min stock filter
+        if ($min_stok_operator && $min_stok_value !== '') {
+            $this->itemModel->where("tbl_m_item.jml_min {$min_stok_operator}", $min_stok_value);
+        }
+        
+        // Apply harga beli filter
+        if ($harga_beli_operator && $harga_beli_value !== '') {
+            $this->itemModel->where("tbl_m_item.harga_beli {$harga_beli_operator}", format_angka_db($harga_beli_value));
+        }
+        
+        // Apply harga jual filter
+        if ($harga_jual_operator && $harga_jual_value !== '') {
+            $this->itemModel->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
+        }
+
+        // Get all filtered data (no pagination)
+        $items = $this->itemModel->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->orderBy('tbl_m_item.id', 'DESC')
+            ->findAll();
+
+        // Create Excel file
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set title
+        $sheet->setCellValue('A1', 'DATA ITEM');
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Set headers
+        $headers = [
+            'No', 'Kode', 'Barcode', 'Nama Item', 'Kategori', 'Merk', 'Deskripsi', 
+            'Stok Min', 'Harga Beli', 'Harga Jual', 'Status Stok', 'Status Item'
+        ];
+
+        $col = 'A';
+        $row = 3;
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . $row, $header);
+            $sheet->getStyle($col . $row)->getFont()->setBold(true);
+            $col++;
+        }
+
+        // Add data
+        $row = 4;
+        $no = 1;
+        foreach ($items as $item) {
+            $sheet->setCellValue('A' . $row, $no);
+            $sheet->setCellValue('B' . $row, $item->kode);
+            $sheet->setCellValue('C' . $row, $item->barcode);
+            $sheet->setCellValue('D' . $row, $item->item);
+            $sheet->setCellValue('E' . $row, $item->kategori);
+            $sheet->setCellValue('F' . $row, $item->merk);
+            $sheet->setCellValue('G' . $row, $item->deskripsi);
+            $sheet->setCellValue('H' . $row, $item->jml_min);
+            $sheet->setCellValue('I' . $row, format_angka($item->harga_beli));
+            $sheet->setCellValue('J' . $row, format_angka($item->harga_jual));
+            $sheet->setCellValue('K' . $row, $item->status_stok == '1' ? 'Stockable' : 'Non Stockable');
+            $sheet->setCellValue('L' . $row, $item->status == '1' ? 'Aktif' : 'Non Aktif');
+            
+            $row++;
+            $no++;
+        }
+
+        // Auto size columns
+        foreach (range('A', 'L') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Add borders
+        $styleArray = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A3:L' . ($row - 1))->applyFromArray($styleArray);
+
+        // Set filename
+        $filename = 'Data_Item_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        // Set headers for download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        // Create Excel writer
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
 } 
