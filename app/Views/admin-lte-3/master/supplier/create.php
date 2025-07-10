@@ -172,9 +172,8 @@
                             <?= form_dropdown(
                                 'tipe',
                                 [
-                                    '' => '- Pilih -',
-                                    '1' => 'Instansi',
-                                    '2' => 'Personal'
+                                    '3' => 'Umum',
+                                    '4' => 'Anggota'
                                 ],
                                 old('tipe'),
                                 'class="form-control rounded-0 ' . ($validation->hasError('tipe') ? 'is-invalid' : '') . '"'

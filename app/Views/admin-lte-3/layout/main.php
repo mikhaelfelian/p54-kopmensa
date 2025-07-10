@@ -51,6 +51,9 @@ if (!isset($Pengaturan)) {
     <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/toastr/toastr.min.js') ?>"></script>
     <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/toastr/toastr.min.css') ?>">
 
+    <!-- iCheck Bootstrap -->
+    <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/icheck-bootstrap/icheck-bootstrap.min.css') ?>">
+
     <!-- jQuery UI -->
     <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>">
 
