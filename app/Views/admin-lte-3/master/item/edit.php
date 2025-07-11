@@ -12,7 +12,7 @@
 
 <?= $this->section('content') ?>
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-12">
         <?= form_open('master/item/update/' . $item->id, ['accept-charset' => 'utf-8']) ?>
         <div class="card card-default">
             <div class="card-header">
@@ -173,104 +173,162 @@
         </div>
         </form>
     </div>
-    <div class="col-md-6">
-        <form id="price-form">
-            <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
-            <div class="card card-default">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div>
-                        <h3 class="card-title mb-0">Kelola Harga Item</h3>
+    <div class="col-md-12">
+        <div class="card card-default">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <ul class="nav nav-tabs card-header-tabs" id="itemTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-harga" data-toggle="tab" href="#tabHarga" role="tab" aria-controls="tabHarga" aria-selected="true">
+                            Harga
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-varian" data-toggle="tab" href="#tabVarian" role="tab" aria-controls="tabVarian" aria-selected="false">
+                            Varian
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="itemTabsContent">
+                    <div class="tab-pane fade show active" id="tabHarga" role="tabpanel" aria-labelledby="tab-harga">
+                        <form id="price-form">
+                            <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-success btn-sm rounded-0" onclick="addPriceRow()">
+                                    <i class="fa fa-plus"></i> Tambah
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="price-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Nama</th>
+                                            <th>Jml Min</th>
+                                            <th>Harga</th>
+                                            <th>Ket</th>
+                                            <th style="width:120px;">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="price-container">
+                                        <?php 
+                                        $itemHargaModel = new \App\Models\ItemHargaModel();
+                                        $existingPrices = $itemHargaModel->getPricesByItemId($item->id);
+                                        $priceIndex = 0;
+                                        ?>
+                                        <?php if (!empty($existingPrices)): ?>
+                                            <?php foreach ($existingPrices as $price): ?>
+                                            <tr class="price-row" data-index="<?= $priceIndex ?>">
+                                                <td class="align-middle">
+                                                    <input type="text" name="prices[<?= $priceIndex ?>][nama]" value="<?= $price->nama ?>" class="form-control rounded-0" placeholder="Contoh: Ecer, Grosir, Distributor" required>
+                                                    <div class="invalid-feedback">Nama level harga wajib diisi.</div>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <input type="number" name="prices[<?= $priceIndex ?>][jml_min]" value="<?= $price->jml_min ?>" class="form-control rounded-0" placeholder="Minimal beli" min="1" required>
+                                                    <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <input type="text" name="prices[<?= $priceIndex ?>][harga]" value="<?= (float)$price->harga ?>" class="form-control rounded-0 price-input" placeholder="Harga Anggota ..." required>
+                                                    <div class="invalid-feedback">Harga wajib diisi.</div>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <input type="text" name="prices[<?= $priceIndex ?>][keterangan]" value="<?= $price->keterangan ?>" class="form-control rounded-0" placeholder="Keterangan tambahan (opsional)">
+                                                </td>
+                                                <td class="align-middle text-center">
+                                                    <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="return confirm('Hapus data ini?') && deletePriceRow(this, <?= $price->id ?>)" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <?php $priceIndex++; ?>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <tr class="price-row" data-index="0">
+                                                <td class="align-middle">
+                                                    <input type="text" name="prices[0][nama]" class="form-control rounded-0" placeholder="Harga Anggota ..." required>
+                                                    <div class="invalid-feedback">Nama level harga wajib diisi.</div>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <input type="number" name="prices[0][jml_min]" class="form-control rounded-0" placeholder="Minimal beli" min="1" value="1" required>
+                                                    <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <input type="text" name="prices[0][harga]" class="form-control rounded-0 price-input" placeholder="Harga Anggota ..." required>
+                                                    <div class="invalid-feedback">Harga wajib diisi.</div>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <input type="text" name="prices[0][keterangan]" class="form-control rounded-0" placeholder="Keterangan tambahan (opsional)">
+                                                </td>
+                                                <td class="align-middle text-center">
+                                                    <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="removePriceRow(this)" title="Delete">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                    </div>
+                                    <div class="col-lg-6 text-right">
+                                            <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save" aria-hidden="true"></i> Simpan</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <button type="button" class="btn btn-success btn-sm rounded-0" onclick="addPriceRow()">
-                            <i class="fa fa-plus"></i> Tambah
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-striped" id="price-table">
-                            <thead>
-                                <tr>
-                                    <th>Nama</th>
-                                    <th>Jml Min</th>
-                                    <th>Harga</th>
-                                    <th>Ket</th>
-                                    <th style="width:120px;">ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody id="price-container">
-                                <?php 
-                                $itemHargaModel = new \App\Models\ItemHargaModel();
-                                $existingPrices = $itemHargaModel->getPricesByItemId($item->id);
-                                $priceIndex = 0;
-                                ?>
-                                <?php if (!empty($existingPrices)): ?>
-                                    <?php foreach ($existingPrices as $price): ?>
-                                    <tr class="price-row" data-index="<?= $priceIndex ?>">
-                                        <td class="align-middle">
-                                            <input type="text" name="prices[<?= $priceIndex ?>][nama]" value="<?= $price->nama ?>" class="form-control rounded-0" placeholder="Contoh: Ecer, Grosir, Distributor" required>
-                                            <div class="invalid-feedback">Nama level harga wajib diisi.</div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <input type="number" name="prices[<?= $priceIndex ?>][jml_min]" value="<?= $price->jml_min ?>" class="form-control rounded-0" placeholder="Minimal beli" min="1" required>
-                                            <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <input type="text" name="prices[<?= $priceIndex ?>][harga]" value="<?= (float)$price->harga ?>" class="form-control rounded-0 price-input" placeholder="Harga Anggota ..." required>
-                                            <div class="invalid-feedback">Harga wajib diisi.</div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <input type="text" name="prices[<?= $priceIndex ?>][keterangan]" value="<?= $price->keterangan ?>" class="form-control rounded-0" placeholder="Keterangan tambahan (opsional)">
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="return confirm('Hapus data ini?') && deletePriceRow(this, <?= $price->id ?>)" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <?php $priceIndex++; ?>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr class="price-row" data-index="0">
-                                        <td class="align-middle">
-                                            <input type="text" name="prices[0][nama]" class="form-control rounded-0" placeholder="Harga Anggota ..." required>
-                                            <div class="invalid-feedback">Nama level harga wajib diisi.</div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <input type="number" name="prices[0][jml_min]" class="form-control rounded-0" placeholder="Minimal beli" min="1" value="1" required>
-                                            <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <input type="text" name="prices[0][harga]" class="form-control rounded-0 price-input" placeholder="Harga Anggota ..." required>
-                                            <div class="invalid-feedback">Harga wajib diisi.</div>
-                                        </td>
-                                        <td class="align-middle">
-                                            <input type="text" name="prices[0][keterangan]" class="form-control rounded-0" placeholder="Keterangan tambahan (opsional)">
-                                        </td>
-                                        <td class="align-middle text-center">
-                                            <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="removePriceRow(this)" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <div class="row">
-                        <div class="col-lg-6">
-                        </div>
-                        <div class="col-lg-6 text-right">
-                                <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save" aria-hidden="true"></i> Simpan</button>
 
-                        </div>
+                    <!-- Tab Varian -->
+                    <div class="tab-pane fade" id="tabVarian" role="tabpanel" aria-labelledby="tab-varian">
+                        <form id="varian-form">
+                            <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-success btn-sm rounded-0" onclick="addVarianRow()">
+                                    <i class="fa fa-plus"></i> Tambah Varian
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="varian-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Kode (SKU)</th>
+                                            <th>Nama Varian</th>
+                                            <th>Harga Beli</th>
+                                            <th>Harga Jual</th>
+                                            <th>Barcode</th>
+                                            <th style="width:120px;">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="varian-tbody">
+                                        <!-- Varian rows will be added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="card-footer">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                    </div>
+                                    <div class="col-lg-6 text-right">
+                                            <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save" aria-hidden="true"></i> Simpan Varian</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
-        </form>
+        </div>
+        <!-- Pastikan Bootstrap JS dan jQuery sudah di-load agar tab berfungsi -->
+        <script>
+        $(function () {
+            $('#itemTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                // Tab event handler jika perlu
+            });
+        });
+        </script>
     </div>
 </div>
 
@@ -374,7 +432,169 @@
                 toastr.error('Terjadi kesalahan server!');
             });
         });
+
+        // Variant form submission
+        $('#varian-form').on('submit', function(e) {
+            e.preventDefault();
+            var $form = $(this);
+            var url = '<?= base_url('master/item/store_variant/' . $item->id) ?>';
+            var data = $form.serializeArray();
+            // Add CSRF token
+            data.push({name: '<?= csrf_token() ?>', value: $('input[name=<?= csrf_token() ?>]').val()});
+            $.post(url, data, function(response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    loadVariants(); // Reload variants after saving
+                } else {
+                    toastr.error(response.message || 'Gagal menyimpan varian!');
+                }
+                // Update CSRF token after each request
+                if (response.csrfHash) {
+                    $('input[name=<?= csrf_token() ?>]').val(response.csrfHash);
+                }
+            }, 'json').fail(function(xhr) {
+                toastr.error('Terjadi kesalahan server!');
+            });
+        });
+
+        // Load existing variants on page load
+        loadVariants();
     });
+
+    let varianIndex = 0;
+
+    function addVarianRow() {
+        const tbody = document.getElementById('varian-tbody');
+        const newRow = document.createElement('tr');
+        newRow.className = 'varian-row';
+        newRow.setAttribute('data-index', varianIndex);
+
+        newRow.innerHTML = `
+            <td class="align-middle">
+                <input type="text" name="variants[${varianIndex}][kode]" class="form-control rounded-0" placeholder="Kode SKU" required>
+                <div class="invalid-feedback">Kode SKU wajib diisi.</div>
+            </td>
+            <td class="align-middle">
+                <input type="text" name="variants[${varianIndex}][nama]" class="form-control rounded-0" placeholder="Nama Varian" required>
+                <div class="invalid-feedback">Nama varian wajib diisi.</div>
+            </td>
+            <td class="align-middle">
+                <input type="text" name="variants[${varianIndex}][harga_beli]" class="form-control rounded-0 varian-price-input" placeholder="Harga Beli" required>
+                <div class="invalid-feedback">Harga beli wajib diisi.</div>
+            </td>
+            <td class="align-middle">
+                <select name="variants[${varianIndex}][id_item_harga]" class="form-control rounded-0" required>
+                    <option value="">Pilih Harga Jual</option>
+                    <?php foreach ($item_harga_list ?? [] as $harga): ?>
+                    <option value="<?= $harga->id ?>"><?= $harga->nama ?> - <?= number_format($harga->harga, 0, ',', '.') ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="invalid-feedback">Harga jual wajib dipilih.</div>
+            </td>
+            <td class="align-middle">
+                <input type="text" name="variants[${varianIndex}][barcode]" class="form-control rounded-0" placeholder="Barcode (opsional)">
+            </td>
+            <td class="align-middle text-center">
+                <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="removeVarianRow(this)" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(newRow);
+
+        // Initialize autoNumeric for the new price input
+        $(newRow).find('.varian-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+
+        varianIndex++;
+    }
+
+    function removeVarianRow(button) {
+        const varianRows = document.querySelectorAll('.varian-row');
+        if (varianRows.length > 0) {
+            button.closest('.varian-row').remove();
+        } else {
+            toastr.warning('Tidak ada varian untuk dihapus!');
+        }
+    }
+
+    function deleteVarianRow(btn, varianId) {
+        if (!varianId) {
+            removeVarianRow(btn);
+            return;
+        }
+        $.post('<?= base_url('master/item/delete_variant/') ?>' + varianId, {
+            '<?= csrf_token() ?>': $('input[name=<?= csrf_token() ?>]').val()
+        }, function(response) {
+            if (response.success) {
+                toastr.success(response.message);
+                $(btn).closest('.varian-row').remove();
+            } else {
+                toastr.error(response.message || 'Gagal menghapus varian!');
+            }
+            if (response.csrfHash) {
+                $('input[name=<?= csrf_token() ?>]').val(response.csrfHash);
+            }
+        }, 'json').fail(function() {
+            toastr.error('Terjadi kesalahan server!');
+        });
+    }
+
+    function loadVariants() {
+        $.get('<?= base_url('master/item/get_variants/' . $item->id) ?>', function(response) {
+            if (response.success) {
+                const tbody = document.getElementById('varian-tbody');
+                tbody.innerHTML = '';
+                
+                response.variants.forEach(function(variant, index) {
+                    const newRow = document.createElement('tr');
+                    newRow.className = 'varian-row';
+                    newRow.setAttribute('data-index', index);
+                    newRow.setAttribute('data-id', variant.id);
+
+                    newRow.innerHTML = `
+                        <td class="align-middle">
+                            <input type="text" name="variants[${index}][kode]" class="form-control rounded-0" value="${variant.kode}" required>
+                            <div class="invalid-feedback">Kode SKU wajib diisi.</div>
+                        </td>
+                        <td class="align-middle">
+                            <input type="text" name="variants[${index}][nama]" class="form-control rounded-0" value="${variant.nama}" required>
+                            <div class="invalid-feedback">Nama varian wajib diisi.</div>
+                        </td>
+                        <td class="align-middle">
+                            <input type="text" name="variants[${index}][harga_beli]" class="form-control rounded-0 varian-price-input" value="${variant.harga_beli}" required>
+                            <div class="invalid-feedback">Harga beli wajib diisi.</div>
+                        </td>
+                        <td class="align-middle">
+                            <select name="variants[${index}][id_item_harga]" class="form-control rounded-0" required>
+                                <option value="">Pilih Harga Jual</option>
+                                <?php foreach ($item_harga_list ?? [] as $harga): ?>
+                                <option value="<?= $harga->id ?>" ${variant.id_item_harga == <?= $harga->id ?> ? 'selected' : ''}>
+                                    <?= $harga->nama ?> - <?= number_format($harga->harga, 0, ',', '.') ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="invalid-feedback">Harga jual wajib dipilih.</div>
+                        </td>
+                        <td class="align-middle">
+                            <input type="text" name="variants[${index}][barcode]" class="form-control rounded-0" value="${variant.barcode || ''}" placeholder="Barcode (opsional)">
+                        </td>
+                        <td class="align-middle text-center">
+                            <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="deleteVarianRow(this, ${variant.id})" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+
+                    tbody.appendChild(newRow);
+                });
+
+                // Initialize autoNumeric for all price inputs
+                $('.varian-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+                varianIndex = response.variants.length;
+            }
+        }, 'json');
+    }
 </script>
 
 <?= $this->endSection() ?>
