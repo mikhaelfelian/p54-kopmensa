@@ -19,6 +19,9 @@ class CreateTblMItemVarian extends Migration
      */
     public function up()
     {
+        // Drop the table if it exists before creating
+        $this->forge->dropTable('tbl_m_item_varian', true);
+
         $this->forge->addField([
             'id' => [
                 'type'           => 'INT',
@@ -32,53 +35,40 @@ class CreateTblMItemVarian extends Migration
                 'unsigned'   => true,
                 'null'       => false,
             ],
+            'id_item_harga' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => false,
+            ],
+            'created_at' => [
+                'type'    => 'TIMESTAMP',
+                'null'    => false,
+                'default' => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
+            ],
+            'updated_at' => [
+                'type'    => 'DATETIME',
+                'null'    => true,
+                'default' => null,
+            ],
             'kode' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 50,
                 'null'       => false,
+                'collate'    => 'utf8mb4_general_ci',
             ],
             'nama' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => false,
+                'collate'    => 'utf8mb4_general_ci',
             ],
-            'atribut1' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
+            'harga_beli' => [
+                'type'       => 'FLOAT',
                 'null'       => true,
-                'default'    => null,
+                'default'    => 0,
             ],
-            'nilai1' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-                'default'    => null,
-            ],
-            'atribut2' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-                'default'    => null,
-            ],
-            'nilai2' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-                'default'    => null,
-            ],
-            'atribut3' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-                'default'    => null,
-            ],
-            'nilai3' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 100,
-                'null'       => true,
-                'default'    => null,
-            ],
-            'harga' => [
+            'harga_jual' => [
                 'type'       => 'FLOAT',
                 'null'       => true,
                 'default'    => 0,
@@ -88,33 +78,34 @@ class CreateTblMItemVarian extends Migration
                 'constraint' => 100,
                 'null'       => true,
                 'default'    => null,
+                'collate'    => 'utf8mb4_general_ci',
             ],
             'foto' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
                 'default'    => null,
+                'collate'    => 'utf8mb4_general_ci',
             ],
             'status' => [
                 'type'       => 'ENUM',
                 'constraint' => ['0', '1'],
                 'null'       => true,
                 'default'    => '1',
-            ],
-            'created_at' => [
-                'type'    => 'TIMESTAMP',
-                'null'    => false,
-                'default' => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
-            ],
-            'updated_at' => [
-                'type' => 'DATETIME',
-                'null' => true,
+                'collate'    => 'utf8mb4_general_ci',
             ],
         ]);
 
-        $this->forge->addKey('id', true);
-        $this->forge->addForeignKey('id_item', 'tbl_m_item', 'id', 'CASCADE', 'CASCADE');
-        $this->forge->createTable('tbl_m_item_varian');
+        // Use unique key names to avoid "Duplicate key name" error
+        $this->forge->addKey('id', true, true, 'PRIMARY'); // Primary key
+        $this->forge->addKey('id_item', false, false, 'idx_id_item');
+        $this->forge->addKey('id_item_harga', false, false, 'idx_id_item_harga');
+        $this->forge->addForeignKey('id_item', 'tbl_m_item', 'id', 'CASCADE', 'CASCADE', 'tbl_m_item_varian_id_item_foreign');
+        $this->forge->addForeignKey('id_item_harga', 'tbl_m_item_harga', 'id', 'CASCADE', 'CASCADE', 'tbl_m_item_varian_id_item_harga_foreign');
+        $this->forge->createTable('tbl_m_item_varian', false, [
+            'ENGINE' => 'InnoDB',
+            'COLLATE' => 'utf8mb4_general_ci',
+        ]);
     }
 
     public function down()
