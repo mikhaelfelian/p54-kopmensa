@@ -154,6 +154,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('item/delete_price/(:num)', 'Item::delete_price/$1');
     $routes->post('item/bulk_delete', 'Item::bulk_delete');
     $routes->get('item/export_excel', 'Item::export_to_excel');
+    $routes->post('item/store_variant/(:num)', 'Item::store_variant/$1');
+    $routes->get('item/get_variants/(:num)', 'Item::get_variants/$1');
+    $routes->post('item/delete_variant/(:num)', 'Item::delete_variant/$1');
 });
 
 // User Module Routes
