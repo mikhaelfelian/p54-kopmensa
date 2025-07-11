@@ -23,6 +23,7 @@ class Item extends BaseController
     protected $itemModel;
     protected $kategoriModel;
     protected $merkModel;
+    protected $itemHargaModel;
     protected $pengaturan;
     protected $ionAuth;
     protected $validation;
@@ -37,6 +38,7 @@ class Item extends BaseController
         $this->kategoriModel = new KategoriModel();
         $this->merkModel     = new MerkModel();
         $this->satuanModel   = new SatuanModel();
+        $this->itemHargaModel = new \App\Models\ItemHargaModel();
         $this->validation    = \Config\Services::validation();
         $this->db            = \Config\Database::connect();
     }
@@ -312,6 +314,7 @@ class Item extends BaseController
             'kategori'      => $this->kategoriModel->findAll(),
             'merk'          => $this->merkModel->findAll(),
             'satuan'        => $this->satuanModel->findAll(),
+            'item_harga_list' => $this->itemHargaModel->getPricesByItemId($id),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -761,5 +764,117 @@ class Item extends BaseController
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $writer->save('php://output');
         exit;
+    }
+
+    public function store_variant($item_id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        $variants = $this->request->getVar('variants');
+        
+        if (empty($variants) || !is_array($variants)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Tidak ada varian yang dikirim']);
+        }
+
+        try {
+            $this->db->transStart();
+            
+            $itemVarianModel = new \App\Models\ItemVarianModel();
+            
+            // Delete existing variants for this item
+            $itemVarianModel->where('id_item', $item_id)->delete();
+            
+            // Insert new variants
+            foreach ($variants as $variant) {
+                if (!empty($variant['nama']) && !empty($variant['kode'])) {
+                    $data = [
+                        'id_item' => $item_id,
+                        'id_item_harga' => $variant['id_item_harga'] ?? null,
+                        'kode' => $variant['kode'],
+                        'nama' => $variant['nama'],
+                        'harga_beli' => format_angka_db($variant['harga_beli'] ?? 0),
+                        'harga_jual' => 0, // Will be populated from item_harga
+                        'barcode' => $variant['barcode'] ?? null,
+                        'status' => '1'
+                    ];
+                    
+                    $itemVarianModel->insert($data);
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menyimpan varian']);
+            }
+
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => 'Varian berhasil disimpan',
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal menyimpan varian'
+            ]);
+        }
+    }
+
+    public function get_variants($item_id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            $itemVarianModel = new \App\Models\ItemVarianModel();
+            $variants = $itemVarianModel->getVariantsWithPrice($item_id);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'variants' => $variants
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengambil data varian'
+            ]);
+        }
+    }
+
+    public function delete_variant($variant_id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            $itemVarianModel = new \App\Models\ItemVarianModel();
+            $deleted = $itemVarianModel->delete($variant_id);
+
+            if ($deleted) {
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'message' => 'Varian berhasil dihapus',
+                    'csrfHash' => csrf_hash()
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'Gagal menghapus varian'
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal menghapus varian'
+            ]);
+        }
     }
 } 
