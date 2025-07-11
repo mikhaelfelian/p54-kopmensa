@@ -20,8 +20,8 @@ class ItemVarianModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_item', 'kode', 'nama', 'atribut1', 'nilai1', 'atribut2', 'nilai2', 
-        'atribut3', 'nilai3', 'harga', 'barcode', 'foto', 'status'
+        'id_item', 'id_item_harga', 'kode', 'nama', 'harga_beli', 'harga_jual', 
+        'barcode', 'foto', 'status'
     ];
 
     // Dates
@@ -33,8 +33,13 @@ class ItemVarianModel extends Model
     // Validation
     protected $validationRules      = [
         'id_item' => 'required|integer',
+        'id_item_harga' => 'required|integer',
         'kode'    => 'required|max_length[50]',
         'nama'    => 'required|max_length[255]',
+        'harga_beli' => 'permit_empty|decimal',
+        'harga_jual' => 'permit_empty|decimal',
+        'barcode' => 'permit_empty|max_length[100]',
+        'status' => 'permit_empty|in_list[0,1]'
     ];
     protected $validationMessages   = [];
     protected $skipValidation       = false;
@@ -87,26 +92,21 @@ class ItemVarianModel extends Model
     }
 
     /**
-     * Get variant attributes as string
+     * Get variants with price information
      * 
-     * @param object $varian Variant object
-     * @return string
+     * @param int $itemId Item ID
+     * @return array
      */
-    public function getAtributString($varian)
+    public function getVariantsWithPrice($itemId)
     {
-        $atributs = [];
+        $builder = $this->builder();
+        $builder->select('tbl_m_item_varian.*, tbl_m_item_harga.nama as harga_nama, tbl_m_item_harga.harga as harga_jual_value');
+        $builder->join('tbl_m_item_harga', 'tbl_m_item_harga.id = tbl_m_item_varian.id_item_harga', 'left');
+        $builder->where('tbl_m_item_varian.id_item', $itemId);
+        $builder->where('tbl_m_item_varian.status', '1');
+        $builder->orderBy('tbl_m_item_varian.nama', 'ASC');
         
-        if (!empty($varian->atribut1) && !empty($varian->nilai1)) {
-            $atributs[] = $varian->atribut1 . ': ' . $varian->nilai1;
-        }
-        if (!empty($varian->atribut2) && !empty($varian->nilai2)) {
-            $atributs[] = $varian->atribut2 . ': ' . $varian->nilai2;
-        }
-        if (!empty($varian->atribut3) && !empty($varian->nilai3)) {
-            $atributs[] = $varian->atribut3 . ': ' . $varian->nilai3;
-        }
-        
-        return implode(', ', $atributs);
+        return $builder->get()->getResultArray();
     }
 
     /**
