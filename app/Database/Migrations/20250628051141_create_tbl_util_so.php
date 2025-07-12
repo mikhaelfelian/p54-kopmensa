@@ -43,6 +43,11 @@ class CreateTblUtilSo extends Migration
                 'null'       => true,
                 'default'    => null,
             ],
+            'tgl_masuk' => [
+                'type' => 'DATE',
+                'null' => true,
+                'default' => null,
+            ],
             'created_at' => [
                 'type' => 'DATETIME',
                 'null' => true,
