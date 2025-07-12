@@ -234,6 +234,14 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="<?= base_url('gudang/penerimaan') ?>"
+                                class="nav-link <?= isMenuActive('gudang/penerimaan') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-truck-loading nav-icon"></i>
+                                <p>Penerimaan</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="<?= base_url('gudang/stok') ?>"
                                 class="nav-link <?= isMenuActive('gudang/stok') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>

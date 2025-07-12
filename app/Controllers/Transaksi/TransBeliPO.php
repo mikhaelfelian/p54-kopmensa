@@ -412,7 +412,7 @@ class TransBeliPO extends BaseController
             }
             $this->db->transCommit();
 
-            return redirect()->back()
+            return redirect()->to(base_url("transaksi/po/edit/$po_id"))
                            ->with('success', 'Item berhasil ditambahkan');
         } catch (\Exception $e) {
             // Log error
@@ -654,6 +654,130 @@ class TransBeliPO extends BaseController
         $newNumber = $lastNumber + 1;
         
         return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Approve or reject PO
+     * 
+     * @param int $id PO ID
+     * @param string $action 'approve' or 'reject'
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function approve($id, $action = 'approve')
+    {
+        try {
+            // Get PO data
+            $po = $this->transBeliPOModel->find($id);
+            
+            if (!$po) {
+                throw new \Exception('PO tidak ditemukan');
+            }
+
+            // Check if PO is in processed status
+            if ($po->status != '4') {
+                throw new \Exception('Hanya PO yang sudah diproses yang dapat diapprove/reject');
+            }
+
+            $newStatus = ($action === 'approve') ? '1' : '3'; // 1 = Approved, 3 = Rejected
+            $statusText = ($action === 'approve') ? 'disetujui' : 'ditolak';
+
+            // Update PO status
+            $this->transBeliPOModel->update($id, [
+                'status' => $newStatus,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            return redirect()->to('transaksi/po')
+                           ->with('success', "PO berhasil {$statusText}");
+                           
+        } catch (\Exception $e) {
+            return redirect()->back()
+                           ->with('error', 'Gagal memproses PO: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get PO statistics for dashboard
+     * 
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function getStats()
+    {
+        try {
+            $stats = [
+                'total_po' => $this->transBeliPOModel->countAll(),
+                'draft_po' => $this->transBeliPOModel->where('status', '0')->countAllResults(),
+                'processed_po' => $this->transBeliPOModel->where('status', '4')->countAllResults(),
+                'approved_po' => $this->transBeliPOModel->where('status', '1')->countAllResults(),
+                'rejected_po' => $this->transBeliPOModel->where('status', '3')->countAllResults(),
+                'invoice_created' => $this->transBeliPOModel->where('status', '2')->countAllResults(),
+                'this_month' => $this->transBeliPOModel->where('MONTH(tgl_masuk)', date('m'))
+                                                      ->where('YEAR(tgl_masuk)', date('Y'))
+                                                      ->countAllResults(),
+                'total_value' => $this->transBeliPOModel->selectSum('total')
+                                                       ->where('status !=', '0')
+                                                       ->get()
+                                                       ->getRow()
+                                                       ->total ?? 0
+            ];
+
+            return $this->response->setJSON($stats);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'error' => true,
+                'message' => $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Bulk delete POs
+     * 
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function bulkDelete()
+    {
+        try {
+            $poIds = $this->request->getPost('po_ids');
+            
+            if (!$poIds || !is_array($poIds)) {
+                throw new \Exception('Tidak ada PO yang dipilih');
+            }
+
+            $deletedCount = 0;
+            $this->db->transStart();
+
+            foreach ($poIds as $poId) {
+                $po = $this->transBeliPOModel->find($poId);
+                
+                if ($po && $po->status == '0') { // Only delete draft POs
+                    // Delete PO details first
+                    $this->transBeliPODetModel->where('id_pembelian', $poId)->delete();
+                    
+                    // Delete PO
+                    $this->transBeliPOModel->delete($poId);
+                    $deletedCount++;
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Gagal menghapus PO');
+            }
+
+            return redirect()->to('transaksi/po')
+                           ->with('success', "Berhasil menghapus {$deletedCount} PO");
+
+        } catch (\Exception $e) {
+            if ($this->db->transStatus() === false) {
+                $this->db->transRollback();
+            }
+            
+            return redirect()->back()
+                           ->with('error', 'Gagal menghapus PO: ' . $e->getMessage());
+        }
     }
 
     /**

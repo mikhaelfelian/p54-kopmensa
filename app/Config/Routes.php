@@ -180,6 +180,10 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('opname', 'Opname::index');
     $routes->get('opname/create', 'Opname::create');
     $routes->post('opname/store', 'Opname::store');
+    
+    // Penerimaan / Receiving
+    $routes->get('penerimaan', 'TransBeli::index');
+    $routes->get('terima/(:num)', 'TransBeli::terima/$1');
 });
 
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
@@ -223,7 +227,12 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('po/print/(:num)', 'TransBeliPO::print/$1');
     $routes->post('po/cart_add/(:num)', 'TransBeliPO::cart_add/$1');
     $routes->get('po/cart_delete/(:num)', 'TransBeliPO::cart_delete/$1');
-    $routes->get('po/proses/(:num)', 'TransBeliPO::proses/$1');
+    $routes->post('po/proses/(:num)', 'TransBeliPO::proses/$1');
+    $routes->get('po/delete/(:num)', 'TransBeliPO::delete/$1');
+    $routes->get('po/buat-faktur/(:num)', 'TransBeliPO::buatFaktur/$1');
+    $routes->get('po/approve/(:num)/(:any)', 'TransBeliPO::approve/$1/$2');
+    $routes->get('po/stats', 'TransBeliPO::getStats');
+    $routes->post('po/bulk-delete', 'TransBeliPO::bulkDelete');
 });
 
 // Purchase Transaction Routes
@@ -231,8 +240,11 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('beli', 'TransBeli::index');
     $routes->get('beli/create', 'TransBeli::create');
     $routes->post('beli/store', 'TransBeli::store');
+    $routes->get('beli/detail/(:num)', 'TransBeli::detail/$1');
     $routes->get('beli/edit/(:num)', 'TransBeli::edit/$1');
     $routes->post('beli/update/(:num)', 'TransBeli::update/$1');
+    $routes->get('beli/get-items/(:num)', 'TransBeli::getItems/$1');
+    $routes->get('beli/proses/(:num)', 'TransBeli::proses/$1');
 });
 
 // Public API routes

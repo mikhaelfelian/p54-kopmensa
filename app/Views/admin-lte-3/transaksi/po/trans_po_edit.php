@@ -250,7 +250,7 @@
                     <?= form_open('transaksi/po/proses/' . $po->id, ['id' => 'form-proses']) ?>
                     <button type="submit" class="btn btn-success float-right rounded-0" id="btn-proses"
                         onclick="return confirm('Apakah anda yakin ingin memproses PO ini?')">
-                        <i class="fas fa-check"></i> Proses &raquo;
+                        <i class="fas fa-check"></i> Prosesa &raquo;
                     </button>
                     <?= form_close() ?>
                 <?php endif; ?>
