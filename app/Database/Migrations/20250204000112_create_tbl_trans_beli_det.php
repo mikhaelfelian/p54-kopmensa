@@ -162,6 +162,23 @@ class CreateTblTransBeliDet extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'null'       => true
+            ],
+            'id_gudang' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'null'       => true,
+                'comment'    => 'ID gudang untuk penerimaan barang'
+            ],
+            'status_terima' => [
+                'type'       => 'ENUM',
+                'constraint' => ['1','2','3'],
+                'null'       => true,
+                'comment'    => '1=Diterima, 2=Ditolak, 3=Sebagian'
+            ],
+            'keterangan_terima' => [
+                'type'       => 'TEXT',
+                'null'       => true,
+                'comment'    => 'Keterangan saat penerimaan'
             ]
         ]);
 

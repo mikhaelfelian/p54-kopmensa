@@ -57,7 +57,11 @@ class TransBeliModel extends Model
         'status_retur',
         'status_penerimaan',
         'metode_bayar',
-        'status_hps'
+        'status_hps',
+        'status_terima',
+        'tgl_terima',
+        'catatan_terima',
+        'id_user_terima'
     ];
 
     // Dates

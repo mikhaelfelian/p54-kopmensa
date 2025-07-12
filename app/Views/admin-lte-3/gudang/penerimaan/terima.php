@@ -95,7 +95,7 @@
                                 <th width="10%" class="text-center">Ordered</th>
                                 <th width="10%" class="text-center">Received</th>
                                 <th width="10%" class="text-center">Satuan</th>
-                                <th width="10%" class="text-center">Status</th>
+                                <th width="15%" class="text-center">Gudang</th>
                                 <th width="15%">Keterangan</th>
                             </tr>
                         </thead>
@@ -125,10 +125,11 @@
                                         </td>
                                         <td class="text-center"><?= esc($item->satuan) ?></td>
                                         <td class="text-center">
-                                            <select name="status_item[<?= $item->id ?>]" class="form-control form-control-sm">
-                                                <option value="1">Diterima</option>
-                                                <option value="2">Ditolak</option>
-                                                <option value="3">Sebagian</option>
+                                            <select name="id_gudang[<?= $item->id ?>]" class="form-control form-control-sm" required>
+                                                <option value="">Pilih Gudang</option>
+                                                <?php foreach ($gudang as $g): ?>
+                                                    <option value="<?= $g->id ?>"><?= esc($g->gudang) ?></option>
+                                                <?php endforeach ?>
                                             </select>
                                         </td>
                                         <td>
@@ -141,7 +142,7 @@
                                 <?php endforeach ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="text-center">Tidak ada item</td>
+                                    <td colspan="9" class="text-center">Tidak ada item</td>
                                 </tr>
                             <?php endif ?>
                         </tbody>
@@ -180,30 +181,21 @@
 <script>
 $(document).ready(function() {
     // Auto-calculate received quantity based on status
-    $('select[name^="status_item"]').on('change', function() {
-        const row = $(this).closest('tr');
-        const receivedInput = row.find('input[name^="jml_diterima"]');
-        const orderedQty = parseFloat(row.find('td:eq(3) strong').text().replace(',', ''));
-        
-        switch ($(this).val()) {
-            case '1': // Diterima
-                receivedInput.val(orderedQty);
-                receivedInput.prop('readonly', false);
-                break;
-            case '2': // Ditolak
-                receivedInput.val(0);
-                receivedInput.prop('readonly', true);
-                break;
-            case '3': // Sebagian
-                receivedInput.val(orderedQty * 0.5);
-                receivedInput.prop('readonly', false);
-                break;
-        }
-    });
+    // (status dropdown removed, so this part can be skipped)
 
     // Form validation
     $('#form-terima').on('submit', function(e) {
         let isValid = true;
+        let errorMessages = [];
+        
+        // Check if all warehouses are selected
+        $('select[name^="id_gudang"]').each(function() {
+            if (!$(this).val()) {
+                errorMessages.push('Gudang harus dipilih untuk semua item');
+                isValid = false;
+                return false;
+            }
+        });
         
         // Check if all received quantities are valid
         $('input[name^="jml_diterima"]').each(function() {
@@ -211,13 +203,13 @@ $(document).ready(function() {
             const ordered = parseFloat($(this).closest('tr').find('td:eq(3) strong').text().replace(',', '')) || 0;
             
             if (received < 0) {
-                alert('Jumlah diterima tidak boleh negatif');
+                errorMessages.push('Jumlah diterima tidak boleh negatif');
                 isValid = false;
                 return false;
             }
             
             if (received > ordered * 1.1) {
-                alert('Jumlah diterima tidak boleh melebihi 110% dari jumlah order');
+                errorMessages.push('Jumlah diterima tidak boleh melebihi 110% dari jumlah order');
                 isValid = false;
                 return false;
             }
@@ -225,25 +217,16 @@ $(document).ready(function() {
         
         if (!isValid) {
             e.preventDefault();
+            toastr.error(errorMessages.join('<br>'), 'Validasi Gagal');
             return false;
         }
         
-        // Show confirmation dialog
-        e.preventDefault();
-        Swal.fire({
-            title: 'Terima Barang?',
-            text: 'Apakah anda yakin ingin menerima barang sesuai data di atas?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#28a745',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Terima!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $('#form-terima')[0].submit();
-            }
-        });
+        // Confirmation with JS confirm
+        if (!confirm('Apakah anda yakin ingin menerima barang sesuai data di atas?')) {
+            e.preventDefault();
+            return false;
+        }
+        // else, allow submit
     });
 });
 </script>

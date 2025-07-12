@@ -47,7 +47,10 @@ class TransBeliDetModel extends Model
         'subtotal',
         'satuan_retur',
         'keterangan',
-        'status_item'
+        'status_item',
+        'id_gudang',
+        'status_terima',
+        'keterangan_terima'
     ];
 
     // Dates

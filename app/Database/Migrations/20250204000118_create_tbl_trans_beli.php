@@ -230,6 +230,29 @@ class CreateTblTransBeli extends Migration
                 'null'       => true,
                 'default'    => '0',
                 'collate'    => 'latin1_swedish_ci'
+            ],
+            'status_terima' => [
+                'type'       => 'ENUM',
+                'constraint' => ['0','1'],
+                'null'       => true,
+                'default'    => '0',
+                'comment'    => '0=Belum diterima, 1=Sudah diterima'
+            ],
+            'tgl_terima' => [
+                'type' => 'DATETIME',
+                'null' => true,
+                'comment' => 'Tanggal penerimaan barang'
+            ],
+            'catatan_terima' => [
+                'type' => 'TEXT',
+                'null' => true,
+                'comment' => 'Catatan saat penerimaan barang'
+            ],
+            'id_user_terima' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'null'       => true,
+                'comment'    => 'ID user yang menerima barang'
             ]
         ]);
 

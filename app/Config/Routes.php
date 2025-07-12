@@ -184,6 +184,7 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     // Penerimaan / Receiving
     $routes->get('penerimaan', 'TransBeli::index');
     $routes->get('terima/(:num)', 'TransBeli::terima/$1');
+    $routes->post('terima/save/(:num)', 'TransBeli::save/$1');
 });
 
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {

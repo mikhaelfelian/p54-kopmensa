@@ -13,18 +13,21 @@ use App\Controllers\BaseController;
 use App\Models\TransBeliModel;
 use App\Models\TransBeliDetModel;
 use App\Models\SupplierModel;
+use App\Models\GudangModel;
 
 class TransBeli extends BaseController
 {
     protected $transBeliModel;
     protected $transBeliDetModel;
     protected $supplierModel;
+    protected $gudangModel;
 
     public function __construct()
     {
         $this->transBeliModel = new TransBeliModel();
         $this->transBeliDetModel = new TransBeliDetModel();
         $this->supplierModel = new SupplierModel();
+        $this->gudangModel = new GudangModel();
     }
 
     /**
@@ -54,7 +57,7 @@ class TransBeli extends BaseController
             'perPage'       => $perPage,
         ];
 
-        return $this->view($this->theme->getThemePath() . '/gudang/trans_beli/index', $data);
+        return $this->view($this->theme->getThemePath() . '/gudang/penerimaan/index', $data);
     }
 
     /**
@@ -93,19 +96,120 @@ class TransBeli extends BaseController
                 ->where('id_pembelian', $id)
                 ->findAll();
 
+            // Get active warehouses
+            $gudang = $this->gudangModel->where('status', '1')->findAll();
+
             $data = [
                 'title'         => 'Terima Barang - ' . $transaksi->no_nota,
                 'Pengaturan'    => $this->pengaturan,
                 'user'          => $this->ionAuth->user()->row(),
                 'transaksi'     => $transaksi,
-                'items'         => $items
+                'items'         => $items,
+                'gudang'        => $gudang
             ];
 
-            return $this->view($this->theme->getThemePath() . '/gudang/trans_beli/terima', $data);
+            return $this->view($this->theme->getThemePath() . '/gudang/penerimaan/terima', $data);
 
         } catch (\Exception $e) {
             return redirect()->to('gudang/penerimaan')
                             ->with('error', 'Gagal memuat data penerimaan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Save receiving data and update stock
+     * 
+     * @param int $id Transaction ID
+     * @return mixed
+     */
+    public function save($id)
+    {
+        try {
+            // Validate transaction exists and is ready for receiving
+            $transaksi = $this->transBeliModel->where('id', $id)
+                                            ->where('status_nota', '1')
+                                            ->first();
+
+            if (!$transaksi) {
+                throw new \Exception('Transaksi tidak ditemukan atau tidak siap untuk diterima');
+            }
+
+            // Get form data
+            $jmlDiterima = $this->request->getPost('jml_diterima');
+            $idGudang = $this->request->getPost('id_gudang');
+            $statusItem = $this->request->getPost('status_item');
+            $keterangan = $this->request->getPost('keterangan');
+            $catatanUmum = $this->request->getPost('catatan_umum');
+
+            if (!$jmlDiterima || !$idGudang) {
+                throw new \Exception('Data penerimaan tidak lengkap');
+            }
+
+            // Start database transaction
+            $this->db = \Config\Database::connect();
+            $this->db->transStart();
+
+            // Get transaction items
+            $items = $this->transBeliDetModel->where('id_pembelian', $id)->findAll();
+            $itemStokModel = new \App\Models\ItemStokModel();
+
+            foreach ($items as $item) {
+                $itemId = $item->id;
+                
+                if (isset($jmlDiterima[$itemId]) && isset($idGudang[$itemId])) {
+                    $receivedQty = floatval($jmlDiterima[$itemId]);
+                    $gudangId = intval($idGudang[$itemId]);
+                    $itemStatus = isset($statusItem[$itemId]) ? $statusItem[$itemId] : '1';
+                    $itemKeterangan = isset($keterangan[$itemId]) ? $keterangan[$itemId] : '';
+
+                    // Validate warehouse exists
+                    $gudang = $this->gudangModel->find($gudangId);
+                    if (!$gudang) {
+                        throw new \Exception('Gudang tidak ditemukan');
+                    }
+
+                    // Update stock if item is received (status = 1 or 3)
+                    if (in_array($itemStatus, ['1', '3']) && $receivedQty > 0) {
+                        // Get current stock
+                        $currentStock = $itemStokModel->getStockByItemAndGudang($item->id_item, $gudangId);
+                        $newStock = $currentStock ? (floatval($currentStock->jml) + $receivedQty) : $receivedQty;
+
+                        // Update or create stock record
+                        $itemStokModel->updateStock($item->id_item, $gudangId, $newStock, $this->ionAuth->user()->row()->id);
+                    }
+
+                    // Update transaction detail with receiving info
+                    $this->transBeliDetModel->update($itemId, [
+                        'jml_diterima' => $receivedQty,
+                        'id_gudang' => $gudangId,
+                        'status_terima' => $itemStatus,
+                        'keterangan_terima' => $itemKeterangan,
+                        'tgl_terima' => date('Y-m-d H:i:s')
+                    ]);
+                }
+            }
+
+            // Update transaction status to received
+            $this->transBeliModel->update($id, [
+                'status_terima' => '1',
+                'tgl_terima' => date('Y-m-d H:i:s'),
+                'catatan_terima' => $catatanUmum,
+                'id_user_terima' => $this->ionAuth->user()->row()->id
+            ]);
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Gagal menyimpan data penerimaan');
+            }
+
+            return redirect()->to('gudang/penerimaan')
+                            ->with('success', 'Barang berhasil diterima dan stok telah diperbarui');
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                            ->with('error', 'Gagal menyimpan penerimaan: ' . $e->getMessage())
+                            ->withInput();
         }
     }
 } 
