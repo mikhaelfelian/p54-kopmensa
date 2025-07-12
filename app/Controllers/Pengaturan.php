@@ -41,6 +41,14 @@ class Pengaturan extends BaseController
         // Validate input
         if (!$this->validate([
             'csrf_test_name' => 'required',
+            'judul' => [
+                'rules'  => 'required|min_length[3]|max_length[100]',
+                'errors' => [
+                    'required'   => 'Judul Perusahaan harus diisi',
+                    'min_length' => 'Judul Perusahaan minimal 3 karakter',
+                    'max_length' => 'Judul Perusahaan maksimal 100 karakter'
+                ]
+            ],
             'judul_app' => [
                 'rules'  => 'required|min_length[3]|max_length[100]',
                 'errors' => [
@@ -49,7 +57,22 @@ class Pengaturan extends BaseController
                     'max_length' => 'Judul Aplikasi maksimal 100 karakter'
                 ]
             ],
-            'deskripsi_app' => [
+            'alamat' => [
+                'rules'  => 'required|min_length[5]',
+                'errors' => [
+                    'required'   => 'Alamat Perusahaan harus diisi',
+                    'min_length' => 'Alamat Perusahaan minimal 5 karakter'
+                ]
+            ],
+            'kota' => [
+                'rules'  => 'required|min_length[2]|max_length[100]',
+                'errors' => [
+                    'required'   => 'Kota harus diisi',
+                    'min_length' => 'Kota minimal 2 karakter',
+                    'max_length' => 'Kota maksimal 100 karakter'
+                ]
+            ],
+            'deskripsi' => [
                 'rules'  => 'required|min_length[10]',
                 'errors' => [
                     'required'   => 'Deskripsi Aplikasi harus diisi',
@@ -84,8 +107,13 @@ class Pengaturan extends BaseController
         $favicon = $this->request->getFile('favicon');
 
         $data = [
+            'judul' => $this->request->getPost('judul'),
             'judul_app' => $this->request->getPost('judul_app'),
-            'deskripsi_app' => $this->request->getPost('deskripsi_app')
+            'alamat' => $this->request->getPost('alamat'),
+            'kota' => $this->request->getPost('kota'),
+            'apt_apa' => $this->request->getPost('apt_apa'),
+            'apt_sipa' => $this->request->getPost('apt_sipa'),
+            'deskripsi' => $this->request->getPost('deskripsi')
         ];
 
         // Process logo header upload
