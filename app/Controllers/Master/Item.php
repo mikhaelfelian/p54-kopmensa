@@ -10,6 +10,7 @@ use App\Models\OutletModel;
 use App\Models\KategoriModel;
 use App\Models\MerkModel;
 use App\Models\SatuanModel;
+use App\Models\SupplierModel;
 
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
@@ -23,6 +24,7 @@ class Item extends BaseController
     protected $itemModel;
     protected $kategoriModel;
     protected $merkModel;
+    protected $supplierModel;
     protected $itemHargaModel;
     protected $pengaturan;
     protected $ionAuth;
@@ -37,6 +39,7 @@ class Item extends BaseController
         $this->outletModel   = new OutletModel();
         $this->kategoriModel = new KategoriModel();
         $this->merkModel     = new MerkModel();
+        $this->supplierModel = new SupplierModel();
         $this->satuanModel   = new SatuanModel();
         $this->itemHargaModel = new \App\Models\ItemHargaModel();
         $this->validation    = \Config\Services::validation();
@@ -143,6 +146,7 @@ class Item extends BaseController
             'validation'    => $this->validation,
             'kategori'      => $this->kategoriModel->findAll(),
             'merk'          => $this->merkModel->findAll(),
+            'supplier'      => $this->supplierModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -161,6 +165,7 @@ class Item extends BaseController
         $deskripsi  = $this->request->getVar('deskripsi');
         $id_kategori = $this->request->getVar('id_kategori');
         $id_merk    = $this->request->getVar('id_merk');
+        $id_supplier = $this->request->getVar('id_supplier');
         $jml_min    = $this->request->getVar('jml_min') ?? 0;
         $harga_beli = $this->request->getVar('harga_beli') ?? 0;
         $harga_jual = $this->request->getVar('harga_jual') ?? 0;
@@ -195,12 +200,14 @@ class Item extends BaseController
         
         try {
             $data = [
+                'id_supplier' => $id_supplier,
                 'kode'        => $this->itemModel->generateKode($id_kategori, $tipe),
                 'barcode'     => $barcode,
                 'item'        => $item,
                 'deskripsi'   => $deskripsi,
                 'id_kategori' => $id_kategori,
                 'id_merk'     => $id_merk,
+                'id_supplier' => $id_supplier,
                 'jml_min'     => $jml_min,
                 'harga_beli'  => format_angka_db($harga_beli),
                 'harga_jual'  => format_angka_db($harga_jual),
@@ -313,6 +320,7 @@ class Item extends BaseController
             'item'          => $this->itemModel->find($id),
             'kategori'      => $this->kategoriModel->findAll(),
             'merk'          => $this->merkModel->findAll(),
+            'supplier'      => $this->supplierModel->findAll(),
             'satuan'        => $this->satuanModel->findAll(),
             'item_harga_list' => $this->itemHargaModel->getPricesByItemId($id),
             'breadcrumbs'   => '
@@ -341,6 +349,7 @@ class Item extends BaseController
             'item'          => $this->itemModel->find($id),
             'kategori'      => $this->kategoriModel->findAll(),
             'merk'          => $this->merkModel->findAll(),
+            'supplier'      => $this->supplierModel->findAll(),
             'satuan'        => $this->satuanModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
@@ -362,6 +371,7 @@ class Item extends BaseController
     {
         $id_kategori    = $this->request->getVar('id_kategori') ?? 0;
         $id_merk        = $this->request->getVar('id_merk') ?? 0;
+        $id_supplier    = $this->request->getVar('id_supplier') ?? 0;
         $id_satuan      = $this->request->getVar('satuan') ?? 0;
         $barcode        = $this->request->getVar('barcode');
         $item           = $this->request->getVar('item');
@@ -401,6 +411,7 @@ class Item extends BaseController
             $data = [
                 'id_kategori' => $id_kategori,
                 'id_merk'     => $id_merk,
+                'id_supplier' => $id_supplier,
                 'id_satuan'   => $id_satuan,
                 'barcode'     => $barcode,
                 'item'        => $item,
@@ -421,7 +432,7 @@ class Item extends BaseController
                 ->with('success', 'Data item berhasil diubah');
 
         } catch (\Exception $e) {            
-            return redirect()->back()
+            return redirect()->to(base_url('master/item/edit/' . $id))
                 ->withInput()
                 ->with('error', ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengubah data item');
         }
