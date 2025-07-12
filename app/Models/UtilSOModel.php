@@ -23,6 +23,7 @@ class UtilSOModel extends Model
         'id_gudang',
         'id_outlet',
         'id_user',
+        'tgl_masuk',
         'created_at',
         'updated_at',
         'keterangan',

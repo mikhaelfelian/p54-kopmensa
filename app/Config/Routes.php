@@ -180,6 +180,12 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('opname', 'Opname::index');
     $routes->get('opname/create', 'Opname::create');
     $routes->post('opname/store', 'Opname::store');
+    $routes->get('opname/detail/(:num)', 'Opname::detail/$1');
+    $routes->get('opname/edit/(:num)', 'Opname::edit/$1');
+    $routes->post('opname/update/(:num)', 'Opname::update/$1');
+    $routes->get('opname/input/(:num)', 'Opname::input/$1');
+    $routes->post('opname/process/(:num)', 'Opname::process/$1');
+    $routes->get('opname/delete/(:num)', 'Opname::delete/$1');
     
     // Penerimaan / Receiving
     $routes->get('penerimaan', 'TransBeli::index');
@@ -257,6 +263,7 @@ $routes->group('publik', function ($routes) {
 // untuk test
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
+$routes->get('test/check-table', 'TestController::checkTable');
 
 
 

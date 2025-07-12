@@ -85,6 +85,20 @@
                                     </td>
                                     <td style="width: 350px;" class="text-left">
                                         <?= $row->keterangan ?? '-' ?>
+                                        <br>
+                                        <small class="text-muted">
+                                            <?php if ($row->status == '0'): ?>
+                                                <span class="badge badge-warning">Draft</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-success">Selesai</span>
+                                            <?php endif ?>
+                                            
+                                            <?php if ($row->reset == '0'): ?>
+                                                <span class="badge badge-info">Belum Diproses</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-success">Sudah Diproses</span>
+                                            <?php endif ?>
+                                        </small>
                                     </td>
                                     <td style="width: 100px;" class="text-left">
                                         <div class="btn-group">
@@ -92,15 +106,24 @@
                                                 class="btn btn-info btn-sm rounded-0">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="<?= base_url("gudang/opname/edit/{$row->id}") ?>"
-                                                class="btn btn-warning btn-sm rounded-0">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="<?= base_url("gudang/opname/input/{$row->id}") ?>"
-                                                class="btn btn-success btn-sm rounded-0" data-toggle="tooltip"
-                                                title="Input Item">
-                                                <i class="fas fa-plus"></i>
-                                            </a>
+                                            <?php if ($row->status == '0'): ?>
+                                                <a href="<?= base_url("gudang/opname/edit/{$row->id}") ?>"
+                                                    class="btn btn-warning btn-sm rounded-0">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="<?= base_url("gudang/opname/input/{$row->id}") ?>"
+                                                    class="btn btn-success btn-sm rounded-0" data-toggle="tooltip"
+                                                    title="Input Item">
+                                                    <i class="fas fa-plus"></i>
+                                                </a>
+                                                <a href="<?= base_url("gudang/opname/delete/{$row->id}") ?>"
+                                                    class="btn btn-danger btn-sm rounded-0" 
+                                                    onclick="return confirm('Yakin ingin menghapus data ini?')"
+                                                    data-toggle="tooltip"
+                                                    title="Hapus">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            <?php endif ?>
                                         </div>
                                     </td>
                                 </tr>
