@@ -18,7 +18,7 @@ use App\Models\ItemModel;
 use App\Models\SupplierModel;
 use App\Models\PengaturanModel;
 use App\Models\SatuanModel;
-use FPDF;
+use TCPDF;
 
 class TransBeliPO extends BaseController
 {
@@ -663,7 +663,19 @@ class TransBeliPO extends BaseController
      * @return mixed
      */
     public function print($id)
-    {
+    {            
+        // Header
+        // Fetch pengaturan (settings) from database
+        $pengaturan = $this->pengaturanModel->first();
+
+        // Use pengaturan values or fallback defaults
+        $judul      = $pengaturan->judul ?? '';
+        $alamat     = $pengaturan->alamat ?? '';
+        $judul_app  = $pengaturan->judul_app ?? 'PURCHASE ORDER';
+        $kota       = $pengaturan->kota ?? 'Semarang';
+        $apt_apa    = $pengaturan->apt_apa ?? '';
+        $apt_sipa   = $pengaturan->apt_sipa ?? '';
+        
         try {
             // Get PO data with relations
             $po = $this->transBeliPOModel->getWithRelations(['id' => $id])->first();
@@ -682,43 +694,64 @@ class TransBeliPO extends BaseController
                 ->findAll();
 
             // Initialize PDF
-            $pdf = new FPDF('P', 'mm', 'A4');
-            $pdf->AddPage();
+            $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+            
+            // Set document information
+            $pdf->SetCreator($judul_app);
+            $pdf->SetAuthor($judul);
+            $pdf->SetTitle('Purchase Order - ' . $po->no_nota);
             
             // Set margins
             $pdf->SetMargins(20, 20, 20);
+            $pdf->SetHeaderMargin(0);
+            $pdf->SetFooterMargin(0);
             
-            // Header
-            $pdf->SetFont('Arial', 'B', 12);
-            $pdf->Cell(120, 6, 'KLINIK UTAMA dan LABORATORIUM "ESENSIA"', 0, 0, 'L');
-            $pdf->Cell(50, 6, 'PURCHASE ORDER', 0, 1, 'R');
+            // Remove default header/footer
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
             
-            $pdf->SetFont('Arial', '', 10);
-            $pdf->Cell(170, 5, 'Perum Mutiara Pandanaran Blok D11', 0, 1, 'L');
+            // Add page
+            $pdf->AddPage();
+            
+            // Set font
+            $pdf->SetFont('helvetica', 'B', 12);
+
+            $pdf->Cell(120, 6, $judul, 0, 0, 'L');
+            $pdf->Cell(50, 6, $judul_app, 0, 1, 'R');
+            
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->Cell(170, 5, $alamat, 0, 1, 'L');
             $pdf->Line(20, 33, 190, 33);
             $pdf->Ln(5);
 
-            // APA & SIPA
-            $pdf->Cell(15, 5, 'APA', 0, 0);
-            $pdf->Cell(5, 5, ':', 0, 0);
-            $pdf->Cell(170, 5, 'APT. UNGSARI RIZKI EKA PURWANTO, M.SC', 0, 1);
+            // APA & SIPA (if available)
+            if (!empty($apt_apa)) {
+                $pdf->Cell(15, 5, 'APA', 0, 0);
+                $pdf->Cell(5, 5, ':', 0, 0);
+                $pdf->Cell(170, 5, $apt_apa, 0, 1);
+            }
             
-            $pdf->Cell(15, 5, 'SIPA', 0, 0);
-            $pdf->Cell(5, 5, ':', 0, 0);
-            $pdf->Cell(170, 5, '449.1/61/DPM-PTSP/SIPA/II/2022', 0, 1);
-            $pdf->Ln(5);
+            if (!empty($apt_sipa)) {
+                $pdf->Cell(15, 5, 'SIPA', 0, 0);
+                $pdf->Cell(5, 5, ':', 0, 0);
+                $pdf->Cell(170, 5, $apt_sipa, 0, 1);
+            }
+            
+            if (!empty($apt_apa) || !empty($apt_sipa)) {
+                $pdf->Ln(5);
+            }
 
             // Supplier Info & PO Details
             $pdf->Cell(20, 5, 'Kepada Yth.', 0, 1);
-            $pdf->Cell(100, 5, $po->supplier_name, 0, 0);
+            $pdf->Cell(100, 5, $po->supplier ?? 'N/A', 0, 0);
             $pdf->Cell(25, 5, 'No. PO', 0, 0);
             $pdf->Cell(5, 5, ':', 0, 0);
             $pdf->Cell(40, 5, $po->no_nota, 0, 1);
             
-            $pdf->Cell(100, 5, $po->supplier_address, 0, 0);
+            $pdf->Cell(100, 5, '', 0, 0);
             $pdf->Cell(25, 5, 'Tanggal', 0, 0);
             $pdf->Cell(5, 5, ':', 0, 0);
-            $pdf->Cell(40, 5, '2025-02-19', 0, 1);
+            $pdf->Cell(40, 5, date('Y-m-d', strtotime($po->tgl_masuk)), 0, 1);
             
             $pdf->Cell(100, 5, '', 0, 0);
             $pdf->Cell(25, 5, 'Oleh', 0, 0);
@@ -727,28 +760,28 @@ class TransBeliPO extends BaseController
             $pdf->Ln(5);
 
             // Table Header
-            $pdf->SetFont('Arial', 'B', 10);
+            $pdf->SetFont('helvetica', 'B', 10);
             $pdf->Cell(35, 7, 'KODE', 1, 0, 'C');
             $pdf->Cell(85, 7, 'DESKRIPSI', 1, 0, 'C');
             $pdf->Cell(20, 7, 'JML', 1, 0, 'C');
             $pdf->Cell(30, 7, 'KETERANGAN', 1, 1, 'C');
 
             // Table Content
-            $pdf->SetFont('Arial', '', 10);
+            $pdf->SetFont('helvetica', '', 10);
             foreach ($po_details as $item) {
-                $pdf->Cell(35, 7, $item->kode, 1, 0, 'L');
-                $pdf->Cell(85, 7, $item->deskripsi, 1, 0, 'L');
-                $pdf->Cell(20, 7, $item->jml, 1, 0, 'C');
-                $pdf->Cell(30, 7, $item->keterangan, 1, 1, 'L');
+                $pdf->Cell(35, 7, $item->kode ?? 'N/A', 1, 0, 'L');
+                $pdf->Cell(85, 7, $item->deskripsi ?? 'N/A', 1, 0, 'L');
+                $pdf->Cell(20, 7, $item->jml ?? '0', 1, 0, 'C');
+                $pdf->Cell(30, 7, $item->keterangan ?? '', 1, 1, 'L');
             }
 
             // Footer
             $pdf->Ln(20);
             $pdf->Cell(85, 5, 'Pemesan', 0, 0, 'C');
-            $pdf->Cell(85, 5, 'Semarang, ' . date('d F Y', strtotime($po->tgl_masuk)), 0, 1, 'C');
+            $pdf->Cell(85, 5, $kota . ', ' . date('d F Y', strtotime($po->tgl_masuk)), 0, 1, 'C');
             
             $pdf->Ln(20);
-            $pdf->Cell(85, 5, 'APT. UNGSARI RIZKI EKA PURWANTO, M.SC', 0, 1, 'C');
+            $pdf->Cell(85, 5, $apt_apa ?: 'Pemesan', 0, 1, 'C');
 
             // Output PDF
             $pdf->Output('PO_' . $po->no_nota . '.pdf', 'I');
