@@ -129,12 +129,23 @@ class ItemModel extends Model
  * description : This function retrieves all items with their category and brand information using joins.
  * This file represents the ItemModel.
  */
-public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1, $kategori = null, $stok = null)
+public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1, $kategori = null, $stok = null, $supplier = null)
 {
-    $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
-        ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
-        ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
-        ->where('tbl_m_item.status_hps', '0')
+    // Check if id_supplier column exists before joining
+    $hasSupplierColumn = $this->db->fieldExists('id_supplier', 'tbl_m_item');
+    
+    if ($hasSupplierColumn) {
+        $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier_nama')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left');
+    } else {
+        $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk, NULL as supplier_nama')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left');
+    }
+    
+    $builder->where('tbl_m_item.status_hps', '0')
         ->orderBy('tbl_m_item.id', 'DESC');
 
     if ($keyword) {
@@ -144,6 +155,7 @@ public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1,
             ->orLike('tbl_m_item.barcode', $keyword)
             ->orLike('tbl_m_kategori.kategori', $keyword)
             ->orLike('tbl_m_merk.merk', $keyword)
+            ->orLike('tbl_m_supplier.nama', $keyword)
             ->groupEnd();
     }
     if ($kategori) {
@@ -151,6 +163,9 @@ public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1,
     }
     if ($stok !== null && $stok !== '') {
         $builder->where('tbl_m_item.status_stok', $stok);
+    }
+    if ($supplier) {
+        $builder->where('tbl_m_item.id_supplier', $supplier);
     }
 
     return $builder->paginate($perPage, 'items', $page);

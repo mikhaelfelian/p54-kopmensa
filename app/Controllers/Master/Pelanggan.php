@@ -56,7 +56,7 @@ class Pelanggan extends BaseController
         $total = $query->countAllResults(false);
 
         $data = [
-            'title'          => 'Data Pelanggan',
+            'title'          => 'Data Pelanggan / Anggota',
             'Pengaturan'     => $this->pengaturan,
             'user'           => $this->ionAuth->user()->row(),
             'pelanggans'     => $query->paginate($perPage, 'pelanggan'),
@@ -90,7 +90,7 @@ class Pelanggan extends BaseController
     public function create()
     {
         $data = [
-            'title'       => 'Tambah Pelanggan',
+            'title'       => 'Form Tambah Pelanggan',
             'Pengaturan'     => $this->pengaturan,
             'user'           => $this->ionAuth->user()->row(),
             'validation'  => $this->validation,
@@ -119,7 +119,8 @@ class Pelanggan extends BaseController
                 'kota'       => $this->request->getPost('kota'),
                 'provinsi'   => $this->request->getPost('provinsi'),
                 'tipe'       => $this->request->getPost('tipe'),
-                'status'     => '1'
+                'status'     => '1',
+                'limit'      => $this->request->getPost('limit') ?? 0
             ];
 
             if (!$this->pelangganModel->insert($data)) {
@@ -154,7 +155,7 @@ class Pelanggan extends BaseController
         }
 
         $data = [
-            'title'       => 'Edit Pelanggan',
+            'title'       => 'Form Ubah Pelanggan',
             'Pengaturan'     => $this->pengaturan,
             'user'           => $this->ionAuth->user()->row(),
             'validation'  => $this->validation,
@@ -180,13 +181,24 @@ class Pelanggan extends BaseController
         }
 
         try {
+            $nama    = $this->request->getPost('nama');
+            $no_tlp  = $this->request->getPost('no_telp');
+            $alamat  = $this->request->getPost('alamat');
+            $kota    = $this->request->getPost('kota');
+            $provinsi= $this->request->getPost('provinsi');
+            $tipe    = $this->request->getPost('tipe');
+            $status  = $this->request->getPost('status');
+            $limit   = $this->request->getPost('limit') ?? 0;
+
             $data = [
-                'nama'       => $this->request->getPost('nama'),
-                'no_telp'    => $this->request->getPost('no_telp'),
-                'alamat'     => $this->request->getPost('alamat'),
-                'kota'       => $this->request->getPost('kota'),
-                'provinsi'   => $this->request->getPost('provinsi'),
-                'tipe'       => $this->request->getPost('tipe')
+                'nama'     => $nama,
+                'no_telp'  => $no_tlp,
+                'alamat'   => $alamat,
+                'kota'     => $kota,
+                'provinsi' => $provinsi,
+                'tipe'     => $tipe,
+                'status'   => $status,
+                'limit'    => format_angka_db($limit),
             ];
 
             if (!$this->pelangganModel->update($id, $data)) {

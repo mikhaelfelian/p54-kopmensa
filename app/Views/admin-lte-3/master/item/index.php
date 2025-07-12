@@ -107,10 +107,27 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
+                            <!-- Supplier Filter -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Supplier</label>
+                                    <select name="supplier" class="form-control rounded-0">
+                                        <option value="">- Semua Supplier -</option>
+                                        <?php if (isset($supplier_list) && is_array($supplier_list)): ?>
+                                            <?php foreach ($supplier_list as $supplier_item): ?>
+                                                <option value="<?= $supplier_item->id ?>" <?= ($supplier == $supplier_item->id) ? 'selected' : '' ?>>
+                                                    <?= $supplier_item->nama ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+
                             <!-- Min Stock Filter -->
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Stok Minimum</label>
                                     <div class="input-group">
@@ -128,7 +145,7 @@
                             </div>
                             
                             <!-- Harga Beli Filter -->
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Harga Beli</label>
                                     <div class="input-group">
@@ -146,7 +163,7 @@
                             </div>
                             
                             <!-- Harga Jual Filter -->
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="form-group">
                                     <label>Harga Jual</label>
                                     <div class="input-group">
@@ -193,6 +210,7 @@
                             <th width="80">Foto</th>
                             <th>Kategori</th>
                             <th>Item</th>
+                            <th>Supplier</th>
                             <th class="text-right">Harga Beli</th>
                             <th class="text-center">Stok Min</th>
                             <th>Aksi</th>
@@ -238,6 +256,7 @@
                                     <?= br() ?>
                                     <span class="badge badge-<?= $statusInfo['badge'] ?>"><?= $statusInfo['label'] ?></span>
                                     </td>
+                                    <td><?= $row->supplier_nama ?? '-' ?></td>
                                     <td class="text-right"><?= format_angka($row->harga_beli) ?></td>
                                     <td class="text-center"><?= $row->jml_min ?></td>
                                     <td>
@@ -261,7 +280,7 @@
                             <?php endforeach ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="13" class="text-center">Tidak ada data</td>
+                                <td colspan="8" class="text-center">Tidak ada data</td>
                             </tr>
                         <?php endif ?>
                     </tbody>

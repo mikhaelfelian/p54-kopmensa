@@ -66,7 +66,6 @@
                         'value' => old('alamat', $pelanggan->alamat)
                     ]) ?>
                 </div>
-
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group <?= (!empty($psnGagal['kota']) ? 'has-error' : '') ?>">
@@ -130,6 +129,24 @@
                             </div>
                         </div>
                     </div>                                
+                </div>
+                
+                <div class="form-group <?= (!empty($psnGagal['limit']) ? 'has-error' : '') ?>">
+                    <label class="control-label">Limit Saldo</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Rp</span>
+                        </div>
+                        <?= form_input([
+                            'id' => 'limit',
+                            'name' => 'limit',
+                            'class' => 'form-control rounded-0' . (!empty($psnGagal['limit']) ? ' is-invalid' : ''),
+                            'placeholder' => '0',
+                            'value' => old('limit', $pelanggan->limit ?? 0),
+                            'data-inputmask' => "'alias': 'numeric', 'groupSeparator': '.', 'radixPoint': ',', 'digits': 2, 'digitsOptional': false, 'prefix': '', 'placeholder': '0'"
+                        ]) ?>
+                    </div>
+                    <small class="form-text text-muted">Batas maksimal saldo yang dapat digunakan pelanggan (dalam Rupiah)</small>
                 </div>
             </div>
             <div class="card-footer">
@@ -249,7 +266,7 @@
 </div>
 
 <script>
-$(document).ready(function() {
+$(document).ready(function() {   
     // Show/hide contact person section based on tipe selection
     $('select[name="tipe"]').change(function() {
         var tipe = $(this).val();
@@ -259,6 +276,8 @@ $(document).ready(function() {
             $('#contactPersonSection').hide();
         }
     });
+
+    $("input[id=limit]").autoNumeric({aSep: '.', aDec: ',', aPad: false});
 });
 </script>
 

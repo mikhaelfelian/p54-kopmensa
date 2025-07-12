@@ -10,18 +10,18 @@
 <?= $this->extend(theme_path('main')) ?>
 
 <?= $this->section('content') ?>
-<div class="card">
+<div class="card rounded-0">
     <div class="card-header">
         <h3 class="card-title">Data Pembelian</h3>
         <div class="card-tools">
             
         </div>
     </div>
-    <div class="card-body table-responsive p-0">
-        <table class="table table-hover text-nowrap">
+    <div class="card-body">
+        <table class="table table-striped">
             <thead>
                 <tr>
-                    <th width="5%">No</th>
+                    <th width="5%" class="text-center">No</th>
                     <th>No. Faktur</th>
                     <th>Tanggal</th>
                     <th>Supplier</th>
@@ -43,7 +43,7 @@
                     foreach ($transaksi as $index => $row) : 
                     ?>
                         <tr>
-                            <td><?= $startNumber + $index + 1 ?></td>
+                            <td class="text-center"><?= $startNumber + $index + 1 ?></td>
                             <td><?= esc($row->no_nota) ?></td>
                             <td><?= date('d/m/Y', strtotime($row->created_at)) ?></td>
                             <td><?= esc($row->supplier) ?></td>

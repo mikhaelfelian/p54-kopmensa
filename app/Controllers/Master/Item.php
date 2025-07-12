@@ -53,6 +53,7 @@ class Item extends BaseController
         $kat        = $this->request->getVar('kategori');
         $merk       = $this->request->getVar('merk');
         $stok       = $this->request->getVar('stok');
+        $supplier   = $this->request->getVar('supplier');
         $query      = $this->request->getVar('keyword') ?? '';
         
         // Min stock filter
@@ -110,7 +111,7 @@ class Item extends BaseController
             'title'         => 'Data Item',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'items'         => $this->itemModel->getItemsWithRelations($per_page, $query, $curr_page, $kat, $stok),
+            'items'         => $this->itemModel->getItemsWithRelations($per_page, $query, $curr_page, $kat, $stok, $supplier),
             'pager'         => $this->itemModel->pager,
             'currentPage'   => $curr_page,
             'perPage'       => $per_page,
@@ -118,6 +119,7 @@ class Item extends BaseController
             'kat'           => $kat,
             'merk'          => $merk,
             'stok'          => $stok,
+            'supplier'      => $supplier,
             'min_stok_operator' => $min_stok_operator,
             'min_stok_value' => $min_stok_value,
             'harga_beli_operator' => $harga_beli_operator,
@@ -127,6 +129,7 @@ class Item extends BaseController
             'trashCount'    => $trashCount,
             'kategori'      => $this->kategoriModel->findAll(),
             'merk_list'     => $this->merkModel->findAll(),
+            'supplier_list' => $this->supplierModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>

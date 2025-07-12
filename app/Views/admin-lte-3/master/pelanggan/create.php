@@ -131,6 +131,24 @@
                         </div>
                     </div>                                
                 </div>
+                
+                <div class="form-group <?= (!empty($psnGagal['limit']) ? 'has-error' : '') ?>">
+                    <label class="control-label">Limit Saldo</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">Rp</span>
+                        </div>
+                        <?= form_input([
+                            'id' => 'limit',
+                            'name' => 'limit',
+                            'class' => 'form-control rounded-0' . (!empty($psnGagal['limit']) ? ' is-invalid' : ''),
+                            'placeholder' => '0',
+                            'value' => old('limit', 0),
+                            'data-inputmask' => "'alias': 'numeric', 'groupSeparator': '.', 'radixPoint': ',', 'digits': 2, 'digitsOptional': false, 'prefix': '', 'placeholder': '0'"
+                        ]) ?>
+                    </div>
+                    <small class="form-text text-muted">Batas maksimal saldo yang dapat digunakan pelanggan (dalam Rupiah)</small>
+                </div>
             </div>
             <div class="card-footer">
                 <div class="row">
@@ -231,6 +249,16 @@
 
 <script>
 $(document).ready(function() {
+    // Initialize input mask for limit field
+    $('#limit').inputmask('currency', {
+        radixPoint: ',',
+        groupSeparator: '.',
+        digits: 2,
+        digitsOptional: false,
+        prefix: '',
+        placeholder: '0'
+    });
+    
     // Show/hide contact person section based on tipe selection
     $('select[name="tipe"]').change(function() {
         var tipe = $(this).val();

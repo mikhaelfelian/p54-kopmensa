@@ -37,6 +37,7 @@
                         <th class="text-left">Kode</th>
                         <th class="text-left">Nama</th>
                         <th class="text-left">Alamat</th>
+                        <th class="text-right">Limit Saldo</th>
                         <th class="text-center">Aksi</th>
                     </tr>
                     <tr>
@@ -49,6 +50,7 @@
                                 'placeholder' => 'Cari...'
                             ]) ?>
                         </th>
+                        <th></th>
                         <th></th>
                         <th></th>
                         <th class="text-center">
@@ -67,8 +69,9 @@
                             <tr>
                                 <td class="text-center" width="3%"><?= $no++ ?>.</td>
                                 <td width="15%"><?= esc($pelanggan->kode) ?></td>
-                                <td width="40%"><?= esc($pelanggan->nama) ?></td>
-                                <td width="30%"><?= esc($pelanggan->alamat) ?></td>
+                                <td width="30%"><?= esc($pelanggan->nama) ?></td>
+                                <td width="25%"><?= esc($pelanggan->alamat) ?></td>
+                                <td class="text-right" width="15%">Rp <?= number_format($pelanggan->limit ?? 0, 0, ',', '.') ?></td>
                                 <td class="text-center" width="12%">
                                     <div class="btn-group">
                                         <a href="<?= base_url("master/customer/detail/{$pelanggan->id}") ?>"
@@ -90,7 +93,7 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="5" class="text-center">Tidak ada data</td>
+                            <td colspan="6" class="text-center">Tidak ada data</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

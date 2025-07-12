@@ -2,7 +2,7 @@
 /**
  * Created by:
  * Mikhael Felian Waskito - mikhaelfelian@gmail.com
- * 2025-02-05
+ * 2025-07-12
  * 
  * Purchase Transaction Edit View
  */
@@ -260,9 +260,6 @@
                                     <td>
                                         <?= esc($item->kode) ?><br>
                                         <?= esc($item->item) ?><br>
-                                        <small class="text-muted">
-                                            Batch: <?= esc($item->kode_batch) ?> | ED: <?= date('d/m/Y', strtotime($item->tgl_ed)) ?>
-                                        </small>
                                     </td>
                                     <td><?= format_angka($item->jml, 2) ?> <?= esc($item->satuan) ?></td>
                                     <td><?= format_angka($item->harga) ?></td>
@@ -321,6 +318,10 @@
 <?= $this->section('js') ?>
 <script>
 $(document).ready(function() {
+    // Initialize autoNumeric for currency fields
+    $("input[id=harga]").autoNumeric({aSep: '.', aDec: ',', aPad: false});
+    $("input[id=potongan]").autoNumeric({aSep: '.', aDec: ',', aPad: false});
+    
     // Initialize Select2
     $('.select2').select2({
         theme: 'bootstrap4',
