@@ -172,6 +172,48 @@
                     </ul>
                 </li>
                 
+                <!-- Transaksi -->
+                <li class="nav-header">TRANSAKSI</li>
+                <li class="nav-item has-treeview">
+                    <a href="#" class="nav-link ">
+                        <i class="nav-icon fas fa-exchange-alt"></i>
+                        <p>
+                            Pembelian
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview" style="display: none;">
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/po/create') ?>" class="nav-link ">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-shopping-cart nav-icon"></i>
+                                <p>Purchase Order</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/beli/create') ?>" class="nav-link ">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-cart-plus nav-icon"></i>
+                                <p>Faktur</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/po') ?>" class="nav-link ">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-list nav-icon"></i>
+                                <p>Data Purchase Order</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/beli') ?>" class="nav-link ">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-list nav-icon"></i>
+                                <p>Data Pembelian</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
                 <!-- Warehouse -->
                 <li class="nav-header">GUDANG</li>
                 <li class="nav-item has-treeview <?= isMenuActive(['gudang/transfer', 'gudang/stok', 'gudang/opname']) ? 'menu-open' : '' ?>">
