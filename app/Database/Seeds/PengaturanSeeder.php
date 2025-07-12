@@ -9,11 +9,11 @@ class PengaturanSeeder extends Seeder
     public function run()
     {
         $data = [
-            'judul'            => 'KOPMENSA POS',
-            'judul_app'        => 'KOPMENSA',
-            'alamat'           => 'Jl. Raya No. 1',
-            'deskripsi'        => 'sistem informasi manajemen penjualan',
-            'kota'             => 'semarang',
+            'judul'            => 'KOPERASI KARYAWAN SYARIAH SULTAN AGUNG',
+            'judul_app'        => 'KOPMENSA PO',
+            'alamat'           => 'Jl. Sultan Agung No. 1, Kota Semarang',
+            'deskripsi'        => 'Sistem informasi manajemen penjualan dan pembelian',
+            'kota'             => 'Semarang',
             'url'              => 'http://localhost/p54-kopmensa',
             'theme'            => 'quirk',
             'pagination_limit' => 10,
