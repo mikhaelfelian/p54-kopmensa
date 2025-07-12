@@ -12,20 +12,18 @@
 namespace App\Controllers;
 
 use App\Models\ItemModel;
-use App\Models\MedTransDetModel;
-use App\Models\MedTransIcdModel;
+use App\Models\ItemStokModel;
 
 class Publik extends BaseController
 {
     protected $itemModel;
-    protected $medTransDetModel;
+    protected $itemStokModel;
 
     public function __construct()
     {
         parent::__construct();
         $this->itemModel = new ItemModel();
-        $this->medTransDetModel = new \App\Models\MedTransDetModel();
-        $this->medTransIcdModel = new \App\Models\MedTransIcdModel();
+        $this->itemStokModel = new ItemStokModel();
     }
 
     /**
