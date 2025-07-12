@@ -174,7 +174,12 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('transfer', 'Transfer::index');
     $routes->get('transfer/create', 'Transfer::create');
     $routes->post('transfer/store', 'Transfer::store');
+    $routes->get('transfer/detail/(:num)', 'Transfer::detail/$1');
+    $routes->get('transfer/edit/(:num)', 'Transfer::edit/$1');
+    $routes->post('transfer/update/(:num)', 'Transfer::update/$1');
+    $routes->get('transfer/delete/(:num)', 'Transfer::delete/$1');
     $routes->get('transfer/input/(:num)', 'Transfer::inputItem/$1');
+    $routes->post('transfer/process/(:num)', 'Transfer::process/$1');
     
     // Opname / Stock Opname
     $routes->get('opname', 'Opname::index');
