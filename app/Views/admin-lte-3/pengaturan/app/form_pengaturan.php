@@ -11,6 +11,20 @@
             <!-- /.card-header -->
             <div class="card-body">
                 <div class="form-group">
+                    <label for="judul">Judul Perusahaan <span class="text-danger">*</span></label>
+                    <?= form_input([
+                        'type' => 'text',
+                        'class' => 'form-control rounded-0',
+                        'id' => 'judul',
+                        'name' => 'judul',
+                        'value' => old('judul', $Pengaturan->judul),
+                        'required' => true,
+                        'placeholder' => 'Contoh: KLINIK UTAMA dan LABORATORIUM "ESENSIA"'
+                    ]) ?>
+                    <small class="text-muted">Judul yang akan muncul di header dokumen PDF</small>
+                </div>
+
+                <div class="form-group">
                     <label for="judul_app">Judul Aplikasi <span class="text-danger">*</span></label>
                     <?= form_input([
                         'type' => 'text',
@@ -18,8 +32,64 @@
                         'id' => 'judul_app',
                         'name' => 'judul_app',
                         'value' => old('judul_app', $Pengaturan->judul_app),
-                        'required' => true
+                        'required' => true,
+                        'placeholder' => 'Contoh: PURCHASE ORDER'
                     ]) ?>
+                    <small class="text-muted">Judul yang akan muncul di pojok kanan atas dokumen PDF</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="alamat">Alamat Perusahaan <span class="text-danger">*</span></label>
+                    <?= form_textarea([
+                        'class' => 'form-control rounded-0',
+                        'id' => 'alamat',
+                        'name' => 'alamat',
+                        'value' => old('alamat', $Pengaturan->alamat),
+                        'rows' => 2,
+                        'required' => true,
+                        'placeholder' => 'Contoh: Perum Mutiara Pandanaran Blok D11'
+                    ]) ?>
+                    <small class="text-muted">Alamat yang akan muncul di bawah judul perusahaan</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="kota">Kota <span class="text-danger">*</span></label>
+                    <?= form_input([
+                        'type' => 'text',
+                        'class' => 'form-control rounded-0',
+                        'id' => 'kota',
+                        'name' => 'kota',
+                        'value' => old('kota', $Pengaturan->kota),
+                        'required' => true,
+                        'placeholder' => 'Contoh: Semarang'
+                    ]) ?>
+                    <small class="text-muted">Kota yang akan muncul di footer dokumen PDF</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="apt_apa">APA (Apoteker Penanggung Jawab)</label>
+                    <?= form_input([
+                        'type' => 'text',
+                        'class' => 'form-control rounded-0',
+                        'id' => 'apt_apa',
+                        'name' => 'apt_apa',
+                        'value' => old('apt_apa', $Pengaturan->apt_apa),
+                        'placeholder' => 'Contoh: APT. UNGSARI RIZKI EKA PURWANTO, M.SC'
+                    ]) ?>
+                    <small class="text-muted">Nama apoteker penanggung jawab (opsional)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="apt_sipa">SIPA (Surat Izin Praktik Apoteker)</label>
+                    <?= form_input([
+                        'type' => 'text',
+                        'class' => 'form-control rounded-0',
+                        'id' => 'apt_sipa',
+                        'name' => 'apt_sipa',
+                        'value' => old('apt_sipa', $Pengaturan->apt_sipa),
+                        'placeholder' => 'Contoh: 449.1/61/DPM-PTSP/SIPA/II/2022'
+                    ]) ?>
+                    <small class="text-muted">Nomor SIPA (opsional)</small>
                 </div>
 
                 <div class="form-group">
