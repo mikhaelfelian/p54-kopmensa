@@ -209,6 +209,32 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     });
 });
 
+/*
+ * TRANSAKSI ROUTES
+ */
+// Purchase Order Routes
+$routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function($routes) {
+    $routes->get('po', 'TransBeliPO::index');
+    $routes->get('po/create', 'TransBeliPO::create');
+    $routes->post('po/store', 'TransBeliPO::store');
+    $routes->get('po/detail/(:num)', 'TransBeliPO::detail/$1');
+    $routes->get('po/edit/(:num)', 'TransBeliPO::edit/$1');
+    $routes->post('po/update/(:num)', 'TransBeliPO::update/$1');
+    $routes->get('po/print/(:num)', 'TransBeliPO::print/$1');
+    $routes->post('po/cart_add/(:num)', 'TransBeliPO::cart_add/$1');
+    $routes->get('po/cart_delete/(:num)', 'TransBeliPO::cart_delete/$1');
+    $routes->get('po/proses/(:num)', 'TransBeliPO::proses/$1');
+});
+
+// Purchase Transaction Routes
+$routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function($routes) {
+    $routes->get('beli', 'TransBeli::index');
+    $routes->get('beli/create', 'TransBeli::create');
+    $routes->post('beli/store', 'TransBeli::store');
+    $routes->get('beli/edit/(:num)', 'TransBeli::edit/$1');
+    $routes->post('beli/update/(:num)', 'TransBeli::update/$1');
+});
+
 // untuk test
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
