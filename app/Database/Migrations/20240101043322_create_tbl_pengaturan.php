@@ -4,11 +4,11 @@ namespace App\Database\Migrations;
 
 use CodeIgniter\Database\Migration;
 
-class CreatePengaturanTable extends Migration
+class Migration_20240101043322_create_tbl_pengaturan extends Migration
 {
     public function up()
     {
-        $this->forge->addField([
+        $fields = [
             'id' => [
                 'type'           => 'INT',
                 'constraint'     => 11,
@@ -24,82 +24,94 @@ class CreatePengaturanTable extends Migration
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
                 'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'judul_app' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
                 'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'alamat' => [
-                'type'    => 'TEXT',
-                'null'    => true, 
+                'type'      => 'TEXT',
+                'null'      => true,
+                'default'   => null,
+                'collation' => 'utf8mb4_general_ci',
             ],
             'deskripsi' => [
-                'type'    => 'TEXT',
-                'null'    => true,
+                'type'      => 'TEXT',
+                'null'      => true,
+                'default'   => null,
+                'collation' => 'utf8mb4_general_ci',
             ],
             'kota' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
                 'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'url' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'theme' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 50,
                 'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'pagination_limit' => [
                 'type'       => 'INT',
                 'constraint' => 11,
                 'null'       => true,
+                'default'    => null,
             ],
             'favicon' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'logo' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'logo_header' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
                 'null'       => true,
-            ],
-            'apt_apa' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => true,
-            ],
-            'apt_sipa' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => true,
+                'default'    => null,
+                'collation'  => 'utf8mb4_general_ci',
             ],
             'ppn' => [
                 'type'       => 'INT',
                 'constraint' => 2,
                 'null'       => true,
+                'default'    => null,
             ],
+        ];
+
+        $this->forge->addField($fields);
+        $this->forge->addKey('id', true, true, 'BTREE');
+        $this->forge->createTable('tbl_pengaturan', true, [
+            'ENGINE' => 'InnoDB',
+            'COLLATE' => 'utf8mb4_general_ci',
         ]);
-
-        $this->forge->addKey('id', true);
-        $this->forge->createTable('tbl_pengaturan', true);
-
-        // Add default data
-        $seeder = \Config\Database::seeder();
-        $seeder->call('PengaturanSeeder');
     }
 
     public function down()
     {
         $this->forge->dropTable('tbl_pengaturan', true);
     }
-} 
+}
