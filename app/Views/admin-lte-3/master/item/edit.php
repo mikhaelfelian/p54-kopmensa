@@ -28,6 +28,21 @@
                 <?= form_hidden(['name' => 'foto', 'value' => old('foto', $item->foto ?? ''), 'id' => 'foto_input']) ?>
 
                 <div class="row">
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label class="control-label">Supplier</label>
+                            <select name="id_supplier" id="id_supplier" class="form-control rounded-0 select2" required>
+                                <option value="">Pilih Supplier</option>
+                                <?php foreach ($supplier as $sup): ?>
+                                    <option value="<?= $sup->id ?>" <?= old('id_supplier', $item->id_supplier ?? '') == $sup->id ? 'selected' : '' ?>>
+                                        <?= $sup->nama ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="control-label">Kategori</label>
@@ -178,12 +193,14 @@
             <div class="card-header d-flex align-items-center justify-content-between">
                 <ul class="nav nav-tabs card-header-tabs" id="itemTabs" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="tab-harga" data-toggle="tab" href="#tabHarga" role="tab" aria-controls="tabHarga" aria-selected="true">
+                        <a class="nav-link active" id="tab-harga" data-toggle="tab" href="#tabHarga" role="tab"
+                            aria-controls="tabHarga" aria-selected="true">
                             Harga
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="tab-varian" data-toggle="tab" href="#tabVarian" role="tab" aria-controls="tabVarian" aria-selected="false">
+                        <a class="nav-link" id="tab-varian" data-toggle="tab" href="#tabVarian" role="tab"
+                            aria-controls="tabVarian" aria-selected="false">
                             Varian
                         </a>
                     </li>
@@ -211,56 +228,75 @@
                                         </tr>
                                     </thead>
                                     <tbody id="price-container">
-                                        <?php 
+                                        <?php
                                         $itemHargaModel = new \App\Models\ItemHargaModel();
                                         $existingPrices = $itemHargaModel->getPricesByItemId($item->id);
                                         $priceIndex = 0;
                                         ?>
                                         <?php if (!empty($existingPrices)): ?>
                                             <?php foreach ($existingPrices as $price): ?>
-                                            <tr class="price-row" data-index="<?= $priceIndex ?>">
-                                                <td class="align-middle">
-                                                    <input type="text" name="prices[<?= $priceIndex ?>][nama]" value="<?= $price->nama ?>" class="form-control rounded-0" placeholder="Contoh: Ecer, Grosir, Distributor" required>
-                                                    <div class="invalid-feedback">Nama level harga wajib diisi.</div>
-                                                </td>
-                                                <td class="align-middle">
-                                                    <input type="number" name="prices[<?= $priceIndex ?>][jml_min]" value="<?= $price->jml_min ?>" class="form-control rounded-0" placeholder="Minimal beli" min="1" required>
-                                                    <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
-                                                </td>
-                                                <td class="align-middle">
-                                                    <input type="text" name="prices[<?= $priceIndex ?>][harga]" value="<?= (float)$price->harga ?>" class="form-control rounded-0 price-input" placeholder="Harga Anggota ..." required>
-                                                    <div class="invalid-feedback">Harga wajib diisi.</div>
-                                                </td>
-                                                <td class="align-middle">
-                                                    <input type="text" name="prices[<?= $priceIndex ?>][keterangan]" value="<?= $price->keterangan ?>" class="form-control rounded-0" placeholder="Keterangan tambahan (opsional)">
-                                                </td>
-                                                <td class="align-middle text-center">
-                                                    <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="return confirm('Hapus data ini?') && deletePriceRow(this, <?= $price->id ?>)" title="Delete">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <?php $priceIndex++; ?>
+                                                <tr class="price-row" data-index="<?= $priceIndex ?>">
+                                                    <td class="align-middle">
+                                                        <input type="text" name="prices[<?= $priceIndex ?>][nama]"
+                                                            value="<?= $price->nama ?>" class="form-control rounded-0"
+                                                            placeholder="Contoh: Ecer, Grosir, Distributor" required>
+                                                        <div class="invalid-feedback">Nama level harga wajib diisi.</div>
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        <input type="number" name="prices[<?= $priceIndex ?>][jml_min]"
+                                                            value="<?= $price->jml_min ?>" class="form-control rounded-0"
+                                                            placeholder="Minimal beli" min="1" required>
+                                                        <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        <input type="text" name="prices[<?= $priceIndex ?>][harga]"
+                                                            value="<?= (float) $price->harga ?>"
+                                                            class="form-control rounded-0 price-input"
+                                                            placeholder="Harga Anggota ..." required>
+                                                        <div class="invalid-feedback">Harga wajib diisi.</div>
+                                                    </td>
+                                                    <td class="align-middle">
+                                                        <input type="text" name="prices[<?= $priceIndex ?>][keterangan]"
+                                                            value="<?= $price->keterangan ?>" class="form-control rounded-0"
+                                                            placeholder="Keterangan tambahan (opsional)">
+                                                    </td>
+                                                    <td class="align-middle text-center">
+                                                        <button type="button" class="btn btn-danger btn-sm rounded-0"
+                                                            onclick="return confirm('Hapus data ini?') && deletePriceRow(this, <?= $price->id ?>)"
+                                                            title="Delete">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                <?php $priceIndex++; ?>
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <tr class="price-row" data-index="0">
                                                 <td class="align-middle">
-                                                    <input type="text" name="prices[0][nama]" class="form-control rounded-0" placeholder="Harga Anggota ..." required>
+                                                    <input type="text" name="prices[0][nama]" class="form-control rounded-0"
+                                                        placeholder="Harga Anggota ..." required>
                                                     <div class="invalid-feedback">Nama level harga wajib diisi.</div>
                                                 </td>
                                                 <td class="align-middle">
-                                                    <input type="number" name="prices[0][jml_min]" class="form-control rounded-0" placeholder="Minimal beli" min="1" value="1" required>
+                                                    <input type="number" name="prices[0][jml_min]"
+                                                        class="form-control rounded-0" placeholder="Minimal beli" min="1"
+                                                        value="1" required>
                                                     <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
                                                 </td>
                                                 <td class="align-middle">
-                                                    <input type="text" name="prices[0][harga]" class="form-control rounded-0 price-input" placeholder="Harga Anggota ..." required>
+                                                    <input type="text" name="prices[0][harga]"
+                                                        class="form-control rounded-0 price-input"
+                                                        placeholder="Harga Anggota ..." required>
                                                     <div class="invalid-feedback">Harga wajib diisi.</div>
                                                 </td>
                                                 <td class="align-middle">
-                                                    <input type="text" name="prices[0][keterangan]" class="form-control rounded-0" placeholder="Keterangan tambahan (opsional)">
+                                                    <input type="text" name="prices[0][keterangan]"
+                                                        class="form-control rounded-0"
+                                                        placeholder="Keterangan tambahan (opsional)">
                                                 </td>
                                                 <td class="align-middle text-center">
-                                                    <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="removePriceRow(this)" title="Delete">
+                                                    <button type="button" class="btn btn-danger btn-sm rounded-0"
+                                                        onclick="removePriceRow(this)" title="Delete">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </td>
@@ -274,7 +310,8 @@
                                     <div class="col-lg-6">
                                     </div>
                                     <div class="col-lg-6 text-right">
-                                            <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save" aria-hidden="true"></i> Simpan</button>
+                                        <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save"
+                                                aria-hidden="true"></i> Simpan</button>
                                     </div>
                                 </div>
                             </div>
@@ -312,7 +349,8 @@
                                     <div class="col-lg-6">
                                     </div>
                                     <div class="col-lg-6 text-right">
-                                            <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save" aria-hidden="true"></i> Simpan Varian</button>
+                                        <button type="submit" class="btn btn-primary btn-flat"><i class="fa fa-save"
+                                                aria-hidden="true"></i> Simpan Varian</button>
                                     </div>
                                 </div>
                             </div>
@@ -323,24 +361,33 @@
         </div>
         <!-- Pastikan Bootstrap JS dan jQuery sudah di-load agar tab berfungsi -->
         <script>
-        $(function () {
-            $('#itemTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-                // Tab event handler jika perlu
+            $(function () {
+                $('#itemTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+                    // Tab event handler jika perlu
+                });
             });
-        });
         </script>
     </div>
 </div>
 
+<!-- Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script type="text/javascript">
     $(document).ready(function () {
-        $("input[id=harga]").autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+        // Initialize Select2 for supplier dropdown
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            width: '100%',
 
-        // Initialize price input formatting
-        $('.price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+        });
+
+        // AutoNumeric for price inputs
+        $("input[id=harga]").autoNumeric({ aSep: '.', aDec: ',', aPad: false });
     });
 
-    let priceIndex = <?= $priceIndex ?? 1 ?>;
+    let priceIndex = 0;
 
     function addPriceRow() {
         const container = document.getElementById('price-container');
@@ -395,7 +442,7 @@
         }
         $.post('<?= base_url('master/item/delete_price/') ?>' + priceId, {
             '<?= csrf_token() ?>': $('input[name=<?= csrf_token() ?>]').val()
-        }, function(response) {
+        }, function (response) {
             if (response.success) {
                 toastr.success(response.message);
                 $(btn).closest('.price-row').remove();
@@ -405,20 +452,20 @@
             if (response.csrfHash) {
                 $('input[name=<?= csrf_token() ?>]').val(response.csrfHash);
             }
-        }, 'json').fail(function() {
+        }, 'json').fail(function () {
             toastr.error('Terjadi kesalahan server!');
         });
     }
 
-    $(function() {
-        $('#price-form').on('submit', function(e) {
+    $(function () {
+        $('#price-form').on('submit', function (e) {
             e.preventDefault();
             var $form = $(this);
             var url = '<?= base_url('master/item/store_price/' . $item->id) ?>';
             var data = $form.serializeArray();
             // Add CSRF token
-            data.push({name: '<?= csrf_token() ?>', value: $('input[name=<?= csrf_token() ?>]').val()});
-            $.post(url, data, function(response) {
+            data.push({ name: '<?= csrf_token() ?>', value: $('input[name=<?= csrf_token() ?>]').val() });
+            $.post(url, data, function (response) {
                 if (response.success) {
                     toastr.success(response.message);
                 } else {
@@ -428,20 +475,20 @@
                 if (response.csrfHash) {
                     $('input[name=<?= csrf_token() ?>]').val(response.csrfHash);
                 }
-            }, 'json').fail(function(xhr) {
+            }, 'json').fail(function (xhr) {
                 toastr.error('Terjadi kesalahan server!');
             });
         });
 
         // Variant form submission
-        $('#varian-form').on('submit', function(e) {
+        $('#varian-form').on('submit', function (e) {
             e.preventDefault();
             var $form = $(this);
             var url = '<?= base_url('master/item/store_variant/' . $item->id) ?>';
             var data = $form.serializeArray();
             // Add CSRF token
-            data.push({name: '<?= csrf_token() ?>', value: $('input[name=<?= csrf_token() ?>]').val()});
-            $.post(url, data, function(response) {
+            data.push({ name: '<?= csrf_token() ?>', value: $('input[name=<?= csrf_token() ?>]').val() });
+            $.post(url, data, function (response) {
                 if (response.success) {
                     toastr.success(response.message);
                     loadVariants(); // Reload variants after saving
@@ -452,7 +499,7 @@
                 if (response.csrfHash) {
                     $('input[name=<?= csrf_token() ?>]').val(response.csrfHash);
                 }
-            }, 'json').fail(function(xhr) {
+            }, 'json').fail(function (xhr) {
                 toastr.error('Terjadi kesalahan server!');
             });
         });
@@ -525,7 +572,7 @@
         }
         $.post('<?= base_url('master/item/delete_variant/') ?>' + varianId, {
             '<?= csrf_token() ?>': $('input[name=<?= csrf_token() ?>]').val()
-        }, function(response) {
+        }, function (response) {
             if (response.success) {
                 toastr.success(response.message);
                 $(btn).closest('.varian-row').remove();
@@ -535,18 +582,18 @@
             if (response.csrfHash) {
                 $('input[name=<?= csrf_token() ?>]').val(response.csrfHash);
             }
-        }, 'json').fail(function() {
+        }, 'json').fail(function () {
             toastr.error('Terjadi kesalahan server!');
         });
     }
 
     function loadVariants() {
-        $.get('<?= base_url('master/item/get_variants/' . $item->id) ?>', function(response) {
+        $.get('<?= base_url('master/item/get_variants/' . $item->id) ?>', function (response) {
             if (response.success) {
                 const tbody = document.getElementById('varian-tbody');
                 tbody.innerHTML = '';
-                
-                response.variants.forEach(function(variant, index) {
+
+                response.variants.forEach(function (variant, index) {
                     const newRow = document.createElement('tr');
                     newRow.className = 'varian-row';
                     newRow.setAttribute('data-index', index);

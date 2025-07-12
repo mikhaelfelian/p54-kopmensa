@@ -20,6 +20,21 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="control-label">Supplier</label>
+                                <select name="id_supplier" id="id_supplier" class="form-control rounded-0 select2" required>
+                                    <option value="">Pilih Supplier</option>
+                                    <?php foreach ($supplier as $sup): ?>
+                                        <option value="<?= $sup->id ?>" <?= old('id_supplier') == $sup->id ? 'selected' : '' ?>>
+                                            <?= $sup->nama ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="control-label">Kategori</label>
@@ -143,12 +158,21 @@
     </div>
 </div>
 
-<!-- Dropzone CSS & JS -->
-<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css">
-<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+<!-- Select2 CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script type="text/javascript">
     $(document).ready(function () {
+        // Initialize Select2 for supplier dropdown
+    // Initialize Select2
+    $('.select2').select2({
+        theme: 'bootstrap4',
+        width: '100%',
+        
+    });
+        
+        // AutoNumeric for price inputs
         $("input[id=harga]").autoNumeric({aSep: '.', aDec: ',', aPad: false});
     });
 </script>
