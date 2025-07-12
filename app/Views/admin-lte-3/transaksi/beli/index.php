@@ -72,7 +72,7 @@
                             </td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="<?= base_url("transaksi/beli/{$row->id}") ?>" 
+                                    <a href="<?= base_url("transaksi/beli/detail/{$row->id}") ?>" 
                                        class="btn btn-default btn-sm" 
                                        title="Detail">
                                         <i class="fas fa-eye"></i>

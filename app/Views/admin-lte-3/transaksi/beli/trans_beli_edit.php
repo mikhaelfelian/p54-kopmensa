@@ -154,23 +154,6 @@
 
                     <div class="row">
                         <div class="col-md-6">
-                            <!-- Kode Batch -->
-                            <div class="form-group">
-                                <label for="kode_batch">Kode Batch</label>
-                                <input type="text" name="kode_batch" id="kode_batch" class="form-control rounded-0">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <!-- Tanggal ED -->
-                            <div class="form-group">
-                                <label for="tgl_ed">Tanggal ED</label>
-                                <input type="date" name="tgl_ed" id="tgl_ed" class="form-control rounded-0">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
                             <!-- Jumlah -->
                             <div class="form-group">
                                 <label for="jml">Jumlah <span class="text-danger">*</span></label>
@@ -281,11 +264,11 @@
                                             Batch: <?= esc($item->kode_batch) ?> | ED: <?= date('d/m/Y', strtotime($item->tgl_ed)) ?>
                                         </small>
                                     </td>
-                                    <td><?= number_format($item->jml, 2) ?> <?= esc($item->satuan) ?></td>
-                                    <td><?= number_format($item->harga) ?></td>
-                                    <td><?= number_format($item->disk1 + $item->disk2 + $item->disk3, 2) ?>%</td>
-                                    <td><?= number_format($item->potongan) ?></td>
-                                    <td><?= number_format($item->subtotal) ?></td>
+                                    <td><?= format_angka($item->jml, 2) ?> <?= esc($item->satuan) ?></td>
+                                    <td><?= format_angka($item->harga) ?></td>
+                                    <td><?= format_angka($item->disk1 + $item->disk2 + $item->disk3, 2) ?>%</td>
+                                    <td><?= format_angka($item->potongan) ?></td>
+                                    <td><?= format_angka($item->subtotal) ?></td>
                                     <td>
                                         <button type="button" class="btn btn-info btn-sm rounded-0 btn-edit"
                                                 data-id="<?= $item->id ?>">
@@ -356,6 +339,100 @@ $(document).ready(function() {
         // Set No PO field value
         $('#no_po').val(noPo);
     });
+
+    // Load items for the current transaction
+    loadItems();
+
+    // Function to load items
+    function loadItems() {
+        const transactionId = <?= $transaksi->id ?>;
+        
+        $.ajax({
+            url: '<?= base_url('transaksi/beli/get-items/') ?>' + transactionId,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    populateItemDropdown(response.items);
+                } else {
+                    console.error('Error loading items:', response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Ajax error:', error);
+            }
+        });
+    }
+
+    // Function to populate item dropdown
+    function populateItemDropdown(items) {
+        const itemSelect = $('#id_item');
+        itemSelect.empty();
+        itemSelect.append('<option value="">Pilih Item</option>');
+        
+        items.forEach(function(item) {
+            itemSelect.append(`<option value="${item.id}" 
+                data-satuan="${item.satuan}" 
+                data-id-satuan="${item.id_satuan}" 
+                data-jml-satuan="${item.jml_satuan}">
+                ${item.kode} - ${item.item}
+            </option>`);
+        });
+    }
+
+    // Handle item selection
+    $('#id_item').on('change', function() {
+        const selectedOption = $(this).find('option:selected');
+        const satuan = selectedOption.data('satuan');
+        const idSatuan = selectedOption.data('id-satuan');
+        const jmlSatuan = selectedOption.data('jml-satuan');
+        
+        // Set satuan dropdown value
+        $('#id_satuan').val(idSatuan).trigger('change');
+        
+        // You can also set other default values here if needed
+        if (jmlSatuan) {
+            $('#jml_satuan').val(jmlSatuan);
+        }
+    });
+
+    // Load satuan options
+    loadSatuan();
+
+    // Function to load satuan
+    function loadSatuan() {
+        $.ajax({
+            url: '<?= base_url('api/satuan') ?>', // You may need to create this API endpoint
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    populateSatuanDropdown(response.data);
+                }
+            },
+            error: function() {
+                // Fallback: populate with common satuan
+                const commonSatuan = [
+                    {id: 1, satuanBesar: 'PCS'},
+                    {id: 2, satuanBesar: 'BOX'},
+                    {id: 3, satuanBesar: 'KG'},
+                    {id: 4, satuanBesar: 'LITER'}
+                ];
+                populateSatuanDropdown(commonSatuan);
+            }
+        });
+    }
+
+    // Function to populate satuan dropdown
+    function populateSatuanDropdown(satuans) {
+        const satuanSelect = $('#id_satuan');
+        satuanSelect.empty();
+        satuanSelect.append('<option value="">Pilih Satuan</option>');
+        
+        satuans.forEach(function(satuan) {
+            satuanSelect.append(`<option value="${satuan.id}">${satuan.satuanBesar}</option>`);
+        });
+    }
 });
 </script>
 <?= $this->endSection() ?>
