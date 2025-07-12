@@ -24,6 +24,7 @@ class ItemModel extends Model
         'id_kategori',
         'id_satuan',
         'id_merk',
+        'id_supplier',
         'kode',
         'barcode',
         'item',
