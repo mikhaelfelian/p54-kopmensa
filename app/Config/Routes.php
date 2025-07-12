@@ -235,6 +235,12 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->post('beli/update/(:num)', 'TransBeli::update/$1');
 });
 
+// Public API routes
+$routes->group('publik', function ($routes) {
+    $routes->get('items', 'Publik::getItems');
+    $routes->get('items_stock', 'Publik::getItemsStock');
+});
+
 // untuk test
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
