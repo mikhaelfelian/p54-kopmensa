@@ -194,36 +194,6 @@ class TransBeli extends BaseController
                         $this->transBeliDetModel->insert($itemData);
                     }
                 }
-            } else {
-                // If no PO, get items from tbl_m_item where status=1
-                $items = $this->db->table('tbl_m_item')
-                                 ->where('status', '1')
-                                 ->get()
-                                 ->getResult();
-
-                foreach ($items as $item) {
-                    // Get default satuan for the item
-                    $satuan = $this->db->table('tbl_m_satuan')
-                                      ->where('id', $item->id_satuan)
-                                      ->get()
-                                      ->getRow();
-
-                    // Insert item
-                    $itemData = [
-                        'id_user'       => $this->ionAuth->user()->row()->id,
-                        'id_pembelian'  => $id,
-                        'id_item'       => $item->id,
-                        'id_satuan'     => $item->id_satuan ?? 1, // Default to first satuan if not set
-                        'tgl_masuk'     => $data['tgl_masuk'],
-                        'kode'          => $item->kode,
-                        'item'          => $item->item,
-                        'jml'           => 0, // Default quantity
-                        'jml_satuan'    => $satuan ? $satuan->jml : 1,
-                        'satuan'        => $satuan ? $satuan->satuanBesar : 'PCS'
-                    ];
-
-                    $this->transBeliDetModel->insert($itemData);
-                }
             }
 
             $this->db->transComplete();
