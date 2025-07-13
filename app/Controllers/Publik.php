@@ -202,5 +202,43 @@ class Publik extends BaseController
         }
     }
 
+    public function getSatuan()
+    {
+        try {
+            // Load SatuanModel
+            $satuanModel = new \App\Models\SatuanModel();
+
+            // Get all satuan as associative arrays
+            $satuans = $satuanModel->findAll();
+
+            // Format data as array of associative arrays (like items API)
+            $result = [];
+            foreach ($satuans as $satuan) {
+                $result[] = [
+                    'id'          => isset($satuan->id) ? $satuan->id : null,
+                    'kode'        => isset($satuan->kode) ? $satuan->kode : null,
+                    'satuanBesar' => isset($satuan->satuanBesar) ? $satuan->satuanBesar : null,
+                    'jml'         => isset($satuan->jml) ? (float)$satuan->jml : null,
+                ];
+            }
+
+            // Send JSON response in the required format
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($result);
+            exit();
+        } catch (\Exception $e) {
+            // Log the error
+            log_message('error', '[Publik::getSatuan] Error: ' . $e->getMessage());
+
+            // Send error response
+            header('HTTP/1.1 500 Internal Server Error');
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success' => false,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Internal server error'
+            ]);
+            exit();
+        }
+    }
 
 } 

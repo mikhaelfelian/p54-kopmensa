@@ -374,6 +374,221 @@ class TransBeli extends BaseController
     }
 
     /**
+     * Add item to purchase transaction cart
+     * 
+     * @param int $id Transaction ID
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function cart_add($id)
+    {
+        try {
+            // Check if transaction exists
+            $transaksi = $this->transBeliModel->find($id);
+            if (!$transaksi) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan'
+                ])->setStatusCode(404);
+            }
+
+            // Check if transaction is in draft status
+            if ($transaksi->status_nota != '0') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Hanya transaksi draft yang dapat diubah'
+                ])->setStatusCode(400);
+            }
+
+            // Validation rules
+            $rules = [
+                'id_item' => [
+                    'rules'  => 'required|numeric',
+                    'errors' => [
+                        'required' => 'Item harus dipilih',
+                        'numeric'  => 'Item tidak valid'
+                    ]
+                ],
+                'jml' => [
+                    'rules'  => 'required|numeric|greater_than[0]',
+                    'errors' => [
+                        'required'     => 'Jumlah harus diisi',
+                        'numeric'      => 'Jumlah harus berupa angka',
+                        'greater_than' => 'Jumlah harus lebih dari 0'
+                    ]
+                ],
+                'id_satuan' => [
+                    'rules'  => 'required|numeric',
+                    'errors' => [
+                        'required' => 'Satuan harus dipilih',
+                        'numeric'  => 'Satuan tidak valid'
+                    ]
+                ],
+                'harga' => [
+                    'rules'  => 'required',
+                    'errors' => [
+                        'required'     => 'Harga harus diisi'
+                    ]
+                ]
+            ];
+
+            // Run validation
+            if (!$this->validate($rules)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $this->validator->getErrors()
+                ])->setStatusCode(400);
+            }
+
+            // Custom validation for harga after cleaning
+            $harga_clean = str_replace(['.', ','], ['', '.'], $this->request->getPost('harga'));
+            if (!is_numeric($harga_clean) || $harga_clean <= 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Harga harus berupa angka yang valid dan lebih dari 0'
+                ])->setStatusCode(400);
+            }
+
+            // Get form data
+            $id_item = $this->request->getPost('id_item');
+            $jml = (float) $this->request->getPost('jml');
+            $id_satuan = $this->request->getPost('id_satuan');
+            $harga = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('harga'));
+            $potongan = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('potongan') ?? '0');
+            $disk1 = (float) ($this->request->getPost('disk1') ?? 0);
+            $disk2 = (float) ($this->request->getPost('disk2') ?? 0);
+            $disk3 = (float) ($this->request->getPost('disk3') ?? 0);
+
+            // Get item details
+            $item = $this->db->table('tbl_m_item')
+                            ->select('tbl_m_item.*, tbl_m_satuan.satuanBesar')
+                            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                            ->where('tbl_m_item.id', $id_item)
+                            ->get()
+                            ->getRow();
+
+            if (!$item) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Item tidak ditemukan'
+                ])->setStatusCode(404);
+            }
+
+            // Get satuan details
+            $satuan = $this->db->table('tbl_m_satuan')
+                              ->where('id', $id_satuan)
+                              ->get()
+                              ->getRow();
+
+            if (!$satuan) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Satuan tidak ditemukan'
+                ])->setStatusCode(404);
+            }
+
+            // Calculate subtotal
+            $subtotal = $jml * $harga;
+            
+            // Apply discounts
+            $total_disk = $disk1 + $disk2 + $disk3;
+            if ($total_disk > 0) {
+                $subtotal = $subtotal - ($subtotal * ($total_disk / 100));
+            }
+            
+            // Apply potongan
+            if ($potongan > 0) {
+                $subtotal = $subtotal - $potongan;
+            }
+
+            // Check if item already exists in cart
+            $existingItem = $this->transBeliDetModel
+                                ->where('id_pembelian', $id)
+                                ->where('id_item', $id_item)
+                                ->first();
+
+            $this->db->transStart();
+
+            if ($existingItem) {
+                // Update existing item
+                $updateData = [
+                    'jml' => $jml,
+                    'id_satuan' => $id_satuan,
+                    'satuan' => $satuan->satuanBesar,
+                    'jml_satuan' => $satuan->jml ?? 1,
+                    'harga' => $harga,
+                    'potongan' => $potongan,
+                    'disk1' => $disk1,
+                    'disk2' => $disk2,
+                    'disk3' => $disk3,
+                    'subtotal' => $subtotal,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ];
+
+                $this->transBeliDetModel->update($existingItem->id, $updateData);
+                $action = 'updated';
+            } else {
+                // Insert new item
+                $insertData = [
+                    'id_user' => $this->ionAuth->user()->row()->id,
+                    'id_pembelian' => $id,
+                    'id_item' => $id_item,
+                    'id_satuan' => $id_satuan,
+                    'tgl_masuk' => $transaksi->tgl_masuk,
+                    'kode' => $item->kode,
+                    'item' => $item->item,
+                    'jml' => $jml,
+                    'jml_satuan' => $satuan->jml ?? 1,
+                    'satuan' => $satuan->satuanBesar,
+                    'harga' => $harga,
+                    'potongan' => $potongan,
+                    'disk1' => $disk1,
+                    'disk2' => $disk2,
+                    'disk3' => $disk3,
+                    'subtotal' => $subtotal,
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+
+                $this->transBeliDetModel->insert($insertData);
+                $action = 'added';
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Gagal menyimpan item');
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Item berhasil ' . ($action == 'added' ? 'ditambahkan' : 'diupdate'),
+                'data' => [
+                    'item' => $item->item,
+                    'action' => $action
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Redirect GET requests to cart_add back to edit page
+     * 
+     * @param int $id Transaction ID
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function cart_add_redirect($id)
+    {
+        return redirect()->to("transaksi/beli/edit/{$id}")
+                        ->with('error', 'Metode tidak diizinkan. Gunakan form untuk menambahkan item.');
+    }
+
+    /**
      * Get items for purchase transaction
      * 
      * @param int $id Transaction ID

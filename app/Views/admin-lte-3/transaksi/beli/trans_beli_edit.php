@@ -143,7 +143,7 @@
                 </h3>
             </div>
             <div class="card-body">
-                <?= form_open('', ['id' => 'form-item']) ?>
+                <?= form_open(base_url("transaksi/beli/cart_add/{$transaksi->id}"), ['id' => 'form-item', 'method' => 'post']) ?>
                     <!-- Item Selection -->
                     <div class="form-group">
                         <label for="id_item">Item <span class="text-danger">*</span></label>
@@ -381,45 +381,92 @@ $(document).ready(function() {
         });
     }
 
-    // Handle item selection
-    $('#id_item').on('change', function() {
-        const selectedOption = $(this).find('option:selected');
-        const satuan = selectedOption.data('satuan');
-        const idSatuan = selectedOption.data('id-satuan');
-        const jmlSatuan = selectedOption.data('jml-satuan');
+    // Handle form submission for adding items
+    $('#form-item').on('submit', function(e) {
+        console.log('Form submission intercepted by JavaScript');
+        e.preventDefault();
         
-        // Set satuan dropdown value
-        $('#id_satuan').val(idSatuan).trigger('change');
+        const formData = $(this).serialize();
+        const actionUrl = $(this).attr('action');
         
-        // You can also set other default values here if needed
-        if (jmlSatuan) {
-            $('#jml_satuan').val(jmlSatuan);
-        }
+        console.log('Form action URL:', actionUrl);
+        console.log('Form data:', formData);
+        
+        $.ajax({
+            url: actionUrl,
+            type: 'POST',
+            data: formData,
+            dataType: 'json',
+            beforeSend: function() {
+                console.log('Sending POST request to:', actionUrl);
+                // Disable submit button and show loading state
+                $('#form-item button[type="submit"]').prop('disabled', true)
+                    .html('<i class="fas fa-spinner fa-spin mr-1"></i> Menambahkan...');
+            },
+            success: function(response) {
+                console.log('Success response:', response);
+                if (response.success) {
+                    // Show success message
+                    toastr.success(response.message);
+                    
+                    // Clear form
+                    $('#form-item')[0].reset();
+                    $('#id_item').val('').trigger('change');
+                    $('#id_satuan').val('').trigger('change');
+                    
+                    // Refresh the page to show updated items
+                    location.reload();
+                } else {
+                    // Show error message
+                    toastr.error(response.message);
+                    
+                    // Show validation errors if any
+                    if (response.errors) {
+                        let errorMessage = '';
+                        for (let field in response.errors) {
+                            errorMessage += response.errors[field] + '<br>';
+                        }
+                        toastr.error(errorMessage);
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Ajax error:', error);
+                console.error('XHR response:', xhr.responseText);
+                toastr.error('Terjadi kesalahan saat menambahkan item');
+            },
+            complete: function() {
+                // Re-enable submit button
+                $('#form-item button[type="submit"]').prop('disabled', false)
+                    .html('<i class="fas fa-plus mr-1"></i> Tambah');
+            }
+        });
     });
 
-    // Load satuan options
+    // Load satuan options dynamically from JSON API
     loadSatuan();
 
-    // Function to load satuan
+    // Function to load satuan from /publik/satuan
     function loadSatuan() {
         $.ajax({
-            url: '<?= base_url('api/satuan') ?>', // You may need to create this API endpoint
+            url: '<?= base_url('publik/satuan') ?>',
             type: 'GET',
             dataType: 'json',
             success: function(response) {
-                if (response.success) {
+                // The API returns an array of satuan objects, not wrapped in {success:..., data:...}
+                // So we expect response to be an array
+                if (Array.isArray(response)) {
+                    populateSatuanDropdown(response);
+                } else if (response.data && Array.isArray(response.data)) {
+                    // fallback if API ever wraps in {data: [...]}
                     populateSatuanDropdown(response.data);
+                } else {
+                    $('#id_satuan').empty().append('<option value="">Pilih Satuan</option>');
                 }
             },
             error: function() {
-                // Fallback: populate with common satuan
-                const commonSatuan = [
-                    {id: 1, satuanBesar: 'PCS'},
-                    {id: 2, satuanBesar: 'BOX'},
-                    {id: 3, satuanBesar: 'KG'},
-                    {id: 4, satuanBesar: 'LITER'}
-                ];
-                populateSatuanDropdown(commonSatuan);
+                // Leave blank: do not populate satuan dropdown on error
+                $('#id_satuan').empty().append('<option value="">Pilih Satuan</option>');
             }
         });
     }
@@ -431,11 +478,17 @@ $(document).ready(function() {
         satuanSelect.append('<option value="">Pilih Satuan</option>');
         
         satuans.forEach(function(satuan) {
-            satuanSelect.append(`<option value="${satuan.id}">${satuan.satuanBesar}</option>`);
+            // satuan.id, satuan.satuanBesar, satuan.jml, satuan.kode may be present
+            // Show satuanBesar, and optionally show jml if >1
+            let label = satuan.satuanBesar;
+            if (satuan.jml && satuan.jml > 1) {
+                label += ` (${satuan.jml})`;
+            }
+            satuanSelect.append(`<option value="${satuan.id}">${label}</option>`);
         });
     }
+    
 });
 </script>
 <?= $this->endSection() ?>
-
 <?= $this->endSection() ?>
