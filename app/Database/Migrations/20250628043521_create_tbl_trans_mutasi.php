@@ -112,7 +112,7 @@ class CreateTblTransMutasi extends Migration
             ],
             'tipe' => [
                 'type'       => 'ENUM',
-                'constraint' => ['0', '1', '2', '3'],
+                'constraint' => ['0', '1', '2', '3','4'],
                 'null'       => true,
                 'default'    => '0',
                 'comment'    => '1 = Pindah Gudang, 2 = Stok Masuk, 3 = Stok Keluar',
