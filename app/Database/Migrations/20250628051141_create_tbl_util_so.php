@@ -69,6 +69,13 @@ class CreateTblUtilSo extends Migration
                 'null'       => true,
                 'default'    => '0',
             ],
+            'tipe' => [
+                'type'       => 'ENUM',
+                'constraint' => ['1', '2'],
+                'null'       => true,
+                'default'    => '1',
+                'comment'    => "1 = Gudang\n2 = Toko",
+            ],
             'status' => [
                 'type'       => 'ENUM',
                 'constraint' => ['0', '1', '2', '3'],
