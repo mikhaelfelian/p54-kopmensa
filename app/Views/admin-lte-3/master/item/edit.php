@@ -124,9 +124,9 @@
                         <div class="form-group">
                             <label class="control-label">Tipe</label>
                             <select name="tipe" class="form-control rounded-0">
-                                <option value="1" <?= old('tipe', $item->tipe) == '1' ? 'selected' : '' ?>>Item</option>
-                                <option value="2" <?= old('tipe', $item->tipe) == '2' ? 'selected' : '' ?>>Jasa</option>
-                                <option value="3" <?= old('tipe', $item->tipe) == '3' ? 'selected' : '' ?>>Paket</option>
+                                <option value="1" <?= old('tipe', $item->tipe ?? '1') == '1' ? 'selected' : '' ?>>Item</option>
+                                <option value="2" <?= old('tipe', $item->tipe ?? '1') == '2' ? 'selected' : '' ?>>Jasa</option>
+                                <option value="3" <?= old('tipe', $item->tipe ?? '1') == '3' ? 'selected' : '' ?>>Paket</option>
                             </select>
                         </div>
                     </div>
