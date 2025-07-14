@@ -81,7 +81,7 @@ class ItemStokModel extends Model
     }
 
     /**
-     * Update stock quantity for an item
+     * Update stock quantity for an item in warehouse
      *
      * @param int $itemId
      * @param int $gudangId
@@ -104,6 +104,37 @@ class ItemStokModel extends Model
             return $this->insert([
                 'id_item' => $itemId,
                 'id_gudang' => $gudangId,
+                'jml' => $quantity,
+                'id_user' => $userId,
+                'status' => '1'
+            ]);
+        }
+    }
+
+    /**
+     * Update stock quantity for an item in outlet
+     *
+     * @param int $itemId
+     * @param int $outletId
+     * @param float $quantity
+     * @param int $userId
+     * @return bool
+     */
+    public function updateStockOutlet($itemId, $outletId, $quantity, $userId = 1)
+    {
+        $existingStock = $this->getStockByItemAndOutlet($itemId, $outletId);
+        
+        if ($existingStock) {
+            // Update existing stock
+            return $this->update($existingStock->id, [
+                'jml' => $quantity,
+                'id_user' => $userId
+            ]);
+        } else {
+            // Create new stock record
+            return $this->insert([
+                'id_item' => $itemId,
+                'id_outlet' => $outletId,
                 'jml' => $quantity,
                 'id_user' => $userId,
                 'status' => '1'
