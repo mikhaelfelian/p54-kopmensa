@@ -94,7 +94,7 @@
                         <p>Transfer ini sudah selesai dan tidak dapat ditambahkan item lagi.</p>
                     </div>
                 <?php else: ?>
-                    <form action="<?= base_url("gudang/transfer/process/{$transfer->id}") ?>" method="post" id="transferItemForm">
+                    <?= form_open(base_url("gudang/transfer/process/{$transfer->id}"), ['id' => 'transferItemForm']) ?>
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="table-responsive">
@@ -157,7 +157,7 @@
                                 </a>
                             </div>
                         </div>
-                    </form>
+                    <?= form_close() ?>
                 <?php endif; ?>
             </div>
         </div>

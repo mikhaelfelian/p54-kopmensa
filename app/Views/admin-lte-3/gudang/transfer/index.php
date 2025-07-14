@@ -72,21 +72,18 @@
                                     </td>
                                     <td>
                                         <?php
-                                        $tipeLabels = [
-                                            '0' => 'Draft',
-                                            '1' => 'Pindah Gudang',
-                                            '2' => 'Stok Masuk',
-                                            '3' => 'Stok Keluar'
-                                        ];
-                                        $tipeColors = [
-                                            '0' => 'secondary',
-                                            '1' => 'info',
-                                            '2' => 'success',
-                                            '3' => 'warning'
-                                        ];
+                                        if ($row->tipe == '0') {
+                                            // Draft, not covered by statusMutasi
+                                            $label = 'Draft';
+                                            $badge = 'secondary';
+                                        } else {
+                                            $mutasi = statusMutasi($row->tipe);
+                                            $label = $mutasi['label'] ?? 'Unknown';
+                                            $badge = $mutasi['badge'] ?? 'secondary';
+                                        }
                                         ?>
-                                        <span class="badge badge-<?= $tipeColors[$row->tipe] ?? 'secondary' ?>">
-                                            <?= $tipeLabels[$row->tipe] ?? 'Unknown' ?>
+                                        <span class="badge badge-<?= $badge ?>">
+                                            <?= $label ?>
                                         </span>
                                     </td>
                                     <td><?= $row->id_gd_asal ?? '-' ?></td>

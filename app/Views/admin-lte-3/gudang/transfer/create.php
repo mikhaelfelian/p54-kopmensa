@@ -22,7 +22,8 @@
                     </a>
                 </div>
             </div>
-            <?= form_open(base_url('gudang/transfer/store'), ['id' => 'transferForm']) ?>
+            <form action="<?= base_url('gudang/transfer/store') ?>" method="post" id="transferForm">
+                <?= csrf_field() ?>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -126,7 +127,7 @@
                         <i class="fas fa-times"></i> Batal
                     </a>
                 </div>
-            <?= form_close() ?>
+            </form>
         </div>
     </div>
 </div>
