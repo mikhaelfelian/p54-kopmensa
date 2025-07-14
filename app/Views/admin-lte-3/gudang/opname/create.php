@@ -43,12 +43,33 @@
                         </div>
                         
                         <div class="form-group">
+                            <label for="opname_type">Tipe Opname <i class="text-danger">*</i></label>
+                            <select name="opname_type" id="opname_type" class="form-control rounded-0" required>
+                                <option value="">- Pilih Tipe Opname -</option>
+                                <option value="gudang">Opname Gudang</option>
+                                <option value="outlet">Opname Outlet</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="gudang_section" style="display: none;">
                             <label for="gudang">Gudang <i class="text-danger">*</i></label>
-                            <select name="id_gudang" class="form-control rounded-0">
+                            <select name="id_gudang" id="id_gudang" class="form-control rounded-0">
                                 <option value="">- Pilih Gudang -</option>
                                 <?php foreach ($gudang as $gd): ?>
                                     <option value="<?= $gd->id ?>">
                                         <?= $gd->gudang ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group" id="outlet_section" style="display: none;">
+                            <label for="outlet">Outlet <i class="text-danger">*</i></label>
+                            <select name="id_outlet" id="id_outlet" class="form-control rounded-0">
+                                <option value="">- Pilih Outlet -</option>
+                                <?php foreach ($outlet as $ot): ?>
+                                    <option value="<?= $ot->id ?>">
+                                        <?= $ot->nama ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -91,6 +112,52 @@ $(document).ready(function() {
         format: 'yyyy-mm-dd',
         autoclose: true,
         todayHighlight: true
+    });
+    
+    // Handle opname type selection
+    $('#opname_type').on('change', function() {
+        const selectedType = $(this).val();
+        
+        // Hide all sections first
+        $('#gudang_section, #outlet_section').hide();
+        
+        // Clear previous selections
+        $('#id_gudang, #id_outlet').val('').removeAttr('required');
+        
+        // Show relevant section based on selection
+        if (selectedType === 'gudang') {
+            $('#gudang_section').fadeIn(300);
+            $('#id_gudang').attr('required', true);
+        } else if (selectedType === 'outlet') {
+            $('#outlet_section').fadeIn(300);
+            $('#id_outlet').attr('required', true);
+        }
+    });
+    
+    // Form validation
+    $('#opname_form').on('submit', function(e) {
+        const opnameType = $('#opname_type').val();
+        
+        if (!opnameType) {
+            e.preventDefault();
+            alert('Silakan pilih tipe opname terlebih dahulu!');
+            $('#opname_type').focus();
+            return false;
+        }
+        
+        if (opnameType === 'gudang' && !$('#id_gudang').val()) {
+            e.preventDefault();
+            alert('Silakan pilih gudang!');
+            $('#id_gudang').focus();
+            return false;
+        }
+        
+        if (opnameType === 'outlet' && !$('#id_outlet').val()) {
+            e.preventDefault();
+            alert('Silakan pilih outlet!');
+            $('#id_outlet').focus();
+            return false;
+        }
     });
 });
 </script>
