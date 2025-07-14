@@ -66,12 +66,7 @@
                     </div>
                 </div>
                 <div class="card-body table-responsive">
-                    <form action="https://simrs.esensia.co.id/gudang/set_stok_update_gd.php" autocomplete="off"
-                        method="post" accept-charset="utf-8">
-                        <input type="hidden" name="medkit_tokens" value="f9944a5c80bc3376cebd8b2b0822be98">
-
-                        <input type="hidden" name="id"
-                            value="MjcxODMxYTNhYjVhMmE2YjgwOGFmMTVmYTM4YjA0MjU3M2RhNDEyNjI1ZDc1NjkxYzI1YjVmMmJkYWFmYTBkOWVmMjEwMWQ3OTg3MGM4ZWE5NGI0Y2Q2OWNiZmM1MjU0MWMwZDA2NjMxNjdmMjAzNjA4ODBlZDg5NzdkZjI3YzNNa2FidS9XRWpvTHlnQXZ3RkpMSnpmekVndWJId0Uva0V3RWtVb2pJZWtNPQ--">
+                    <?= form_open(base_url("gudang/stok/update/{$item->id}"), ['autocomplete' => 'off', 'id' => 'stock-update-form']) ?>
                         <table class="table table-striped">
                             <thead>
                                 <tr>
@@ -86,13 +81,20 @@
                                     <th><?= $outlet->outlet_nama ?? $outlet->gudang_nama ?? $outlet->nama ?></th>
                                     <th>:</th>
                                     <td class="text-right" style="width: 120px;">
-                                        <input type="text" name="jml[<?= $outlet->id_outlet ?>]" value="<?= $outlet->jml ?? 0 ?>" id="jml"
-                                            class="form-control rounded-0">
+                                        <input type="number" 
+                                               name="jml[<?= $outlet->id_outlet ?? $outlet->id_gudang ?>]" 
+                                               value="<?= $outlet->jml ?? 0 ?>" 
+                                               class="form-control rounded-0" 
+                                               min="0" 
+                                               step="0.01">
                                     </td>
                                     <td class="text-left">PCS</td>
                                     <td class="text-left">
-                                        <button type="submit" class="btn btn-primary btn-flat"><i
-                                                class="fa fa-save"></i></button>
+                                        <button type="submit" 
+                                                class="btn btn-primary btn-flat btn-sm" 
+                                                onclick="updateSingleStock(this, <?= $outlet->id_outlet ?? $outlet->id_gudang ?>)">
+                                            <i class="fa fa-save"></i>
+                                        </button>
                                     </td>
                                     <td class="text-left">
                                         <?php if ($outlet->status == '1'): ?>
@@ -105,7 +107,16 @@
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
-                    </form>
+                        
+                        <div class="stock-update-buttons">
+                            <button type="submit" class="btn btn-success btn-flat">
+                                <i class="fa fa-save mr-1"></i> Update Semua Stok
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-flat" onclick="resetForm()">
+                                <i class="fa fa-undo mr-1"></i> Reset
+                            </button>
+                        </div>
+                    <?= form_close() ?>
                 </div>
             </div>
         </div>
@@ -187,4 +198,195 @@
     </div>
     <!-- /.row -->
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
+<script>
+// Store original values for reset functionality
+var originalValues = {};
+
+$(document).ready(function() {
+    // Store original stock values
+    $('input[name^="jml["]').each(function() {
+        originalValues[$(this).attr('name')] = $(this).val();
+    });
+    
+    // Show success/error messages
+    <?php if (session()->getFlashdata('success')): ?>
+        toastr.success('<?= session()->getFlashdata('success') ?>');
+    <?php endif; ?>
+    
+    <?php if (session()->getFlashdata('error')): ?>
+        toastr.error('<?= session()->getFlashdata('error') ?>');
+    <?php endif; ?>
+});
+
+// Function to update single stock item
+function updateSingleStock(button, locationId) {
+    event.preventDefault();
+    
+    var $button = $(button);
+    var $row = $button.closest('tr');
+    var $input = $row.find('input[name^="jml["]');
+    var quantity = $input.val();
+    
+    if (quantity === '' || isNaN(quantity) || parseFloat(quantity) < 0) {
+        toastr.error('Jumlah stok harus berupa angka yang valid dan tidak boleh negatif');
+        return false;
+    }
+    
+    // Create temporary form data for single item
+    var formData = new FormData();
+    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+    formData.append($input.attr('name'), quantity);
+    
+    // Show loading state
+    var originalHtml = $button.html();
+    $button.html('<i class="fa fa-spinner fa-spin"></i>').prop('disabled', true);
+    
+    $.ajax({
+        url: '<?= base_url("gudang/stok/update/{$item->id}") ?>',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            toastr.success('Stok berhasil diupdate');
+            // Update the original value
+            originalValues[$input.attr('name')] = quantity;
+        },
+        error: function(xhr, status, error) {
+            toastr.error('Gagal mengupdate stok: ' + error);
+        },
+        complete: function() {
+            // Restore button state
+            $button.html(originalHtml).prop('disabled', false);
+        }
+    });
+}
+
+// Function to reset form to original values
+function resetForm() {
+    if (confirm('Apakah Anda yakin ingin mereset semua nilai ke nilai awal?')) {
+        $('input[name^="jml["]').each(function() {
+            var fieldName = $(this).attr('name');
+            if (originalValues[fieldName] !== undefined) {
+                $(this).val(originalValues[fieldName]);
+            }
+        });
+        toastr.info('Form telah direset ke nilai awal');
+    }
+}
+
+// Handle form submission for updating all stocks
+$('#stock-update-form').on('submit', function(e) {
+    e.preventDefault();
+    
+    var $form = $(this);
+    var hasChanges = false;
+    
+    // Check if any values have changed
+    $('input[name^="jml["]').each(function() {
+        var fieldName = $(this).attr('name');
+        if (originalValues[fieldName] !== $(this).val()) {
+            hasChanges = true;
+            return false; // break loop
+        }
+    });
+    
+    if (!hasChanges) {
+        toastr.warning('Tidak ada perubahan data untuk diupdate');
+        return false;
+    }
+    
+    // Validate all inputs
+    var isValid = true;
+    $('input[name^="jml["]').each(function() {
+        var value = $(this).val();
+        if (value !== '' && (isNaN(value) || parseFloat(value) < 0)) {
+            $(this).addClass('is-invalid');
+            isValid = false;
+        } else {
+            $(this).removeClass('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        toastr.error('Pastikan semua jumlah stok berupa angka yang valid dan tidak negatif');
+        return false;
+    }
+    
+    if (confirm('Apakah Anda yakin ingin mengupdate semua stok?')) {
+        // Show loading state
+        var $submitBtn = $form.find('button[type="submit"]');
+        var originalBtnText = $submitBtn.html();
+        $submitBtn.html('<i class="fa fa-spinner fa-spin mr-1"></i> Mengupdate...').prop('disabled', true);
+        
+        // Submit form normally
+        $form.off('submit').submit();
+    }
+});
+
+// Remove invalid class when user types
+$('input[name^="jml["]').on('input', function() {
+    $(this).removeClass('is-invalid');
+});
+</script>
+<?= $this->endSection() ?>
+
+<?= $this->section('css') ?>
+<style>
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.is-invalid:focus {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.btn-flat {
+    border-radius: 0 !important;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.stock-update-buttons {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.table-responsive {
+    border-radius: 5px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+</style>
 <?= $this->endSection() ?>

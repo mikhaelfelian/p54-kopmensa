@@ -296,4 +296,148 @@ class Inventori extends BaseController
 
         return view($this->theme->getThemePath() . '/gudang/inventori/detail', $data);
     }
+
+    /**
+     * Update stock quantity for specific outlet/warehouse
+     * 
+     * @param int $id Item ID
+     * @return \CodeIgniter\HTTP\RedirectResponse
+     */
+    public function updateStock($id)
+    {
+        // Check if item exists
+        $item = $this->itemModel->find($id);
+        if (!$item) {
+            return redirect()->back()->with('error', 'Item tidak ditemukan.');
+        }
+
+        // Get form data - expecting jml array with outlet/warehouse IDs as keys
+        $jmlData = $this->request->getPost('jml');
+        $outletId = $this->request->getPost('outlet_id');
+        $gudangId = $this->request->getPost('gudang_id');
+
+        if (!$jmlData) {
+            return redirect()->back()->with('error', 'Data stok tidak ditemukan.');
+        }
+
+        try {
+            $this->db = \Config\Database::connect();
+            $this->db->transStart();
+
+            $updatedCount = 0;
+
+            // Process each stock update
+            foreach ($jmlData as $locationId => $quantity) {
+                $quantity = (float) $quantity;
+                
+                // Determine if this is outlet or warehouse stock
+                $existingStock = null;
+                $isOutlet = false;
+                
+                // First check if it's an outlet
+                $outletStock = $this->itemStokModel
+                    ->where('id_item', $id)
+                    ->where('id_outlet', $locationId)
+                    ->first();
+                
+                if ($outletStock) {
+                    $existingStock = $outletStock;
+                    $isOutlet = true;
+                } else {
+                    // Check if it's a warehouse
+                    $warehouseStock = $this->itemStokModel
+                        ->where('id_item', $id)
+                        ->where('id_gudang', $locationId)
+                        ->first();
+                    
+                    if ($warehouseStock) {
+                        $existingStock = $warehouseStock;
+                        $isOutlet = false;
+                    }
+                }
+
+                if ($existingStock) {
+                    // Update existing stock record
+                    $updateData = [
+                        'jml' => $quantity,
+                        'id_user' => $this->ionAuth->user()->row()->id,
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ];
+                    
+                    $result = $this->itemStokModel->update($existingStock->id, $updateData);
+                    if ($result) {
+                        $updatedCount++;
+                    }
+                } else {
+                    // Create new stock record
+                    $insertData = [
+                        'id_item' => $id,
+                        'jml' => $quantity,
+                        'id_user' => $this->ionAuth->user()->row()->id,
+                        'status' => '1',
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+
+                    if ($isOutlet) {
+                        $insertData['id_outlet'] = $locationId;
+                        $insertData['id_gudang'] = null;
+                    } else {
+                        $insertData['id_gudang'] = $locationId;
+                        $insertData['id_outlet'] = null;
+                    }
+                    
+                    $result = $this->itemStokModel->insert($insertData);
+                    if ($result) {
+                        $updatedCount++;
+                    }
+                }
+
+                // Add to history
+                $historyData = [
+                    'id_item' => $id,
+                    'id_user' => $this->ionAuth->user()->row()->id,
+                    'tgl_masuk' => date('Y-m-d H:i:s'),
+                    'no_nota' => 'STOCK-UPDATE-' . date('YmdHis'),
+                    'kode' => $item->kode,
+                    'item' => $item->item,
+                    'keterangan' => 'Update Stok Manual',
+                    'jml' => $quantity,
+                    'status' => '2', // Stok Masuk
+                    'sp' => '0'
+                ];
+
+                if ($isOutlet) {
+                    $historyData['id_outlet'] = $locationId;
+                } else {
+                    $historyData['id_gudang'] = $locationId;
+                }
+
+                // Insert history if ItemHistModel exists
+                if (class_exists('App\Models\ItemHistModel')) {
+                    $itemHistModel = new \App\Models\ItemHistModel();
+                    $itemHistModel->addHistory($historyData);
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Gagal mengupdate stok');
+            }
+
+            $message = $updatedCount > 0 ? 
+                "Berhasil mengupdate {$updatedCount} stok item." : 
+                "Tidak ada stok yang diupdate.";
+
+            return redirect()->back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            if ($this->db->transStatus() !== false) {
+                $this->db->transRollback();
+            }
+            
+            log_message('error', 'Stock update failed: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengupdate stok: ' . $e->getMessage());
+        }
+    }
 } 
