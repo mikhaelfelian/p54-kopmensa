@@ -147,10 +147,12 @@ class Transfer extends BaseController
             $rules['id_gd_tujuan'] = 'required';
         } elseif ($tipe == '3') { // Stok Keluar
             $rules['id_gd_asal'] = 'required';
+        } elseif ($tipe == '4') { // Pindah Outlet
+            $rules['id_outlet'] = 'required';
         }
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to(base_url('gudang/transfer'))->withInput()->with('errors', $this->validator->getErrors());
         }
 
         // Get form data using explicit variable assignment pattern
@@ -181,7 +183,7 @@ class Transfer extends BaseController
             return redirect()->to(base_url('gudang/transfer'))
                 ->with('success', 'Data transfer berhasil disimpan!');
         } catch (\Exception $e) {
-            return redirect()->back()
+            return redirect()->to(base_url('gudang/transfer'))
                 ->withInput()
                 ->with('error', 'Gagal menyimpan data transfer: ' . $e->getMessage());
         }
