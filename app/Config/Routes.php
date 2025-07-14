@@ -168,6 +168,7 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     // Inventori / Stok
     $routes->get('stok', 'Inventori::index');
     $routes->get('stok/detail/(:num)', 'Inventori::detail/$1');
+    $routes->post('stok/update/(:num)', 'Inventori::updateStock/$1');
     $routes->get('stok/export_excel', 'Inventori::export_to_excel');
     
     // Transfer / Mutasi
