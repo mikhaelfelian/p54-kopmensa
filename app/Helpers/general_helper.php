@@ -236,6 +236,46 @@ if (!function_exists('statusHist')) {
     }
 }
 
+if (!function_exists('statusMutasi')) {
+    /**
+     * Mendapatkan label dan badge status mutasi transfer gudang.
+     * 
+     * @param string|int $status
+     * @return array
+     */
+    function statusMutasi($status)
+    {
+        switch ($status) {
+            case '1':
+                return [
+                    'label' => 'Pindah Gudang',
+                    'badge' => 'primary'
+                ];
+            case '2':
+                return [
+                    'label' => 'Stok Masuk',
+                    'badge' => 'success'
+                ];
+            case '3':
+                return [
+                    'label' => 'Stok Keluar',
+                    'badge' => 'danger'
+                ];
+            case '4':
+                return [
+                    'label' => 'Pindah Outlet',
+                    'badge' => 'info'
+                ];
+            default:
+                return [
+                    'label' => '-',
+                    'badge' => 'secondary'
+                ];
+        }
+    }
+}
+
+
 if (!function_exists('isItemActive')) {
     function isItemActive($status)
     {
