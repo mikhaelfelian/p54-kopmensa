@@ -66,8 +66,8 @@ class Opname extends BaseController
         foreach ($opnameData as $opname) {
             // Check if id_user is not null before calling user() method
             if ($opname->id_user) {
-                $user = $this->ionAuth->user($opname->id_user)->row();
-                $opname->user_name = $user ? $user->first_name : 'Unknown User';
+            $user = $this->ionAuth->user($opname->id_user)->row();
+            $opname->user_name = $user ? $user->first_name : 'Unknown User';
             } else {
                 $opname->user_name = 'Unknown User';
             }
@@ -182,14 +182,14 @@ class Opname extends BaseController
             'tipe'       => $tipe,
         ];
 
-            try {
-                // Save to database
+        try {
+            // Save to database
                 $this->utilSOModel->save($data);
-
+            
                 return redirect()->to(base_url('gudang/opname'))->with('success', "Data opname {$opn_tipe['label']} berhasil disimpan.");
-            } catch (\Exception $e) {
+        } catch (\Exception $e) {
                 return redirect()->to(base_url('gudang/opname/create'))->withInput()->with('error', 'Gagal menyimpan data opname: ' . $e->getMessage());
-            }
+        }
     }
 
     public function detail($id)
@@ -201,8 +201,8 @@ class Opname extends BaseController
 
         // Get user data
         if ($opname->id_user) {
-            $user = $this->ionAuth->user($opname->id_user)->row();
-            $opname->user_name = $user ? $user->first_name : 'Unknown User';
+        $user = $this->ionAuth->user($opname->id_user)->row();
+        $opname->user_name = $user ? $user->first_name : 'Unknown User';
         } else {
             $opname->user_name = 'Unknown User';
         }

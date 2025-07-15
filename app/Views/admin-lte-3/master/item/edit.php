@@ -388,7 +388,7 @@
         
         // Initialize existing price inputs with AutoNumeric
         $('.price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
-        
+
         // Set initial price index
         window.priceIndex = $('.price-row').length;
         
@@ -405,15 +405,15 @@
         
         const newRowHtml = `
             <tr class="price-row" data-index="${currentIndex}" style="display: none;">
-                <td class="align-middle">
+            <td class="align-middle">
                     <input type="text" 
                            name="prices[${currentIndex}][nama]" 
                            class="form-control rounded-0" 
                            placeholder="Contoh: Ecer, Grosir, Distributor" 
                            required>
-                    <div class="invalid-feedback">Nama level harga wajib diisi.</div>
-                </td>
-                <td class="align-middle">
+                <div class="invalid-feedback">Nama level harga wajib diisi.</div>
+            </td>
+            <td class="align-middle">
                     <input type="number" 
                            name="prices[${currentIndex}][jml_min]" 
                            class="form-control rounded-0" 
@@ -421,30 +421,30 @@
                            min="1" 
                            value="1" 
                            required>
-                    <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
-                </td>
-                <td class="align-middle">
+                <div class="invalid-feedback">Jumlah minimal wajib diisi.</div>
+            </td>
+            <td class="align-middle">
                     <input type="text" 
                            name="prices[${currentIndex}][harga]" 
                            class="form-control rounded-0 price-input" 
                            placeholder="0" 
                            required>
-                    <div class="invalid-feedback">Harga wajib diisi.</div>
-                </td>
-                <td class="align-middle">
+                <div class="invalid-feedback">Harga wajib diisi.</div>
+            </td>
+            <td class="align-middle">
                     <input type="text" 
                            name="prices[${currentIndex}][keterangan]" 
                            class="form-control rounded-0" 
                            placeholder="Keterangan tambahan (opsional)">
-                </td>
-                <td class="align-middle text-center">
+            </td>
+            <td class="align-middle text-center">
                     <button type="button" 
                             class="btn btn-danger btn-sm rounded-0 remove-price-btn" 
                             data-toggle="tooltip" 
                             title="Hapus baris ini">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
             </tr>
         `;
 
@@ -453,7 +453,7 @@
         
         // Show with animation
         $newRow.fadeIn(300);
-        
+
         // Initialize AutoNumeric for new price input
         $newRow.find('.price-input').autoNumeric({ 
             aSep: '.', 
@@ -523,20 +523,20 @@
             },
             dataType: 'json',
             success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
+            if (response.success) {
+                toastr.success(response.message);
                     $btn.closest('.price-row').fadeOut(300, function() {
                         $(this).remove();
                         reindexPriceRows();
                     });
-                } else {
-                    toastr.error(response.message || 'Gagal menghapus harga!');
+            } else {
+                toastr.error(response.message || 'Gagal menghapus harga!');
                     $btn.html(originalHtml).prop('disabled', false);
-                }
+            }
                 
-                if (response.csrfHash) {
+            if (response.csrfHash) {
                     $('input[name="<?= csrf_token() ?>"]').val(response.csrfHash);
-                }
+            }
             },
             error: function() {
                 toastr.error('Terjadi kesalahan server!');
