@@ -160,4 +160,106 @@ class ItemStokModel extends Model
         
         return $result ? (float) $result->jml : 0;
     }
+
+    /**
+     * Get comprehensive stock summary for a specific item
+     *
+     * @param int $itemId
+     * @return array
+     */
+    public function getStockSummary($itemId)
+    {
+        // Get stock by warehouse
+        $stockByWarehouse = $this->select('
+                tbl_m_item_stok.id_gudang,
+                tbl_m_item_stok.jml,
+                tbl_m_gudang.gudang as gudang_name,
+                tbl_m_gudang.keterangan as gudang_keterangan
+            ')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'left')
+            ->where('tbl_m_item_stok.id_item', $itemId)
+            ->where('tbl_m_item_stok.status', '1')
+            ->whereNotNull('tbl_m_item_stok.id_gudang')
+            ->orderBy('tbl_m_gudang.gudang', 'ASC')
+            ->findAll();
+
+        // Get stock by outlet
+        $stockByOutlet = $this->select('
+                tbl_m_item_stok.id_outlet,
+                tbl_m_item_stok.jml,
+                tbl_m_outlet.nama as outlet_name,
+                tbl_m_outlet.alamat as outlet_alamat
+            ')
+            ->join('tbl_m_outlet', 'tbl_m_outlet.id = tbl_m_item_stok.id_outlet', 'left')
+            ->where('tbl_m_item_stok.id_item', $itemId)
+            ->where('tbl_m_item_stok.status', '1')
+            ->whereNotNull('tbl_m_item_stok.id_outlet')
+            ->orderBy('tbl_m_outlet.nama', 'ASC')
+            ->findAll();
+
+        // Calculate totals
+        $totalWarehouseStock = 0;
+        $totalOutletStock = 0;
+
+        foreach ($stockByWarehouse as $stock) {
+            $totalWarehouseStock += $stock->jml;
+        }
+
+        foreach ($stockByOutlet as $stock) {
+            $totalOutletStock += $stock->jml;
+        }
+
+        $totalStock = $totalWarehouseStock + $totalOutletStock;
+
+        // Count locations
+        $warehouseCount = count($stockByWarehouse);
+        $outletCount = count($stockByOutlet);
+
+        return [
+            'item_id' => $itemId,
+            'total_stock' => $totalStock,
+            'total_warehouse_stock' => $totalWarehouseStock,
+            'total_outlet_stock' => $totalOutletStock,
+            'warehouse_count' => $warehouseCount,
+            'outlet_count' => $outletCount,
+            'stock_by_warehouse' => $stockByWarehouse,
+            'stock_by_outlet' => $stockByOutlet,
+            'locations_with_stock' => $warehouseCount + $outletCount
+        ];
+    }
+
+    /**
+     * Get stock summary with low stock alerts
+     *
+     * @param int $itemId
+     * @param float $minStock
+     * @return array
+     */
+    public function getStockSummaryWithAlerts($itemId, $minStock = 0)
+    {
+        $summary = $this->getStockSummary($itemId);
+        
+        // Check for low stock alerts
+        $lowStockWarehouses = [];
+        $lowStockOutlets = [];
+        
+        foreach ($summary['stock_by_warehouse'] as $stock) {
+            if ($stock->jml <= $minStock) {
+                $lowStockWarehouses[] = $stock;
+            }
+        }
+        
+        foreach ($summary['stock_by_outlet'] as $stock) {
+            if ($stock->jml <= $minStock) {
+                $lowStockOutlets[] = $stock;
+            }
+        }
+        
+        $summary['low_stock_warehouses'] = $lowStockWarehouses;
+        $summary['low_stock_outlets'] = $lowStockOutlets;
+        $summary['has_low_stock'] = !empty($lowStockWarehouses) || !empty($lowStockOutlets);
+        $summary['min_stock_threshold'] = $minStock;
+        
+        return $summary;
+    }
 }

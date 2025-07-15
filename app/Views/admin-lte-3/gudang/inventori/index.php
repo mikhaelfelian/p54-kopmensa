@@ -186,7 +186,7 @@
                             <th width="80">Foto</th>
                             <th>Kategori</th>
                             <th>Item</th>
-                            <th class="text-center">Stok Min</th>
+                            <th class="text-center">Stok</th>
                             <th width="100">Aksi</th>
                         </tr>
                     </thead>

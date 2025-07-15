@@ -80,14 +80,16 @@ class ItemHistModel extends Model
     }
 
     /**
-     * Get item history with relations
+     * Get item history with relations and pagination
      *
      * @param int|null $id_item
      * @param int|null $id_gudang
      * @param string|null $status
+     * @param int $perPage
+     * @param int $page
      * @return array
      */
-    public function getWithRelations($id_item = null, $id_gudang = null, $status = null)
+    public function getWithRelationsPaginated($id_item = null, $id_gudang = null, $status = null, $perPage = 10, $page = 1)
     {
         $builder = $this->select('
                 tbl_m_item_hist.*,
@@ -111,9 +113,48 @@ class ItemHistModel extends Model
             $builder->where('tbl_m_item_hist.status', $status);
         }
 
-        return $builder->orderBy('tbl_m_item_hist.created_at', 'DESC')
-                      ->get()
-                      ->getResult();
+        // Get total count before pagination
+        $total = $this->getFilteredCount($id_item, $id_gudang, $status);
+        
+        $builder->orderBy('tbl_m_item_hist.created_at', 'DESC');
+        
+        // Get paginated results
+        $data = $builder->paginate($perPage, 'item_hist', $page);
+        
+        return [
+            'data' => $data,
+            'pager' => $this->pager,
+            'current_page' => $page,
+            'per_page' => $perPage,
+            'total' => $total
+        ];
+    }
+
+    /**
+     * Get count of filtered results
+     *
+     * @param int|null $id_item
+     * @param int|null $id_gudang
+     * @param string|null $status
+     * @return int
+     */
+    public function getFilteredCount($id_item = null, $id_gudang = null, $status = null)
+    {
+        $builder = $this->builder();
+
+        if ($id_item !== null) {
+            $builder->where('id_item', $id_item);
+        }
+
+        if ($id_gudang !== null) {
+            $builder->where('id_gudang', $id_gudang);
+        }
+
+        if ($status !== null) {
+            $builder->where('status', $status);
+        }
+
+        return $builder->countAllResults();
     }
 
     /**

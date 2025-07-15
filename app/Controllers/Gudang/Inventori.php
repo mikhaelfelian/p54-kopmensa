@@ -12,6 +12,7 @@ namespace App\Controllers\Gudang;
 use App\Controllers\BaseController;
 use App\Models\ItemModel;
 use App\Models\ItemStokModel;
+use App\Models\ItemHistModel;
 use App\Models\GudangModel;
 use App\Models\OutletModel;
 use App\Models\KategoriModel;
@@ -21,6 +22,7 @@ class Inventori extends BaseController
 {
     protected $itemModel;
     protected $itemStokModel;
+    protected $itemHistModel;
     protected $gudangModel;
     protected $outletModel;
     protected $kategoriModel;
@@ -31,6 +33,7 @@ class Inventori extends BaseController
         parent::__construct();
         $this->itemModel = new ItemModel();
         $this->itemStokModel = new ItemStokModel();
+        $this->itemHistModel = new ItemHistModel();
         $this->gudangModel = new GudangModel();
         $this->outletModel = new OutletModel();
         $this->kategoriModel = new KategoriModel();
@@ -277,8 +280,25 @@ class Inventori extends BaseController
             return redirect()->to(base_url('gudang/stok'))->with('error', 'Item tidak ditemukan.');
         }
 
-        // TODO: Fetch real stock data from a new model
-        $stokData = []; 
+        // Get pagination parameters
+        $page = $this->request->getVar('page') ?? 1;
+        $perPage = 10;
+        
+        // Get filter parameters
+        $filter_gd = $this->request->getVar('filter_gd');
+        $filter_status = $this->request->getVar('filter_status');
+        
+        // Fetch paginated stock history data
+        $stockHistory = $this->itemHistModel->getWithRelationsPaginated(
+            $id, 
+            $filter_gd, 
+            $filter_status, 
+            $perPage, 
+            $page
+        );
+
+        // Get comprehensive stock summary
+        $stockSummary = $this->itemStokModel->getStockSummaryWithAlerts($id, $item->jml_min ?? 0);
 
         $data = [
             'title'       => 'Detail Stok Item: ' . $item->item,
@@ -286,7 +306,14 @@ class Inventori extends BaseController
             'user'        => $this->ionAuth->user()->row(),
             'item'        => $item,
             'outlets'     => $item_stok,
-            'stokData'    => $stokData,
+            'stokData'    => $stockHistory['data'],
+            'stockSummary' => $stockSummary,
+            'pager'       => $stockHistory['pager'],
+            'current_page' => $stockHistory['current_page'],
+            'per_page'    => $stockHistory['per_page'],
+            'total'       => $stockHistory['total'],
+            'filter_gd'   => $filter_gd,
+            'filter_status' => $filter_status,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/stok') . '">Inventori</a></li>

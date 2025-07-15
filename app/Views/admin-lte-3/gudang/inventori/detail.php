@@ -123,6 +123,117 @@
     </div>
     <div class="row">
         <div class="col-md-12">
+            <!-- Stock Summary Section -->
+            <div class="card card-default rounded-0 mb-3">
+                <div class="card-header">
+                    <h3 class="card-title">Ringkasan Stok</h3>
+                    <div class="card-tools">
+                        <?php if ($stockSummary['has_low_stock']): ?>
+                            <span class="badge badge-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Stok Rendah
+                            </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-boxes"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Stok</span>
+                                    <span class="info-box-number"><?= number_format($stockSummary['total_stock'], 0, ',', '.') ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-warehouse"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Total Lokasi</span>
+                                    <span class="info-box-number"><?= $stockSummary['locations_with_stock'] ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-warehouse"></i> Stok Per Gudang</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Gudang</th>
+                                            <th class="text-right">Jumlah</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (!empty($stockSummary['stock_by_warehouse'])): ?>
+                                            <?php foreach ($stockSummary['stock_by_warehouse'] as $stock): ?>
+                                                <tr>
+                                                    <td><?= $stock->gudang_name ?></td>
+                                                    <td class="text-right"><?= number_format($stock->jml, 0, ',', '.') ?></td>
+                                                    <td class="text-center">
+                                                        <?php if ($stock->jml <= $stockSummary['min_stock_threshold']): ?>
+                                                            <span class="badge badge-danger">Rendah</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-success">Aman</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">Tidak ada stok di gudang</td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-store"></i> Stok Per Outlet</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Outlet</th>
+                                            <th class="text-right">Jumlah</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (!empty($stockSummary['stock_by_outlet'])): ?>
+                                            <?php foreach ($stockSummary['stock_by_outlet'] as $stock): ?>
+                                                <tr>
+                                                    <td><?= $stock->outlet_name ?></td>
+                                                    <td class="text-right"><?= number_format($stock->jml, 0, ',', '.') ?></td>
+                                                    <td class="text-center">
+                                                        <?php if ($stock->jml <= $stockSummary['min_stock_threshold']): ?>
+                                                            <span class="badge badge-danger">Rendah</span>
+                                                        <?php else: ?>
+                                                            <span class="badge badge-success">Aman</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">Tidak ada stok di outlet</td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stock History Section -->
             <div class="card card-default rounded-0">
                 <div class="card-header">
                     <h3 class="card-title">Data Mutasi Stok</h3>
@@ -130,66 +241,110 @@
                     </div>
                 </div>
                 <div class="card-body table-responsive">
+                    <form method="get" action="<?= current_url() ?>">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Gudang</th>
+                                    <th class="text-right">Jml</th>
+                                    <th>Satuan</th>
+                                    <th>Keterangan</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="form-group ">
+                                            <select name="filter_gd" class="form-control rounded-0">
+                                                <option value="">- [Pilih] -</option>
+                                                <option value="1" <?= ($filter_gd == '1') ? 'selected' : '' ?>>
+                                                    Gd. Bawah</option>
+                                                <option value="2" <?= ($filter_gd == '2') ? 'selected' : '' ?>>
+                                                    Gd. Atas</option>
+                                            </select>
+                                        </div>
+                                    </td>
+                                    <td style="width: 100px;">
+                                        <input type="number" name="filter_jml" class="form-control rounded-0"
+                                            placeholder="Jumlah" value="">
+                                    </td>
+                                    <td style="width: 100px;"></td>
+                                    <td>
+                                        <input type="text" name="filter_ket" class="form-control rounded-0"
+                                            placeholder="Keterangan" value="">
+                                    </td>
+                                    <td>
+                                        <select name="filter_status" class="form-control rounded-0">
+                                            <option value="">- [Semua] -</option>
+                                            <option value="1" <?= ($filter_status == '1') ? 'selected' : '' ?>>Stok Masuk Pembelian</option>
+                                            <option value="2" <?= ($filter_status == '2') ? 'selected' : '' ?>>Stok Masuk</option>
+                                            <option value="3" <?= ($filter_status == '3') ? 'selected' : '' ?>>Stok Masuk Retur Jual</option>
+                                            <option value="4" <?= ($filter_status == '4') ? 'selected' : '' ?>>Stok Keluar Penjualan</option>
+                                            <option value="5" <?= ($filter_status == '5') ? 'selected' : '' ?>>Stok Keluar Retur Beli</option>
+                                            <option value="6" <?= ($filter_status == '6') ? 'selected' : '' ?>>SO (Stock Opname)</option>
+                                            <option value="7" <?= ($filter_status == '7') ? 'selected' : '' ?>>Stok Keluar</option>
+                                            <option value="8" <?= ($filter_status == '8') ? 'selected' : '' ?>>Mutasi Antar Gudang</option>
+                                            <option value="9" <?= ($filter_status == '9') ? 'selected' : '' ?>>Adjust stok</option>
+                                        </select>
+                                    </td>
+                                    <td><button type="submit" class="btn btn-primary btn-flat rounded-0"><i
+                                                class="fa fa-search"></i></button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                    
+                    <!-- Stock History Data Table -->
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
+                                <th>Tanggal</th>
                                 <th>Gudang</th>
                                 <th class="text-right">Jml</th>
                                 <th>Satuan</th>
                                 <th>Keterangan</th>
                                 <th>Status</th>
-                                <th>Aksi</th>
+                                <th>No. Nota</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>
-                                    <div class="form-group ">
-                                        <select name="filter_gd" class="form-control rounded-0">
-                                            <option value="">- [Pilih] -</option>
-                                            <option value="1">
-                                                Gd. Bawah</option>
-                                            <option value="2">
-                                                Gd. Atas</option>
-                                        </select>
-                                    </div>
-                                </td>
-                                <td style="width: 100px;">
-                                    <input type="number" name="filter_jml" class="form-control rounded-0"
-                                        placeholder="Jumlah" value="">
-                                </td>
-                                <td style="width: 100px;"></td>
-                                <td>
-                                    <input type="text" name="filter_ket" class="form-control rounded-0"
-                                        placeholder="Keterangan" value="">
-                                </td>
-                                <td>
-                                    <select name="filter_status" class="form-control rounded-0">
-                                        <option value="">- [Semua] -</option>
-                                        <option value="1">Stok Masuk Pembelian</option>
-                                        <option value="2">Stok Masuk</option>
-                                        <option value="3">Stok Masuk Retur Jual</option>
-                                        <option value="4">Stok Keluar Penjualan</option>
-                                        <option value="5">Stok Keluar Retur Beli</option>
-                                        <option value="6">SO (Stock Opname)</option>
-                                        <option value="7">Stok Keluar</option>
-                                        <option value="8">Mutasi Antar Gudang</option>
-                                        <option value="9">Adjust stok</option>
-                                    </select>
-                                </td>
-                                <td><button type="submit" class="btn btn-primary btn-flat rounded-0"><i
-                                            class="fa fa-search"></i></button></td>
-                            </tr>
+                            <?php if (!empty($stokData)): ?>
+                                <?php foreach ($stokData as $row): ?>
+                                    <tr>
+                                        <td><?= date('d/m/Y H:i', strtotime($row->created_at)) ?></td>
+                                        <td><?= $row->gudang_name ?? '-' ?></td>
+                                        <td class="text-right"><?= number_format($row->jml, 0, ',', '.') ?></td>
+                                        <td><?= $row->satuan_name ?? 'PCS' ?></td>
+                                        <td><?= $row->keterangan ?></td>
+                                        <td>
+                                            <span class="badge badge-<?= in_array($row->status, ['1', '2', '3']) ? 'success' : 'danger' ?>">
+                                                <?= (new \App\Models\ItemHistModel())->getStatusLabel($row->status) ?>
+                                            </span>
+                                        </td>
+                                        <td><?= $row->no_nota ?? '-' ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="7" class="text-center">Tidak ada data riwayat stok</td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
                 <div class="card-footer">
                     <div class="row">
-                        <div class="col-lg-6">
-
+                        <div class="col-md-6">
+                            <div class="pagination-info">
+                                Showing <?= (($current_page - 1) * $per_page) + 1 ?> to <?= min($current_page * $per_page, $total) ?> of <?= $total ?> entries
+                            </div>
                         </div>
-                        <div class="col-lg-6 text-right">
-
+                        <div class="col-md-6">
+                            <div class="pagination-wrapper float-right">
+                                <?= $pager->links('item_hist', 'adminlte_pagination') ?>
+                            </div>
                         </div>
                     </div>
                 </div>
