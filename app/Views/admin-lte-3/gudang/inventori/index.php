@@ -234,15 +234,6 @@
                                             </span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="text-center"><?= $row->jml_min ?></td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="<?= base_url("gudang/stok/detail/{$row->id}") ?>"
-                                                class="btn btn-info btn-sm rounded-0">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </div>
-                                    </td>
                                 </tr>
                             <?php endforeach ?>
                         <?php else: ?>
