@@ -488,7 +488,8 @@ class Opname extends BaseController
                     'id_user'     => $this->ionAuth->user()->row()->id ?? null,
                     'id_so'       => $opname->id,
                     'tgl_masuk'   => $opname->tgl_masuk,
-                    'kode'        => $opname->kode ?? null,
+                    'no_nota'     => sprintf('%05d', $opname->id),
+                    'kode'        => $item->kode ?? null,
                     'item'        => $item->item ?? null,
                     'keterangan'  => 'Stock Opname ' . $item->item,
                     'jml'         => $item->jml_so,
@@ -505,7 +506,7 @@ class Opname extends BaseController
 
             return $this->response->setJSON([
                 'status' => 'success',
-                'message' => 'Berhasil foreach item.',
+                'message' => 'Stok opname berhasil diproses',
                 'items' => '',
                 'csrfHash' => csrf_hash()
             ]);
