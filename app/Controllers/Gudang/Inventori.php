@@ -297,8 +297,6 @@ class Inventori extends BaseController
             $page
         );
 
-        // Get comprehensive stock summary
-        $stockSummary = $this->itemStokModel->getStockSummaryWithAlerts($id, $item->jml_min ?? 0);
 
         $data = [
             'title'       => 'Detail Stok Item: ' . $item->item,
@@ -307,7 +305,6 @@ class Inventori extends BaseController
             'item'        => $item,
             'outlets'     => $item_stok,
             'stokData'    => $stockHistory['data'],
-            'stockSummary' => $stockSummary,
             'pager'       => $stockHistory['pager'],
             'current_page' => $stockHistory['current_page'],
             'per_page'    => $stockHistory['per_page'],
