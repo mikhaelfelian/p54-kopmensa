@@ -122,117 +122,7 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-md-12">
-            <!-- Stock Summary Section -->
-            <div class="card card-default rounded-0 mb-3">
-                <div class="card-header">
-                    <h3 class="card-title">Ringkasan Stok</h3>
-                    <div class="card-tools">
-                        <?php if ($stockSummary['has_low_stock']): ?>
-                            <span class="badge badge-danger">
-                                <i class="fas fa-exclamation-triangle"></i> Stok Rendah
-                            </span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-primary"><i class="fas fa-boxes"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Total Stok</span>
-                                    <span class="info-box-number"><?= number_format($stockSummary['total_stock'], 0, ',', '.') ?></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-box">
-                                <span class="info-box-icon bg-success"><i class="fas fa-warehouse"></i></span>
-                                <div class="info-box-content">
-                                    <span class="info-box-text">Total Lokasi</span>
-                                    <span class="info-box-number"><?= $stockSummary['locations_with_stock'] ?></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-warehouse"></i> Stok Per Gudang</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Gudang</th>
-                                            <th class="text-right">Jumlah</th>
-                                            <th class="text-center">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($stockSummary['stock_by_warehouse'])): ?>
-                                            <?php foreach ($stockSummary['stock_by_warehouse'] as $stock): ?>
-                                                <tr>
-                                                    <td><?= $stock->gudang_name ?></td>
-                                                    <td class="text-right"><?= number_format($stock->jml, 0, ',', '.') ?></td>
-                                                    <td class="text-center">
-                                                        <?php if ($stock->jml <= $stockSummary['min_stock_threshold']): ?>
-                                                            <span class="badge badge-danger">Rendah</span>
-                                                        <?php else: ?>
-                                                            <span class="badge badge-success">Aman</span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <tr>
-                                                <td colspan="3" class="text-center text-muted">Tidak ada stok di gudang</td>
-                                            </tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-store"></i> Stok Per Outlet</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Outlet</th>
-                                            <th class="text-right">Jumlah</th>
-                                            <th class="text-center">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($stockSummary['stock_by_outlet'])): ?>
-                                            <?php foreach ($stockSummary['stock_by_outlet'] as $stock): ?>
-                                                <tr>
-                                                    <td><?= $stock->outlet_name ?></td>
-                                                    <td class="text-right"><?= number_format($stock->jml, 0, ',', '.') ?></td>
-                                                    <td class="text-center">
-                                                        <?php if ($stock->jml <= $stockSummary['min_stock_threshold']): ?>
-                                                            <span class="badge badge-danger">Rendah</span>
-                                                        <?php else: ?>
-                                                            <span class="badge badge-success">Aman</span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                </tr>
-                                            <?php endforeach; ?>
-                                        <?php else: ?>
-                                            <tr>
-                                                <td colspan="3" class="text-center text-muted">Tidak ada stok di outlet</td>
-                                            </tr>
-                                        <?php endif; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
+        <div class="col-md-12">            
             <!-- Stock History Section -->
             <div class="card card-default rounded-0">
                 <div class="card-header">
@@ -338,7 +228,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="pagination-info">
-                                Showing <?= (($current_page - 1) * $per_page) + 1 ?> to <?= min($current_page * $per_page, $total) ?> of <?= $total ?> entries
+                                Tampilkan <?= (($current_page - 1) * $per_page) + 1 ?> dari <?= min($current_page * $per_page, $total) ?> of <?= $total ?> data
                             </div>
                         </div>
                         <div class="col-md-6">
