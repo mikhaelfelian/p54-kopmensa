@@ -157,10 +157,10 @@ class TransBeli extends BaseController
                 $itemId = $item->id;
                 
                 if (isset($jmlDiterima[$itemId]) && isset($idGudang[$itemId])) {
-                    $receivedQty = floatval($jmlDiterima[$itemId]);
-                    $gudangId = intval($idGudang[$itemId]);
-                    $itemStatus = isset($statusItem[$itemId]) ? $statusItem[$itemId] : '1';
-                    $itemKeterangan = isset($keterangan[$itemId]) ? $keterangan[$itemId] : '';
+                    $receivedQty     = floatval($jmlDiterima[$itemId]);
+                    $gudangId        = intval($idGudang[$itemId]);
+                    $itemStatus      = isset($statusItem[$itemId]) ? $statusItem[$itemId] : '1';
+                    $itemKeterangan  = isset($keterangan[$itemId]) ? $keterangan[$itemId] : '';
 
                     // Validate warehouse exists
                     $gudang = $this->gudangModel->find($gudangId);
