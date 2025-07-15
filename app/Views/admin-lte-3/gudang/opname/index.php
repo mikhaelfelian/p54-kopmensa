@@ -28,6 +28,8 @@
                         <tr>
                             <th class="text-center">No.</th>
                             <th>Tgl Opname</th>
+                            <th>Tipe</th>
+                            <th>Lokasi</th>
                             <th>User</th>
                             <th>Keterangan</th>
                             <th>Aksi</th>
@@ -45,6 +47,8 @@
                                     'value' => $tgl ?? ''
                                 ]) ?>
                             </th>
+                            <th></th>
+                            <th></th>
                             <th></th>
                             <th>
                                 <?= form_input([
@@ -69,7 +73,7 @@
                     <tbody>
                         <?php if (empty($opname)): ?>
                             <tr>
-                                <td colspan="5" class="text-center">Tidak ada data</td>
+                                <td colspan="7" class="text-center">Tidak ada data</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($opname as $key => $row): ?>
@@ -80,10 +84,26 @@
                                     <td style="width: 100px;" class="text-left">
                                         <?= date('d/m/Y', strtotime($row->created_at)) ?>
                                     </td>
-                                    <td style="width: 250px;" class="text-left">
+                                    <td style="width: 80px;" class="text-center">
+                                        <?php if ($row->opname_type == 'Gudang'): ?>
+                                            <span class="badge badge-primary">
+                                                <i class="fas fa-warehouse"></i> Gudang
+                                            </span>
+                                        <?php elseif ($row->opname_type == 'Outlet'): ?>
+                                            <span class="badge badge-info">
+                                                <i class="fas fa-store"></i> Outlet
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="badge badge-secondary">Unknown</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td style="width: 200px;" class="text-left">
+                                        <?= $row->location_name ?>
+                                    </td>
+                                    <td style="width: 150px;" class="text-left">
                                         <?= $row->user_name ?>
                                     </td>
-                                    <td style="width: 350px;" class="text-left">
+                                    <td style="width: 300px;" class="text-left">
                                         <?= $row->keterangan ?? '-' ?>
                                         <br>
                                         <small class="text-muted">

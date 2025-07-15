@@ -35,6 +35,14 @@ class CreateTblMItemHist extends Migration
                 'null'       => true,
                 'default'    => null
             ],
+            // Add id_outlet after id_gudang
+            'id_outlet' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'unsigned'   => true,
+                'null'       => true,
+                'default'    => null
+            ],
             'id_user' => [
                 'type'       => 'INT',
                 'constraint' => 11,
@@ -163,10 +171,13 @@ class CreateTblMItemHist extends Migration
         $this->forge->addKey('id', true);
         $this->forge->addKey('id_item');
         $this->forge->addKey('id_gudang');
+        $this->forge->addKey('id_outlet');
         
         // Add foreign key constraints
         $this->forge->addForeignKey('id_gudang', 'tbl_m_gudang', 'id', 'CASCADE', 'CASCADE');
         $this->forge->addForeignKey('id_item', 'tbl_m_item', 'id', 'CASCADE', 'CASCADE');
+        // Optionally, add a foreign key for id_outlet if tbl_m_outlet exists:
+        // $this->forge->addForeignKey('id_outlet', 'tbl_m_outlet', 'id', 'CASCADE', 'CASCADE');
         
         $this->forge->createTable('tbl_m_item_hist', true, [
             'comment' => 'Table untuk menyimpan item stok histories',

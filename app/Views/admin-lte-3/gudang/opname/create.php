@@ -44,16 +44,16 @@
                         
                         <div class="form-group">
                             <label for="opname_type">Tipe Opname <i class="text-danger">*</i></label>
-                            <select name="opname_type" id="opname_type" class="form-control rounded-0" required>
+                            <select name="tipe" id="tipe" class="form-control rounded-0" required>
                                 <option value="">- Pilih Tipe Opname -</option>
-                                <option value="gudang">Opname Gudang</option>
-                                <option value="outlet">Opname Outlet</option>
+                                <option value="1">Opname Gudang</option>
+                                <option value="2">Opname Outlet</option>
                             </select>
                         </div>
                         
                         <div class="form-group" id="gudang_section" style="display: none;">
                             <label for="gudang">Gudang <i class="text-danger">*</i></label>
-                            <select name="id_gudang" id="id_gudang" class="form-control rounded-0">
+                            <select name="gudang" id="gudang" class="form-control rounded-0">
                                 <option value="">- Pilih Gudang -</option>
                                 <?php foreach ($gudang as $gd): ?>
                                     <option value="<?= $gd->id ?>">
@@ -65,7 +65,7 @@
                         
                         <div class="form-group" id="outlet_section" style="display: none;">
                             <label for="outlet">Outlet <i class="text-danger">*</i></label>
-                            <select name="id_outlet" id="id_outlet" class="form-control rounded-0">
+                            <select name="outlet" id="outlet" class="form-control rounded-0">
                                 <option value="">- Pilih Outlet -</option>
                                 <?php foreach ($outlet as $ot): ?>
                                     <option value="<?= $ot->id ?>">
@@ -106,56 +106,58 @@
 </div>
 
 <script>
-$(document).ready(function() {
-    // Initialize date picker
-    $('#tgl').datepicker({
-        format: 'yyyy-mm-dd',
-        autoclose: true,
-        todayHighlight: true
-    });
-    
+jQuery(function($) {
+    // Initialize date picker if using bootstrap-datepicker, otherwise skip
+    if ($.fn.datepicker) {
+        $('#tgl').datepicker({
+            format: 'yyyy-mm-dd',
+            autoclose: true,
+            todayHighlight: true
+        });
+    }
+
     // Handle opname type selection
-    $('#opname_type').on('change', function() {
-        const selectedType = $(this).val();
-        
+    $('#tipe').on('change', function() {
+        var selectedType = $(this).val();
+
         // Hide all sections first
         $('#gudang_section, #outlet_section').hide();
-        
+
         // Clear previous selections
-        $('#id_gudang, #id_outlet').val('').removeAttr('required');
-        
+        $('#gudang, #outlet').val('').removeAttr('required');
+
         // Show relevant section based on selection
-        if (selectedType === 'gudang') {
+        if (selectedType === '1') {
             $('#gudang_section').fadeIn(300);
-            $('#id_gudang').attr('required', true);
-        } else if (selectedType === 'outlet') {
+            $('#gudang').attr('required', true);
+        } else if (selectedType === '2') {
             $('#outlet_section').fadeIn(300);
-            $('#id_outlet').attr('required', true);
+            $('#outlet').attr('required', true);
         }
     });
-    
+
     // Form validation
     $('#opname_form').on('submit', function(e) {
-        const opnameType = $('#opname_type').val();
-        
+        var opnameType = $('#tipe').val();
+
         if (!opnameType) {
             e.preventDefault();
             alert('Silakan pilih tipe opname terlebih dahulu!');
-            $('#opname_type').focus();
+            $('#tipe').focus();
             return false;
         }
-        
-        if (opnameType === 'gudang' && !$('#id_gudang').val()) {
+
+        if (opnameType === '1' && !$('#gudang').val()) {
             e.preventDefault();
             alert('Silakan pilih gudang!');
-            $('#id_gudang').focus();
+            $('#gudang').focus();
             return false;
         }
-        
-        if (opnameType === 'outlet' && !$('#id_outlet').val()) {
+
+        if (opnameType === '2' && !$('#outlet').val()) {
             e.preventDefault();
             alert('Silakan pilih outlet!');
-            $('#id_outlet').focus();
+            $('#outlet').focus();
             return false;
         }
     });

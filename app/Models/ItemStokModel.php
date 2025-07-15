@@ -75,8 +75,11 @@ class ItemStokModel extends Model
      */
     public function getStockByItemAndOutlet($itemId, $outletId)
     {
-        return $this->where('id_item', $itemId)
-                    ->where('id_outlet', $outletId)
+        return $this->select('tbl_m_item_stok.*, tbl_m_satuan.satuanBesar as satuan_nama, tbl_m_item.item as item_nama')
+                    ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
+                    ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                    ->where('tbl_m_item_stok.id_item', $itemId)
+                    ->where('tbl_m_item_stok.id_outlet', $outletId)
                     ->first();
     }
 

@@ -16,6 +16,7 @@ use App\Models\OutletModel;
 use App\Models\ItemModel;
 use App\Models\ItemStokModel;
 use App\Models\ItemHistModel;
+use Exception;
 
 class Opname extends BaseController
 {
@@ -25,6 +26,7 @@ class Opname extends BaseController
     protected $itemModel;
     protected $itemStokModel;
     protected $itemHistModel;
+    protected $utilSODetModel; // <-- ADD THIS LINE
 
     public function __construct()
     {
@@ -35,6 +37,7 @@ class Opname extends BaseController
         $this->itemModel = new ItemModel();
         $this->itemStokModel = new ItemStokModel();
         $this->itemHistModel = new ItemHistModel();
+        $this->utilSODetModel = new \App\Models\UtilSODetModel(); // <-- ADD THIS LINE
     }
 
     public function index()
@@ -61,21 +64,39 @@ class Opname extends BaseController
         // Get user data and location info for each opname record
         $opnameWithUsers = [];
         foreach ($opnameData as $opname) {
-            $user = $this->ionAuth->user($opname->id_user)->row();
-            $opname->user_name = $user ? $user->first_name : 'Unknown User';
+            // Check if id_user is not null before calling user() method
+            if ($opname->id_user) {
+                $user = $this->ionAuth->user($opname->id_user)->row();
+                $opname->user_name = $user ? $user->first_name : 'Unknown User';
+            } else {
+                $opname->user_name = 'Unknown User';
+            }
             
-            // Determine opname type and location
-            if ($opname->id_gudang > 0) {
+            // Determine opname type and location based on tipe field
+            if ($opname->tipe == '1') {
+                // Gudang opname
                 $gudang = $this->gudangModel->find($opname->id_gudang);
                 $opname->opname_type = 'Gudang';
                 $opname->location_name = $gudang ? $gudang->gudang : 'N/A';
-            } elseif ($opname->id_outlet > 0) {
+            } elseif ($opname->tipe == '2') {
+                // Outlet opname
                 $outlet = $this->outletModel->find($opname->id_outlet);
                 $opname->opname_type = 'Outlet';
                 $opname->location_name = $outlet ? $outlet->nama : 'N/A';
             } else {
-                $opname->opname_type = 'Unknown';
-                $opname->location_name = 'N/A';
+                // Fallback to legacy method for records without tipe
+                if ($opname->id_gudang > 0) {
+                    $gudang = $this->gudangModel->find($opname->id_gudang);
+                    $opname->opname_type = 'Gudang';
+                    $opname->location_name = $gudang ? $gudang->gudang : 'N/A';
+                } elseif ($opname->id_outlet > 0) {
+                    $outlet = $this->outletModel->find($opname->id_outlet);
+                    $opname->opname_type = 'Outlet';
+                    $opname->location_name = $outlet ? $outlet->nama : 'N/A';
+                } else {
+                    $opname->opname_type = 'Unknown';
+                    $opname->location_name = 'N/A';
+                }
             }
             
             $opnameWithUsers[] = $opname;
@@ -123,50 +144,52 @@ class Opname extends BaseController
     public function store()
     {
         // Get opname type and set dynamic validation rules
-        $opnameType = $this->request->getPost('opname_type');
+        $opnameType = $this->request->getPost('tipe');
         
         $rules = [
             'tgl_masuk' => 'required',
-            'opname_type' => 'required|in_list[gudang,outlet]',
+            'tipe'      => 'required|in_list[1,2]',
         ];
         
         // Dynamic validation based on opname type
-        if ($opnameType === 'gudang') {
-            $rules['id_gudang'] = 'required|numeric';
-        } elseif ($opnameType === 'outlet') {
-            $rules['id_outlet'] = 'required|numeric';
+        if ($opnameType === '1') {
+            $rules['gudang'] = 'required|numeric';
+        } elseif ($opnameType === '2') {
+            $rules['outlet'] = 'required|numeric';
         }
 
         if (!$this->validate($rules)) {
-            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to(base_url('gudang/opname/create'))->with('errors', $this->validator->getErrors());
         }
 
         // Get form data using explicit variable assignment pattern
-        $id_user = $this->ionAuth->user()->row()->id;
-        $tgl_masuk = $this->request->getPost('tgl_masuk');
-        $id_gudang = $this->request->getPost('id_gudang');
-        $id_outlet = $this->request->getPost('id_outlet');
+        $id_user    = $this->ionAuth->user()->row()->id;
+        $tgl_masuk  = $this->request->getPost('tgl_masuk');
+        $id_gudang  = $this->request->getPost('gudang');
+        $id_outlet  = $this->request->getPost('outlet');
+        $tipe       = $this->request->getPost('tipe');
         $keterangan = $this->request->getPost('keterangan');
+        $opn_tipe   = tipeOpn($tipe);
 
         $data = [
-            'id_user' => $id_user,
-            'id_gudang' => $opnameType === 'gudang' ? $id_gudang : 0,
-            'id_outlet' => $opnameType === 'outlet' ? $id_outlet : 0,
-            'tgl_masuk' => $tgl_masuk,
+            'id_user'    => $id_user,
+            'id_gudang'  => ($tipe === '1') ? $id_gudang : 0,
+            'id_outlet'  => ($tipe === '2') ? $id_outlet : 0,
+            'tgl_masuk'  => tgl_indo_sys($tgl_masuk),
             'keterangan' => $keterangan,
-            'status' => '0', // Draft
-            'reset' => '0', // Not reset
+            'status'     => '0', // Draft
+            'reset'      => '0', // Not reset
+            'tipe'       => $tipe,
         ];
 
-        try {
-            // Save to database
-            $this->utilSOModel->insert($data);
-            
-            $opnameTypeText = $opnameType === 'gudang' ? 'gudang' : 'outlet';
-            return redirect()->to(base_url('gudang/opname'))->with('success', "Data opname {$opnameTypeText} berhasil disimpan.");
-        } catch (\Exception $e) {
-            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan data opname: ' . $e->getMessage());
-        }
+            try {
+                // Save to database
+                $this->utilSOModel->save($data);
+
+                return redirect()->to(base_url('gudang/opname'))->with('success', "Data opname {$opn_tipe['label']} berhasil disimpan.");
+            } catch (\Exception $e) {
+                return redirect()->to(base_url('gudang/opname/create'))->withInput()->with('error', 'Gagal menyimpan data opname: ' . $e->getMessage());
+            }
     }
 
     public function detail($id)
@@ -177,8 +200,12 @@ class Opname extends BaseController
         }
 
         // Get user data
-        $user = $this->ionAuth->user($opname->id_user)->row();
-        $opname->user_name = $user ? $user->first_name : 'Unknown User';
+        if ($opname->id_user) {
+            $user = $this->ionAuth->user($opname->id_user)->row();
+            $opname->user_name = $user ? $user->first_name : 'Unknown User';
+        } else {
+            $opname->user_name = 'Unknown User';
+        }
 
         // Get gudang data
         $gudang = $this->gudangModel->find($opname->id_gudang);
@@ -265,64 +292,15 @@ class Opname extends BaseController
 
     public function input($id)
     {
-        $opname = $this->utilSOModel->find($id);
-        if (!$opname) {
-            return redirect()->to(base_url('gudang/opname'))->with('error', 'Data opname tidak ditemukan.');
-        }
-
-        // Determine opname type and get location information
-        $isGudangOpname = $opname->id_gudang > 0;
-        $isOutletOpname = $opname->id_outlet > 0;
-        
-        if ($isGudangOpname) {
-            // Get gudang information
-            $gudang = $this->gudangModel->find($opname->id_gudang);
-            $opname->gudang = $gudang ? $gudang->gudang : 'N/A';
-            $opname->location_type = 'Gudang';
-            $opname->location_name = $opname->gudang;
-            
-            // Get items for the selected gudang
-            $items = $this->itemStokModel->select('
-                    tbl_m_item_stok.*,
-                    tbl_m_item.kode as item_kode,
-                    tbl_m_item.item as item_name,
-                    tbl_m_satuan.satuanBesar as satuan_name
-                ')
-                ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
-                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-                ->where('tbl_m_item_stok.id_gudang', $opname->id_gudang)
-                ->where('tbl_m_item_stok.status', '1')
-                ->findAll();
-                
-        } elseif ($isOutletOpname) {
-            // Get outlet information
-            $outlet = $this->outletModel->find($opname->id_outlet);
-            $opname->outlet = $outlet ? $outlet->nama : 'N/A';
-            $opname->location_type = 'Outlet';
-            $opname->location_name = $opname->outlet;
-            
-            // Get items for the selected outlet
-            $items = $this->itemStokModel->select('
-                    tbl_m_item_stok.*,
-                    tbl_m_item.kode as item_kode,
-                    tbl_m_item.item as item_name,
-                    tbl_m_satuan.satuanBesar as satuan_name
-                ')
-                ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
-                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-                ->where('tbl_m_item_stok.id_outlet', $opname->id_outlet)
-                ->where('tbl_m_item_stok.status', '1')
-                ->findAll();
-        } else {
-            return redirect()->to(base_url('gudang/opname'))->with('error', 'Data opname tidak valid - tidak ada gudang atau outlet yang dipilih.');
-        }
+        $opname     = $this->utilSOModel->find($id);
+        $opn_det    = $this->utilSODetModel->where('id_so', $id)->findAll();
 
         $data = [
-            'title'       => 'Input Item Opname ' . $opname->location_type,
+            'title'       => 'Input Item Opname ',
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
             'opname'      => $opname,
-            'items'       => $items,
+            'items'       => $opn_det,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/opname') . '">Opname</a></li>
@@ -330,116 +308,253 @@ class Opname extends BaseController
             '
         ];
 
+        $itemModel = new \App\Models\ItemModel();
+        $dropdownItems = $itemModel->getItemStocksWithRelations(1000); // or any large number to get all
+        $data['dropdownItems'] = $dropdownItems;
+
         return view($this->theme->getThemePath() . '/gudang/opname/input', $data);
     }
 
-    public function process($id)
+    public function addItem()
     {
+        // if (!$this->request->isAJAX()) {
+        //     return $this->response->setStatusCode(400)->setJSON([
+        //         'status' => 'error',
+        //         'message' => 'Invalid request type.'
+        //     ]);
+        // }
+
+        // Accept id_so (id opname) from POST data
+        $id = $this->request->getPost('id_so');
+        if (!$id) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 'error',
+                'message' => 'ID opname tidak ditemukan.'
+            ]);
+        }
+
         $opname = $this->utilSOModel->find($id);
         if (!$opname) {
-            return redirect()->to(base_url('gudang/opname'))->with('error', 'Data opname tidak ditemukan.');
+            return $this->response->setStatusCode(404)->setJSON([
+                'status' => 'error',
+                'message' => 'Data opname tidak ditemukan.'
+            ]);
         }
 
-        // Get form data
+        // Accept both single item and array of items
         $items = $this->request->getPost('items');
-        $quantities = $this->request->getPost('quantities');
-        $notes = $this->request->getPost('notes');
-
-        if (!$items || !$quantities) {
-            return redirect()->back()->with('error', 'Data item tidak lengkap.');
+        if (!$items) {
+            // Try to build items from flat POST (single row)
+            $singleItem = [
+                'id_item'     => $this->request->getPost('id_item'),
+                'stok_sistem' => $this->request->getPost('stok_sistem'),
+                'stok_fisik'  => $this->request->getPost('stok_fisik'),
+                'keterangan'  => $this->request->getPost('keterangan'),
+                'satuan'      => $this->request->getPost('satuan'),
+            ];
+            // If at least id_item and stok_fisik are present, treat as single item
+            if (!empty($singleItem['id_item']) && $singleItem['stok_fisik'] !== null) {
+                $items = [$singleItem];
+            } else {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Tidak ada item yang diinput.'
+                ]);
+            }
         }
 
-        try {
-            $this->db = \Config\Database::connect();
-            $this->db->transStart();
+        $userId = $this->ionAuth->user()->row()->id;
+        $results = [];
+        foreach ($items as $row) {
+            // Defensive: handle both array and object
+            $row = (array)$row;
+            
+            // Get item details for this specific item
+            $item_row = $this->itemModel->find($row['id_item']);
+            if (!$item_row) {
+                continue; // Skip if item not found
+            }
+            
+            $data = [
+                'id_so'      => $id,
+                'id_item'    => $row['id_item'],
+                'id_satuan'  => $item_row->id_satuan,
+                'item'       => $item_row->item,
+                'jml_sys'    => $row['stok_sistem'],
+                'jml_so'     => $row['stok_fisik'],
+                'keterangan' => $row['keterangan'] ?? null,
+                'satuan'     => $row['satuan'] ?? null,
+                'id_user'    => $userId,
+            ];
+            $existing = $this->utilSODetModel
+                ->where('id_so', $id)
+                ->where('id_item', $row['id_item'])
+                ->first();
 
-            $utilSODetModel = new \App\Models\UtilSODetModel();
-
-            foreach ($items as $index => $itemId) {
-                $quantity = floatval($quantities[$index] ?? 0);
-                $note = $notes[$index] ?? '';
-
-                // Get current stock based on opname type
-                if ($opname->id_gudang > 0) {
-                    $currentStock = $this->itemStokModel->getStockByItemAndGudang($itemId, $opname->id_gudang);
-                } else {
-                    $currentStock = $this->itemStokModel->getStockByItemAndOutlet($itemId, $opname->id_outlet);
-                }
-                $currentQty = $currentStock ? floatval($currentStock->jml) : 0;
-
-                // Get item details
-                $item = $this->itemModel->find($itemId);
-                $satuan = $this->db->table('tbl_m_satuan')->where('id', $item->id_satuan)->get()->getRow();
-
-                // Save opname detail
-                $opnameDetailData = [
-                    'id_so' => $id,
-                    'id_item' => $itemId,
-                    'id_satuan' => $item->id_satuan,
-                    'id_user' => $this->ionAuth->user()->row()->id,
-                    'tgl_masuk' => isset($opname->tgl_masuk) ? $opname->tgl_masuk : date('Y-m-d'),
-                    'kode' => $item->kode,
-                    'item' => $item->item,
-                    'satuan' => $satuan ? $satuan->satuanBesar : '',
-                    'keterangan' => $note,
-                    'jml_sys' => $currentQty,
-                    'jml_so' => $quantity,
-                    'jml_sls' => $quantity - $currentQty,
-                    'jml_satuan' => 1,
-                    'sp' => '0'
+            if ($existing) {
+                $success = $this->utilSODetModel->update($existing->id, $data);
+                $results[] = [
+                    'id_item' => $row['id_item'],
+                    'action' => 'update',
+                    'success' => $success
                 ];
-                $utilSODetModel->insert($opnameDetailData);
+            } else {
+                $insertId = $this->utilSODetModel->insert($data);
+                $results[] = [
+                    'id_item' => $row['id_item'],
+                    'action' => 'insert',
+                    'success' => $insertId ? true : false
+                ];
+            }
+        }
 
-                // Calculate difference
-                $difference = $quantity - $currentQty;
+        return $this->response->setJSON([
+            'status' => 'success',
+            'message' => 'Data opname berhasil disimpan!',
+            'results' => $results,
+            'csrfHash' => csrf_hash()
+        ]);
+    }
 
-                if ($difference != 0) {
-                    // Update stock based on opname type
-                    $newQty = $currentQty + $difference;
-                    if ($opname->id_gudang > 0) {
-                        $this->itemStokModel->updateStock($itemId, $opname->id_gudang, $newQty, $this->ionAuth->user()->row()->id);
-                        $locationId = $opname->id_gudang;
-                        $locationType = 'gudang';
-                    } else {
-                        $this->itemStokModel->updateStockOutlet($itemId, $opname->id_outlet, $newQty, $this->ionAuth->user()->row()->id);
-                        $locationId = $opname->id_outlet;
-                        $locationType = 'outlet';
-                    }
-
-                    // Add to history
-                    $historyData = [
-                        'id_item' => $itemId,
-                        'id_gudang' => $opname->id_gudang > 0 ? $opname->id_gudang : null,
-                        'id_outlet' => $opname->id_outlet > 0 ? $opname->id_outlet : null,
-                        'id_user' => $this->ionAuth->user()->row()->id,
-                        'id_so' => $id,
-                        'tgl_masuk' => date('Y-m-d H:i:s'),
-                        'no_nota' => 'SO-' . $id,
-                        'keterangan' => "Stock Opname {$locationType}: " . $note,
-                        'jml' => abs($difference),
-                        'status' => $difference > 0 ? '2' : '7', // 2=Stok Masuk, 7=Stok Keluar
-                        'sp' => '0'
-                    ];
-                    $this->itemHistModel->addHistory($historyData);
-                }
+    /**
+     * Proses opname: update stock, create item history, and mark opname as processed
+     * Route: POST gudang/opname/process/(:num)
+     */
+    public function proses($id)
+    {
+        try {
+            // Handle GET requests by redirecting to input page
+            if ($this->request->is('get')) {
+                return redirect()->to(base_url("gudang/opname/input/{$id}"));
+            }
+            
+            // Only allow POST for actual processing
+            if (!$this->request->is('post')) {
+                return $this->response->setStatusCode(405)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Metode tidak diizinkan'
+                ]);
             }
 
-            // Update opname status
-            $this->utilSOModel->update($id, [
-                'status' => '1', // Completed
-                'reset' => '1'   // Processed
+            // Test 1: Check if opname exists
+            $opname = $this->utilSOModel->find($id);
+            if (!$opname) {
+                return $this->response->setStatusCode(404)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Data opname tidak ditemukan.'
+                ]);
+            }
+
+            // Test 2: Check if already processed
+            if ($opname->status == '1') {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Opname sudah diproses sebelumnya.'
+                ]);
+            }
+
+            // Test 3: Check if items exist
+            $items = $this->utilSODetModel->where('id_so', $id)->findAll();
+
+            foreach ($items as $item) {
+                $stokQuery = $this->itemStokModel->where('id_item', $item->id_item);
+                if (!empty($opname->id_outlet) && $opname->id_outlet != 0) {
+                    $stokQuery = $stokQuery->where('id_outlet', $opname->id_outlet);
+                } elseif (!empty($opname->id_gudang) && $opname->id_gudang != 0) {
+                    $stokQuery = $stokQuery->where('id_gudang', $opname->id_gudang);
+                }
+                $sql_stok_row = $stokQuery->first();
+
+                // Update stok using ->save($data)
+                $stokData = [
+                    'id'        => $sql_stok_row ? $sql_stok_row->id : null,
+                    'id_item'   => $item->id_item,
+                    'jml'       => $item->jml_so,
+                ];
+
+                if (!empty($opname->id_outlet) && $opname->id_outlet != 0) {
+                    $stokData['id_outlet'] = $opname->id_outlet;
+                } elseif (!empty($opname->id_gudang) && $opname->id_gudang != 0) {
+                    $stokData['id_gudang'] = $opname->id_gudang;
+                }
+                $this->itemStokModel->save($stokData);
+
+                // After success, save to ItemHistModel
+                $itemHistData = [
+                    'id_item'     => $item->id_item,
+                    'id_satuan'   => $item->id_satuan ?? null,
+                    'id_gudang'   => !empty($opname->id_gudang) ? $opname->id_gudang : null,
+                    'id_outlet'   => !empty($opname->id_outlet) ? $opname->id_outlet : null,
+                    'id_user'     => $this->ionAuth->user()->row()->id ?? null,
+                    'id_so'       => $opname->id,
+                    'tgl_masuk'   => $opname->tgl_masuk,
+                    'kode'        => $opname->kode ?? null,
+                    'item'        => $item->item ?? null,
+                    'keterangan'  => 'Stock Opname ' . $item->item,
+                    'jml'         => $item->jml_so,
+                    'jml_satuan'  => $item->jml_satuan ?? 1,
+                    'satuan'      => $item->satuan ?? null,
+                    'status'      => '6', // 6 = SO
+                    'sp'          => '0'
+                ];
+                
+                $this->itemHistModel->save($itemHistData);
+            }
+
+            $this->utilSOModel->update($opname->id, ['status' => '1']);
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Berhasil foreach item.',
+                'items' => '',
+                'csrfHash' => csrf_hash()
             ]);
 
-            $this->db->transComplete();
+        } catch (Exception $e) {
+            log_message('error', "Error in proses method: " . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat memproses opname: ' . $e->getMessage()
+            ]);
+        }
+    }
 
-            if ($this->db->transStatus() === false) {
-                throw new \Exception('Gagal memproses opname');
-            }
+    public function deleteItem()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request type.'
+            ]);
+        }
 
-            return redirect()->to(base_url('gudang/opname'))->with('success', 'Opname berhasil diproses dan stok telah diperbarui.');
+        $itemId = $this->request->getPost('item_id');
+        if (!$itemId) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'status' => 'error',
+                'message' => 'ID item tidak ditemukan.'
+            ]);
+        }
 
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal memproses opname: ' . $e->getMessage());
+        $item = $this->utilSODetModel->find($itemId);
+        if (!$item) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status' => 'error',
+                'message' => 'Item tidak ditemukan.'
+            ]);
+        }
+
+        if ($this->utilSODetModel->delete($itemId)) {
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Item berhasil dihapus dari opname.',
+                'csrfHash' => csrf_hash()
+            ]);
+        } else {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Gagal menghapus item.'
+            ]);
         }
     }
 
@@ -456,6 +571,75 @@ class Opname extends BaseController
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus data opname: ' . $e->getMessage());
         }
+    }
+
+    public function getStockOutletAjax()
+    {
+        $itemId = $this->request->getGet('item_id');
+        $outletId = $this->request->getGet('outlet_id');
+        $itemStokModel = new \App\Models\ItemStokModel();
+        $stock = $itemStokModel->getStockByItemAndOutlet($itemId, $outletId);
+        return $this->response->setJSON([
+                'id'     => $stock ? $stock->id_item : null,
+                'item'   => $stock ? $stock->item_nama : null,
+                'satuan' => $stock ? $stock->satuan_nama : null,
+                'jml'    => $stock ? $stock->jml : 0
+        ]);
+    }
+
+    public function getTableData($id)
+    {
+        $opname = $this->utilSOModel->find($id);
+        if (!$opname) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'status' => 'error',
+                'message' => 'Data opname tidak ditemukan.'
+            ]);
+        }
+
+        // Get items for this opname
+        $items = $this->utilSODetModel->where('id_so', $id)->findAll();
+        
+        // Get dropdown items for the select
+        $dropdownItems = $this->itemModel->getItemStocksWithRelations();
+
+        $html = '';
+        $html .= '<tr>';
+        $html .= '<td class="text-center">1</td>';
+        $html .= '<td>';
+        $html .= '<select name="items[0][id_item]" class="form-control form-control-sm rounded-0 select2" required>';
+        $html .= '<option value="">Pilih Item</option>';
+        foreach ($dropdownItems as $item) {
+            $html .= '<option value="' . $item->id . '">' . esc($item->item) . ' (' . esc($item->kode) . ')</option>';
+        }
+        $html .= '</select>';
+        $html .= '</td>';
+        $html .= '<td><input type="text" name="items[0][satuan]" class="form-control form-control-sm rounded-0 satuan-outlet" placeholder="Satuan" readonly></td>';
+        $html .= '<td><input type="text" class="form-control form-control-sm text-right stok-outlet" name="items[0][stok_sistem]" value="" readonly></td>';
+        $html .= '<td><input type="number" min="0" step="any" name="items[0][stok_fisik]" class="form-control form-control-sm text-right rounded-0" placeholder="Stok Fisik" required></td>';
+        $html .= '<td><input type="text" name="items[0][keterangan]" class="form-control form-control-sm rounded-0" placeholder="Keterangan"></td>';
+        $html .= '<td><button type="button" class="btn btn-success btn-sm rounded-0 btn-add-opname-item"><i class="fas fa-plus"></i></button></td>';
+        $html .= '</tr>';
+
+        if (!empty($items)) {
+            $no = 2;
+            foreach ($items as $item) {
+                $html .= '<tr>';
+                $html .= '<td>' . $no++ . '</td>';
+                $html .= '<td>' . esc($item->item) . '</td>';
+                $html .= '<td>' . esc($item->satuan) . '</td>';
+                $html .= '<td><input type="text" class="form-control form-control-sm text-right rounded-0" value="' . (float)$item->jml_sys . '" readonly></td>';
+                $html .= '<td><input type="number" min="0" step="any" class="form-control form-control-sm text-right rounded-0" name="items[' . $item->id . '][stok_fisik]" value="' . ($item->jml_so ?? '') . '" required readonly></td>';
+                $html .= '<td><input type="text" class="form-control form-control-sm rounded-0" name="items[' . $item->id . '][keterangan]" value="' . ($item->keterangan ?? '') . '" readonly></td>';
+                $html .= '<td><button type="button" class="btn btn-danger btn-sm rounded-0 btn-delete-opname-item" data-id="' . $item->id . '"><i class="fas fa-trash"></i></button></td>';
+                $html .= '</tr>';
+            }
+        }
+
+        return $this->response->setJSON([
+            'status' => 'success',
+            'html' => $html
+        ]);
     }
 
     private function getOpnameDetails($opnameId)

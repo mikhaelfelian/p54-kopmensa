@@ -275,6 +275,85 @@ if (!function_exists('statusMutasi')) {
     }
 }
 
+if (!function_exists('statusOpn')) {
+    /**
+     * Mendapatkan label dan badge status stok opname.
+     * 
+     * Status:
+     * 0 = Draft
+     * 1 = Selesai
+     * 2 = Dibatalkan
+     * 3 = Dikonfirmasi
+     * 
+     * @param string|int $status
+     * @return array
+     */
+    function statusOpn($status)
+    {
+        switch ((string)$status) {
+            case '0':
+                return [
+                    'label' => 'Draft',
+                    'badge' => 'secondary'
+                ];
+            case '1':
+                return [
+                    'label' => 'Selesai',
+                    'badge' => 'success'
+                ];
+            case '2':
+                return [
+                    'label' => 'Dibatalkan',
+                    'badge' => 'danger'
+                ];
+            case '3':
+                return [
+                    'label' => 'Dikonfirmasi',
+                    'badge' => 'info'
+                ];
+            default:
+                return [
+                    'label' => '-',
+                    'badge' => 'secondary'
+                ];
+        }
+    }
+}
+
+if (!function_exists('tipeOpn')) {
+    /**
+     * Mendapatkan label tipe stok opname.
+     * 
+     * 1 = Gudang
+     * 2 = Outlet
+     * 
+     * @param string|int $tipe
+     * @return array
+     */
+    function tipeOpn($tipe)
+    {
+        switch ((string)$tipe) {
+            case '1':
+                return [
+                    'label' => 'Gudang',
+                    'badge' => 'success'
+                ];
+            case '2':
+                return [
+                    'label' => 'Outlet',
+                    'badge' => 'secondary'
+                ];
+            default:
+                return [
+                    'label' => '-',
+                    'badge' => 'secondary'
+                ];
+        }
+    }
+}
+
+
+
 
 if (!function_exists('isItemActive')) {
     function isItemActive($status)

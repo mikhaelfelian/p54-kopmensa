@@ -29,6 +29,7 @@ class UtilSOModel extends Model
         'keterangan',
         'reset',
         'status',
+        'tipe',
     ];
 
     // Dates
