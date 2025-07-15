@@ -190,8 +190,12 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('opname/edit/(:num)', 'Opname::edit/$1');
     $routes->post('opname/update/(:num)', 'Opname::update/$1');
     $routes->get('opname/input/(:num)', 'Opname::input/$1');
-    $routes->post('opname/process/(:num)', 'Opname::process/$1');
+    $routes->match(['get', 'post'], 'opname/process/(:num)', 'Opname::proses/$1');
     $routes->get('opname/delete/(:num)', 'Opname::delete/$1');
+    $routes->get('opname/get-stock-outlet', 'Opname::getStockOutletAjax');
+    $routes->match(['get', 'post'], 'opname/add-item', 'Opname::addItem');
+    $routes->post('opname/delete-item', 'Opname::deleteItem');
+    $routes->get('opname/get-table-data/(:num)', 'Opname::getTableData/$1');
     
     // Penerimaan / Receiving
     $routes->get('penerimaan', 'TransBeli::index');
@@ -273,6 +277,8 @@ $routes->group('publik', function ($routes) {
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
 $routes->get('test/check-table', 'TestController::checkTable');
+
+
 
 
 
