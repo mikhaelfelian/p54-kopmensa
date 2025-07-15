@@ -174,38 +174,48 @@
                 
                 <!-- Transaksi -->
                 <li class="nav-header">TRANSAKSI</li>
-                <li class="nav-item has-treeview">
-                    <a href="#" class="nav-link ">
+                <?php
+                    // Integrate isMenuActive with all transaksi menu routes
+                    $transaksiMenus = [
+                        'transaksi/po',
+                        'transaksi/po/create',
+                        'transaksi/beli',
+                        'transaksi/beli/create'
+                    ];
+                    $isTransaksiActive = isMenuActive($transaksiMenus);
+                ?>
+                <li class="nav-item has-treeview <?= $isTransaksiActive ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= $isTransaksiActive ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-exchange-alt"></i>
                         <p>
                             Pembelian
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
-                    <ul class="nav nav-treeview" style="display: none;">
+                    <ul class="nav nav-treeview" <?= $isTransaksiActive ? 'style="display: block;"' : 'style="display: none;"' ?>>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/po/create') ?>" class="nav-link ">
+                            <a href="<?= base_url('transaksi/po/create') ?>" class="nav-link <?= isMenuActive('transaksi/po/create') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-shopping-cart nav-icon"></i>
                                 <p>Purchase Order</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/beli/create') ?>" class="nav-link ">
+                            <a href="<?= base_url('transaksi/beli/create') ?>" class="nav-link <?= isMenuActive('transaksi/beli/create') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-cart-plus nav-icon"></i>
                                 <p>Faktur</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/po') ?>" class="nav-link ">
+                            <a href="<?= base_url('transaksi/po') ?>" class="nav-link <?= isMenuActive('transaksi/po') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Data Purchase Order</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/beli') ?>" class="nav-link ">
+                            <a href="<?= base_url('transaksi/beli') ?>" class="nav-link <?= isMenuActive('transaksi/beli') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Data Pembelian</p>
@@ -216,8 +226,18 @@
 
                 <!-- Warehouse -->
                 <li class="nav-header">GUDANG</li>
-                <li class="nav-item has-treeview <?= isMenuActive(['gudang/transfer', 'gudang/stok', 'gudang/opname']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['gudang/transfer', 'gudang/stok', 'gudang/opname']) ? 'active' : '' ?>">
+                <?php
+                    // Integrate isMenuActive with all Gudang menu routes
+                    $gudangMenus = [
+                        'gudang/transfer',
+                        'gudang/penerimaan',
+                        'gudang/stok',
+                        'gudang/opname'
+                    ];
+                    $isGudangActive = isMenuActive($gudangMenus);
+                ?>
+                <li class="nav-item has-treeview <?= $isGudangActive ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= $isGudangActive ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-warehouse"></i>
                         <p>
                             Gudang
