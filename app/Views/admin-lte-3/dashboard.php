@@ -568,61 +568,36 @@
             <!-- /.card-header -->
             <div class="card-body p-0">
                 <ul class="products-list product-list-in-card pl-2 pr-2">
-                    <li class="item">
-                        <div class="product-img">
-                            <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/default-150x150.png') ?>" alt="Product Image" class="img-size-50">
-                        </div>
-                        <div class="product-info">
-                            <a href="javascript:void(0)" class="product-title">Samsung TV
-                                <span class="badge badge-warning float-right">Rp 18.000.000</span></a>
-                            <span class="product-description">
-                                Samsung 32" 1080p 60Hz LED Smart HDTV.
-                            </span>
-                        </div>
-                    </li>
-                    <!-- /.item -->
-                    <li class="item">
-                        <div class="product-img">
-                            <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/default-150x150.png') ?>" alt="Product Image" class="img-size-50">
-                        </div>
-                        <div class="product-info">
-                            <a href="javascript:void(0)" class="product-title">Sepeda
-                                <span class="badge badge-info float-right">Rp 7.000.000</span></a>
-                            <span class="product-description">
-                                Sepeda Mongoose Dolomite 26" 7-percepatan, Biru Navy.
-                            </span>
-                        </div>
-                    </li>
-                    <!-- /.item -->
-                    <li class="item">
-                        <div class="product-img">
-                            <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/default-150x150.png') ?>" alt="Product Image" class="img-size-50">
-                        </div>
-                        <div class="product-info">
-                            <a href="javascript:void(0)" class="product-title">
-                                Xbox One <span class="badge badge-danger float-right">
-                                    Rp 3.500.000
-                                </span>
-                            </a>
-                            <span class="product-description">
-                                Xbox One Console Bundle dengan Halo Master Chief Collection.
-                            </span>
-                        </div>
-                    </li>
-                    <!-- /.item -->
-                    <li class="item">
-                        <div class="product-img">
-                            <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/default-150x150.png') ?>" alt="Product Image" class="img-size-50">
-                        </div>
-                        <div class="product-info">
-                            <a href="javascript:void(0)" class="product-title">PlayStation 4
-                                <span class="badge badge-success float-right">Rp 3.990.000</span></a>
-                            <span class="product-description">
-                                PlayStation 4 500GB Console (PS4)
-                            </span>
-                        </div>
-                    </li>
-                    <!-- /.item -->
+                    <?php if (!empty($items)): ?>
+                        <?php foreach ($items as $item): ?>
+                            <li class="item">
+                                <div class="product-img">
+                                    <?php if (!empty($item->foto) && file_exists(FCPATH . 'public/assets/images/item/' . $item->foto)): ?>
+                                        <img src="<?= base_url('public/assets/images/item/' . $item->foto) ?>" alt="<?= esc($item->item) ?>" class="img-size-50">
+                                    <?php else: ?>
+                                        <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/default-150x150.png') ?>" alt="<?= esc($item->item) ?>" class="img-size-50">
+                                    <?php endif; ?>
+                                </div>
+                                <div class="product-info">
+                                    <a href="javascript:void(0)" class="product-title"><?= esc($item->item) ?>
+                                        <span class="badge badge-success float-right"><?= 'Rp ' . number_format($item->harga_jual, 0, ',', '.') ?></span>
+                                    </a>
+                                    <span class="product-description">
+                                        <?= esc($item->kategori ?? 'Tidak berkategori') ?> | <?= esc($item->merk ?? 'Tidak bermerk') ?>
+                                        <?php if (!empty($item->deskripsi)): ?>
+                                            <br><?= esc(substr($item->deskripsi, 0, 50)) ?><?= strlen($item->deskripsi) > 50 ? '...' : '' ?>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li class="item">
+                            <div class="product-info">
+                                <span class="product-description text-muted">Tidak ada produk aktif</span>
+                            </div>
+                        </li>
+                    <?php endif; ?>
                 </ul>
             </div>
             <!-- /.card-body -->
