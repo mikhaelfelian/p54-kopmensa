@@ -76,7 +76,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 
 
 // Karyawan Routes
-$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
     $routes->get('karyawan', 'Karyawan::index');
     $routes->get('karyawan/create', 'Karyawan::create');
     $routes->post('karyawan/store', 'Karyawan::store');
@@ -87,7 +87,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 });
 
 // Supplier Routes
-$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
     $routes->get('supplier', 'Supplier::index');
     $routes->get('supplier/create', 'Supplier::create');
     $routes->post('supplier/store', 'Supplier::store');
@@ -99,7 +99,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 });
 
 // Pelanggan Routes
-$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
     $routes->get('customer', 'Pelanggan::index');
     $routes->get('customer/create', 'Pelanggan::create');
     $routes->post('customer/store', 'Pelanggan::store');
@@ -113,7 +113,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 });
 
 // Platform Routes
-$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
     $routes->get('platform', 'Platform::index');
     $routes->get('platform/create', 'Platform::create');
     $routes->post('platform/store', 'Platform::store');
@@ -124,7 +124,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 });
 
 // Outlet routes
-$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
     $routes->get('outlet', 'Outlet::index');
     $routes->get('outlet/create', 'Outlet::create');
     $routes->post('outlet/store', 'Outlet::store');
@@ -137,7 +137,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 });
 
 // Items routes
-$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function($routes) {
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
     $routes->get('item', 'Item::index');
     $routes->get('item/create', 'Item::create');
     $routes->post('item/store', 'Item::store');
@@ -170,7 +170,7 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('stok/detail/(:num)', 'Inventori::detail/$1');
     $routes->post('stok/update/(:num)', 'Inventori::updateStock/$1');
     $routes->get('stok/export_excel', 'Inventori::export_to_excel');
-    
+
     // Transfer / Mutasi
     $routes->get('transfer', 'Transfer::index');
     $routes->get('transfer/create', 'Transfer::create');
@@ -181,7 +181,7 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('transfer/delete/(:num)', 'Transfer::delete/$1');
     $routes->get('transfer/input/(:num)', 'Transfer::inputItem/$1');
     $routes->post('transfer/process/(:num)', 'Transfer::process/$1');
-    
+
     // Opname / Stock Opname
     $routes->get('opname', 'Opname::index');
     $routes->get('opname/create', 'Opname::create');
@@ -196,7 +196,7 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->match(['get', 'post'], 'opname/add-item', 'Opname::addItem');
     $routes->post('opname/delete-item', 'Opname::deleteItem');
     $routes->get('opname/get-table-data/(:num)', 'Opname::getTableData/$1');
-    
+
     // Penerimaan / Receiving
     $routes->get('penerimaan', 'TransBeli::index');
     $routes->get('terima/(:num)', 'TransBeli::terima/$1');
@@ -208,7 +208,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $routes->group('anggota', function ($routes) {
         $routes->post('login', 'Anggota\Auth::login');
     });
-    
+
     // Protected API routes (require JWT authentication)
     $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
         $routes->get('profile', 'Anggota\\Auth::profile');
@@ -219,11 +219,11 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('produk', 'Produk::index');
         $routes->get('produk/detail/(:num)', 'Produk::detail/$1');
         $routes->get('produk/category', 'Produk::getCategory');
-        
+
         // Merge: Kategori endpoints under api/pos
         $routes->get('category', 'Kategori::index');
         $routes->get('category/(:num)', 'Kategori::detail/$1');
-        
+
         // Outlet endpoints
         $routes->get('outlet', 'Store::index');
         $routes->get('outlet/detail/(:num)', 'Store::detail/$1');
@@ -234,7 +234,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
  * TRANSAKSI ROUTES
  */
 // Purchase Order Routes
-$routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function($routes) {
+$routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
     $routes->get('po', 'TransBeliPO::index');
     $routes->get('po/create', 'TransBeliPO::create');
     $routes->post('po/store', 'TransBeliPO::store');
@@ -250,10 +250,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('po/approve/(:num)/(:any)', 'TransBeliPO::approve/$1/$2');
     $routes->get('po/stats', 'TransBeliPO::getStats');
     $routes->post('po/bulk-delete', 'TransBeliPO::bulkDelete');
-});
 
-// Purchase Transaction Routes
-$routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function($routes) {
     $routes->get('beli', 'TransBeli::index');
     $routes->get('beli/create', 'TransBeli::create');
     $routes->post('beli/store', 'TransBeli::store');
