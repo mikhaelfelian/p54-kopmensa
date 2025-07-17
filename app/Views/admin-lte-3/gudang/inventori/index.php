@@ -234,6 +234,26 @@
                                             </span>
                                         <?php endif; ?>
                                     </td>
+                                    <td>
+                                        <?php
+                                            // Query sum stok for this item
+                                            $db = \Config\Database::connect();
+                                            $sumStok = $db->table('tbl_m_item_stok')
+                                                ->select('SUM(jml) as total_stok')
+                                                ->where('id_item', $row->id)
+                                                ->get()
+                                                ->getRow();
+                                            $totalStok = $sumStok && isset($sumStok->total_stok) ? $sumStok->total_stok : 0;
+                                        ?>
+                                        <?= $totalStok ?>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="<?= base_url('gudang/stok/detail/' . $row->id) ?>" 
+                                           class="btn btn-info btn-sm rounded-0" 
+                                           title="Lihat Detail Stok">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                             <?php endforeach ?>
                         <?php else: ?>
