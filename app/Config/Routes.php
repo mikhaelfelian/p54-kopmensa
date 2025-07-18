@@ -261,6 +261,17 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('beli/cart_add/(:num)', 'TransBeli::cart_add_redirect/$1');
     $routes->get('beli/get-items/(:num)', 'TransBeli::getItems/$1');
     $routes->get('beli/proses/(:num)', 'TransBeli::proses/$1');
+
+    // Sales Transaction Routes
+    $routes->get('jual', 'TransJual::index');
+    $routes->get('jual/cashier', 'TransJual::cashier');
+    $routes->get('jual/create', 'TransJual::create');
+    $routes->post('jual/store', 'TransJual::store');
+    $routes->get('jual/get-details/(:num)', 'TransJual::getTransactionDetails/$1');
+    $routes->match(['get', 'post'], 'jual/search-items', 'TransJual::searchItems');
+    $routes->get('jual/get-customer/(:num)', 'TransJual::getCustomerInfo/$1');
+    $routes->get('jual/generate-nota', 'TransJual::generateNotaNumber');
+    $routes->post('jual/validate-voucher', 'TransJual::validateVoucher');
 });
 
 // Public API routes

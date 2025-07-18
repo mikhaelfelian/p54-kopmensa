@@ -184,6 +184,26 @@
                     ];
                     $isTransaksiActive = isMenuActive($transaksiMenus);
                 ?>
+                <?php
+                    // Integrate isMenuActive with all transaksi menu routes (Pembelian)
+                    $transaksiMenus = [
+                        'transaksi/po',
+                        'transaksi/po/create',
+                        'transaksi/beli',
+                        'transaksi/beli/create'
+                    ];
+                    $isTransaksiActive = isMenuActive($transaksiMenus);
+
+                    // Integrate isMenuActive with all penjualan menu routes
+                    $penjualanMenus = [
+                        'transaksi/jual',
+                        'transaksi/jual/create',
+                        'transaksi/jual/cashier',
+                        'transaksi/jual/detail',
+                        'transaksi/jual/edit'
+                    ];
+                    $isPenjualanActive = isMenuActive($penjualanMenus);
+                ?>
                 <li class="nav-item has-treeview <?= $isTransaksiActive ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= $isTransaksiActive ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-exchange-alt"></i>
@@ -219,6 +239,52 @@
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Data Pembelian</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/retur-beli') ?>" class="nav-link <?= isMenuActive('transaksi/retur-beli') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-undo nav-icon"></i>
+                                <p>Retur Pembelian</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="nav-item has-treeview <?= $isPenjualanActive ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= $isPenjualanActive ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-cash-register"></i>
+                        <p>
+                            Penjualan
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview" <?= $isPenjualanActive ? 'style="display: block;"' : 'style="display: none;"' ?>>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/jual/cashier') ?>" class="nav-link <?= isMenuActive('transaksi/jual/cashier') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-cash-register nav-icon"></i>
+                                <p>Kasir</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/jual/create') ?>" class="nav-link <?= isMenuActive('transaksi/jual/create') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-plus nav-icon"></i>
+                                <p>Input Penjualan</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/jual') ?>" class="nav-link <?= isMenuActive('transaksi/jual') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-list nav-icon"></i>
+                                <p>Data Penjualan</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/jual/retur') ?>" class="nav-link <?= isMenuActive('transaksi/retur') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-undo nav-icon"></i>
+                                <p>Retur Penjualan</p>
                             </a>
                         </li>
                     </ul>

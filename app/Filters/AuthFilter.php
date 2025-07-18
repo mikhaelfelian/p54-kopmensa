@@ -22,6 +22,13 @@ class AuthFilter implements FilterInterface
     public function before(RequestInterface $request, $arguments = null)
     {
         if (!$this->ionAuth->loggedIn()) {
+            // Handle AJAX requests differently
+            if ($request->isAJAX()) {
+                return Services::response()
+                    ->setStatusCode(401)
+                    ->setJSON(['error' => 'Unauthorized', 'message' => 'Silakan login terlebih dahulu!']);
+            }
+            
             $this->session->setFlashdata('error', 'Silakan login terlebih dahulu!');
             return redirect()->to(base_url('auth/login'));
         }
