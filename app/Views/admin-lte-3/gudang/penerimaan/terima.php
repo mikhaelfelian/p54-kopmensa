@@ -111,14 +111,14 @@
                                             <small class="text-muted"><?= esc($item->item_name ?? $item->item) ?></small>
                                         </td>
                                         <td class="text-center">
-                                            <strong><?= number_format($item->jml, 2) ?></strong>
+                                            <strong><?= (float)$item->jml ?></strong>
                                         </td>
                                         <td class="text-center">
                                             <input type="number" 
                                                    name="jml_diterima[<?= $item->id ?>]" 
-                                                   value="<?= $item->jml ?>" 
+                                                   value="<?= (float)$item->jml ?>" 
                                                    min="0" 
-                                                   max="<?= $item->jml * 1.1 ?>" 
+                                                   max="<?= (float)$item->jml * 1.1 ?>" 
                                                    step="0.01"
                                                    class="form-control form-control-sm text-center"
                                                    required>

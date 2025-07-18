@@ -100,12 +100,6 @@ class Outlet extends BaseController
                     'required' => 'Nama outlet harus diisi',
                     'max_length' => 'Nama outlet maksimal 128 karakter'
                 ]
-            ],
-            env('security.tokenName', 'csrf_test_name') => [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'CSRF token tidak valid'
-                ]
             ]
         ];
 
