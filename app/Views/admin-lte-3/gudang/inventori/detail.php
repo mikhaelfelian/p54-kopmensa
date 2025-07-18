@@ -107,15 +107,6 @@
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
-                        
-                        <div class="stock-update-buttons">
-                            <button type="submit" class="btn btn-success btn-flat">
-                                <i class="fa fa-save mr-1"></i> Update Semua Stok
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-flat" onclick="resetForm()">
-                                <i class="fa fa-undo mr-1"></i> Reset
-                            </button>
-                        </div>
                     <?= form_close() ?>
                 </div>
             </div>

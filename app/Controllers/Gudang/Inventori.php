@@ -353,17 +353,17 @@ class Inventori extends BaseController
             // Process each stock update
             foreach ($jmlData as $locationId => $quantity) {
                 $quantity = (float) $quantity;
-                
+
                 // Determine if this is outlet or warehouse stock
                 $existingStock = null;
                 $isOutlet = false;
-                
-                // First check if it's an outlet
+
+                // Check if this locationId is an outlet
                 $outletStock = $this->itemStokModel
                     ->where('id_item', $id)
                     ->where('id_outlet', $locationId)
                     ->first();
-                
+
                 if ($outletStock) {
                     $existingStock = $outletStock;
                     $isOutlet = true;
@@ -373,7 +373,7 @@ class Inventori extends BaseController
                         ->where('id_item', $id)
                         ->where('id_gudang', $locationId)
                         ->first();
-                    
+
                     if ($warehouseStock) {
                         $existingStock = $warehouseStock;
                         $isOutlet = false;
@@ -387,11 +387,10 @@ class Inventori extends BaseController
                         'id_user' => $this->ionAuth->user()->row()->id,
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
-                    
-                    $result = $this->itemStokModel->update($existingStock->id, $updateData);
-                    if ($result) {
-                        $updatedCount++;
-                    }
+
+                    // Use update() with where to ensure correct record is updated
+                    $this->itemStokModel->where('id', $existingStock->id)->set($updateData)->update();
+                    $updatedCount++;
                 } else {
                     // Create new stock record
                     $insertData = [
@@ -409,25 +408,23 @@ class Inventori extends BaseController
                         $insertData['id_gudang'] = $locationId;
                         $insertData['id_outlet'] = null;
                     }
-                    
-                    $result = $this->itemStokModel->insert($insertData);
-                    if ($result) {
-                        $updatedCount++;
-                    }
+
+                    $this->itemStokModel->insert($insertData);
+                    $updatedCount++;
                 }
 
                 // Add to history
                 $historyData = [
-                    'id_item' => $id,
-                    'id_user' => $this->ionAuth->user()->row()->id,
-                    'tgl_masuk' => date('Y-m-d H:i:s'),
-                    'no_nota' => 'STOCK-UPDATE-' . date('YmdHis'),
-                    'kode' => $item->kode,
-                    'item' => $item->item,
-                    'keterangan' => 'Update Stok Manual',
-                    'jml' => $quantity,
-                    'status' => '2', // Stok Masuk
-                    'sp' => '0'
+                    'id_item'     => $id,
+                    'id_user'     => $this->ionAuth->user()->row()->id,
+                    'tgl_masuk'   => date('Y-m-d H:i:s'),
+                    'no_nota'     => 'STOCK-UPDATE-' . date('YmdHis'),
+                    'kode'        => $item->kode,
+                    'item'        => $item->item,
+                    'keterangan'  => 'Update Stok Manual',
+                    'jml'         => $quantity,
+                    'status'      => '2', // Stok Masuk
+                    'sp'          => '0'
                 ];
 
                 if ($isOutlet) {
@@ -449,17 +446,18 @@ class Inventori extends BaseController
                 throw new \Exception('Gagal mengupdate stok');
             }
 
-            $message = $updatedCount > 0 ? 
-                "Berhasil mengupdate {$updatedCount} stok item." : 
+            $message = $updatedCount > 0 ?
+                "Berhasil mengupdate {$updatedCount} stok item." :
                 "Tidak ada stok yang diupdate.";
 
-            return redirect()->back()->with('success', $message);
+            // Redirect to detail page after success
+            return redirect()->to(base_url('gudang/stok/detail/' . $id))->with('success', $message);
 
         } catch (\Exception $e) {
             if ($this->db->transStatus() !== false) {
                 $this->db->transRollback();
             }
-            
+
             log_message('error', 'Stock update failed: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal mengupdate stok: ' . $e->getMessage());
         }
