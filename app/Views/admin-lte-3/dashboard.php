@@ -41,8 +41,8 @@
             <span class="info-box-icon bg-success elevation-1"><i class="fas fa-shopping-cart"></i></span>
 
             <div class="info-box-content">
-                <span class="info-box-text">Penjualan</span>
-                <span class="info-box-number">760</span>
+                <span class="info-box-text">Transaksi Lunas</span>
+                <span class="info-box-number"><?= number_format($totalPaidTransactions) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
@@ -51,11 +51,11 @@
     <!-- /.col -->
     <div class="col-12 col-sm-6 col-md-3">
         <div class="info-box mb-3">
-            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-users"></i></span>
+            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-money-bill-wave"></i></span>
 
             <div class="info-box-content">
-                <span class="info-box-text">Anggota Baru</span>
-                <span class="info-box-number">2,000</span>
+                <span class="info-box-text">Total Pendapatan</span>
+                <span class="info-box-number">Rp <?= number_format($totalRevenue) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
@@ -158,8 +158,8 @@
                     <div class="col-sm-3 col-6">
                         <div class="description-block border-right">
                             <span class="description-percentage text-success"><i class="fas fa-caret-up"></i>
-                                17%</span>
-                            <h5 class="description-header">Rp 35.210.430</h5>
+                                100%</span>
+                            <h5 class="description-header">Rp <?= number_format($totalRevenue) ?></h5>
                             <span class="description-text">TOTAL PENDAPATAN</span>
                         </div>
                         <!-- /.description-block -->
@@ -332,12 +332,13 @@
         </div>
         <!-- /.row -->
 
-        <!-- TABLE: LATEST ORDERS -->
+        <!-- TABLE: RECENT PAID TRANSACTIONS -->
         <div class="card">
             <div class="card-header border-transparent">
-                <h3 class="card-title">Pesanan Terbaru</h3>
+                <h3 class="card-title">Transaksi Lunas Terbaru</h3>
 
                 <div class="card-tools">
+                    <span class="badge badge-success"><?= $totalPaidTransactions ?> Transaksi</span>
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                         <i class="fas fa-minus"></i>
                     </button>
@@ -352,76 +353,27 @@
                     <table class="table m-0">
                         <thead>
                             <tr>
-                                <th>ID Pesanan</th>
-                                <th>Item</th>
+                                <th>No. Nota</th>
+                                <th>Tanggal</th>
+                                <th>Total</th>
                                 <th>Status</th>
-                                <th>Popularitas</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><a href="pages/examples/invoice.html">OR9842</a></td>
-                                <td>Call of Duty IV</td>
-                                <td><span class="badge badge-success">Dikirim</span></td>
-                                <td>
-                                    <div class="sparkbar" data-color="#00a65a" data-height="20">
-                                        90,80,90,-70,61,-83,63</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><a href="pages/examples/invoice.html">OR1848</a></td>
-                                <td>Samsung Smart TV</td>
-                                <td><span class="badge badge-warning">Menunggu</span></td>
-                                <td>
-                                    <div class="sparkbar" data-color="#f39c12" data-height="20">
-                                        90,80,-90,70,61,-83,68</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><a href="pages/examples/invoice.html">OR7429</a></td>
-                                <td>iPhone 6 Plus</td>
-                                <td><span class="badge badge-danger">Terkirim</span></td>
-                                <td>
-                                    <div class="sparkbar" data-color="#f56954" data-height="20">
-                                        90,-80,90,70,-61,83,63</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><a href="pages/examples/invoice.html">OR7429</a></td>
-                                <td>Samsung Smart TV</td>
-                                <td><span class="badge badge-info">Diproses</span></td>
-                                <td>
-                                    <div class="sparkbar" data-color="#00c0ef" data-height="20">
-                                        90,80,-90,70,-61,83,63</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><a href="pages/examples/invoice.html">OR1848</a></td>
-                                <td>Samsung Smart TV</td>
-                                <td><span class="badge badge-warning">Menunggu</span></td>
-                                <td>
-                                    <div class="sparkbar" data-color="#f39c12" data-height="20">
-                                        90,80,-90,70,61,-83,68</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><a href="pages/examples/invoice.html">OR7429</a></td>
-                                <td>iPhone 6 Plus</td>
-                                <td><span class="badge badge-danger">Terkirim</span></td>
-                                <td>
-                                    <div class="sparkbar" data-color="#f56954" data-height="20">
-                                        90,-80,90,70,-61,83,63</div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><a href="pages/examples/invoice.html">OR9842</a></td>
-                                <td>Call of Duty IV</td>
-                                <td><span class="badge badge-success">Dikirim</span></td>
-                                <td>
-                                    <div class="sparkbar" data-color="#00a65a" data-height="20">
-                                        90,80,90,-70,61,-83,63</div>
-                                </td>
-                            </tr>
+                            <?php if (!empty($paidTransactions)): ?>
+                                <?php foreach (array_slice($paidTransactions, 0, 5) as $transaction): ?>
+                                    <tr>
+                                        <td><a href="<?= base_url('transaksi/jual/detail/' . $transaction->id) ?>"><?= esc($transaction->no_nota) ?></a></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($transaction->tgl_masuk)) ?></td>
+                                        <td>Rp <?= number_format($transaction->jml_gtotal) ?></td>
+                                        <td><span class="badge badge-success">Lunas</span></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="4" class="text-center">Belum ada transaksi lunas</td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -429,8 +381,8 @@
             </div>
             <!-- /.card-body -->
             <div class="card-footer clearfix">
-                <a href="javascript:void(0)" class="btn btn-sm btn-info float-left">Buat Pesanan Baru</a>
-                <a href="javascript:void(0)" class="btn btn-sm btn-secondary float-right">Lihat Semua Pesanan</a>
+                <a href="<?= base_url('transaksi/jual/cashier') ?>" class="btn btn-sm btn-info float-left">Kasir Baru</a>
+                <a href="<?= base_url('transaksi/jual') ?>" class="btn btn-sm btn-secondary float-right">Lihat Semua Transaksi</a>
             </div>
             <!-- /.card-footer -->
         </div>
