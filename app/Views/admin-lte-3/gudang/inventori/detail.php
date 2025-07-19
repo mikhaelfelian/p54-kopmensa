@@ -196,7 +196,7 @@
                                     <tr>
                                         <td><?= date('d/m/Y H:i', strtotime($row->created_at)) ?></td>
                                         <td><?= $row->gudang_name ?? '-' ?></td>
-                                        <td class="text-right"><?= number_format($row->jml, 0, ',', '.') ?></td>
+                                        <td class="text-right"><?= $row->jml; ?></td>
                                         <td><?= $row->satuan_name ?? 'PCS' ?></td>
                                         <td><?= $row->keterangan ?></td>
                                         <td>

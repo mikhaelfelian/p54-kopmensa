@@ -201,12 +201,22 @@ class Transfer extends BaseController
         $transfer->user_name = $user ? $user->first_name : 'Unknown User';
 
         // Get gudang data
-        $gudangAsal = $this->gudangModel->find($transfer->id_gd_asal);
-        $gudangTujuan = $this->gudangModel->find($transfer->id_gd_tujuan);
+        if(!empty($transfer->id_gd_asal)){
+            $gudangAsal   = $this->gudangModel->find($transfer->id_gd_asal);
+            $gudangTujuan = $this->gudangModel->find($transfer->id_gd_tujuan);
+
+            $gudangAsalName   = ($gudangAsal && isset($gudangAsal->gudang)) ? $gudangAsal->gudang : 'N/A';
+            $gudangTujuanName = ($gudangTujuan && isset($gudangTujuan->gudang)) ? $gudangTujuan->gudang : 'N/A';
+        }else{
+            $gudangAsal         = $this->gudangModel->find($transfer->id_gd_asal);
+            $gudangTujuan       = $this->outletModel->find($transfer->id_outlet);
+            $gudangAsalName     = $gudangAsal->gudang;
+            $gudangTujuanName   = $gudangTujuan->nama;
+        }
         
         // Safely get gudang names
-        $gudangAsalName = 'N/A';
-        $gudangTujuanName = 'N/A';
+        $gudangAsalName     = 'N/A';
+        $gudangTujuanName   = 'N/A';
         
         if ($gudangAsal) {
             if (is_object($gudangAsal) && isset($gudangAsal->gudang)) {
@@ -228,7 +238,7 @@ class Transfer extends BaseController
         $transferDetails = $this->getTransferDetails($id);
 
         $data = [
-            'title'       => 'Detail Transfer/Mutasi',
+            'title'       => 'Detail Transfer',
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
             'transfer'    => $transfer,
@@ -407,9 +417,9 @@ class Transfer extends BaseController
         }
 
         // Get form data
-        $items = $this->request->getPost('items');
+        $items      = $this->request->getPost('items');
         $quantities = $this->request->getPost('quantities');
-        $notes = $this->request->getPost('notes');
+        $notes      = $this->request->getPost('notes');
 
         if (!$items || !$quantities) {
             return redirect()->back()->with('error', 'Data item tidak lengkap.');
@@ -422,8 +432,9 @@ class Transfer extends BaseController
             log_message('debug', 'Starting transfer process for ID: ' . $id);
 
             foreach ($items as $index => $itemId) {
-                $quantity = floatval($quantities[$index] ?? 0);
-                $note = $notes[$index] ?? '';
+                $sql_item = $this->db->table('tbl_m_item')->where('id', $itemId)->get()->getRow();
+                $quantity = isset($quantities[$index]) ? floatval($quantities[$index]) : 0;
+                $note     = isset($notes[$index]) ? $notes[$index] : '';
 
                 if ($quantity > 0) {
                     log_message('debug', "Processing item ID: $itemId, quantity: $quantity");
@@ -449,18 +460,18 @@ class Transfer extends BaseController
 
                     // Save transfer detail
                     $transferDetailData = [
-                        'id_mutasi' => $id,
-                        'id_item' => $itemId,
-                        'id_satuan' => $item->id_satuan,
-                        'id_user' => $this->ionAuth->user()->row()->id,
-                        'tgl_masuk' => $transfer->tgl_masuk,
-                        'kode' => $item->kode,
-                        'item' => $item->item,
-                        'satuan' => $satuan ? $satuan->satuanBesar : '',
-                        'keterangan' => $note,
-                        'jml' => $quantity,
-                        'jml_satuan' => 1,
-                        'sp' => '0'
+                        'id_mutasi'    => $id,
+                        'id_item'      => $sql_item->id,
+                        'id_satuan'    => $sql_item->id_satuan,
+                        'id_user'      => $this->ionAuth->user()->row()->id,
+                        'tgl_masuk'    => $transfer->tgl_masuk,
+                        'kode'         => $sql_item->kode,
+                        'item'         => $sql_item->item,
+                        'satuan'       => $satuan ? $satuan->satuanBesar : '',
+                        'keterangan'   => $note,
+                        'jml'          => $quantity,
+                        'jml_satuan'   => 1,
+                        'sp'           => '0'
                     ];
 
                     $insertResult = $this->transMutasiDetModel->insert($transferDetailData);
@@ -678,6 +689,10 @@ class Transfer extends BaseController
     private function getTransferDetails($transferId)
     {
         // Get transfer details from TransMutasiDetModel
-        return $this->transMutasiDetModel->where('id_mutasi', $transferId)->findAll();
+        return $this->transMutasiDetModel
+            ->select('tbl_trans_mutasi_det.*, tbl_m_item.foto')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_mutasi_det.id_item', 'left')
+            ->where('id_mutasi', $transferId)
+            ->findAll();
     }
 } 

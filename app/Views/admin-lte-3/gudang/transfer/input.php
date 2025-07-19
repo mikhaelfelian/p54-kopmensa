@@ -97,59 +97,72 @@
                     <?= form_open(base_url("gudang/transfer/process/{$transfer->id}"), ['id' => 'transferItemForm']) ?>
                         <div class="row">
                             <div class="col-md-12">
+                                <h4 class="mb-3">Produk</h4>
                                 <div class="table-responsive">
-                                    <table class="table table-striped" id="itemTable">
+                                    <table class="table table-striped" id="productTable">
                                         <thead>
                                             <tr>
-                                                <th width="50" class="text-center">
-                                                    <input type="checkbox" id="selectAll">
-                                                </th>
-                                                <th>Kode Item</th>
-                                                <th>Nama Item</th>
-                                                <th>Satuan</th>
-                                                <th class="text-center">Stok Tersedia</th>
-                                                <th class="text-center">Jumlah Transfer</th>
+                                                <th width="50" class="text-center">#</th>
+                                                <th>Produk</th>
+                                                <th width="100">Qty</th>
+                                                <th width="120">Stok Tersedia</th>
                                                 <th>Keterangan</th>
+                                                <th width="80" class="text-center">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php if (empty($items)): ?>
-                                                <tr>
-                                                    <td colspan="7" class="text-center">Tidak ada item tersedia di gudang asal</td>
-                                                </tr>
-                                            <?php else: ?>
-                                                <?php foreach ($items as $item): ?>
-                                                    <tr>
-                                                        <td class="text-center">
-                                                            <input type="checkbox" name="items[]" value="<?= $item->id_item ?>" 
-                                                                   class="item-checkbox" data-stok="<?= $item->jml ?>">
-                                                        </td>
-                                                        <td><?= $item->item_kode ?? '-' ?></td>
-                                                        <td><?= $item->item_name ?? '-' ?></td>
-                                                        <td><?= $item->satuan_name ?? '-' ?></td>
-                                                        <td class="text-center">
-                                                            <span class="badge badge-info"><?= number_format($item->jml, 2) ?></span>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <input type="number" name="quantities[]" class="form-control form-control-sm quantity-input" 
-                                                                   min="0" max="<?= $item->jml ?>" step="0.01" placeholder="0" disabled>
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" name="notes[]" class="form-control form-control-sm" 
-                                                                   placeholder="Keterangan..." disabled>
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach ?>
-                                            <?php endif ?>
+                                            <tr class="product-row" data-row="1">
+                                                <td class="text-center">1</td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <input type="text" class="form-control product-select" placeholder="Pilih produk..." readonly>
+                                                        <div class="input-group-append">
+                                                            <button type="button" class="btn btn-outline-secondary btn-sm product-search" data-row="1">
+                                                                <i class="fas fa-search"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-secondary btn-sm product-clear" data-row="1">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" name="items[]" class="product-id">
+                                                </td>
+                                                <td>
+                                                    <input type="number" name="quantities[]" class="form-control qty-input" value="1" min="1" step="1">
+                                                </td>
+                                                <td>
+                                                    <span class="stock-display">-</span>
+                                                    <input type="hidden" name="stock[]" class="stock-input">
+                                                </td>
+                                                <td>
+                                                    <input type="text" name="notes[]" class="form-control deskripsi-input" placeholder="Keterangan...">
+                                                </td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-danger btn-sm remove-row">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
+                                </div>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-12">
+                                        <button type="button" class="btn btn-primary" id="addRow">
+                                            <i class="fas fa-plus"></i> Tambah Baris
+                                        </button>
+                                        <button type="button" class="btn btn-danger" id="removeAllRows">
+                                            <i class="fas fa-times"></i> Hapus Semua Baris
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="row mt-3">
                             <div class="col-md-12 text-right">
-                                <button type="submit" class="btn btn-success rounded-0" id="btnProcess" disabled>
+                                <button type="submit" class="btn btn-success rounded-0" id="btnProcess">
                                     <i class="fas fa-check"></i> Proses Transfer
                                 </button>
                                 <a href="<?= base_url('gudang/transfer') ?>" class="btn btn-secondary rounded-0">
@@ -164,85 +177,223 @@
     </div>
 </div>
 
+<!-- Product Search Modal -->
+<div class="modal fade" id="productSearchModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pilih Produk</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="productSearchInput" placeholder="Cari produk...">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="productSearchTable">
+                        <thead>
+                            <tr>
+                                <th>Kode</th>
+                                <th>Nama Produk</th>
+                                <th>Deskripsi</th>
+                                <th>Stok</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Product search results will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 $(document).ready(function() {
-    // Select all checkbox
-    $('#selectAll').on('change', function() {
-        $('.item-checkbox').prop('checked', $(this).is(':checked'));
-        $('.item-checkbox').trigger('change');
+    let rowCounter = 1;
+    let currentRow = null;
+    
+    // Add new row
+    $('#addRow').on('click', function() {
+        rowCounter++;
+        const newRow = `
+            <tr class="product-row" data-row="${rowCounter}">
+                <td class="text-center">${rowCounter}</td>
+                <td>
+                    <div class="input-group">
+                        <input type="text" class="form-control product-select" placeholder="Pilih produk..." readonly>
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary btn-sm product-search" data-row="${rowCounter}">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm product-clear" data-row="${rowCounter}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" name="items[]" class="product-id">
+                </td>
+                <td>
+                    <input type="number" name="quantities[]" class="form-control qty-input" value="1" min="1" step="1">
+                </td>
+                <td>
+                    <span class="stock-display">-</span>
+                    <input type="hidden" name="stock[]" class="stock-input">
+                </td>
+                <td>
+                    <input type="text" name="notes[]" class="form-control deskripsi-input" placeholder="Keterangan...">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-danger btn-sm remove-row">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        $('#productTable tbody').append(newRow);
+        updateRowNumbers();
     });
     
-    // Individual checkbox change
-    $('.item-checkbox').on('change', function() {
-        var row = $(this).closest('tr');
-        var quantityInput = row.find('.quantity-input');
-        var noteInput = row.find('input[name="notes[]"]');
-        
-        if ($(this).is(':checked')) {
-            quantityInput.prop('disabled', false).focus();
-            noteInput.prop('disabled', false);
-        } else {
-            quantityInput.prop('disabled', true).val('');
-            noteInput.prop('disabled', true).val('');
-        }
-        
-        updateProcessButton();
+    // Remove row
+    $(document).on('click', '.remove-row', function() {
+        $(this).closest('tr').remove();
+        updateRowNumbers();
     });
     
-    // Quantity input validation
-    $('.quantity-input').on('input', function() {
-        var max = parseFloat($(this).attr('max'));
-        var value = parseFloat($(this).val());
-        
-        if (value > max) {
-            $(this).val(max);
-            alert('Jumlah tidak boleh melebihi stok tersedia!');
+    // Remove all rows
+    $('#removeAllRows').on('click', function() {
+        if (confirm('Apakah Anda yakin ingin menghapus semua baris?')) {
+            $('#productTable tbody').empty();
+            rowCounter = 0;
+            $('#addRow').click(); // Add one empty row
         }
-        
-        if (value <= 0) {
-            $(this).val('');
-        }
-        
-        updateProcessButton();
     });
     
-    // Update process button state
-    function updateProcessButton() {
-        var checkedItems = $('.item-checkbox:checked').length;
-        var hasQuantities = false;
-        
-        $('.item-checkbox:checked').each(function() {
-            var row = $(this).closest('tr');
-            var quantity = parseFloat(row.find('.quantity-input').val());
-            if (quantity > 0) {
-                hasQuantities = true;
-                return false;
+    // Product search
+    $(document).on('click', '.product-search', function() {
+        currentRow = $(this).data('row');
+        $('#productSearchModal').modal('show');
+        loadProducts();
+    });
+    
+    // Product clear
+    $(document).on('click', '.product-clear', function() {
+        const row = $(this).data('row');
+        $(`.product-row[data-row="${row}"] .product-select`).val('');
+        $(`.product-row[data-row="${row}"] .product-id`).val('');
+        $(`.product-row[data-row="${row}"] .stock-display`).text('-');
+        $(`.product-row[data-row="${row}"] .stock-input`).val('');
+    });
+    
+    // Load products for search
+    function loadProducts(search = '') {
+        $.ajax({
+            url: '<?= base_url('publik/items') ?>',
+            method: 'GET',
+            data: { term: search },
+            success: function(response) {
+                let html = '';
+                if (response && response.length > 0) {
+                    response.forEach(function(item) {
+                        html += `
+                            <tr>
+                                <td>${item.kode || '-'}</td>
+                                <td>${item.item}</td>
+                                <td>${item.deskripsi || '-'}</td>
+                                <td>${item.jml_min || 0}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary select-product" 
+                                            data-id="${item.id}" 
+                                            data-nama="${item.item}" 
+                                            data-stok="${item.jml_min || 0}">
+                                        Pilih
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    html = '<tr><td colspan="5" class="text-center">Tidak ada produk ditemukan</td></tr>';
+                }
+                $('#productSearchTable tbody').html(html);
+            },
+            error: function() {
+                $('#productSearchTable tbody').html('<tr><td colspan="5" class="text-center text-danger">Gagal memuat data produk</td></tr>');
             }
         });
+    }
+    
+    // Select product from search
+    $(document).on('click', '.select-product', function() {
+        const productId = $(this).data('id');
+        const productNama = $(this).data('nama');
+        const productStok = $(this).data('stok');
         
-        $('#btnProcess').prop('disabled', !(checkedItems > 0 && hasQuantities));
+        $(`.product-row[data-row="${currentRow}"] .product-select`).val(productNama);
+        $(`.product-row[data-row="${currentRow}"] .product-id`).val(productId);
+        $(`.product-row[data-row="${currentRow}"] .stock-display`).text(productStok);
+        $(`.product-row[data-row="${currentRow}"] .stock-input`).val(productStok);
+        
+        $('#productSearchModal').modal('hide');
+    });
+    
+    // Product search input
+    $('#productSearchInput').on('input', function() {
+        loadProducts($(this).val());
+    });
+    
+
+    
+    // Input change events
+    $(document).on('input', '.qty-input', function() {
+        const row = $(this).closest('tr').data('row');
+        
+        // Validate quantity against stock
+        const qty = parseFloat($(this).val()) || 0;
+        const stock = parseFloat($(`.product-row[data-row="${row}"] .stock-input`).val()) || 0;
+        
+        if (qty > stock) {
+            alert('Jumlah transfer tidak boleh melebihi stok tersedia!');
+            $(this).val(stock);
+        }
+    });
+    
+    // Update row numbers
+    function updateRowNumbers() {
+        $('#productTable tbody tr').each(function(index) {
+            $(this).find('td:first').text(index + 1);
+            $(this).attr('data-row', index + 1);
+            $(this).find('.product-search, .product-clear').attr('data-row', index + 1);
+        });
+        rowCounter = $('#productTable tbody tr').length;
+    }
+    
+    // Format number
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
     
     // Form submission
     $('#transferItemForm').on('submit', function(e) {
-        var hasValidItems = false;
-        
-        $('.item-checkbox:checked').each(function() {
-            var row = $(this).closest('tr');
-            var quantity = parseFloat(row.find('.quantity-input').val());
-            if (quantity > 0) {
-                hasValidItems = true;
+        let hasProducts = false;
+        $('.product-id').each(function() {
+            if ($(this).val()) {
+                hasProducts = true;
                 return false;
             }
         });
         
-        if (!hasValidItems) {
+        if (!hasProducts) {
             e.preventDefault();
-            alert('Pilih minimal satu item dengan jumlah lebih dari 0!');
+            alert('Pilih minimal satu produk!');
             return false;
         }
         
-        if (!confirm('Apakah Anda yakin ingin memproses transfer ini? Stok akan diperbarui secara otomatis.')) {
+        if (!confirm('Apakah Anda yakin ingin memproses transfer ini?')) {
             e.preventDefault();
             return false;
         }
