@@ -18,6 +18,8 @@ use App\Models\ItemModel;
 use App\Models\KaryawanModel;
 use App\Models\GudangModel;
 use App\Models\PlatformModel;
+use App\Models\OutletModel;
+use App\Models\ItemHistModel;
 
 class TransJual extends BaseController
 {
@@ -29,6 +31,8 @@ class TransJual extends BaseController
     protected $karyawanModel;
     protected $gudangModel;
     protected $platformModel;
+    protected $outletModel;
+    protected $itemHistModel;
 
     public function __construct()
     {
@@ -40,6 +44,8 @@ class TransJual extends BaseController
         $this->karyawanModel       = new KaryawanModel();
         $this->gudangModel         = new GudangModel();
         $this->platformModel       = new PlatformModel();
+        $this->outletModel         = new OutletModel();
+        $this->itemHistModel       = new ItemHistModel();
     }
 
     /**
@@ -320,6 +326,7 @@ class TransJual extends BaseController
         $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
         $sales      = $this->karyawanModel->where('status', '1')->findAll();
         $warehouses = $this->gudangModel->where('status', '1')->findAll();
+        $outlets    = $this->outletModel->where('status', '1')->findAll();
         $platforms  = $this->platformModel->where('status', '1')->findAll();
         $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
 
@@ -330,6 +337,7 @@ class TransJual extends BaseController
             'customers'     => $customers,
             'sales'         => $sales,
             'warehouses'    => $warehouses,
+            'outlets'       => $outlets,
             'platforms'     => $platforms,
             'items'         => $items
         ];
@@ -528,6 +536,252 @@ class TransJual extends BaseController
             return redirect()->back()
                             ->withInput()
                             ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Process cashier transaction (AJAX)
+     */
+    public function processTransaction()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['error' => 'Invalid request']);
+        }
+
+        // Get transaction data from POST
+        $cart            = $this->request->getPost('cart');
+        $customerId      = $this->request->getPost('customer_id')      ?: null;
+        $warehouseId     = $this->request->getPost('warehouse_id');
+        $outletId        = $this->request->getPost('outlet_id')        ?: null;
+        $discountPercent = $this->request->getPost('discount_percent') ?: 0;
+        $voucherCode     = $this->request->getPost('voucher_code')     ?: null;
+        $voucherDiscount = $this->request->getPost('voucher_discount') ?: 0;
+        $paymentMethod   = $this->request->getPost('payment_method');
+        $platformId      = $this->request->getPost('platform_id')      ?: null;
+        $amountReceived  = $this->request->getPost('amount_received')  ?: 0;
+        $grandTotal      = $this->request->getPost('grand_total')      ?: 0;
+
+        // Validate required data
+        if (empty($cart) || !is_array($cart) || count($cart) === 0) {
+            return $this->response->setJSON(['error' => 'Keranjang belanja kosong']);
+        }
+
+        if (empty($warehouseId)) {
+            return $this->response->setJSON(['error' => 'Gudang harus dipilih']);
+        }
+
+        if (empty($paymentMethod)) {
+            return $this->response->setJSON(['error' => 'Metode pembayaran harus dipilih']);
+        }
+
+        if ($amountReceived < $grandTotal) {
+            return $this->response->setJSON(['error' => 'Jumlah bayar kurang dari total']);
+        }
+
+        try {
+            $this->db = \Config\Database::connect();
+            $this->db->transStart();
+
+            // Generate nota number
+            $prefix = 'INV';
+            $date = date('Ymd');
+            $lastTransaction = $this->transJualModel->where('DATE(created_at)', date('Y-m-d'))
+                                                   ->orderBy('id', 'DESC')
+                                                   ->first();
+
+            if ($lastTransaction) {
+                $lastNumber = (int) substr($lastTransaction->no_nota, -4);
+                $newNumber = $lastNumber + 1;
+            } else {
+                $newNumber = 1;
+            }
+
+            $noNota = $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+
+            // Calculate totals
+            $subtotal = 0;
+            foreach ($cart as $item) {
+                $subtotal += ($item['price'] * $item['quantity']);
+            }
+
+            $discountAmount = $subtotal * ($discountPercent / 100);
+            $afterDiscount  = $subtotal - $discountAmount;
+            $voucherAmount  = $afterDiscount * ($voucherDiscount / 100);
+            $afterVoucher   = $afterDiscount - $voucherAmount;
+            $taxAmount      = $afterVoucher * 0.11; // 11% PPN
+            $finalTotal     = $afterVoucher + $taxAmount;
+            $change         = $amountReceived - $finalTotal;
+            $change         = $change < 0 ? 0 : $change;
+
+            // Prepare transaction data
+            $transactionData = [
+                'id_user'           => $this->ionAuth->user()->row()->id,
+                'id_sales'          => null, // Can be added later if needed
+                'id_pelanggan'      => $customerId,
+                'id_gudang'         => $warehouseId,
+                'no_nota'           => $noNota,
+                'tgl_masuk'         => date('Y-m-d H:i:s'),
+                'tgl_bayar'         => date('Y-m-d H:i:s'),
+                'jml_subtotal'      => $subtotal,
+                'diskon'            => $discountPercent,
+                'jml_diskon'        => $discountAmount,
+                'ppn'               => 11, // 11%
+                'jml_ppn'           => $taxAmount,
+                'jml_gtotal'        => $finalTotal,
+                'jml_bayar'         => $amountReceived,
+                'jml_kembali'       => $change,
+                'metode_bayar'      => $paymentMethod,
+                'status'            => '1', // Completed
+                'status_nota'       => '1', // Completed
+                'status_bayar'      => '1', // Paid
+                'status_ppn'        => '1'  // PPN included
+            ];
+
+            // Insert main transaction
+            $this->transJualModel->insert($transactionData);
+            $transactionId = $this->transJualModel->getInsertID();
+
+            // Insert transaction details
+            foreach ($cart as $item) {
+                // Get item details from database
+                $itemDetails = $this->itemModel->find($item['id']);
+                if (!$itemDetails) {
+                    throw new \Exception("Item dengan ID {$item['id']} tidak ditemukan");
+                }
+
+                $detailData = [
+                    'id_penjualan'   => $transactionId,
+                    'id_item'        => $item['id'],
+                    'id_satuan'      => $itemDetails->id_satuan,
+                    'id_kategori'    => $itemDetails->id_kategori,
+                    'id_merk'        => $itemDetails->id_merk,
+                    'no_nota'        => $noNota,
+                    'kode'           => $itemDetails->kode,
+                    'produk'         => $item['name'],
+                    'satuan'         => $itemDetails->satuan ?? 'PCS',
+                    'keterangan'     => null,
+                    'harga'          => $item['price'],
+                    'harga_beli'     => $itemDetails->harga_beli ?? 0,
+                    'jml'            => $item['quantity'],
+                    'jml_satuan'     => $item['quantity'],
+                    'disk1'          => 0,
+                    'disk2'          => 0,
+                    'disk3'          => 0,
+                    'diskon'         => 0,
+                    'potongan'       => 0,
+                    'subtotal'       => $item['price'] * $item['quantity'],
+                    'status'         => 1
+                ];
+
+                $this->transJualDetModel->insert($detailData);
+
+                // Update stock (decrease stock)
+                if ($warehouseId) {
+                    $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
+                }
+
+                // Insert item history record (Stok Keluar Penjualan - status 4)
+                $historyData = [
+                    'id_item'        => $item['id'],
+                    'id_satuan'      => $itemDetails->id_satuan,
+                    'id_gudang'      => $warehouseId,
+                    'id_outlet'      => $outletId,
+                    'id_user'        => $this->ionAuth->user()->row()->id,
+                    'id_pelanggan'   => $customerId,
+                    'id_penjualan'   => $transactionId,
+                    'tgl_masuk'      => date('Y-m-d H:i:s'),
+                    'no_nota'        => $noNota,
+                    'kode'           => $itemDetails->kode,
+                    'item'           => $item['name'],
+                    'keterangan'     => 'Penjualan - ' . $noNota,
+                    'nominal'        => $item['price'],
+                    'jml'            => $item['quantity'],
+                    'jml_satuan'     => $item['quantity'],
+                    'satuan'         => $itemDetails->satuan ?? 'PCS',
+                    'status'         => '4', // Stok Keluar Penjualan
+                    'sp'             => null
+                ];
+
+                $this->itemHistModel->insert($historyData);
+            }
+
+            // Insert platform payment if specified
+            if ($platformId) {
+                $platformData = [
+                    'id_penjualan' => $transactionId,
+                    'id_platform'  => $platformId,
+                    'no_nota'      => $noNota,
+                    'platform'     => $this->platformModel->find($platformId)->platform ?? 'Unknown',
+                    'keterangan'   => 'Pembayaran via ' . $paymentMethod,
+                    'nominal'      => $finalTotal
+                ];
+
+                $this->transJualPlatModel->insert($platformData);
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Database transaction failed');
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Transaksi berhasil diproses',
+                'transaction_id' => $transactionId,
+                'no_nota' => $noNota,
+                'total' => $finalTotal,
+                'change' => $change
+            ]);
+
+        } catch (\Exception $e) {
+            if ($this->db->transStatus() !== false) {
+                $this->db->transRollback();
+            }
+            
+            log_message('error', 'Cashier transaction failed: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'error' => true,
+                'message' => 'Gagal memproses transaksi: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Update stock for an item in a warehouse
+     */
+    private function updateStock($itemId, $warehouseId, $quantity, $action = 'decrease')
+    {
+        $builder = $this->db->table('tbl_m_item_stok');
+        
+        // Get current stock
+        $currentStock = $builder->where('id_item', $itemId)
+                               ->where('id_gudang', $warehouseId)
+                               ->get()
+                               ->getRow();
+
+        if ($currentStock) {
+            // Update existing stock
+            $newQuantity = $action === 'decrease' 
+                ? $currentStock->jml - $quantity 
+                : $currentStock->jml + $quantity;
+            
+            $newQuantity = max(0, $newQuantity); // Ensure stock doesn't go negative
+            
+            $builder->where('id_item', $itemId)
+                   ->where('id_gudang', $warehouseId)
+                   ->update(['jml' => $newQuantity]);
+        } else {
+            // Create new stock record if doesn't exist
+            $newQuantity = $action === 'decrease' ? 0 : $quantity;
+            
+            $builder->insert([
+                'id_item' => $itemId,
+                'id_gudang' => $warehouseId,
+                'jml' => $newQuantity,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
         }
     }
 } 

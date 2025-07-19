@@ -19,9 +19,6 @@
                     <i class="fas fa-shopping-cart"></i> Kasir - Transaksi Penjualan
                 </h3>
                 <div class="card-tools">
-                    <button type="button" class="btn btn-success btn-sm" id="completeTransaction">
-                        <i class="fas fa-check"></i> Selesai
-                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="newTransaction">
                         <i class="fas fa-plus"></i> Transaksi Baru
                     </button>
@@ -41,10 +38,10 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <select class="form-control" id="warehouseSelect">
-                            <option value="">Pilih Gudang</option>
-                            <?php foreach ($warehouses as $warehouse): ?>
-                                <option value="<?= $warehouse->id ?>"><?= esc($warehouse->gudang) ?></option>
+                        <select class="form-control" id="outletSelect">
+                            <option value="">Pilih Outlet</option>
+                            <?php foreach ($outlets as $outlet): ?>
+                                <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -190,8 +187,8 @@
                 <!-- Action Buttons -->
                 <div class="row">
                     <div class="col-6">
-                        <button type="button" class="btn btn-warning btn-block" id="holdTransaction">
-                            <i class="fas fa-pause"></i> Tahan
+                        <button type="button" class="btn btn-success btn-block" id="completeTransaction">
+                            <i class="fas fa-check"></i> Proses
                         </button>
                     </div>
                     <div class="col-6">
@@ -237,10 +234,11 @@
 
 <?= $this->section('js') ?>
 <script>
+// Global variables
+let cart = [];
+let currentTransactionId = null;
+
 $(document).ready(function() {
-    let cart = [];
-    let currentTransactionId = null;
-    
     // Initialize
     loadProducts();
     
@@ -374,10 +372,21 @@ function updateCartDisplay() {
             <tr>
                 <td>${item.name}</td>
                 <td>
-                    <div class="input-group input-group-sm">
-                        <button type="button" class="btn btn-outline-secondary" onclick="updateQuantity(${index}, -1)">-</button>
-                        <input type="number" class="form-control text-center" value="${item.quantity}" min="1" onchange="updateQuantityInput(${index}, this.value)">
-                        <button type="button" class="btn btn-outline-secondary" onclick="updateQuantity(${index}, 1)">+</button>
+                    <div class="d-flex align-items-center justify-content-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 me-1" style="min-width:32px;" onclick="updateQuantity(${index}, -1)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <input 
+                            type="number" 
+                            class="form-control form-control-sm text-center mx-1" 
+                            value="${item.quantity}" 
+                            min="1" 
+                            style="width: 50px; height: 32px; padding: 0 4px; box-shadow: none;"
+                            onchange="updateQuantityInput(${index}, this.value)"
+                        >
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 ms-1" style="min-width:32px;" onclick="updateQuantity(${index}, 1)">
+                            <i class="fas fa-plus"></i>
+                        </button>
                     </div>
                 </td>
                 <td class="text-right">Rp ${numberFormat(item.price)}</td>
@@ -474,11 +483,13 @@ function validateVoucher(voucherCode) {
 }
 
 function calculateChange() {
-    const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d.-]/g, '')) || 0;
+    const grandTotalText = $('#grandTotalDisplay').text();
+    // Remove all non-numeric characters including dots (thousands separators)
+    const grandTotal = parseFloat(grandTotalText.replace(/[^\d]/g, '')) || 0;
     const amountReceived = parseFloat($('#amountReceived').val()) || 0;
     const change = amountReceived - grandTotal;
     
-    $('#changeDisplay').text(`Rp ${numberFormat(Math.max(0, change))}`);
+    $('#changeDisplay').text(`Rp ${numberFormat(change)}`);
 }
 
 function completeTransaction() {
@@ -494,17 +505,64 @@ function completeTransaction() {
     }
     
     const amountReceived = parseFloat($('#amountReceived').val()) || 0;
-    const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d.-]/g, '')) || 0;
+    const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
     
     if (amountReceived < grandTotal) {
         toastr.error('Jumlah bayar kurang dari total');
         return;
     }
     
-    // Show completion modal
-    $('#finalTotal').text(`Rp ${numberFormat(grandTotal)}`);
-    $('#finalPaymentMethod').text($('#paymentMethod option:selected').text());
-    $('#completeModal').modal('show');
+    // Prepare transaction data
+    const transactionData = {
+        cart: cart,
+        customer_id: $('#customerSelect').val() || null,
+        warehouse_id: $('#outletSelect').val() || null,
+        discount_percent: parseFloat($('#discountPercent').val()) || 0,
+        voucher_code: $('#voucherCode').val() || null,
+        voucher_discount: parseFloat($('#voucherDiscount').val()) || 0,
+        payment_method: paymentMethod,
+        platform_id: $('#id_platform').val() || null,
+        amount_received: amountReceived,
+        grand_total: grandTotal
+    };
+    
+    // Show loading state
+    $('#completeTransaction').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Memproses...');
+    
+    // Send transaction to server
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/process-transaction') ?>',
+        type: 'POST',
+        data: transactionData,
+        success: function(response) {
+            if (response.success) {
+                // Show completion modal
+                $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
+                $('#finalPaymentMethod').text($('#paymentMethod option:selected').text());
+                $('#completeModal').modal('show');
+                
+                // Store transaction info for receipt printing
+                window.lastTransaction = {
+                    id: response.transaction_id,
+                    no_nota: response.no_nota,
+                    total: response.total,
+                    change: response.change
+                };
+                
+                toastr.success(response.message);
+            } else {
+                toastr.error(response.message || 'Gagal memproses transaksi');
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Transaction error:', error);
+            toastr.error('Terjadi kesalahan saat memproses transaksi');
+        },
+        complete: function() {
+            // Reset button state
+            $('#completeTransaction').prop('disabled', false).html('<i class="fas fa-check"></i> Selesai');
+        }
+    });
 }
 
 function newTransaction() {
@@ -550,9 +608,9 @@ function printReceipt() {
 
 function numberFormat(number) {
     return new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(number || 0);
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(Math.round(number || 0));
 }
 </script>
 <?= $this->endSection() ?> 
