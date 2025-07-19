@@ -75,7 +75,13 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
-            'csrf' => ['except' => ['api/*']],
+            'csrf' => ['except' => [
+                'api/*', 
+                'gudang/stok/update/*', 
+                'transaksi/jual/process-transaction',
+                'transaksi/jual/validate-voucher',
+                'transaksi/jual/search-items'
+            ]],
         ],
         'after' => [
             // 'toolbar',

@@ -255,6 +255,8 @@ $(document).ready(function() {
     <?php if (session()->getFlashdata('error')): ?>
         toastr.error('<?= session()->getFlashdata('error') ?>');
     <?php endif; ?>
+    
+
 });
 
 // Function to update single stock item
@@ -271,10 +273,12 @@ function updateSingleStock(button, locationId) {
         return false;
     }
     
-    // Create temporary form data for single item
-    var formData = new FormData();
-    formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
-    formData.append($input.attr('name'), quantity);
+    // Create data object for single item
+    var data = {};
+    data[$input.attr('name')] = quantity;
+    
+    // Debug: Log the data being sent
+    console.log('Sending data:', data);
     
     // Show loading state
     var originalHtml = $button.html();
@@ -283,15 +287,14 @@ function updateSingleStock(button, locationId) {
     $.ajax({
         url: '<?= base_url("gudang/stok/update/{$item->id}") ?>',
         type: 'POST',
-        data: formData,
-        processData: false,
-        contentType: false,
+        data: data,
         success: function(response) {
             toastr.success('Stok berhasil diupdate');
             // Update the original value
             originalValues[$input.attr('name')] = quantity;
         },
         error: function(xhr, status, error) {
+            console.error('Error:', xhr.responseText);
             toastr.error('Gagal mengupdate stok: ' + error);
         },
         complete: function() {

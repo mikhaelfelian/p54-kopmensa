@@ -10,8 +10,6 @@
 <?= $this->extend(theme_path('main')) ?>
 
 <?= $this->section('content') ?>
-<!-- CSRF Token -->
-<?= csrf_field() ?>
 
 <div class="row">
     <!-- Left Column - Product Selection and Cart -->
@@ -243,16 +241,6 @@
 let cart = [];
 let currentTransactionId = null;
 
-// CSRF token function
-function getCsrfToken() {
-    return $('input[name="<?= csrf_token() ?>"]').val();
-}
-
-// CSRF token function
-function getCsrfToken() {
-    return $('input[name="<?= csrf_token() ?>"]').val();
-}
-
 $(document).ready(function() {
     // Initialize
     loadProducts();
@@ -314,8 +302,7 @@ function searchProducts(query) {
         type: 'POST',
         data: {
             search: query,
-            warehouse_id: $('#warehouseSelect').val(),
-            '<?= csrf_token() ?>': getCsrfToken()
+            warehouse_id: $('#warehouseSelect').val()
         },
         success: function(response) {
             if (response.items) {
@@ -481,8 +468,7 @@ function validateVoucher(voucherCode) {
         url: '<?= base_url('transaksi/jual/validate-voucher') ?>',
         type: 'POST',
         data: { 
-            voucher_code: voucherCode,
-            '<?= csrf_token() ?>': getCsrfToken()
+            voucher_code: voucherCode
         },
         success: function(response) {
             if (response.valid) {
@@ -551,8 +537,7 @@ function completeTransaction() {
     // Show loading state
     $('#completeTransaction').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Memproses...');
     
-    // Add CSRF token to transaction data
-    transactionData['<?= csrf_token() ?>'] = getCsrfToken();
+
     
     // Send transaction to server
     $.ajax({

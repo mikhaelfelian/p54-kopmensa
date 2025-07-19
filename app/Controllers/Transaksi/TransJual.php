@@ -678,10 +678,10 @@ class TransJual extends BaseController
 
                 $this->transJualDetModel->insert($detailData);
 
-                // Update stock (decrease stock)
-                if ($warehouseId) {
-                    $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
-                }
+                // // Update stock (decrease stock)
+                // if ($warehouseId) {
+                //     $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
+                // }
 
                 // Insert item history record (Stok Keluar Penjualan - status 4)
                 $historyData = [
