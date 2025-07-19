@@ -272,6 +272,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('jual/get-customer/(:num)', 'TransJual::getCustomerInfo/$1');
     $routes->get('jual/generate-nota', 'TransJual::generateNotaNumber');
     $routes->post('jual/validate-voucher', 'TransJual::validateVoucher');
+    $routes->post('jual/process-transaction', 'TransJual::processTransaction');
 });
 
 // Public API routes
