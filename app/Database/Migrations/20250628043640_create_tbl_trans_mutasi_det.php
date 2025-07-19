@@ -72,13 +72,7 @@ class CreateTblTransMutasiDet extends Migration
                 'null'       => true,
                 'default'    => null,
             ],
-            'kode_batch' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 50,
-                'null'       => true,
-                'default'    => null,
-            ],
-            'produk' => [
+            'item' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 256,
                 'null'       => true,
