@@ -21,14 +21,14 @@ if (!function_exists('isMenuActive')) {
         $uri = service('uri');
         $segments = $uri->getSegments(); // Get all segments
         $currentPath = implode('/', $segments); // Join segments with /
-        
+
         // Convert single path to array
         $paths = (array) $paths;
-        
+
         foreach ($paths as $path) {
             // Remove leading/trailing slashes
             $path = trim($path, '/');
-            
+
             if ($exact) {
                 // Exact path matching
                 if ($currentPath === $path) {
@@ -41,7 +41,7 @@ if (!function_exists('isMenuActive')) {
                 }
             }
         }
-        
+
         return false;
     }
 }
@@ -56,7 +56,7 @@ if (!function_exists('isStockable')) {
     function isStockable($value = '1'): string
     {
         if ($value) {
-            return br().'<span class="badge badge-success">Stockable</span>';
+            return br() . '<span class="badge badge-success">Stockable</span>';
         }
         return ''; // Return empty string when not stockable
     }
@@ -290,7 +290,7 @@ if (!function_exists('statusOpn')) {
      */
     function statusOpn($status)
     {
-        switch ((string)$status) {
+        switch ((string) $status) {
             case '0':
                 return [
                     'label' => 'Draft',
@@ -332,7 +332,7 @@ if (!function_exists('tipeOpn')) {
      */
     function tipeOpn($tipe)
     {
-        switch ((string)$tipe) {
+        switch ((string) $tipe) {
             case '1':
                 return [
                     'label' => 'Gudang',
@@ -368,6 +368,107 @@ if (!function_exists('isItemActive')) {
                 return [
                     'label' => 'Non Aktif',
                     'badge' => 'danger'
+                ];
+            default:
+                return [
+                    'label' => '-',
+                    'badge' => 'secondary'
+                ];
+        }
+    }
+}
+
+if (!function_exists('statusNota')) {
+    /**
+     * Mendapatkan label dan badge status nota transfer.
+     * 
+     * Status:
+     * 0 = Draft
+     * 1 = Pending
+     * 2 = Diproses
+     * 3 = Selesai
+     * 4 = Dibatalkan
+     * 
+     * @param string|int $status
+     * @return array
+     */
+    function statusNota($status)
+    {
+        switch ((string) $status) {
+            case '0':
+                return [
+                    'label' => 'Draft',
+                    'badge' => 'secondary'
+                ];
+            case '1':
+                return [
+                    'label' => 'Pending',
+                    'badge' => 'warning'
+                ];
+            case '2':
+                return [
+                    'label' => 'Diproses',
+                    'badge' => 'info'
+                ];
+            case '3':
+                return [
+                    'label' => 'Selesai',
+                    'badge' => 'success'
+                ];
+            case '4':
+                return [
+                    'label' => 'Dibatalkan',
+                    'badge' => 'danger'
+                ];
+            default:
+                return [
+                    'label' => '-',
+                    'badge' => 'secondary'
+                ];
+        }
+    }
+}
+
+if (!function_exists('tipeMutasi')) {
+    /**
+     * Mendapatkan label dan badge tipe mutasi transfer.
+     * 
+     * Tipe:
+     * 0 = Draft
+     * 1 = Pindah Gudang
+     * 2 = Stok Masuk
+     * 3 = Stok Keluar
+     * 
+     * @param string|int $tipe
+     * @return array
+     */
+    function tipeMutasi($tipe)
+    {
+        switch ((string) $tipe) {
+            case '0':
+                return [
+                    'label' => 'Draft',
+                    'badge' => 'secondary'
+                ];
+            case '1':
+                return [
+                    'label' => 'Antar Gudang',
+                    'badge' => 'info'
+                ];
+            case '2':
+                return [
+                    'label' => 'Stok Masuk',
+                    'badge' => 'success'
+                ];
+            case '3':
+                return [
+                    'label' => 'Stok Keluar',
+                    'badge' => 'warning'
+                ];
+            case '4':
+                return [
+                    'label' => 'Antar Outlet',
+                    'badge' => 'info'
                 ];
             default:
                 return [
