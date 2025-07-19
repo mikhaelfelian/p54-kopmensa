@@ -11,6 +11,9 @@
 <?= $this->extend(theme_path('main')) ?>
 
 <?= $this->section('content') ?>
+<!-- CSRF Token -->
+<?= csrf_field() ?>
+
 <div class="row">
     <div class="col-12">
         <div class="card card-default">

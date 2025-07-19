@@ -388,6 +388,12 @@ class Item extends BaseController
 
         // Validation rules
         $rules = [
+            csrf_token() => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'CSRF token tidak valid'
+                ]
+            ],
             'item' => [
                 'rules' => 'required|max_length[128]',
                 'errors' => [

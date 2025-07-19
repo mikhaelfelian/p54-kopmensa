@@ -10,6 +10,9 @@
 <?= $this->extend(theme_path('main')) ?>
 
 <?= $this->section('content') ?>
+<!-- CSRF Token -->
+<?= csrf_field() ?>
+
 <!-- Summary Cards -->
 <div class="row">
     <div class="col-lg-3 col-6">

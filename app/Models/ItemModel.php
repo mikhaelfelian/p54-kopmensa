@@ -173,9 +173,10 @@ public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1,
 
 public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $page = 1, $kategori = null, $merk = null)
 {
-    $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
+    $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier')
         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
         ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+        ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left')
         ->where('tbl_m_item.status_hps', '0')
         ->where('tbl_m_item.status', '1')
         ->orderBy('tbl_m_item.id', 'DESC');
@@ -187,6 +188,7 @@ public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $pag
             ->orLike('tbl_m_item.barcode', $keyword)
             ->orLike('tbl_m_kategori.kategori', $keyword)
             ->orLike('tbl_m_merk.merk', $keyword)
+            ->orLike('tbl_m_supplier.nama', $keyword)
             ->groupEnd();
     }
 

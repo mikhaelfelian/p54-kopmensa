@@ -10,6 +10,9 @@
 <?= $this->extend(theme_path('main')) ?>
 
 <?= $this->section('content') ?>
+<!-- CSRF Token -->
+<?= csrf_field() ?>
+
 <div class="row">
     <!-- Left Column - Product Selection and Cart -->
     <div class="col-md-8">
@@ -107,16 +110,7 @@
                     </select>
                 </div>
 
-                <!-- Supplier Selection -->
-                <div class="form-group">
-                    <label for="supplierSelect">Supplier</label>
-                    <select class="form-control" id="supplierSelect">
-                        <option value="">Pilih Supplier</option>
-                        <?php foreach ($suppliers as $supplier): ?>
-                            <option value="<?= $supplier->id ?>"><?= esc($supplier->nama) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+
 
                 <!-- Payment Summary -->
                 <div class="border rounded p-3 mb-3">
@@ -249,6 +243,16 @@
 let cart = [];
 let currentTransactionId = null;
 
+// CSRF token function
+function getCsrfToken() {
+    return $('input[name="<?= csrf_token() ?>"]').val();
+}
+
+// CSRF token function
+function getCsrfToken() {
+    return $('input[name="<?= csrf_token() ?>"]').val();
+}
+
 $(document).ready(function() {
     // Initialize
     loadProducts();
@@ -310,7 +314,8 @@ function searchProducts(query) {
         type: 'POST',
         data: {
             search: query,
-            warehouse_id: $('#warehouseSelect').val()
+            warehouse_id: $('#warehouseSelect').val(),
+            '<?= csrf_token() ?>': getCsrfToken()
         },
         success: function(response) {
             if (response.items) {
@@ -331,13 +336,15 @@ function displayProducts(products) {
         const brand = product.merk || '-';
         const price = product.harga_jual || product.harga || 0;
         const stock = product.stok || 0;
+        const supplier = '[' + product.supplier + ']' || '-';
         
         html += `
             <tr>
                 <td>${product.kode || '-'}</td>
                 <td>
                     <strong>${itemName}</strong><br>
-                    <small class="text-muted">${category} - ${brand}</small>
+                    <small class="text-muted">${category} - ${brand}</small><br>
+                    ${product.supplier ? `<small class="text-muted">[${product.supplier}]</small>` : ''}
                 </td>
                 <td>Rp ${numberFormat(price)}</td>
                 <td>${stock}</td>
@@ -473,7 +480,10 @@ function validateVoucher(voucherCode) {
     $.ajax({
         url: '<?= base_url('transaksi/jual/validate-voucher') ?>',
         type: 'POST',
-        data: { voucher_code: voucherCode },
+        data: { 
+            voucher_code: voucherCode,
+            '<?= csrf_token() ?>': getCsrfToken()
+        },
         success: function(response) {
             if (response.valid) {
                 $('#voucherInfo').text('Voucher valid: ' + response.discount + '%').removeClass('text-danger').addClass('text-success');
@@ -527,7 +537,7 @@ function completeTransaction() {
     const transactionData = {
         cart: cart,
         customer_id: $('#customerSelect').val() || null,
-        supplier_id: $('#supplierSelect').val() || null,
+
         warehouse_id: $('#outletSelect').val() || null,
         discount_percent: parseFloat($('#discountPercent').val()) || 0,
         voucher_code: $('#voucherCode').val() || null,
@@ -540,6 +550,9 @@ function completeTransaction() {
     
     // Show loading state
     $('#completeTransaction').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Memproses...');
+    
+    // Add CSRF token to transaction data
+    transactionData['<?= csrf_token() ?>'] = getCsrfToken();
     
     // Send transaction to server
     $.ajax({
@@ -582,7 +595,7 @@ function newTransaction() {
     updateCartDisplay();
     calculateTotal();
     $('#customerSelect').val('');
-    $('#supplierSelect').val('');
+
     $('#discountPercent').val('');
     $('#voucherCode').val('');
     $('#voucherInfo').text('');

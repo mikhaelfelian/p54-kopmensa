@@ -211,7 +211,7 @@ class Satuan extends BaseController
     {
         // Validation rules
         $rules = [
-            'csrf_test_name' => [
+            csrf_token() => [
                 'rules' => 'required',
                 'errors' => [
                     'required' => 'CSRF token tidak valid'
