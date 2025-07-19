@@ -242,7 +242,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/retur-beli') ?>" class="nav-link <?= isMenuActive('transaksi/retur-beli') ? 'active' : '' ?>">
+                            <a href="#" class="nav-link <?= isMenuActive('transaksi/retur-beli') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-undo nav-icon"></i>
                                 <p>Retur Pembelian</p>
@@ -281,7 +281,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/jual/retur') ?>" class="nav-link <?= isMenuActive('transaksi/retur') ? 'active' : '' ?>">
+                            <a href="#" class="nav-link <?= isMenuActive('transaksi/retur') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-undo nav-icon"></i>
                                 <p>Retur Penjualan</p>
