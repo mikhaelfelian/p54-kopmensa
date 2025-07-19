@@ -78,6 +78,10 @@ class Kategori extends BaseController
 
     public function store()
     {
+        $kategori = $this->request->getPost('kategori');
+        $ket      = $this->request->getPost('keterangan');
+        $status   = $this->request->getPost('status');
+
         // Validation rules
         $rules = [
             'kategori' => [
@@ -101,11 +105,15 @@ class Kategori extends BaseController
                 ->with('error', 'Validasi gagal');
         }
 
+        // Generate kode
+        $kode     = $this->kategoriModel->generateKode($kategori);
+
+        // Generate data
         $data = [
-            'kode'       => $this->kategoriModel->generateKode(),
-            'kategori'   => $this->request->getPost('kategori'),
-            'keterangan' => $this->request->getPost('keterangan'),
-            'status'     => $this->request->getPost('status')
+            'kode'       => $kode,
+            'kategori'   => $kategori,
+            'keterangan' => $ket,
+            'status'     => $status
         ];
 
         if ($this->kategoriModel->insert($data)) {

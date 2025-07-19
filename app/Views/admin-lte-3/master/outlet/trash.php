@@ -66,7 +66,7 @@
                                         <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
                                     </span>
                                 </td>
-                                <td><?= date('d/m/Y H:i', strtotime($row->deleted_at)) ?></td>
+                                <td><?= tgl_indo6($row->deleted_at) ?></td>
                                 <td>
                                     <div class="btn-group">
                                         <a href="<?= base_url("master/outlet/restore/{$row->id}") ?>"
@@ -74,11 +74,11 @@
                                             onclick="return confirm('Apakah anda yakin ingin mengembalikan data ini?')">
                                             <i class="fas fa-undo"></i>
                                         </a>
-                                        <a href="<?= base_url("master/outlet/delete_permanent/{$row->id}") ?>"
+                                        <!-- <a href="<?php // echo base_url("master/outlet/delete_permanent/{$row->id}") ?>"
                                             class="btn btn-danger btn-sm rounded-0"
                                             onclick="return confirm('Apakah anda yakin ingin menghapus permanen data ini?')">
                                             <i class="fas fa-trash"></i>
-                                        </a>
+                                        </a> -->
                                     </div>
                                 </td>
                             </tr>

@@ -32,21 +32,39 @@ class KategoriModel extends Model
      * Generate unique kode for kategori
      * Format: KTG-001, KTG-002, etc
      */
-    public function generateKode()
+    /**
+     * Generate unique kode for kategori using SAP style:
+     * e.g. CAT01, CAT02, etc.
+     * - Prefix: 3 chars from category name (no space, uppercase, pad with X if <3)
+     * - Suffix: 2 digit running number (01, 02, ...)
+     * - Max length: 5 chars
+     * @param string $categoryName
+     * @return string
+     */
+    public function generateKode($categoryName = null)
     {
-        $prefix = 'KTG-';
-        $lastKode = $this->select('kode')
-                        ->like('kode', $prefix, 'after')
-                        ->orderBy('kode', 'DESC')
-                        ->first();
-
-        if (!$lastKode) {
-            return $prefix . '001';
+        if ($categoryName === null) {
+            // Optionally, you can throw an exception or return a default value
+            throw new \InvalidArgumentException('Category name is required');
         }
 
-        $lastNumber = (int) substr($lastKode->kode, strlen($prefix));
-        $newNumber = $lastNumber + 1;
-        
-        return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        // Take the first 2 chars from brand name (no padding with X)
+        $prefix = substr($categoryName, 0, 2);
+        $prefix = strtoupper($prefix);
+
+        // Find the last code for this prefix
+        // Count how many existing codes with this prefix
+        $numRows = $this->countAllResults();
+
+        if ($numRows == 0) {
+            // Start from 0001
+            $suffix = '0001';
+        } else {
+            $suffix = str_pad($numRows + 1, 4, '0', STR_PAD_LEFT);
+        }
+
+        // Combine and ensure max 6 chars
+        $kode = $prefix . $suffix;
+        return substr($kode, 0, 6);
     }
 } 

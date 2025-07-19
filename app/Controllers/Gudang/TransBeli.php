@@ -14,6 +14,10 @@ use App\Models\TransBeliModel;
 use App\Models\TransBeliDetModel;
 use App\Models\SupplierModel;
 use App\Models\GudangModel;
+use App\Models\ItemModel;
+use App\Models\ItemStokModel;
+use App\Models\ItemHistModel;
+
 
 class TransBeli extends BaseController
 {
@@ -21,13 +25,19 @@ class TransBeli extends BaseController
     protected $transBeliDetModel;
     protected $supplierModel;
     protected $gudangModel;
+    protected $itemModel;
+    protected $itemStokModel;
+    protected $itemHistModel;
 
     public function __construct()
     {
-        $this->transBeliModel = new TransBeliModel();
-        $this->transBeliDetModel = new TransBeliDetModel();
-        $this->supplierModel = new SupplierModel();
-        $this->gudangModel = new GudangModel();
+        $this->transBeliModel     = new TransBeliModel();
+        $this->transBeliDetModel  = new TransBeliDetModel();
+        $this->supplierModel      = new SupplierModel();
+        $this->gudangModel        = new GudangModel();
+        $this->itemModel          = new ItemModel();
+        $this->itemStokModel      = new ItemStokModel();
+        $this->itemHistModel      = new ItemHistModel();
     }
 
     /**
@@ -97,7 +107,7 @@ class TransBeli extends BaseController
                 ->findAll();
 
             // Get active warehouses
-            $gudang = $this->gudangModel->where('status', '1')->findAll();
+            $gudang = $this->gudangModel->where('status_otl', '0')->where('status_hps', '0')->where('status', '1')->findAll();
 
             $data = [
                 'title'         => 'Terima Barang - ' . $transaksi->no_nota,
@@ -180,21 +190,45 @@ class TransBeli extends BaseController
 
                     // Update transaction detail with receiving info
                     $this->transBeliDetModel->update($itemId, [
-                        'jml_diterima' => $receivedQty,
-                        'id_gudang' => $gudangId,
-                        'status_terima' => $itemStatus,
+                        'jml_diterima'      => $receivedQty,
+                        'id_gudang'         => $gudangId,
+                        'status_terima'     => $itemStatus,
                         'keterangan_terima' => $itemKeterangan,
-                        'tgl_terima' => date('Y-m-d H:i:s')
+                        'tgl_terima'        => date('Y-m-d H:i:s'),
+                        'id_user_terima'    => $this->ionAuth->user()->row()->id
+                    ]);
+
+                    // Add stock history using ItemHistModel
+                    $itemHistModel = $this->itemHistModel;
+                    $itemHistModel->addHistory([
+                        'id_item'         => $item->id_item,
+                        'id_satuan'       => $item->id_satuan,
+                        'id_gudang'       => $gudangId,
+                        'id_supplier'     => $transaksi->id_supplier,
+                        'id_pembelian'    => $id,
+                        'id_pembelian_det'=> $itemId,
+                        'tgl_masuk'       => date('Y-m-d H:i:s'),
+                        'no_nota'         => $transaksi->no_nota,
+                        'kode'            => $item->kode,
+                        'item'            => $item->item,
+                        'keterangan'      => 'Pembelian - ' . $transaksi->no_nota,
+                        'jml'             => $receivedQty,
+                        'jml_satuan'      => $receivedQty,
+                        'satuan'          => $item->satuan,
+                        'status'          => '1', // 1 = Stok Masuk Pembelian
+                        'id_user'         => $this->ionAuth->user()->row()->id,
+                        'created_at'      => date('Y-m-d H:i:s'),
+                        'updated_at'      => date('Y-m-d H:i:s'),
                     ]);
                 }
             }
 
             // Update transaction status to received
             $this->transBeliModel->update($id, [
-                'status_terima' => '1',
-                'tgl_terima' => date('Y-m-d H:i:s'),
-                'catatan_terima' => $catatanUmum,
-                'id_user_terima' => $this->ionAuth->user()->row()->id
+                    'status_terima'    => '1',
+                    'tgl_terima'       => date('Y-m-d H:i:s'),
+                    'catatan_terima'   => $catatanUmum,
+                    'id_user_terima'   => $this->ionAuth->user()->row()->id
             ]);
 
             $this->db->transComplete();

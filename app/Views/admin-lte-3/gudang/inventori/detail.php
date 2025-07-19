@@ -78,11 +78,11 @@
                             <tbody>
                                 <?php foreach ($outlets as $outlet): ?>
                                 <tr>
-                                    <th><?= $outlet->outlet_nama ?? $outlet->gudang_nama ?? $outlet->nama ?></th>
+                                    <th><?= $outlet->gudang_nama ?></th>
                                     <th>:</th>
                                     <td class="text-right" style="width: 120px;">
                                         <input type="number" 
-                                               name="jml[<?= $outlet->id_outlet ?? $outlet->id_gudang ?>]" 
+                                               name="jml[<?= $outlet->id_gudang ?>]" 
                                                value="<?= $outlet->jml ?? 0 ?>" 
                                                class="form-control rounded-0" 
                                                min="0" 
@@ -92,7 +92,7 @@
                                     <td class="text-left">
                                         <button type="submit" 
                                                 class="btn btn-primary btn-flat btn-sm" 
-                                                onclick="updateSingleStock(this, <?= $outlet->id_outlet ?? $outlet->id_gudang ?>)">
+                                                onclick="updateSingleStock(this, <?= $outlet->id_gudang ?>)">
                                             <i class="fa fa-save"></i>
                                         </button>
                                     </td>
@@ -140,10 +140,11 @@
                                         <div class="form-group ">
                                             <select name="filter_gd" class="form-control rounded-0">
                                                 <option value="">- [Pilih] -</option>
-                                                <option value="1" <?= ($filter_gd == '1') ? 'selected' : '' ?>>
-                                                    Gd. Bawah</option>
-                                                <option value="2" <?= ($filter_gd == '2') ? 'selected' : '' ?>>
-                                                    Gd. Atas</option>
+                                                <?php foreach ($warehouses as $warehouse): ?>
+                                                    <option value="<?= $warehouse->id ?>" <?= ($filter_gd == $warehouse->id) ? 'selected' : '' ?>>
+                                                        <?= $warehouse->nama ?>
+                                                    </option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                     </td>

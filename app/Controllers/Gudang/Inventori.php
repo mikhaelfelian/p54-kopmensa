@@ -267,10 +267,9 @@ class Inventori extends BaseController
 
     public function detail($id)
     {
-        $item       = $this->itemModel->find($id);
+        $item = $this->itemModel->find($id);
         $item_stok = $this->itemStokModel
-            ->select('tbl_m_item_stok.*, tbl_m_outlet.nama as outlet_nama, tbl_m_gudang.gudang as gudang_nama')
-            ->join('tbl_m_outlet', 'tbl_m_outlet.id = tbl_m_item_stok.id_outlet', 'left')
+            ->select('tbl_m_item_stok.*, tbl_m_gudang.nama as gudang_nama')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'left')
             ->where('tbl_m_item_stok.id_item', $id)
             ->findAll();
@@ -288,16 +287,22 @@ class Inventori extends BaseController
         $filter_gd = $this->request->getVar('filter_gd');
         $filter_status = $this->request->getVar('filter_status');
         
+        // Convert empty strings to null for proper filtering
+        $filter_gd = ($filter_gd === '' || $filter_gd === null) ? null : (int)$filter_gd;
+        $filter_status = ($filter_status === '' || $filter_status === null) ? null : $filter_status;
+        
         // Fetch paginated stock history data
-        $stockHistory = $this->itemHistModel->getWithRelationsPaginated(
-            $id, 
-            $filter_gd, 
-            $filter_status, 
-            $perPage, 
-            $page
-        );
+            $stockHistory = $this->itemHistModel->getWithRelationsPaginated(
+                (int)$id, 
+                $filter_gd, 
+                $filter_status, 
+                $perPage, 
+                $page
+            );
 
-
+        // Get active warehouses for filter dropdown
+        $warehouses = $this->gudangModel->where('status', '1')->where('status_hps', '0')->findAll();
+        
         $data = [
             'title'       => 'Detail Stok Item: ' . $item->item,
             'Pengaturan'  => $this->pengaturan,
@@ -311,6 +316,7 @@ class Inventori extends BaseController
             'total'       => $stockHistory['total'],
             'filter_gd'   => $filter_gd,
             'filter_status' => $filter_status,
+            'warehouses'  => $warehouses,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/stok') . '">Inventori</a></li>
@@ -335,9 +341,8 @@ class Inventori extends BaseController
             return redirect()->back()->with('error', 'Item tidak ditemukan.');
         }
 
-        // Get form data - expecting jml array with outlet/warehouse IDs as keys
+        // Get form data - expecting jml array with warehouse IDs as keys
         $jmlData = $this->request->getPost('jml');
-        $outletId = $this->request->getPost('outlet_id');
         $gudangId = $this->request->getPost('gudang_id');
 
         if (!$jmlData) {
@@ -351,34 +356,14 @@ class Inventori extends BaseController
             $updatedCount = 0;
 
             // Process each stock update
-            foreach ($jmlData as $locationId => $quantity) {
+            foreach ($jmlData as $gudangId => $quantity) {
                 $quantity = (float) $quantity;
 
-                // Determine if this is outlet or warehouse stock
-                $existingStock = null;
-                $isOutlet = false;
-
-                // Check if this locationId is an outlet
-                $outletStock = $this->itemStokModel
+                // Only use id_gudang for stock
+                $existingStock = $this->itemStokModel
                     ->where('id_item', $id)
-                    ->where('id_outlet', $locationId)
+                    ->where('id_gudang', $gudangId)
                     ->first();
-
-                if ($outletStock) {
-                    $existingStock = $outletStock;
-                    $isOutlet = true;
-                } else {
-                    // Check if it's a warehouse
-                    $warehouseStock = $this->itemStokModel
-                        ->where('id_item', $id)
-                        ->where('id_gudang', $locationId)
-                        ->first();
-
-                    if ($warehouseStock) {
-                        $existingStock = $warehouseStock;
-                        $isOutlet = false;
-                    }
-                }
 
                 if ($existingStock) {
                     // Update existing stock record
@@ -388,26 +373,18 @@ class Inventori extends BaseController
                         'updated_at' => date('Y-m-d H:i:s')
                     ];
 
-                    // Use update() with where to ensure correct record is updated
                     $this->itemStokModel->where('id', $existingStock->id)->set($updateData)->update();
                     $updatedCount++;
                 } else {
                     // Create new stock record
                     $insertData = [
                         'id_item' => $id,
+                        'id_gudang' => $gudangId,
                         'jml' => $quantity,
                         'id_user' => $this->ionAuth->user()->row()->id,
                         'status' => '1',
                         'created_at' => date('Y-m-d H:i:s')
                     ];
-
-                    if ($isOutlet) {
-                        $insertData['id_outlet'] = $locationId;
-                        $insertData['id_gudang'] = null;
-                    } else {
-                        $insertData['id_gudang'] = $locationId;
-                        $insertData['id_outlet'] = null;
-                    }
 
                     $this->itemStokModel->insert($insertData);
                     $updatedCount++;
@@ -424,14 +401,9 @@ class Inventori extends BaseController
                     'keterangan'  => 'Update Stok Manual',
                     'jml'         => $quantity,
                     'status'      => '2', // Stok Masuk
-                    'sp'          => '0'
+                    'sp'          => '0',
+                    'id_gudang'   => $gudangId
                 ];
-
-                if ($isOutlet) {
-                    $historyData['id_outlet'] = $locationId;
-                } else {
-                    $historyData['id_gudang'] = $locationId;
-                }
 
                 // Insert history if ItemHistModel exists
                 if (class_exists('App\Models\ItemHistModel')) {

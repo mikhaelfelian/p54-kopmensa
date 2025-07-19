@@ -91,42 +91,72 @@ class ItemHistModel extends Model
      */
     public function getWithRelationsPaginated($id_item = null, $id_gudang = null, $status = null, $perPage = 10, $page = 1)
     {
+        // Reset the model to avoid query builder conflicts
+        $this->resetQuery();
+        
+        // Build the query
         $builder = $this->select('
                 tbl_m_item_hist.*,
                 tbl_m_item.item as item_name,
-                tbl_m_gudang.gudang as gudang_name,
+                tbl_m_gudang.nama as gudang_name,
                 tbl_m_satuan.satuanBesar as satuan_name
             ')
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_hist.id_item', 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_hist.id_gudang', 'left')
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item_hist.id_satuan', 'left');
 
-        if ($id_item !== null) {
+        if ($id_item !== null && $id_item !== '') {
             $builder->where('tbl_m_item_hist.id_item', $id_item);
         }
 
-        if ($id_gudang !== null) {
+        if ($id_gudang !== null && $id_gudang !== '') {
             $builder->where('tbl_m_item_hist.id_gudang', $id_gudang);
         }
 
-        if ($status !== null) {
+        if ($status !== null && $status !== '') {
             $builder->where('tbl_m_item_hist.status', $status);
         }
 
-        // Get total count before pagination
-        $total = $this->getFilteredCount($id_item, $id_gudang, $status);
+        $builder->orderBy('tbl_m_item_hist.created_at', 'DESC');
         
+        // Get total count first
+        $total = $builder->countAllResults(false);
+        
+        // Reset and rebuild for pagination
+        $this->resetQuery();
+        $builder = $this->select('
+                tbl_m_item_hist.*,
+                tbl_m_item.item as item_name,
+                tbl_m_gudang.nama as gudang_name,
+                tbl_m_satuan.satuanBesar as satuan_name
+            ')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_hist.id_item', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_hist.id_gudang', 'left')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item_hist.id_satuan', 'left');
+
+        if ($id_item !== null && $id_item !== '') {
+            $builder->where('tbl_m_item_hist.id_item', $id_item);
+        }
+
+        if ($id_gudang !== null && $id_gudang !== '') {
+            $builder->where('tbl_m_item_hist.id_gudang', $id_gudang);
+        }
+
+        if ($status !== null && $status !== '') {
+            $builder->where('tbl_m_item_hist.status', $status);
+        }
+
         $builder->orderBy('tbl_m_item_hist.created_at', 'DESC');
         
         // Get paginated results
         $data = $builder->paginate($perPage, 'item_hist', $page);
         
         return [
-            'data' => $data,
-            'pager' => $this->pager,
+            'data'         => $data,
+            'pager'        => $this->pager,
             'current_page' => $page,
-            'per_page' => $perPage,
-            'total' => $total
+            'per_page'     => $perPage,
+            'total'        => $total,
         ];
     }
 

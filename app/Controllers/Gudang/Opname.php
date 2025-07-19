@@ -77,7 +77,7 @@ class Opname extends BaseController
                 // Gudang opname
                 $gudang = $this->gudangModel->find($opname->id_gudang);
                 $opname->opname_type = 'Gudang';
-                $opname->location_name = $gudang ? $gudang->gudang : 'N/A';
+                $opname->location_name = $gudang ? $gudang->nama : 'N/A';
             } elseif ($opname->tipe == '2') {
                 // Outlet opname
                 $outlet = $this->outletModel->find($opname->id_outlet);
@@ -88,7 +88,7 @@ class Opname extends BaseController
                 if ($opname->id_gudang > 0) {
                     $gudang = $this->gudangModel->find($opname->id_gudang);
                     $opname->opname_type = 'Gudang';
-                    $opname->location_name = $gudang ? $gudang->gudang : 'N/A';
+                    $opname->location_name = $gudang ? $gudang->nama : 'N/A';
                 } elseif ($opname->id_outlet > 0) {
                     $outlet = $this->outletModel->find($opname->id_outlet);
                     $opname->opname_type = 'Outlet';
@@ -129,8 +129,8 @@ class Opname extends BaseController
             'title'       => 'Form Stok Opname',
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
-            'gudang'      => $this->gudangModel->where('status', '1')->findAll(),
-            'outlet'      => $this->outletModel->where('status', '1')->findAll(),
+            'gudang'      => $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll(),
+            'outlet'      => $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/opname') . '">Opname</a></li>
@@ -247,8 +247,8 @@ class Opname extends BaseController
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
             'opname'      => $opname,
-            'gudang'      => $this->gudangModel->where('status', '1')->findAll(),
-            'outlet'      => $this->outletModel->where('status', '1')->findAll(),
+            'gudang'      => $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll(),
+            'outlet'      => $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/opname') . '">Opname</a></li>
@@ -457,26 +457,17 @@ class Opname extends BaseController
             $items = $this->utilSODetModel->where('id_so', $id)->findAll();
 
             foreach ($items as $item) {
-                $stokQuery = $this->itemStokModel->where('id_item', $item->id_item);
-                if (!empty($opname->id_outlet) && $opname->id_outlet != 0) {
-                    $stokQuery = $stokQuery->where('id_outlet', $opname->id_outlet);
-                } elseif (!empty($opname->id_gudang) && $opname->id_gudang != 0) {
-                    $stokQuery = $stokQuery->where('id_gudang', $opname->id_gudang);
-                }
-                $sql_stok_row = $stokQuery->first();
+                $stokQuery      = $this->itemStokModel->where('id_item', $item->id_item)->where('id_gudang', $opname->id_gudang);
+                $sql_stok_row   = $stokQuery->first();
 
                 // Update stok using ->save($data)
                 $stokData = [
                     'id'        => $sql_stok_row ? $sql_stok_row->id : null,
                     'id_item'   => $item->id_item,
+                    'id_gudang' => $opname->id_gudang,
                     'jml'       => $item->jml_so,
                 ];
 
-                if (!empty($opname->id_outlet) && $opname->id_outlet != 0) {
-                    $stokData['id_outlet'] = $opname->id_outlet;
-                } elseif (!empty($opname->id_gudang) && $opname->id_gudang != 0) {
-                    $stokData['id_gudang'] = $opname->id_gudang;
-                }
                 $this->itemStokModel->save($stokData);
 
                 // After success, save to ItemHistModel
@@ -484,7 +475,6 @@ class Opname extends BaseController
                     'id_item'     => $item->id_item,
                     'id_satuan'   => $item->id_satuan ?? null,
                     'id_gudang'   => !empty($opname->id_gudang) ? $opname->id_gudang : null,
-                    'id_outlet'   => !empty($opname->id_outlet) ? $opname->id_outlet : null,
                     'id_user'     => $this->ionAuth->user()->row()->id ?? null,
                     'id_so'       => $opname->id,
                     'tgl_masuk'   => $opname->tgl_masuk,

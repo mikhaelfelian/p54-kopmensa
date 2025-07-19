@@ -62,38 +62,58 @@ class ItemModel extends Model
      * @param string $type Item type
      * @return string
      */
+    /**
+     * Generate unique item code using SAP style numeric only.
+     * Format: <category_id(2)><type(2)><running_number(4)>
+     * All numeric, max 8 digits.
+     * Example: 01010001 (category=1, type=1, running=0001)
+     *
+     * @param int|string $categoryId
+     * @param int|string $type
+     * @return string
+     */
+    /**
+     * Generate unique 18-digit numeric item code (SAP style)
+     * Format: <category_id(4)><type(2)><date(yyyymmdd)><running_number(4)>
+     * All numeric, max 18 digits.
+     * Example: 000101202406210001 (category=1, type=1, date=2024-06-21, running=0001)
+     *
+     * @param int|string $categoryId
+     * @param int|string $type
+     * @return string
+     */
     public function generateKode($categoryId = null, $type = null)
     {
-        // Get current month and year (mmyy format)
-        $currentDate = date('my'); // e.g., 0225 for February 2025
-        
-        // Get category ID (1 digit)
-        $categoryCode = $categoryId ? substr($categoryId, -1) : '0';
-        
-        // Get type code (1 digit)
-        $typeCode = $type ? substr($type, 0, 1) : '0';
-        
-        // Get last code for this category and type combination
+        // Category code: 4 digits, left padded with 0
+        $categoryCode = $categoryId ? str_pad((int)$categoryId, 4, '0', STR_PAD_LEFT) : '0000';
+
+        // Type code: 2 digits, left padded with 0
+        $typeCode = $type ? str_pad((int)$type, 2, '0', STR_PAD_LEFT) : '00';
+
+        // Date code: yyyymmdd (8 digits)
+        $dateCode = date('Ymd');
+
+        // Find last code for this category, type, and date
         $lastCode = $this->select('kode')
             ->where('status_hps', '0')
             ->where('id_kategori', $categoryId)
             ->where('tipe', $type)
+            ->like('kode', $categoryCode . $typeCode . $dateCode, 'after')
             ->orderBy('id', 'DESC')
             ->first();
 
-        if ($lastCode) {
-            // Extract auto increment number from last code
-            $lastNumber = (int) substr($lastCode->kode, -3); // Last 3 digits
+        if ($lastCode && is_numeric(substr($lastCode->kode, -4))) {
+            $lastNumber = (int)substr($lastCode->kode, -4); // Last 4 digits
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
         }
 
-        // Format: <category><type><auto_increment><mmyy>
-        // Example: 1025001 (category=1, type=0, auto=25, date=001 for Jan 2025)
-        $autoIncrement = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
-        
-        return $categoryCode . $typeCode . $autoIncrement . $currentDate;
+        // Running number: 4 digits, left padded with 0
+        $runningNumber = str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+
+        // Concatenate all parts: 4+2+8+4 = 18 digits
+        return $categoryCode . $typeCode . $dateCode . $runningNumber;
     }
 
     /**

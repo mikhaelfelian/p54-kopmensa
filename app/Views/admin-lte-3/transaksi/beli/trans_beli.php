@@ -94,8 +94,7 @@
                             'name' => 'no_nota',
                             'id' => 'no_nota',
                             'class' => 'form-control rounded-0',
-                            'value' => old('no_nota'),
-                            'required' => true
+                            'value' => old('no_nota')
                         ]) ?>
                     </div>
 

@@ -245,30 +245,14 @@ class Item extends BaseController
                 ]);
             }
 
-            // Insert item stock records for all outlets
-            $outletModel = new \App\Models\OutletModel();
-            
-            // Get all active outlets
-            $outletData = $outletModel->where('status', '1')->findAll();
-            
-            foreach ($outletData as $outlet) {
-                $itemStokModel->insert([
-                    'id_item'    => $newItemId,
-                    'id_outlet'  => $outlet->id,
-                    'jml'        => 0,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s'),
-                    'status'     => $outlet->status,
-                ]);
-            }
-
             $tempFotoPath = $this->request->getVar('foto');
 
             if (!empty($tempFotoPath) && strpos($tempFotoPath, 'file/item/temp/') === 0) {
-                $fileName = basename($tempFotoPath);
-                $finalDir = 'file/item/' . $newItemId . '/';
-                $finalPath = $finalDir . $fileName;
+                $fileName      = basename($tempFotoPath);
+                $finalDir      = 'file/item/' . $newItemId . '/';
+                $finalPath     = $finalDir . $fileName;
                 $finalFullPath = FCPATH . $finalDir;
+                
                 if (!is_dir($finalFullPath)) {
                     mkdir($finalFullPath, 0777, true);
                 }

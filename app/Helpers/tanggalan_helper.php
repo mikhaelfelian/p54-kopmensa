@@ -49,7 +49,7 @@ if (!function_exists('tgl_indo6')) {
     function tgl_indo6($date)
     {
         if (empty($date) || $date == '0000-00-00 00:00:00') return '';
-        return date('m/d/y H:i', strtotime($date));
+        return date('m/d/Y H:i', strtotime($date));
     }
 }
 
@@ -57,7 +57,7 @@ if (!function_exists('tgl_indo7')) {
     function tgl_indo7($date)
     {
         if (empty($date) || $date == '0000-00-00 00:00:00') return '';
-        return date('d/m/y H:i', strtotime($date));
+        return date('d/m/Y H:i', strtotime($date));
     }
 }
 
@@ -65,7 +65,7 @@ if (!function_exists('tgl_indo8')) {
     function tgl_indo8($date)
     {
         if (empty($date) || $date == '0000-00-00 00:00:00') return '';
-        return date('d-m-y H:i', strtotime($date));
+        return date('d-m-Y H:i', strtotime($date));
     }
 }
 

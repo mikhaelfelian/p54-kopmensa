@@ -13,31 +13,36 @@ namespace App\Controllers\Master;
 
 use App\Controllers\BaseController;
 use App\Models\GudangModel;
+use App\Models\ItemModel;
+use App\Models\ItemStokModel;
 
 class Gudang extends BaseController
 {
     protected $gudangModel;
     protected $validation;
-
+    protected $itemModel;
+    protected $itemStokModel;
     public function __construct()
     {
-        $this->gudangModel = new GudangModel();
-        $this->validation = \Config\Services::validation();
+        $this->gudangModel      = new GudangModel();
+        $this->itemModel        = new ItemModel();
+        $this->itemStokModel    = new ItemStokModel();
+        $this->validation       = \Config\Services::validation();
     }
 
     public function index()
     {
-        $currentPage = $this->request->getVar('page_gudang') ?? 1;
-        $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
+        $currentPage    = $this->request->getVar('page_gudang') ?? 1;
+        $perPage        = $this->pengaturan->pagination_limit;
+        $keyword        = $this->request->getVar('keyword');
 
-        $query = $this->gudangModel;
+        $query = $this->gudangModel->where('status_otl', '0')->where('status_hps', '0');
 
         if ($keyword) {
             $query->groupStart()
-                ->like('gudang', $keyword)
+                ->like('nama', $keyword)
                 ->orLike('kode', $keyword)
-                ->orLike('keterangan', $keyword)
+                ->orLike('deskripsi', $keyword)
                 ->groupEnd();
         }
 
@@ -50,6 +55,7 @@ class Gudang extends BaseController
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
             'keyword'       => $keyword,
+            'trashCount'    => $this->trashCount(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -103,12 +109,18 @@ class Gudang extends BaseController
                 ->with('error', 'Validasi gagal');
         }
 
+        $kode      = $this->gudangModel->generateKode();
+        $nama      = $this->request->getPost('gudang');
+        $deskripsi = $this->request->getPost('keterangan');
+        $status    = $this->request->getPost('status');
+        $status_gd = $this->request->getPost('status_gd');
+
         $data = [
-            'kode'       => $this->gudangModel->generateKode(),
-            'gudang'     => $this->request->getPost('gudang'),
-            'keterangan' => $this->request->getPost('keterangan'),
-            'status'     => $this->request->getPost('status'),
-            'status_gd'  => $this->request->getPost('status_gd')
+            'kode'       => $kode,
+            'nama'       => $nama,
+            'deskripsi'  => $deskripsi,
+            'status'     => $status,
+            'status_gd'  => $status_gd
         ];
 
         if ($this->gudangModel->insert($data)) {
@@ -116,7 +128,7 @@ class Gudang extends BaseController
                 ->with('success', 'Data gudang berhasil ditambahkan');
         }
 
-        return redirect()->back()
+        return redirect()->to(base_url('master/gudang/create'))
             ->with('error', 'Gagal menambahkan data gudang')
             ->withInput();
     }
@@ -171,11 +183,17 @@ class Gudang extends BaseController
                 ->with('error', 'Validasi gagal');
         }
 
+        $kode      = $this->gudangModel->generateKode();
+        $nama      = $this->request->getPost('gudang');
+        $deskripsi = $this->request->getPost('keterangan');
+        $status    = $this->request->getPost('status');
+        $status_gd = $this->request->getPost('status_gd');
+
         $data = [
-            'gudang'     => $this->request->getPost('gudang'),
-            'keterangan' => $this->request->getPost('keterangan'),
-            'status'     => $this->request->getPost('status'),
-            'status_gd'  => $this->request->getPost('status_gd')
+            'nama'       => $nama,
+            'deskripsi'  => $deskripsi,
+            'status'     => $status,
+            'status_gd'  => $status_gd
         ];
 
         if ($this->gudangModel->update($id, $data)) {
@@ -190,7 +208,16 @@ class Gudang extends BaseController
 
     public function delete($id)
     {
-        if ($this->gudangModel->delete($id)) {
+        $data = [
+            'status_hps' => '1',
+            'deleted_at' => date('Y-m-d H:i:s')
+        ];
+
+        // Set the status of all item stock records related to this warehouse to 0 (inactive)
+        $this->itemStokModel->where('id_gudang', $id)->set(['status' => '0'])->update();
+
+        // Update warehouse status to 0 (inactive)
+        if ($this->gudangModel->update($id, $data)) {
             return redirect()->to(base_url('master/gudang'))
                 ->with('success', 'Data gudang berhasil dihapus');
         }
@@ -198,4 +225,82 @@ class Gudang extends BaseController
         return redirect()->back()
             ->with('error', 'Gagal menghapus data gudang');
     }
-} 
+
+    public function delete_permanent($id)
+    {
+        $sql_cek = $this->itemStokModel->where('id_gudang', $id)->countAllResults();
+
+        if ($sql_cek > 0) {
+            // Hapus semua item stok yang terkait dengan gudang ini sebelum menghapus gudang secara permanen
+            $this->itemStokModel->where('id_gudang', $id)->delete();
+        }
+        
+        if ($this->gudangModel->delete($id, true)) {
+            return redirect()->to(base_url('master/gudang/trash'))
+                ->with('success', 'Data gudang berhasil dihapus permanen');
+        }
+
+        return redirect()->to(base_url('master/gudang/trash'))
+            ->with('error', 'Gagal menghapus permanen data gudang');
+    }
+
+    public function trash()
+    {
+        $currentPage    = $this->request->getVar('page_gudang') ?? 1;
+        $perPage        = $this->pengaturan->pagination_limit;
+        $keyword        = $this->request->getVar('keyword');
+
+        $this->gudangModel->where('status_otl', '0')->where('status_hps', '1');
+
+        if ($keyword) {
+            $this->gudangModel->groupStart()
+                ->like('nama', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('deskripsi', $keyword)
+                ->groupEnd();
+        }
+
+        $data = [
+            'title'         => 'Data Gudang Arsip',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'gudang'        => $this->gudangModel->paginate($perPage, 'gudang'),
+            'pager'         => $this->gudangModel->pager,
+            'currentPage'   => $currentPage,
+            'perPage'       => $perPage,
+            'keyword'       => $keyword,
+            'breadcrumbs'   => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/gudang') . '">Gudang</a></li>
+                <li class="breadcrumb-item active">Tempat Sampah</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/master/gudang/trash', $data);
+    }
+
+    public function restore($id)
+    {
+        $data = [
+            'status_hps' => '0',
+            'deleted_at' => null
+        ];
+
+        // Set the status of all item stock records related to this warehouse to 1 (active)
+        $this->itemStokModel->where('id_gudang', $id)->set(['status' => '1'])->update();
+
+        if ($this->gudangModel->update($id, $data)) {
+            return redirect()->to(base_url('master/gudang/trash'))
+                ->with('success', 'Data gudang berhasil dikembalikan');
+        }
+
+        return redirect()->to(base_url('master/gudang/trash'))
+            ->with('error', 'Gagal mengembalikan data gudang');
+    }
+
+    private function trashCount()
+    {
+        return $this->gudangModel->where('status_otl', '0')->where('status_hps', '1')->countAllResults();
+    }
+}

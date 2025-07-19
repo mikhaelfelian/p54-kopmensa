@@ -90,6 +90,20 @@ class TransBeli extends BaseController
      */
     public function store()
     {
+        $id_po        = $this->request->getPost('id_po');
+        $id_supplier  = $this->request->getPost('id_supplier');
+        $tgl_masuk    = $this->request->getPost('tgl_masuk');
+        $tgl_keluar   = $this->request->getPost('tgl_keluar');
+        $status_ppn   = $this->request->getPost('status_ppn');
+
+        // Generate no. nota if not provided
+        $no_nota_post = $this->request->getPost('no_nota');
+        if (!empty($no_nota_post)) {
+            $no_nota = $this->transBeliModel->generateKode();
+        } else {
+            $no_nota = $no_nota_post;
+        }
+        
         // Validation rules
         $rules = [
             'id_supplier' => [
@@ -106,13 +120,6 @@ class TransBeli extends BaseController
                     'valid_date' => 'Tanggal faktur tidak valid'
                 ]
             ],
-            'no_nota' => [
-                'rules'  => 'required|is_unique[tbl_trans_beli.no_nota]',
-                'errors' => [
-                    'required'  => 'No. Faktur harus diisi',
-                    'is_unique' => 'No. Faktur sudah digunakan'
-                ]
-            ],
             'status_ppn' => [
                 'rules'  => 'required|in_list[0,1,2]',
                 'errors' => [
@@ -124,20 +131,20 @@ class TransBeli extends BaseController
 
         // Run validation
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to('transaksi/beli/create')
                             ->withInput()
                             ->with('errors', $this->validator->getErrors());
         }
 
         // Get form data
         $data = [
-            'id_po'         => $this->request->getPost('id_po'),
-            'id_supplier'   => $this->request->getPost('id_supplier'),
+            'id_po'         => $id_po,
+            'id_supplier'   => $id_supplier,
             'id_user'       => $this->ionAuth->user()->row()->id,
-            'tgl_masuk'     => $this->request->getPost('tgl_masuk'),
-            'tgl_keluar'    => $this->request->getPost('tgl_keluar'),
-            'no_nota'       => $this->request->getPost('no_nota'),
-            'status_ppn'    => $this->request->getPost('status_ppn'),
+            'tgl_masuk'     => $tgl_masuk,
+            'tgl_keluar'    => $tgl_keluar,
+            'no_nota'       => $no_nota,
+            'status_ppn'    => $status_ppn,
             'status_nota'   => 0, // Draft
         ];
 
@@ -586,6 +593,99 @@ class TransBeli extends BaseController
     {
         return redirect()->to("transaksi/beli/edit/{$id}")
                         ->with('error', 'Metode tidak diizinkan. Gunakan form untuk menambahkan item.');
+    }
+
+    /**
+     * Update cart item
+     * 
+     * @param int $id Item ID
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function cart_update($id)
+    {
+        try {
+            // Get item data
+            $item = $this->transBeliDetModel->find($id);
+            if (!$item) {
+                throw new \Exception('Item tidak ditemukan');
+            }
+
+            // Get form data
+            $jml = $this->request->getPost('jml');
+            $id_satuan = $this->request->getPost('id_satuan');
+            $harga = $this->request->getPost('harga');
+            $potongan = $this->request->getPost('potongan');
+
+            // Validation
+            if (empty($jml) || empty($harga)) {
+                throw new \Exception('Jumlah dan harga harus diisi');
+            }
+
+            // Convert currency format to number
+            $harga = str_replace(['.', ','], ['', '.'], $harga);
+            $potongan = str_replace(['.', ','], ['', '.'], $potongan);
+
+            // Get satuan data
+            $satuan = $this->db->table('tbl_m_satuan')->where('id', $id_satuan)->get()->getRow();
+
+            // Calculate subtotal
+            $subtotal = ($jml * $harga) - $potongan;
+
+            // Update item
+            $updateData = [
+                'jml' => $jml,
+                'id_satuan' => $id_satuan,
+                'satuan' => $satuan ? $satuan->satuanBesar : 'PCS',
+                'harga' => $harga,
+                'potongan' => $potongan,
+                'subtotal' => $subtotal,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            $this->transBeliDetModel->update($id, $updateData);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Item berhasil diupdate'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Delete cart item
+     * 
+     * @param int $id Item ID
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function cart_delete($id)
+    {
+        try {
+            // Get item data
+            $item = $this->transBeliDetModel->find($id);
+            if (!$item) {
+                throw new \Exception('Item tidak ditemukan');
+            }
+
+            // Delete item
+            $this->transBeliDetModel->delete($id);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Item berhasil dihapus'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ])->setStatusCode(500);
+        }
     }
 
     /**

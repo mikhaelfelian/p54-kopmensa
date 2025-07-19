@@ -158,6 +158,31 @@ class Publik extends BaseController
 
             // Format the results
             $data = [];
+
+            // Get all item IDs from $results
+            $itemIds = [];
+            foreach ($results as $item) {
+                $itemIds[] = $item->id;
+            }
+
+            // Fetch stok for all items, grouped by id_item and id_gudang using ItemStokModel
+            $stokData = [];
+            if (!empty($itemIds)) {
+
+                // Get all stock records for these items
+                $stokRows = $this->itemStokModel
+                    ->whereIn('id_item', $itemIds)
+                    ->findAll();
+
+                foreach ($stokRows as $stokRow) {
+                    // Group by item, then by gudang
+                    if (!isset($stokData[$stokRow->id_item])) {
+                        $stokData[$stokRow->id_item] = [];
+                    }
+                    $stokData[$stokRow->id_item][$stokRow->id_gudang] = (float)$stokRow->jml;
+                }
+            }
+
             foreach ($results as $item) {
                 $data[] = [
                     'id'         => $item->id,
@@ -167,6 +192,8 @@ class Publik extends BaseController
                     'item'       => $item->item,
                     'deskripsi'  => $item->deskripsi,
                     'jml_min'    => (float)$item->jml_min,
+                    'jml'        => (float)$this->itemStokModel->select('SUM(jml) as jml')->where('id_item', $item->id)->first()->jml,
+                    'stok'       => isset($stokData[$item->id]) ? $stokData[$item->id] : [],
                     'harga_beli' => (float)$item->harga_beli,
                     'harga_jual' => (float)$item->harga_jual,
                     'foto'       => $item->foto,

@@ -35,13 +35,6 @@ class CreateTblMItemStok extends Migration
                 'null'       => true,
                 'default'    => 1,
             ],
-            'id_outlet' => [
-                'type'       => 'INT',
-                'constraint' => 11,
-                'unsigned'   => true,
-                'null'       => true,
-                'default'    => 1,
-            ],
             'id_user' => [
                 'type'       => 'INT',
                 'constraint' => 11,

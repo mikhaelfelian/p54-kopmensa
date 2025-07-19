@@ -307,12 +307,12 @@ $(document).ready(function() {
                                 <td>${item.kode || '-'}</td>
                                 <td>${item.item}</td>
                                 <td>${item.deskripsi || '-'}</td>
-                                <td>${item.jml_min || 0}</td>
+                                <td>${(item.stok && item.stok['<?= $transfer->id_gd_asal ?>'] !== undefined) ? item.stok['<?= $transfer->id_gd_asal ?>'] : 0}</td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-primary select-product" 
                                             data-id="${item.id}" 
                                             data-nama="${item.item}" 
-                                            data-stok="${item.jml_min || 0}">
+                                            data-stok="${item.stok['<?= $transfer->id_gd_asal ?>'] || 0}">
                                         Pilih
                                     </button>
                                 </td>

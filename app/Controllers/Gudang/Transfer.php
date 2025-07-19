@@ -116,8 +116,8 @@ class Transfer extends BaseController
             'title'       => 'Tambah Transfer/Mutasi',
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
-            'gudang'      => $this->gudangModel->where('status', '1')->findAll(),
-            'outlet'      => $this->outletModel->where('status', '1')->findAll(),
+            'gudang'      => $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll(),
+            'outlet'      => $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/transfer') . '">Transfer</a></li>
@@ -168,8 +168,7 @@ class Transfer extends BaseController
             'tgl_masuk'    => tgl_indo_sys($tgl_masuk),
             'tipe'         => $tipe,
             'id_gd_asal'   => $id_gd_asal ?: 0,
-            'id_gd_tujuan' => $id_gd_tujuan ?: 0,
-            'id_outlet'    => $id_outlet ?: 0,
+            'id_gd_tujuan' => $id_gd_tujuan ?: $id_outlet,
             'keterangan'   => $keterangan,
             'status_nota'  => '0', // Draft
             'status_terima'=> '0', // Belum
@@ -269,8 +268,8 @@ class Transfer extends BaseController
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
             'transfer'    => $transfer,
-            'gudang'      => $this->gudangModel->where('status', '1')->findAll(),
-            'outlet'      => $this->outletModel->where('status', '1')->findAll(),
+            'gudang'      => $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll(),
+            'outlet'      => $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/transfer') . '">Transfer</a></li>

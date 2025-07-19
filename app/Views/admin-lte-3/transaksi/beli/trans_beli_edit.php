@@ -261,9 +261,9 @@
                                         <?= esc($item->kode) ?><br>
                                         <?= esc($item->item) ?><br>
                                     </td>
-                                    <td><?= format_angka($item->jml, 2) ?> <?= esc($item->satuan) ?></td>
+                                    <td><?= (float) $item->jml?> <?= esc($item->satuan) ?></td>
                                     <td><?= format_angka($item->harga) ?></td>
-                                    <td><?= format_angka($item->disk1 + $item->disk2 + $item->disk3, 2) ?>%</td>
+                                    <td><?= format_angka($item->disk1 + $item->disk2 + $item->disk3) ?>%</td>
                                     <td><?= format_angka($item->potongan) ?></td>
                                     <td><?= format_angka($item->subtotal) ?></td>
                                     <td>
@@ -287,19 +287,19 @@
                     <tfoot>
                         <tr>
                             <td colspan="6" class="text-right"><strong>Subtotal</strong></td>
-                            <td colspan="2"><?= number_format($transaksi->jml_subtotal ?? 0) ?></td>
+                            <td colspan="2"><?= format_angka($transaksi->jml_subtotal ?? 0) ?></td>
                         </tr>
                         <tr>
                             <td colspan="6" class="text-right"><strong>DPP</strong></td>
-                            <td colspan="2"><?= number_format($transaksi->jml_dpp ?? 0) ?></td>
+                            <td colspan="2"><?= format_angka($transaksi->jml_dpp ?? 0) ?></td>
                         </tr>
                         <tr>
                             <td colspan="6" class="text-right"><strong>PPN (11%)</strong></td>
-                            <td colspan="2"><?= number_format($transaksi->jml_ppn ?? 0) ?></td>
+                            <td colspan="2"><?= format_angka($transaksi->jml_ppn ?? 0) ?></td>
                         </tr>
                         <tr>
                             <td colspan="6" class="text-right"><strong>Grand Total</strong></td>
-                            <td colspan="2"><?= number_format($transaksi->jml_total ?? 0) ?></td>
+                            <td colspan="2"><?= format_angka($transaksi->jml_total ?? 0) ?></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -487,6 +487,83 @@ $(document).ready(function() {
             satuanSelect.append(`<option value="${satuan.id}">${label}</option>`);
         });
     }
+
+    // Handle edit button click
+    $(document).on('click', '.btn-edit', function() {
+        const itemId = $(this).data('id');
+        const row = $(this).closest('tr');
+        
+        // Get item data from the row
+        const jmlText = row.find('td:eq(2)').text().trim();
+        const jml = parseFloat(jmlText.split(' ')[0]) || 0;
+        const satuan = jmlText.split(' ')[1] || 'PCS';
+        
+        const hargaText = row.find('td:eq(3)').text().trim();
+        const harga = hargaText.replace(/[^\d]/g, '') || 0;
+        
+        const potonganText = row.find('td:eq(5)').text().trim();
+        const potongan = potonganText.replace(/[^\d]/g, '') || 0;
+        
+        // Populate the form with item data
+        $('#id_item').val(itemId).trigger('change');
+        $('#jml').val(jml);
+        $('#harga').val(harga);
+        $('#potongan').val(potongan);
+        
+        // Set satuan after a short delay to ensure it's loaded
+        setTimeout(function() {
+            $('#id_satuan').val(satuan).trigger('change');
+        }, 500);
+        
+        // Change form action to update instead of add
+        $('#form-item').attr('action', '<?= base_url("transaksi/beli/cart_update/") ?>' + itemId);
+        
+        // Change button text
+        $('#form-item button[type="submit"]').html('<i class="fas fa-edit mr-1"></i> Update');
+        
+        // Scroll to form
+        $('html, body').animate({
+            scrollTop: $('#form-item').offset().top - 100
+        }, 500);
+        
+        // Show info message
+        toastr.info('Item dipilih untuk diedit. Silakan ubah data dan klik Update.');
+    });
+
+    // Handle delete button click
+    $(document).on('click', '.btn-delete', function() {
+        const itemId = $(this).data('id');
+        
+        if (confirm('Apakah Anda yakin ingin menghapus item ini?')) {
+            $.ajax({
+                url: '<?= base_url("transaksi/beli/cart_delete/") ?>' + itemId,
+                type: 'POST',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success(response.message);
+                        location.reload();
+                    } else {
+                        toastr.error(response.message);
+                    }
+                },
+                error: function() {
+                    toastr.error('Terjadi kesalahan saat menghapus item');
+                }
+            });
+        }
+    });
+
+    // Reset form when adding new item (clear edit mode)
+    $('#id_item').on('change', function() {
+        if ($(this).val() === '') {
+            // Reset form to add mode
+            $('#form-item').attr('action', '<?= base_url("transaksi/beli/cart_add/{$transaksi->id}") ?>');
+            $('#form-item button[type="submit"]').html('<i class="fas fa-plus mr-1"></i> Tambah');
+            $('#form-item')[0].reset();
+            $('#id_satuan').val('').trigger('change');
+        }
+    });
     
 });
 </script>

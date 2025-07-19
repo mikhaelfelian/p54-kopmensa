@@ -41,6 +41,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('gudang/edit/(:num)', 'Gudang::edit/$1');
     $routes->post('gudang/update/(:num)', 'Gudang::update/$1');
     $routes->get('gudang/delete/(:num)', 'Gudang::delete/$1');
+    $routes->get('gudang/trash', 'Gudang::trash');
+    $routes->get('gudang/restore/(:num)', 'Gudang::restore/$1');
+    $routes->get('gudang/delete_permanent/(:num)', 'Gudang::delete_permanent/$1');
 });
 
 // Satuan routes
@@ -259,6 +262,8 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->post('beli/update/(:num)', 'TransBeli::update/$1');
     $routes->post('beli/cart_add/(:num)', 'TransBeli::cart_add/$1');
     $routes->get('beli/cart_add/(:num)', 'TransBeli::cart_add_redirect/$1');
+    $routes->post('beli/cart_update/(:num)', 'TransBeli::cart_update/$1');
+    $routes->post('beli/cart_delete/(:num)', 'TransBeli::cart_delete/$1');
     $routes->get('beli/get-items/(:num)', 'TransBeli::getItems/$1');
     $routes->get('beli/proses/(:num)', 'TransBeli::proses/$1');
 

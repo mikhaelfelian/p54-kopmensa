@@ -57,7 +57,7 @@
                                 <option value="">- Pilih Gudang -</option>
                                 <?php foreach ($gudang as $gd): ?>
                                     <option value="<?= $gd->id ?>">
-                                        <?= $gd->gudang ?>
+                                        <?= $gd->nama ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

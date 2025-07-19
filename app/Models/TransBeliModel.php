@@ -111,21 +111,32 @@ class TransBeliModel extends Model
      * 
      * @return string
      */
+    /**
+     * Generate unique Purchase Invoice number in SAP style: 10-digit numeric, starting with 35 + YYMM + 6-digit sequence
+     * Example: 352407000001 (35 + 24(year) + 07(month) + 000001)
+     * 
+     * @return string
+     */
     public function generateKode()
     {
-        $prefix = 'FB-' . date('ym');
-        $lastKode = $this->select('no_nota')
-                        ->like('no_nota', $prefix, 'after')
-                        ->orderBy('id', 'DESC')
-                        ->first();
+        $prefix = '35' . date('ym'); // SAP style: 35 + YYMM
 
-        if ($lastKode) {
-            $lastNumber = (int) substr($lastKode->no_nota, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
+        // Find the last invoice with this prefix
+        $lastInvoice = $this->select('no_nota')
+                            ->like('no_nota', $prefix, 'after')
+                            ->orderBy('no_nota', 'DESC')
+                            ->first();
+
+        if (!$lastInvoice) {
+            // First invoice for this period
+            return $prefix . '000001';
         }
 
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        // Extract the last 6 digits and increment
+        $lastNumber = (int)substr($lastInvoice->no_nota, -6);
+        $newNumber = $lastNumber + 1;
+
+        // Format with leading zeros to 6 digits
+        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 } 

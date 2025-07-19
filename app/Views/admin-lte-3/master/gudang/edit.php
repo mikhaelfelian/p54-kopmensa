@@ -26,7 +26,7 @@
                         'name'        => 'gudang',
                         'class'       => 'form-control rounded-0',
                         'placeholder' => 'Nama Gudang', 
-                        'value'       => $gudang->gudang
+                        'value'       => $gudang->nama
                     ]) ?>
                 </div>
                 <div class="form-group">
@@ -35,7 +35,7 @@
                         'name'        => 'keterangan',
                         'class'       => 'form-control rounded-0',
                         'placeholder' => 'Keterangan',
-                        'value'       => $gudang->keterangan
+                        'value'       => $gudang->deskripsi
                     ]) ?>
                 </div>
                 <div class="form-group">

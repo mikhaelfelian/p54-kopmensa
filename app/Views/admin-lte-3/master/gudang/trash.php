@@ -1,3 +1,13 @@
+<?php
+/**
+ * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
+ * Date: 2025-06-18
+ * Github : github.com/mikhaelfelian
+ * description : View for displaying deleted outlet data
+ * This file represents the Outlet Trash View.
+ */
+?>
+
 <?= $this->extend(theme_path('main')) ?>
 
 <?= $this->section('content') ?>
@@ -7,14 +17,9 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-6">
-                        <a href="<?= base_url('master/gudang/create') ?>" class="btn btn-sm btn-primary rounded-0">
-                            <i class="fas fa-plus"></i> Tambah Data
+                        <a href="<?= base_url('master/gudang') ?>" class="btn btn-sm btn-secondary rounded-0">
+                            <i class="fas fa-arrow-left"></i> Kembali
                         </a>
-                        <?php if ($trashCount > 0): ?>
-                            <a href="<?= base_url('master/gudang/trash') ?>" class="btn btn-sm btn-danger rounded-0">
-                                <i class="fas fa-trash"></i> Arsip (<?= $trashCount ?>)
-                            </a>
-                        <?php endif ?>
                     </div>
                     <div class="col-md-6">
                         <?= form_open('', ['method' => 'get', 'class' => 'float-right']) ?>
@@ -42,9 +47,10 @@
                         <tr>
                             <th width="50">No</th>
                             <th>Kode</th>
-                            <th>Gudang</th>
+                            <th>Nama</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
+                            <th>Dihapus Pada</th>
                             <th width="100">Aksi</th>
                         </tr>
                     </thead>
@@ -56,22 +62,23 @@
                                 <td><?= $row->nama ?></td>
                                 <td><?= $row->deskripsi ?></td>
                                 <td>
-                                    <?php $statusInfo = statusGd($row->status_gd); ?>
-                                    <span class="badge badge-<?= $statusInfo['badge'] ?>">
-                                        <?= $statusInfo['label'] ?>
+                                    <span class="badge badge-<?= ($row->status == '1') ? 'success' : 'danger' ?>">
+                                        <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
                                     </span>
                                 </td>
+                                <td><?= tgl_indo6($row->deleted_at) ?></td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="<?= base_url("master/gudang/edit/$row->id") ?>"
-                                            class="btn btn-warning btn-sm rounded-0">
-                                            <i class="fas fa-edit"></i>
+                                        <a href="<?= base_url("master/gudang/restore/{$row->id}") ?>"
+                                            class="btn btn-success btn-sm rounded-0"
+                                            onclick="return confirm('Apakah anda yakin ingin mengembalikan data ini?')">
+                                            <i class="fas fa-undo"></i>
                                         </a>
-                                        <a href="<?= base_url("master/gudang/delete/$row->id") ?>"
+                                        <!-- <a href="<?php // echo base_url("master/gudang/delete_permanent/{$row->id}") ?>"
                                             class="btn btn-danger btn-sm rounded-0"
-                                            onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
+                                            onclick="return confirm('Apakah anda yakin ingin menghapus permanen data ini?')">
                                             <i class="fas fa-trash"></i>
-                                        </a>
+                                        </a> -->
                                     </div>
                                 </td>
                             </tr>

@@ -33,30 +33,32 @@ class TransBeliPOModel extends Model
     protected $updatedField  = 'updated_at';
 
     /**
-     * Generate unique PO number with format PO25010001
-     * PO + YY + MM + 4-digit sequence
+     * Generate unique PO number in SAP style: 10-digit numeric, starting with 45 + YYMM + 6-digit sequence
+     * Example: 452407000001 (45 + 24(year) + 07(month) + 000001)
      * 
      * @return string
      */
     public function generateNoNota()
     {
-        $prefix = 'PO' . date('ym');
-        
+        $prefix = '45' . date('ym'); // SAP style: 45 + YYMM
+
+        // Find the last PO with this prefix
         $lastPO = $this->select('no_nota')
                        ->like('no_nota', $prefix, 'after')
                        ->orderBy('no_nota', 'DESC')
                        ->first();
 
         if (!$lastPO) {
-            return $prefix . '0001';
+            // First PO for this period
+            return $prefix . '000001';
         }
 
-        // Extract the numeric part and increment
-        $lastNumber = (int)substr($lastPO->no_nota, -4);
+        // Extract the last 6 digits and increment
+        $lastNumber = (int)substr($lastPO->no_nota, -6);
         $newNumber = $lastNumber + 1;
-        
-        // Format with leading zeros
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+
+        // Format with leading zeros to 6 digits
+        return $prefix . str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 
     /**

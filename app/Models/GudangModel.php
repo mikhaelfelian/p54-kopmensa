@@ -12,7 +12,7 @@ class GudangModel extends Model
     protected $returnType       = 'object';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['kode', 'gudang', 'keterangan', 'status', 'status_gd', 'updated_at'];
+    protected $allowedFields    = ['created_at','updated_at','deleted_at','id_user','kode', 'nama', 'deskripsi', 'status', 'status_hps', 'status_gd', 'status_otl'];
 
     // Pengaturan tanggal
     protected $useTimestamps = true;
@@ -22,32 +22,46 @@ class GudangModel extends Model
 
     // Validasi
     protected $validationRules = [
-        'gudang'     => 'required|max_length[160]',
+        'nama'       => 'required|max_length[160]',
         'kode'       => 'permit_empty|max_length[160]',
         'status'     => 'permit_empty|in_list[0,1]',
+        'status_hps' => 'permit_empty|in_list[0,1]',
         'status_gd'  => 'permit_empty|in_list[0,1]',
+        'status_otl' => 'permit_empty|in_list[0,1]',
     ];
 
     /**
      * Menghasilkan kode unik untuk gudang
      * Format: GDG-001, GDG-002, dll
      */
-    public function generateKode()
+    public function generateKode($status_otl = null)
     {
-        $prefix = 'GDG-';
+        // SAP format code: 1xxx for Gudang, 2xxx for Outlet
+        $typeDigit  = ($status_otl === '1') ? '2' : '1';
+        $prefix     = $typeDigit;
+
+        // Find the last code for this type
         $lastKode = $this->select('kode')
-                        ->like('kode', $prefix, 'after')
-                        ->orderBy('kode', 'DESC')
-                        ->first();
+            ->like('kode', $prefix, 'after')
+            ->orderBy('kode', 'DESC')
+            ->first();
 
         if (!$lastKode) {
-            return $prefix . '001';
+            // Start from 1001 or 2001 depending on type
+            $startNumber = ($typeDigit === '2') ? 2001 : 1001;
+            return (string)$startNumber;
         }
 
-        $lastNumber = (int) substr($lastKode->kode, strlen($prefix));
+        // Extract the numeric part and increment
+        $lastNumber = (int) $lastKode->kode;
         $newNumber = $lastNumber + 1;
-        
-        return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+
+        // Ensure the new code starts with the correct type digit
+        if (substr((string)$newNumber, 0, 1) !== $typeDigit) {
+            $newNumber = ($typeDigit === '2') ? 2001 : 1001;
+        }
+
+        return (string)$newNumber;
     }
 
     /**

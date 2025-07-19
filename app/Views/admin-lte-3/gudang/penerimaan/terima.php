@@ -128,7 +128,7 @@
                                             <select name="id_gudang[<?= $item->id ?>]" class="form-control form-control-sm" required>
                                                 <option value="">Pilih Gudang</option>
                                                 <?php foreach ($gudang as $g): ?>
-                                                    <option value="<?= $g->id ?>"><?= esc($g->gudang) ?></option>
+                                                    <option value="<?= $g->id ?>"><?= esc($g->nama) ?></option>
                                                 <?php endforeach ?>
                                             </select>
                                         </td>

@@ -78,6 +78,10 @@ class Merk extends BaseController
 
     public function store()
     {
+        $merk   = $this->request->getPost('merk');
+        $ket    = $this->request->getPost('keterangan');
+        $status = $this->request->getPost('status');
+
         // Validation rules
         $rules = [
             'merk' => [
@@ -101,11 +105,14 @@ class Merk extends BaseController
                 ->with('error', 'Validasi gagal');
         }
 
+        // Generate brand code
+        $kode   = $this->merkModel->generateKode($merk);
+
         $data = [
-            'kode'       => $this->merkModel->generateKode(),
-            'merk'       => $this->request->getPost('merk'),
-            'keterangan' => $this->request->getPost('keterangan'),
-            'status'     => $this->request->getPost('status')
+            'kode'       => $kode,
+            'merk'       => $merk,
+            'keterangan' => $ket,
+            'status'     => $status
         ];
 
         if ($this->merkModel->insert($data)) {
@@ -113,7 +120,7 @@ class Merk extends BaseController
                 ->with('success', 'Data merk berhasil ditambahkan');
         }
 
-        return redirect()->back()
+        return redirect()->to(base_url('master/merk'))
             ->with('error', 'Gagal menambahkan data merk')
             ->withInput();
     }

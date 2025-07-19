@@ -3,7 +3,9 @@
 namespace App\Controllers\Master;
 
 use App\Controllers\BaseController;
-use App\Models\OutletModel;
+use App\Models\GudangModel;
+use App\Models\ItemModel;
+use App\Models\ItemStokModel;
 
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
@@ -19,25 +21,23 @@ class Outlet extends BaseController
     protected $ionAuth;
     protected $db;
     protected $validation;
-
+    protected $itemModel;
+    protected $itemStokModel;
     public function __construct()
     {
-        $this->outletModel = new OutletModel();
-        $this->validation = \Config\Services::validation();
-    }
-
-    private function trashCount()
-    {
-        return $this->outletModel->where('status_hps', '1')->countAllResults();
+        $this->outletModel   = new GudangModel();
+        $this->itemModel     = new ItemModel();
+        $this->itemStokModel = new ItemStokModel();
+        $this->validation    = \Config\Services::validation();
     }
 
     public function index()
     {
         $currentPage = $this->request->getVar('page_outlet') ?? 1;
-        $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
+        $perPage     = $this->pengaturan->pagination_limit;
+        $keyword     = $this->request->getVar('keyword');
 
-        $this->outletModel->where('status_hps', '0');
+        $this->outletModel->where('status_otl', '1')->where('status_hps', '0');
 
         if ($keyword) {
             $this->outletModel->groupStart()
@@ -51,7 +51,7 @@ class Outlet extends BaseController
             'title'         => 'Data Outlet',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'outlet'        => $this->outletModel->paginate($perPage, 'outlet'),
+            'outlet'        => $this->outletModel->paginate($perPage, 'gudang'),
             'pager'         => $this->outletModel->pager,
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
@@ -104,27 +104,50 @@ class Outlet extends BaseController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to(base_url('master/outlet/create'))
                 ->withInput()
                 ->with('error', 'Validasi gagal');
         }
 
         $data = [
-            'kode'       => $this->outletModel->generateKode(),
+            'id_user'    => $id_user,
+            'kode'       => $this->outletModel->generateKode('1'),
             'nama'       => $nama,
             'deskripsi'  => $deskripsi,
             'status'     => $status,
-            'id_user'    => $id_user
+            'status_otl' => '1',
         ];
 
-        if ($this->outletModel->insert($data)) {
+        $db = \Config\Database::connect();
+        $db->transStart();
+        try {
+            $this->outletModel->insert($data);
+            $last_id = $this->outletModel->getInsertID();
+
+            $sql_cek = $this->itemModel->where('status_hps', '0')->where('status', '1')->findAll();
+            foreach ($sql_cek as $row) {
+                $this->itemStokModel->insert([
+                    'id_item'   => $row->id,
+                    'id_gudang' => $last_id,
+                    'id_user'   => $this->ionAuth->user()->row()->id,
+                    'status'    => '1',
+                ]);
+            }
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
             return redirect()->to(base_url('master/outlet'))
                 ->with('success', 'Data outlet berhasil ditambahkan');
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return redirect()->to(base_url('master/outlet/create'))
+                ->withInput()
+                ->with('error', 'Gagal menambahkan data outlet: ' . $e->getMessage());
         }
-
-        return redirect()->back()
-            ->with('error', 'Gagal menambahkan data outlet')
-            ->withInput();
     }
 
     public function edit($id)
@@ -203,17 +226,27 @@ class Outlet extends BaseController
             'deleted_at' => date('Y-m-d H:i:s')
         ];
 
+        // Set the status of all item stock records related to this warehouse to 0 (inactive)
+        $this->itemStokModel->where('id_gudang', $id)->set(['status' => '0'])->update();
+
         if ($this->outletModel->update($id, $data)) {
             return redirect()->to(base_url('master/outlet'))
                 ->with('success', 'Data outlet berhasil dihapus');
         }
 
-        return redirect()->back()
+        return redirect()->to(base_url('master/outlet'))
             ->with('error', 'Gagal menghapus data outlet');
     }
 
     public function delete_permanent($id)
     {
+        $sql_cek = $this->itemStokModel->where('id_gudang', $id)->countAllResults();
+
+        if ($sql_cek > 0) {
+            // Delete all item stock records related to this outlet before permanently deleting the outlet
+            $this->itemStokModel->where('id_gudang', $id)->delete();
+        }
+        
         if ($this->outletModel->delete($id, true)) {
             return redirect()->to(base_url('master/outlet/trash'))
                 ->with('success', 'Data outlet berhasil dihapus permanen');
@@ -226,10 +259,10 @@ class Outlet extends BaseController
     public function trash()
     {
         $currentPage = $this->request->getVar('page_outlet') ?? 1;
-        $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
+        $perPage     = $this->pengaturan->pagination_limit;
+        $keyword     = $this->request->getVar('keyword');
 
-        $this->outletModel->where('status_hps', '1');
+        $this->outletModel->where('status_otl', '1')->where('status_hps', '1');
 
         if ($keyword) {
             $this->outletModel->groupStart()
@@ -266,12 +299,21 @@ class Outlet extends BaseController
             'deleted_at' => null
         ];
 
+        // Set the status of all item stock records related to this warehouse to 1 (active)
+        $this->itemStokModel->where('id_gudang', $id)->set(['status' => '1'])->update();
+
+        // Update warehouse status to 1 (active)
         if ($this->outletModel->update($id, $data)) {
             return redirect()->to(base_url('master/outlet/trash'))
                 ->with('success', 'Data outlet berhasil dikembalikan');
         }
 
-        return redirect()->back()
+        return redirect()->to(base_url('master/outlet/trash'))
             ->with('error', 'Gagal mengembalikan data outlet');
+    }
+
+    private function trashCount()
+    {
+        return $this->outletModel->where('status_otl', '1')->where('status_hps', '1')->countAllResults();
     }
 } 

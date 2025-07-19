@@ -42,7 +42,7 @@
                         <tr>
                             <th width="50">No</th>
                             <th>Kode</th>
-                            <th>Nama</th>
+                            <th>Outlet</th>
                             <th>Deskripsi</th>
                             <th>Status</th>
                             <th width="100">Aksi</th>

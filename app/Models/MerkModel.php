@@ -29,24 +29,33 @@ class MerkModel extends Model
     ];
 
     /**
-     * Generate unique kode for merk
-     * Format: MRK-001, MRK-002, etc
+     * Generate unique kode for merk using SAP style:
+     * e.g. BRND01, BRND02, etc.
+     * - Prefix: 4 chars from brand name (no space, uppercase, pad with X if <4)
+     * - Suffix: 2 digit running number (01, 02, ...)
+     * - Max length: 6 chars
+     * @param string $brandName
+     * @return string
      */
-    public function generateKode()
+    public function generateKode($brandName)
     {
-        $prefix = 'MRK-';
-        $lastKode = $this->select('kode')
-                        ->like('kode', $prefix, 'after')
-                        ->orderBy('kode', 'DESC')
-                        ->first();
+        // Take the first 2 chars from brand name (no padding with X)
+        $prefix = substr($brandName, 0, 2);
+        $prefix = strtoupper($prefix);
 
-        if (!$lastKode) {
-            return $prefix . '001';
+        // Find the last code for this prefix
+        // Count how many existing codes with this prefix
+        $numRows = $this->countAllResults();
+
+        if ($numRows == 0) {
+            // Start from 0001
+            $suffix = '0001';
+        } else {
+            $suffix = str_pad($numRows + 1, 4, '0', STR_PAD_LEFT);
         }
 
-        $lastNumber = (int) substr($lastKode->kode, strlen($prefix));
-        $newNumber = $lastNumber + 1;
-        
-        return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        // Combine and ensure max 6 chars
+        $kode = $prefix . $suffix;
+        return substr($kode, 0, 6);
     }
 } 

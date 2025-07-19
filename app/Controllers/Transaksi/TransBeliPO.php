@@ -145,13 +145,15 @@ class TransBeliPO extends BaseController
                 throw new \RuntimeException('Gagal menyimpan PO');
             }
 
+            $po_id = $this->transBeliPOModel->getInsertID();
+
             $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
                 throw new \RuntimeException('Gagal menyimpan PO');
             }
 
-            return redirect()->to('transaksi/po')
+            return redirect()->to('transaksi/po/edit/' . $po_id)
                             ->with('success', 'Purchase Order berhasil dibuat');
 
         } catch (\Exception $e) {

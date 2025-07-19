@@ -66,7 +66,7 @@
                                 <select class="form-control rounded-0" id="id_gd_asal" name="id_gd_asal">
                                     <option value="">Pilih Gudang Asal</option>
                                     <?php foreach ($gudang as $gd): ?>
-                                        <option value="<?= $gd->id ?>"><?= $gd->gudang ?></option>
+                                        <option value="<?= $gd->id ?>"><?= $gd->nama ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <?php if (isset($errors['id_gd_asal'])): ?>
@@ -80,7 +80,7 @@
                                 <select class="form-control rounded-0" id="id_gd_tujuan" name="id_gd_tujuan">
                                     <option value="">Pilih Gudang Tujuan</option>
                                     <?php foreach ($gudang as $gd): ?>
-                                        <option value="<?= $gd->id ?>"><?= $gd->gudang ?></option>
+                                        <option value="<?= $gd->id ?>"><?= $gd->nama ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <?php if (isset($errors['id_gd_tujuan'])): ?>
