@@ -107,6 +107,17 @@
                     </select>
                 </div>
 
+                <!-- Supplier Selection -->
+                <div class="form-group">
+                    <label for="supplierSelect">Supplier</label>
+                    <select class="form-control" id="supplierSelect">
+                        <option value="">Pilih Supplier</option>
+                        <?php foreach ($suppliers as $supplier): ?>
+                            <option value="<?= $supplier->id ?>"><?= esc($supplier->nama) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
                 <!-- Payment Summary -->
                 <div class="border rounded p-3 mb-3">
                     <div class="row mb-2">
@@ -516,6 +527,7 @@ function completeTransaction() {
     const transactionData = {
         cart: cart,
         customer_id: $('#customerSelect').val() || null,
+        supplier_id: $('#supplierSelect').val() || null,
         warehouse_id: $('#outletSelect').val() || null,
         discount_percent: parseFloat($('#discountPercent').val()) || 0,
         voucher_code: $('#voucherCode').val() || null,
@@ -570,6 +582,7 @@ function newTransaction() {
     updateCartDisplay();
     calculateTotal();
     $('#customerSelect').val('');
+    $('#supplierSelect').val('');
     $('#discountPercent').val('');
     $('#voucherCode').val('');
     $('#voucherInfo').text('');

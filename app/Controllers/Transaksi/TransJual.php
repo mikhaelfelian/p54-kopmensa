@@ -20,6 +20,7 @@ use App\Models\GudangModel;
 use App\Models\PlatformModel;
 use App\Models\OutletModel;
 use App\Models\ItemHistModel;
+use App\Models\SupplierModel;
 
 class TransJual extends BaseController
 {
@@ -33,6 +34,7 @@ class TransJual extends BaseController
     protected $platformModel;
     protected $outletModel;
     protected $itemHistModel;
+    protected $supplierModel;
 
     public function __construct()
     {
@@ -46,6 +48,7 @@ class TransJual extends BaseController
         $this->platformModel       = new PlatformModel();
         $this->outletModel         = new OutletModel();
         $this->itemHistModel       = new ItemHistModel();
+        $this->supplierModel       = new SupplierModel();
     }
 
     /**
@@ -174,9 +177,6 @@ class TransJual extends BaseController
      */
     public function searchItems()
     {
-        // Log the request for debugging
-        log_message('info', 'SearchItems method called. AJAX: ' . ($this->request->isAJAX() ? 'Yes' : 'No'));
-        
         if (!$this->request->isAJAX()) {
             return $this->response->setJSON(['error' => 'Invalid request']);
         }
@@ -205,14 +205,16 @@ class TransJual extends BaseController
             $builder->join('tbl_m_kategori mk', 'mk.id = mi.id_kategori', 'left');
             $builder->join('tbl_m_merk mm', 'mm.id = mi.id_merk', 'left');
             $builder->join('tbl_m_satuan ms', 'ms.id = mi.id_satuan', 'left');
+            $builder->join('tbl_m_supplier msup', 'msup.id = mi.id_supplier', 'left');
             
-            $builder->groupStart()
-                    ->like('mi.kode', $search)
-                    ->orLike('mi.item', $search)
-                    ->orLike('mi.barcode', $search)
-                    ->orLike('mk.kategori', $search)
-                    ->orLike('mm.merk', $search)
-                    ->groupEnd();
+                $builder->groupStart()
+                        ->like('mi.kode', $search)
+                        ->orLike('mi.item', $search)
+                        ->orLike('mi.barcode', $search)
+                        ->orLike('mk.kategori', $search)
+                        ->orLike('mm.merk', $search)
+                        ->orLike('msup.supplier', $search)
+                        ->groupEnd();
             
             $builder->where('mi.status', '1');
             $builder->where('mi.status_hps', '0');
@@ -327,6 +329,7 @@ class TransJual extends BaseController
         $sales      = $this->karyawanModel->where('status', '1')->findAll();
         $warehouses = $this->gudangModel->where('status', '1')->findAll();
         $outlets    = $this->outletModel->where('status', '1')->findAll();
+        $suppliers  = $this->supplierModel->where('status', '1')->findAll();
         $platforms  = $this->platformModel->where('status', '1')->findAll();
         $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
 
@@ -338,6 +341,7 @@ class TransJual extends BaseController
             'sales'         => $sales,
             'warehouses'    => $warehouses,
             'outlets'       => $outlets,
+            'suppliers'     => $suppliers,
             'platforms'     => $platforms,
             'items'         => $items
         ];

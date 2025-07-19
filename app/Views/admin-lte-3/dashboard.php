@@ -3,36 +3,6 @@
 <?= $this->section('content') ?>
 <!-- Info boxes -->
 <div class="row">
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box">
-            <span class="info-box-icon bg-info elevation-1"><i class="fas fa-cog"></i></span>
-
-            <div class="info-box-content">
-                <span class="info-box-text">Lalu Lintas CPU</span>
-                <span class="info-box-number">
-                    10
-                    <small>%</small>
-                </span>
-            </div>
-            <!-- /.info-box-content -->
-        </div>
-        <!-- /.info-box -->
-    </div>
-    <!-- /.col -->
-    <div class="col-12 col-sm-6 col-md-3">
-        <div class="info-box mb-3">
-            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-thumbs-up"></i></span>
-
-            <div class="info-box-content">
-                <span class="info-box-text">Suka</span>
-                <span class="info-box-number">41,410</span>
-            </div>
-            <!-- /.info-box-content -->
-        </div>
-        <!-- /.info-box -->
-    </div>
-    <!-- /.col -->
-
     <!-- fix for small devices only -->
     <div class="clearfix hidden-md-up"></div>
 
@@ -41,8 +11,8 @@
             <span class="info-box-icon bg-success elevation-1"><i class="fas fa-shopping-cart"></i></span>
 
             <div class="info-box-content">
-                <span class="info-box-text">Transaksi Lunas</span>
-                <span class="info-box-number"><?= number_format($totalPaidTransactions) ?></span>
+                <span class="info-box-text">Penjualan Lunas</span>
+                <span class="info-box-number"><?= format_angka($totalPaidSalesTransactions) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
@@ -55,7 +25,31 @@
 
             <div class="info-box-content">
                 <span class="info-box-text">Total Pendapatan</span>
-                <span class="info-box-number">Rp <?= number_format($totalRevenue) ?></span>
+                <span class="info-box-number">Rp <?= format_angka($totalRevenue) ?></span>
+            </div>
+            <!-- /.info-box-content -->
+        </div>
+    </div>
+    <!-- /.col -->
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3">
+            <span class="info-box-icon bg-danger elevation-1"><i class="fas fa-shopping-bag"></i></span>
+
+            <div class="info-box-content">
+                <span class="info-box-text">Pembelian Lunas</span>
+                <span class="info-box-number"><?= format_angka($totalPaidPurchaseTransactions) ?></span>
+            </div>
+            <!-- /.info-box-content -->
+        </div>
+    </div>
+    <!-- /.col -->
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box mb-3">
+            <span class="info-box-icon bg-warning elevation-1"><i class="fas fa-chart-line"></i></span>
+
+            <div class="info-box-content">
+                <span class="info-box-text">Total Laba</span>
+                <span class="info-box-number">Rp <?= format_angka($totalProfit) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
@@ -159,7 +153,7 @@
                         <div class="description-block border-right">
                             <span class="description-percentage text-success"><i class="fas fa-caret-up"></i>
                                 100%</span>
-                            <h5 class="description-header">Rp <?= number_format($totalRevenue) ?></h5>
+                            <h5 class="description-header">Rp <?= format_angka($totalRevenue) ?></h5>
                             <span class="description-text">TOTAL PENDAPATAN</span>
                         </div>
                         <!-- /.description-block -->
@@ -167,9 +161,9 @@
                     <!-- /.col -->
                     <div class="col-sm-3 col-6">
                         <div class="description-block border-right">
-                            <span class="description-percentage text-warning"><i class="fas fa-caret-left"></i>
-                                0%</span>
-                            <h5 class="description-header">Rp 10.390.900</h5>
+                            <span class="description-percentage text-danger"><i class="fas fa-caret-down"></i>
+                                100%</span>
+                            <h5 class="description-header">Rp <?= format_angka($totalExpenses) ?></h5>
                             <span class="description-text">TOTAL BIAYA</span>
                         </div>
                         <!-- /.description-block -->
@@ -177,9 +171,10 @@
                     <!-- /.col -->
                     <div class="col-sm-3 col-6">
                         <div class="description-block border-right">
-                            <span class="description-percentage text-success"><i class="fas fa-caret-up"></i>
-                                20%</span>
-                            <h5 class="description-header">Rp 24.813.530</h5>
+                            <span class="description-percentage <?= $totalProfit >= 0 ? 'text-success' : 'text-danger' ?>">
+                                <i class="fas fa-caret-<?= $totalProfit >= 0 ? 'up' : 'down' ?>"></i>
+                                100%</span>
+                            <h5 class="description-header">Rp <?= format_angka($totalProfit) ?></h5>
                             <span class="description-text">TOTAL LABA</span>
                         </div>
                         <!-- /.description-block -->
@@ -338,7 +333,8 @@
                 <h3 class="card-title">Transaksi Lunas Terbaru</h3>
 
                 <div class="card-tools">
-                    <span class="badge badge-success"><?= $totalPaidTransactions ?> Transaksi</span>
+                    <span class="badge badge-success"><?= $totalPaidSalesTransactions ?> Penjualan</span>
+                    <span class="badge badge-danger ml-1"><?= $totalPaidPurchaseTransactions ?> Pembelian</span>
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
                         <i class="fas fa-minus"></i>
                     </button>
@@ -353,6 +349,7 @@
                     <table class="table m-0">
                         <thead>
                             <tr>
+                                <th>Tipe</th>
                                 <th>No. Nota</th>
                                 <th>Tanggal</th>
                                 <th>Total</th>
@@ -360,18 +357,58 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (!empty($paidTransactions)): ?>
-                                <?php foreach (array_slice($paidTransactions, 0, 5) as $transaction): ?>
+                            <?php 
+                            // Combine and sort recent transactions
+                            $allRecentTransactions = [];
+                            
+                            // Add sales transactions
+                            foreach ($recentSalesTransactions as $transaction) {
+                                $allRecentTransactions[] = [
+                                    'type' => 'Penjualan',
+                                    'type_class' => 'success',
+                                    'nota' => $transaction->no_nota,
+                                    'date' => $transaction->tgl_masuk,
+                                    'total' => $transaction->jml_gtotal,
+                                    'id' => $transaction->id,
+                                    'url' => base_url('transaksi/jual/detail/' . $transaction->id)
+                                ];
+                            }
+                            
+                            // Add purchase transactions
+                            foreach ($recentPurchaseTransactions as $transaction) {
+                                $allRecentTransactions[] = [
+                                    'type' => 'Pembelian',
+                                    'type_class' => 'danger',
+                                    'nota' => $transaction->no_nota,
+                                    'date' => $transaction->tgl_masuk,
+                                    'total' => $transaction->jml_gtotal,
+                                    'id' => $transaction->id,
+                                    'url' => base_url('transaksi/beli/detail/' . $transaction->id)
+                                ];
+                            }
+                            
+                            // Sort by date (newest first)
+                            usort($allRecentTransactions, function($a, $b) {
+                                return strtotime($b['date']) - strtotime($a['date']);
+                            });
+                            
+                            // Take only the first 5
+                            $allRecentTransactions = array_slice($allRecentTransactions, 0, 5);
+                            ?>
+                            
+                            <?php if (!empty($allRecentTransactions)): ?>
+                                <?php foreach ($allRecentTransactions as $transaction): ?>
                                     <tr>
-                                        <td><a href="<?= base_url('transaksi/jual/detail/' . $transaction->id) ?>"><?= esc($transaction->no_nota) ?></a></td>
-                                        <td><?= date('d/m/Y H:i', strtotime($transaction->tgl_masuk)) ?></td>
-                                        <td>Rp <?= number_format($transaction->jml_gtotal) ?></td>
+                                        <td><span class="badge badge-<?= $transaction['type_class'] ?>"><?= $transaction['type'] ?></span></td>
+                                        <td><a href="<?= $transaction['url'] ?>"><?= esc($transaction['nota']) ?></a></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($transaction['date'])) ?></td>
+                                        <td>Rp <?= format_angka($transaction['total']) ?></td>
                                         <td><span class="badge badge-success">Lunas</span></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="4" class="text-center">Belum ada transaksi lunas</td>
+                                    <td colspan="5" class="text-center">Belum ada transaksi lunas</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>
@@ -381,7 +418,8 @@
             </div>
             <!-- /.card-body -->
             <div class="card-footer clearfix">
-                <a href="<?= base_url('transaksi/jual/cashier') ?>" class="btn btn-sm btn-info float-left">Kasir Baru</a>
+                <a href="<?= base_url('transaksi/jual/cashier') ?>" class="btn btn-sm btn-success float-left">Kasir Baru</a>
+                <a href="<?= base_url('transaksi/beli/create') ?>" class="btn btn-sm btn-danger float-left ml-2">Pembelian Baru</a>
                 <a href="<?= base_url('transaksi/jual') ?>" class="btn btn-sm btn-secondary float-right">Lihat Semua Transaksi</a>
             </div>
             <!-- /.card-footer -->
@@ -397,7 +435,7 @@
 
             <div class="info-box-content">
                 <span class="info-box-text">Persediaan</span>
-                <span class="info-box-number">5,200</span>
+                <span class="info-box-number"><?= format_angka($totalStock) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
@@ -407,7 +445,7 @@
 
             <div class="info-box-content">
                 <span class="info-box-text">Mention</span>
-                <span class="info-box-number">92,050</span>
+                <span class="info-box-number"><?= format_angka($totalMentions) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
@@ -417,7 +455,7 @@
 
             <div class="info-box-content">
                 <span class="info-box-text">Unduhan</span>
-                <span class="info-box-number">114,381</span>
+                <span class="info-box-number"><?= format_angka($totalDownloads) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
@@ -427,7 +465,7 @@
 
             <div class="info-box-content">
                 <span class="info-box-text">Pesan Langsung</span>
-                <span class="info-box-number">163,921</span>
+                <span class="info-box-number"><?= format_angka($totalDirectMessages) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
