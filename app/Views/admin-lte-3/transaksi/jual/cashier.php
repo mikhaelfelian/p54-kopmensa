@@ -109,7 +109,12 @@ helper('form');
                                 <br/>
                                 <small class="text-muted"><?= tgl_indo6($transaction->created_at) ?></small>
                             </div>
-                            <span class="badge badge-success badge-pill">Rp <?= number_format($transaction->jml_gtotal, 0, ',', '.') ?></span>
+                            <div class="d-flex flex-column align-items-end">
+                                <span class="badge badge-success badge-pill mb-1">Rp <?= number_format($transaction->jml_gtotal, 0, ',', '.') ?></span>
+                                <button type="button" class="btn btn-sm btn-info" onclick="viewTransaction(<?= $transaction->id ?>)" title="Lihat Detail">
+                                    <i class="fa fa-eye"></i> View
+                                </button>
+                            </div>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -686,6 +691,11 @@ function numberFormat(number) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(Math.round(number || 0));
+}
+
+function viewTransaction(transactionId) {
+    // Redirect to the main transaction list with a filter for this specific transaction
+    window.open('<?= base_url('transaksi/jual') ?>?search=' + transactionId, '_blank');
 }
 </script>
 <?= $this->endSection() ?> 

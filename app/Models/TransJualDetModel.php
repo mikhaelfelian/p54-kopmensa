@@ -108,7 +108,7 @@ class TransJualDetModel extends Model
     public function getDetailsWithItem($penjualanId = null)
     {
         $builder = $this->db->table('tbl_trans_jual_det tjd');
-        $builder->select('tjd.*, mi.nama as nama_item, mk.nama as nama_kategori, mm.nama as nama_merk, ms.nama as nama_satuan');
+        $builder->select('tjd.*, mi.item as nama_item, mk.kategori as nama_kategori, mm.merk as nama_merk, ms.satuanBesar as nama_satuan');
         $builder->join('tbl_m_item mi', 'mi.id = tjd.id_item', 'left');
         $builder->join('tbl_m_kategori mk', 'mk.id = tjd.id_kategori', 'left');
         $builder->join('tbl_m_merk mm', 'mm.id = tjd.id_merk', 'left');

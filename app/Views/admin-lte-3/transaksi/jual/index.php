@@ -70,7 +70,8 @@
                     <i class="fas fa-cash-register"></i> Kasir - Transaksi Penjualan
                 </h3>
                 <div class="card-tools">
-                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#newTransactionModal">
+                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"
+                        data-target="#newTransactionModal">
                         <i class="fas fa-plus"></i> Transaksi Baru
                     </button>
                 </div>
@@ -79,7 +80,8 @@
                 <!-- Search and Filter -->
                 <div class="row mb-3">
                     <div class="col-md-3">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Cari nota/pelanggan..." value="<?= $search ?>">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Cari nota/pelanggan..."
+                            value="<?= $search ?>">
                     </div>
                     <div class="col-md-2">
                         <select class="form-control" id="statusFilter">
@@ -112,33 +114,32 @@
                             <tr>
                                 <th width="5%" class="text-center">No</th>
                                 <th>No. Nota</th>
-                                <th>Tanggal</th>
                                 <th>Pelanggan</th>
-                                <th>Sales</th>
-                                <th>Total</th>
+                                <th class="text-right">Total</th>
                                 <th>Status</th>
                                 <th>Status Bayar</th>
                                 <th width="12%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (empty($transactions)) : ?>
+                            <?php if (empty($transactions)): ?>
                                 <tr>
                                     <td colspan="9" class="text-center">Tidak ada data transaksi</td>
                                 </tr>
-                            <?php else : ?>
-                                <?php 
+                            <?php else: ?>
+                                <?php
                                 $startNumber = ($currentPage - 1) * $perPage;
-                                foreach ($transactions as $index => $row) : 
-                                ?>
+                                foreach ($transactions as $index => $row):
+                                    ?>
                                     <tr>
                                         <td class="text-center"><?= $startNumber + $index + 1 ?></td>
-                                                                <td>
-                            <strong><?= esc(isset($row->no_nota) ? $row->no_nota : 'Unknown') ?></strong>
-                        </td>
-                                        <td><?= isset($row->created_at) ? date('d/m/Y H:i', strtotime($row->created_at)) : '-' ?></td>
                                         <td>
-                                            <?php 
+                                            <strong><?= esc(isset($row->no_nota) ? $row->no_nota : 'Unknown') ?></strong><br/>
+                                            <small class="text-muted"><?= tgl_indo6($row->created_at) ?></small><br/>
+                                            <small class="text-muted"><?= esc($row->user_name ?? 'Umum') ?></small>
+                                        </td>
+                                        <td>
+                                            <?php
                                             $customerName = 'Umum';
                                             if ($row->id_pelanggan) {
                                                 foreach ($customers as $customer) {
@@ -151,23 +152,10 @@
                                             echo esc($customerName);
                                             ?>
                                         </td>
-                                        <td>
-                                            <?php 
-                                            $salesName = '-';
-                                            if ($row->id_sales) {
-                                                foreach ($sales as $sale) {
-                                                    if ($sale->id == $row->id_sales) {
-                                                        $salesName = isset($sale->nama) ? $sale->nama : 'Unknown';
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                            echo esc($salesName);
-                                            ?>
+                                        <td class="text-right">
+                                            <strong>Rp
+                                                <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?></strong>
                                         </td>
-                                                                <td class="text-right">
-                            <strong>Rp <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?></strong>
-                        </td>
                                         <td>
                                             <?php
                                             $statusBadges = [
@@ -192,22 +180,19 @@
                                         </td>
                                         <td>
                                             <div class="btn-group">
-                                                <button type="button" class="btn btn-info btn-sm" 
-                                                        onclick="viewTransaction(<?= $row->id ?>)" 
-                                                        title="Detail">
+                                                <button type="button" class="btn btn-info btn-sm"
+                                                    onclick="viewTransaction(<?= $row->id ?>)" title="Detail">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <?php if (isset($row->status) && $row->status == '0') : ?>
-                                                    <button type="button" class="btn btn-warning btn-sm" 
-                                                            onclick="editTransaction(<?= $row->id ?>)" 
-                                                            title="Edit">
+                                                <?php if (isset($row->status) && $row->status == '0'): ?>
+                                                    <button type="button" class="btn btn-warning btn-sm"
+                                                        onclick="editTransaction(<?= $row->id ?>)" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                 <?php endif; ?>
-                                                <?php if (isset($row->status) && $row->status == '1') : ?>
-                                                    <button type="button" class="btn btn-success btn-sm" 
-                                                            onclick="printReceipt(<?= $row->id ?>)" 
-                                                            title="Cetak">
+                                                <?php if (isset($row->status) && $row->status == '1'): ?>
+                                                    <button type="button" class="btn btn-success btn-sm"
+                                                        onclick="printReceipt(<?= $row->id ?>)" title="Cetak">
                                                         <i class="fas fa-print"></i>
                                                     </button>
                                                 <?php endif; ?>
@@ -230,25 +215,37 @@
 
     <!-- Quick Actions Sidebar -->
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-bolt"></i> Aksi Cepat
+        <div class="card shadow-sm rounded-0 border-0 mb-4">
+            <div class="card-header bg-white border-bottom-0 rounded-0 pb-2 pt-3">
+                <h3 class="card-title font-weight-bold text-dark mb-0" style="font-size:1.25rem;">
+                    <i class="fas fa-bolt text-warning mr-2"></i> Aksi Cepat
                 </h3>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#newTransactionModal">
-                        <i class="fas fa-plus"></i> Transaksi Baru
+            <div class="card-body p-3 rounded-0">
+                <div class="d-flex flex-column gap-3">
+                    <button type="button"
+                        class="btn btn-primary btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center"
+                        onclick="openSO()">
+                        <i class="fas fa-plus fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Transaksi Baru</span>
                     </button>
-                    <button type="button" class="btn btn-success btn-lg" onclick="openCashier()">
-                        <i class="fas fa-cash-register"></i> Buka Kasir
+                    <button type="button"
+                        class="btn btn-success btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center"
+                        onclick="openCashier()">
+                        <i class="fas fa-cash-register fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Buka Kasir</span>
                     </button>
-                    <button type="button" class="btn btn-info btn-lg" onclick="viewReports()">
-                        <i class="fas fa-chart-bar"></i> Laporan
+                    <button type="button"
+                        class="btn btn-info btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center"
+                        onclick="viewReports()">
+                        <i class="fas fa-chart-bar fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Laporan</span>
                     </button>
-                    <button type="button" class="btn btn-warning btn-lg" onclick="viewReturns()">
-                        <i class="fas fa-undo"></i> Retur
+                    <button type="button"
+                        class="btn btn-warning btn-lg rounded-0 py-3 shadow-sm text-left d-flex align-items-center"
+                        onclick="viewReturns()">
+                        <i class="fas fa-undo fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Retur</span>
                     </button>
                 </div>
             </div>
@@ -263,16 +260,17 @@
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
-                    <?php 
+                    <?php
                     $recentTransactions = array_slice($transactions, 0, 5);
-                    foreach ($recentTransactions as $row): 
-                    ?>
+                    foreach ($recentTransactions as $row):
+                        ?>
                         <div class="list-group-item">
                             <div class="d-flex w-100 justify-content-between">
                                 <h6 class="mb-1"><?= esc(isset($row->no_nota) ? $row->no_nota : 'Unknown') ?></h6>
                                 <small><?= isset($row->created_at) ? date('H:i', strtotime($row->created_at)) : '-' ?></small>
                             </div>
-                            <p class="mb-1">Rp <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?></p>
+                            <p class="mb-1">Rp
+                                <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?></p>
                             <small>
                                 <?php
                                 $statusBadges = [
@@ -294,7 +292,8 @@
 </div>
 
 <!-- New Transaction Modal -->
-<div class="modal fade" id="newTransactionModal" tabindex="-1" role="dialog" aria-labelledby="newTransactionModalLabel" aria-hidden="true">
+<div class="modal fade" id="newTransactionModal" tabindex="-1" role="dialog" aria-labelledby="newTransactionModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -314,7 +313,8 @@
                                 <div class="input-group">
                                     <input type="text" class="form-control" id="no_nota" name="no_nota" readonly>
                                     <div class="input-group-append">
-                                        <button type="button" class="btn btn-outline-secondary" onclick="generateNotaNumber()">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                            onclick="generateNotaNumber()">
                                             <i class="fas fa-sync"></i>
                                         </button>
                                     </div>
@@ -327,7 +327,8 @@
                                 <select class="form-control select2" id="id_pelanggan" name="id_pelanggan">
                                     <option value="">Pilih Pelanggan</option>
                                     <?php foreach ($customers as $customer): ?>
-                                        <option value="<?= $customer->id ?>"><?= esc(isset($customer->nama) ? $customer->nama : 'Unknown') ?></option>
+                                        <option value="<?= $customer->id ?>">
+                                            <?= esc(isset($customer->nama) ? $customer->nama : 'Unknown') ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -340,7 +341,8 @@
                                 <select class="form-control select2" id="id_sales" name="id_sales">
                                     <option value="">Pilih Sales</option>
                                     <?php foreach ($sales as $sale): ?>
-                                        <option value="<?= $sale->id ?>"><?= esc(isset($sale->nama) ? $sale->nama : 'Unknown') ?></option>
+                                        <option value="<?= $sale->id ?>">
+                                            <?= esc(isset($sale->nama) ? $sale->nama : 'Unknown') ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -351,7 +353,8 @@
                                 <select class="form-control select2" id="id_gudang" name="id_gudang">
                                     <option value="">Pilih Gudang</option>
                                     <?php foreach ($warehouses as $warehouse): ?>
-                                        <option value="<?= $warehouse->id ?>"><?= esc(isset($warehouse->gudang) ? $warehouse->gudang : 'Unknown') ?></option>
+                                        <option value="<?= $warehouse->id ?>">
+                                            <?= esc(isset($warehouse->gudang) ? $warehouse->gudang : 'Unknown') ?></option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -370,7 +373,8 @@
 </div>
 
 <!-- Transaction Detail Modal -->
-<div class="modal fade" id="transactionDetailModal" tabindex="-1" role="dialog" aria-labelledby="transactionDetailModalLabel" aria-hidden="true">
+<div class="modal fade" id="transactionDetailModal" tabindex="-1" role="dialog"
+    aria-labelledby="transactionDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -397,105 +401,105 @@
 
 <?= $this->section('js') ?>
 <script>
-$(document).ready(function() {
-    // Initialize Select2
-    $('.select2').select2({
-        theme: 'bootstrap4'
-    });
+    $(document).ready(function () {
+        // Initialize Select2
+        $('.select2').select2({
+            theme: 'bootstrap4'
+        });
 
-    // Generate nota number on page load
-    generateNotaNumber();
+        // Generate nota number on page load
+        generateNotaNumber();
 
-    // Search functionality
-    $('#searchBtn').on('click', function() {
-        performSearch();
-    });
-
-    // Reset search
-    $('#resetBtn').on('click', function() {
-        $('#searchInput').val('');
-        $('#statusFilter').val('');
-        $('#dateFrom').val('');
-        $('#dateTo').val('');
-        performSearch();
-    });
-
-    // Enter key on search input
-    $('#searchInput').on('keypress', function(e) {
-        if (e.which == 13) {
+        // Search functionality
+        $('#searchBtn').on('click', function () {
             performSearch();
-        }
+        });
+
+        // Reset search
+        $('#resetBtn').on('click', function () {
+            $('#searchInput').val('');
+            $('#statusFilter').val('');
+            $('#dateFrom').val('');
+            $('#dateTo').val('');
+            performSearch();
+        });
+
+        // Enter key on search input
+        $('#searchInput').on('keypress', function (e) {
+            if (e.which == 13) {
+                performSearch();
+            }
+        });
     });
-});
 
-function performSearch() {
-    const search = $('#searchInput').val();
-    const status = $('#statusFilter').val();
-    const dateFrom = $('#dateFrom').val();
-    const dateTo = $('#dateTo').val();
+    function performSearch() {
+        const search = $('#searchInput').val();
+        const status = $('#statusFilter').val();
+        const dateFrom = $('#dateFrom').val();
+        const dateTo = $('#dateTo').val();
 
-    let url = '<?= base_url('transaksi/jual') ?>?';
-    const params = new URLSearchParams();
-    
-    if (search) params.append('search', search);
-    if (status) params.append('status', status);
-    if (dateFrom) params.append('date_from', dateFrom);
-    if (dateTo) params.append('date_to', dateTo);
+        let url = '<?= base_url('transaksi/jual') ?>?';
+        const params = new URLSearchParams();
 
-    window.location.href = url + params.toString();
-}
+        if (search) params.append('search', search);
+        if (status) params.append('status', status);
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
 
-function generateNotaNumber() {
-    $.ajax({
-        url: '<?= base_url('transaksi/jual/generate-nota') ?>',
-        type: 'GET',
-        success: function(response) {
-            if (response.success) {
-                $('#no_nota').val(response.nota_number);
+        window.location.href = url + params.toString();
+    }
+
+    function generateNotaNumber() {
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/generate-nota') ?>',
+            type: 'GET',
+            success: function (response) {
+                if (response.success) {
+                    $('#no_nota').val(response.nota_number);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error generating nota number:', error);
+                if (xhr.status === 401) {
+                    toastr.error('Sesi Anda telah berakhir. Silakan login ulang.');
+                    setTimeout(function () {
+                        window.location.href = '<?= base_url('auth/login') ?>';
+                    }, 2000);
+                }
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error generating nota number:', error);
-            if (xhr.status === 401) {
-                toastr.error('Sesi Anda telah berakhir. Silakan login ulang.');
-                setTimeout(function() {
-                    window.location.href = '<?= base_url('auth/login') ?>';
-                }, 2000);
-            }
-        }
-    });
-}
+        });
+    }
 
-function viewTransaction(id) {
-    $.ajax({
-        url: '<?= base_url('transaksi/jual/get-details') ?>/' + id,
-        type: 'GET',
-        success: function(response) {
-            if (response.success) {
-                $('#transactionDetailContent').html(generateTransactionDetailHTML(response));
-                $('#transactionDetailModal').modal('show');
-            } else {
-                toastr.error('Gagal memuat detail transaksi');
+    function viewTransaction(id) {
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/get-details') ?>/' + id,
+            type: 'GET',
+            success: function (response) {
+                if (response.success) {
+                    $('#transactionDetailContent').html(generateTransactionDetailHTML(response));
+                    $('#transactionDetailModal').modal('show');
+                } else {
+                    toastr.error('Gagal memuat detail transaksi');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error loading transaction details:', error);
+                if (xhr.status === 401) {
+                    toastr.error('Sesi Anda telah berakhir. Silakan login ulang.');
+                    setTimeout(function () {
+                        window.location.href = '<?= base_url('auth/login') ?>';
+                    }, 2000);
+                }
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error loading transaction details:', error);
-            if (xhr.status === 401) {
-                toastr.error('Sesi Anda telah berakhir. Silakan login ulang.');
-                setTimeout(function() {
-                    window.location.href = '<?= base_url('auth/login') ?>';
-                }, 2000);
-            }
-        }
-    });
-}
+        });
+    }
 
-function generateTransactionDetailHTML(data) {
-    const transaction = data.transaction;
-    const details = data.details;
-    const platforms = data.platforms;
+    function generateTransactionDetailHTML(data) {
+        const transaction = data.transaction;
+        const details = data.details;
+        const platforms = data.platforms;
 
-    let html = `
+        let html = `
         <div class="row">
             <div class="col-md-6">
                 <h6>Informasi Transaksi</h6>
@@ -531,8 +535,8 @@ function generateTransactionDetailHTML(data) {
                 </thead>
                 <tbody>`;
 
-    details.forEach((detail, index) => {
-        html += `
+        details.forEach((detail, index) => {
+            html += `
             <tr>
                 <td>${index + 1}</td>
                 <td>${detail.produk || detail.nama_item}</td>
@@ -540,15 +544,15 @@ function generateTransactionDetailHTML(data) {
                 <td class="text-right">Rp ${numberFormat(detail.harga)}</td>
                 <td class="text-right">Rp ${numberFormat(detail.subtotal)}</td>
             </tr>`;
-    });
+        });
 
-    html += `
+        html += `
                 </tbody>
             </table>
         </div>`;
 
-    if (platforms && platforms.length > 0) {
-        html += `
+        if (platforms && platforms.length > 0) {
+            html += `
         <hr>
         <h6>Platform Pembayaran</h6>
         <div class="table-responsive">
@@ -562,96 +566,96 @@ function generateTransactionDetailHTML(data) {
                 </thead>
                 <tbody>`;
 
-        platforms.forEach(platform => {
-            html += `
+            platforms.forEach(platform => {
+                html += `
                 <tr>
                     <td>${platform.platform}</td>
                     <td class="text-right">Rp ${numberFormat(platform.nominal)}</td>
                     <td>${platform.keterangan || '-'}</td>
                 </tr>`;
-        });
+            });
 
-        html += `
+            html += `
                 </tbody>
             </table>
         </div>`;
+        }
+
+        return html;
     }
 
-    return html;
-}
-
-function getStatusBadge(status) {
-    const badges = {
-        '0': '<span class="badge badge-secondary">Draft</span>',
-        '1': '<span class="badge badge-success">Selesai</span>',
-        '2': '<span class="badge badge-danger">Batal</span>',
-        '3': '<span class="badge badge-warning">Retur</span>',
-        '4': '<span class="badge badge-info">Pending</span>'
-    };
-    return badges[status] || '<span class="badge badge-secondary">Unknown</span>';
-}
-
-function getPaymentStatusBadge(status) {
-    const badges = {
-        '0': '<span class="badge badge-warning">Belum Lunas</span>',
-        '1': '<span class="badge badge-success">Lunas</span>',
-        '2': '<span class="badge badge-danger">Kurang</span>'
-    };
-    return badges[status] || '<span class="badge badge-secondary">Unknown</span>';
-}
-
-function numberFormat(number) {
-    return new Intl.NumberFormat('id-ID').format(number || 0);
-}
-
-function createTransaction() {
-    const formData = {
-        no_nota: $('#no_nota').val(),
-        id_pelanggan: $('#id_pelanggan').val(),
-        id_sales: $('#id_sales').val(),
-        id_gudang: $('#id_gudang').val()
-    };
-
-    // Basic validation
-    if (!formData.no_nota) {
-        toastr.error('No. Nota harus diisi');
-        return;
+    function getStatusBadge(status) {
+        const badges = {
+            '0': '<span class="badge badge-secondary">Draft</span>',
+            '1': '<span class="badge badge-success">Selesai</span>',
+            '2': '<span class="badge badge-danger">Batal</span>',
+            '3': '<span class="badge badge-warning">Retur</span>',
+            '4': '<span class="badge badge-info">Pending</span>'
+        };
+        return badges[status] || '<span class="badge badge-secondary">Unknown</span>';
     }
 
-    // Here you would typically submit the form to create a new transaction
-    // For now, we'll just close the modal and show a success message
-    $('#newTransactionModal').modal('hide');
-    toastr.success('Transaksi baru berhasil dibuat');
-    
-    // Reload the page to show the new transaction
-    setTimeout(() => {
-        window.location.reload();
-    }, 1000);
-}
+    function getPaymentStatusBadge(status) {
+        const badges = {
+            '0': '<span class="badge badge-warning">Belum Lunas</span>',
+            '1': '<span class="badge badge-success">Lunas</span>',
+            '2': '<span class="badge badge-danger">Kurang</span>'
+        };
+        return badges[status] || '<span class="badge badge-secondary">Unknown</span>';
+    }
 
-function editTransaction(id) {
-    // Redirect to edit page or open edit modal
-    window.location.href = '<?= base_url('transaksi/jual/edit') ?>/' + id;
-}
+    function numberFormat(number) {
+        return new Intl.NumberFormat('id-ID').format(number || 0);
+    }
 
-function printReceipt(id) {
-    // Open print window for receipt
-    window.open('<?= base_url('transaksi/jual/print') ?>/' + id, '_blank');
-}
+    function createTransaction() {
+        const formData = {
+            no_nota: $('#no_nota').val(),
+            id_pelanggan: $('#id_pelanggan').val(),
+            id_sales: $('#id_sales').val(),
+            id_gudang: $('#id_gudang').val()
+        };
 
-function openCashier() {
-    // Redirect to cashier interface
-    window.location.href = '<?= base_url('transaksi/jual/cashier') ?>';
-}
+        // Basic validation
+        if (!formData.no_nota) {
+            toastr.error('No. Nota harus diisi');
+            return;
+        }
 
-function viewReports() {
-    // Redirect to reports page
-    window.location.href = '<?= base_url('transaksi/jual/reports') ?>';
-}
+        // Here you would typically submit the form to create a new transaction
+        // For now, we'll just close the modal and show a success message
+        $('#newTransactionModal').modal('hide');
+        toastr.success('Transaksi baru berhasil dibuat');
 
-function viewReturns() {
-    // Redirect to returns page
-    window.location.href = '<?= base_url('transaksi/jual/returns') ?>';
-}
+        // Reload the page to show the new transaction
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    }
+
+    function editTransaction(id) {
+        // Redirect to edit page or open edit modal
+        window.location.href = '<?= base_url('transaksi/jual/edit') ?>/' + id;
+    }
+
+    function printReceipt(id) {
+        // Open print window for receipt
+        window.open('<?= base_url('transaksi/jual/print') ?>/' + id, '_blank');
+    }
+
+    function openSO() {
+        // Redirect to sales order creation page
+        window.location.href = '<?= base_url('transaksi/jual/create') ?>';
+    }
+
+    function viewReports() {
+        // Redirect to reports page
+        window.location.href = '<?= base_url('transaksi/jual/reports') ?>';
+    }
+
+    function viewReturns() {
+        // Redirect to returns page
+        window.location.href = '<?= base_url('transaksi/jual/returns') ?>';
+    }
 </script>
-<?= $this->endSection() ?> 
+<?= $this->endSection() ?>

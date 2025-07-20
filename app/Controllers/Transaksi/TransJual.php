@@ -152,24 +152,30 @@ class TransJual extends BaseController
      */
     public function getTransactionDetails($id)
     {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['error' => 'Invalid request']);
-        }
-
         $transaction = $this->transJualModel->find($id);
         if (!$transaction) {
-            return $this->response->setJSON(['error' => 'Transaction not found']);
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON(['error' => 'Transaction not found']);
+            } else {
+                return redirect()->to(base_url('transaksi/jual'))->with('error', 'Transaction not found');
+            }
         }
 
         $details = $this->transJualDetModel->getDetailsWithItem($id);
         $platforms = $this->transJualPlatModel->getPlatformsWithInfo($id);
 
-        return $this->response->setJSON([
-            'success'     => true,
-            'transaction' => $transaction,
-            'details'     => $details,
-            'platforms'   => $platforms,
-        ]);
+        // If AJAX request, return JSON
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success'     => true,
+                'transaction' => $transaction,
+                'details'     => $details,
+                'platforms'   => $platforms,
+            ]);
+        }
+
+        // If direct browser access, redirect to main transaction list with search
+        return redirect()->to(base_url('transaksi/jual?search=' . $transaction->no_nota));
     }
 
     /**
@@ -359,8 +365,8 @@ class TransJual extends BaseController
         // Get related data for dropdowns
         $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
         $sales      = $this->karyawanModel->where('status', '1')->findAll();
-        $warehouses = $this->gudangModel->where('status', '1')->where('status_outlet', '0')->where('status_hps', '0')->findAll();
-        $outlets    = $this->gudangModel->where('status', '1')->where('status_outlet', '1')->where('status_hps', '0')->findAll();
+        $warehouses = $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll();
+        $outlets    = $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll();
         $platforms  = $this->platformModel->where('status', '1')->findAll();
         $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
 
