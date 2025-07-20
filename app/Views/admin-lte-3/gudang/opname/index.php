@@ -13,7 +13,7 @@
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-md-12">
-        <div class="card card-default">
+        <div class="card card-default rounded-0">
             <div class="card-header">
                 <h3 class="card-title">Data Stok Opname</h3>
                 <div class="card-tools">
@@ -23,6 +23,72 @@
                 </div>
             </div>
             <div class="card-body">
+                <!-- Filter Section -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <?= form_open(base_url('gudang/opname'), ['autocomplete' => 'off']) ?>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Tanggal Opname</label>
+                                    <?= form_input([
+                                        'id' => 'tgl',
+                                        'name' => 'tgl',
+                                        'class' => 'form-control rounded-0',
+                                        'placeholder' => 'Pilih tanggal...',
+                                        'type' => 'date',
+                                        'value' => $tgl ?? ''
+                                    ]) ?>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Tipe</label>
+                                    <?= form_dropdown('tipe', [
+                                        '' => '- [Semua] -',
+                                        'Gudang' => 'Gudang',
+                                        'Outlet' => 'Outlet'
+                                    ], $tipe ?? '', ['class' => 'form-control rounded-0']) ?>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <?= form_dropdown('status', [
+                                        '' => '- [Semua] -',
+                                        '0' => 'Draft',
+                                        '1' => 'Selesai'
+                                    ], $status ?? '', ['class' => 'form-control rounded-0']) ?>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Keterangan</label>
+                                    <?= form_input([
+                                        'id' => 'ket',
+                                        'name' => 'ket',
+                                        'class' => 'form-control rounded-0',
+                                        'placeholder' => 'Cari keterangan...',
+                                        'value' => $ket ?? ''
+                                    ]) ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary btn-flat">
+                                    <i class="fa fa-search-plus"></i> Filter
+                                </button>
+                                <a href="<?= base_url('gudang/opname') ?>" class="btn btn-secondary btn-flat">
+                                    <i class="fa fa-refresh"></i> Reset
+                                </a>
+                            </div>
+                        </div>
+                        <?= form_close() ?>
+                    </div>
+                </div>
+                
+                <!-- Data Table -->
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -34,41 +100,6 @@
                             <th>Keterangan</th>
                             <th>Aksi</th>
                         </tr>
-                        <?= form_open(base_url('gudang/opname'), ['autocomplete' => 'off']) ?>
-                        <tr>
-                            <th class="text-center"></th>
-                            <th>
-                                <?= form_input([
-                                    'id' => 'tgl',
-                                    'name' => 'tgl',
-                                    'class' => 'form-control rounded-0',
-                                    'placeholder' => 'Isikan Tgl ...',
-                                    'type' => 'date',
-                                    'value' => $tgl ?? ''
-                                ]) ?>
-                            </th>
-                            <th></th>
-                            <th></th>
-                            <th></th>
-                            <th>
-                                <?= form_input([
-                                    'id' => 'ket',
-                                    'name' => 'ket',
-                                    'class' => 'form-control rounded-0',
-                                    'placeholder' => 'Isikan Keterangan ...',
-                                    'value' => $ket ?? ''
-                                ]) ?>
-                            </th>
-                            <th>
-                                <button type="submit" class="btn btn-primary btn-flat">
-                                    <i class="fa fa-search-plus"></i> Filter
-                                </button>
-                                <a href="<?= base_url('gudang/opname') ?>" class="btn btn-secondary btn-flat">
-                                    <i class="fa fa-refresh"></i> Reset
-                                </a>
-                            </th>
-                        </tr>
-                        <?= form_close() ?>
                     </thead>
                     <tbody>
                         <?php if (empty($opname)): ?>

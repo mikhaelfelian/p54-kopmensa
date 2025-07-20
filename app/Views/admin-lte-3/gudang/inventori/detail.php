@@ -125,59 +125,72 @@
                 </div>
                 <div class="card-body table-responsive">
                     <form method="get" action="<?= current_url() ?>">
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Gudang</th>
-                                    <th class="text-right">Jml</th>
-                                    <th>Satuan</th>
-                                    <th>Keterangan</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <div class="form-group ">
-                                            <select name="filter_gd" class="form-control rounded-0">
-                                                <option value="">- [Pilih] -</option>
-                                                <?php foreach ($warehouses as $warehouse): ?>
-                                                    <option value="<?= $warehouse->id ?>" <?= ($filter_gd == $warehouse->id) ? 'selected' : '' ?>>
-                                                        <?= $warehouse->nama ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </td>
-                                    <td style="width: 100px;">
-                                        <input type="number" name="filter_jml" class="form-control rounded-0"
-                                            placeholder="Jumlah" value="">
-                                    </td>
-                                    <td style="width: 100px;"></td>
-                                    <td>
-                                        <input type="text" name="filter_ket" class="form-control rounded-0"
-                                            placeholder="Keterangan" value="">
-                                    </td>
-                                    <td>
-                                        <select name="filter_status" class="form-control rounded-0">
-                                            <option value="">- [Semua] -</option>
-                                            <option value="1" <?= ($filter_status == '1') ? 'selected' : '' ?>>Stok Masuk Pembelian</option>
-                                            <option value="2" <?= ($filter_status == '2') ? 'selected' : '' ?>>Stok Masuk</option>
-                                            <option value="3" <?= ($filter_status == '3') ? 'selected' : '' ?>>Stok Masuk Retur Jual</option>
-                                            <option value="4" <?= ($filter_status == '4') ? 'selected' : '' ?>>Stok Keluar Penjualan</option>
-                                            <option value="5" <?= ($filter_status == '5') ? 'selected' : '' ?>>Stok Keluar Retur Beli</option>
-                                            <option value="6" <?= ($filter_status == '6') ? 'selected' : '' ?>>SO (Stock Opname)</option>
-                                            <option value="7" <?= ($filter_status == '7') ? 'selected' : '' ?>>Stok Keluar</option>
-                                            <option value="8" <?= ($filter_status == '8') ? 'selected' : '' ?>>Mutasi Antar Gudang</option>
-                                            <option value="9" <?= ($filter_status == '9') ? 'selected' : '' ?>>Adjust stok</option>
-                                        </select>
-                                    </td>
-                                    <td><button type="submit" class="btn btn-primary btn-flat rounded-0"><i
-                                                class="fa fa-search"></i></button></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Gudang</label>
+                                    <select name="filter_gd" class="form-control rounded-0">
+                                        <option value="">- [Semua] -</option>
+                                        <?php foreach ($warehouses as $warehouse): ?>
+                                            <option value="<?= $warehouse->id ?>" <?= ($filter_gd == $warehouse->id) ? 'selected' : '' ?>>
+                                                <?= $warehouse->nama ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Jumlah</label>
+                                    <input type="number" name="filter_jml" class="form-control rounded-0"
+                                        placeholder="Jumlah" value="<?= $filter_jml ?? '' ?>" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Status</label>
+                                    <select name="filter_status" class="form-control rounded-0">
+                                        <option value="">- [Semua] -</option>
+                                        <option value="1" <?= ($filter_status == '1') ? 'selected' : '' ?>>Stok Masuk Pembelian</option>
+                                        <option value="2" <?= ($filter_status == '2') ? 'selected' : '' ?>>Stok Masuk</option>
+                                        <option value="3" <?= ($filter_status == '3') ? 'selected' : '' ?>>Stok Masuk Retur Jual</option>
+                                        <option value="4" <?= ($filter_status == '4') ? 'selected' : '' ?>>Stok Keluar Penjualan</option>
+                                        <option value="5" <?= ($filter_status == '5') ? 'selected' : '' ?>>Stok Keluar Retur Beli</option>
+                                        <option value="6" <?= ($filter_status == '6') ? 'selected' : '' ?>>SO (Stock Opname)</option>
+                                        <option value="7" <?= ($filter_status == '7') ? 'selected' : '' ?>>Stok Keluar</option>
+                                        <option value="8" <?= ($filter_status == '8') ? 'selected' : '' ?>>Mutasi Antar Gudang</option>
+                                        <option value="9" <?= ($filter_status == '9') ? 'selected' : '' ?>>Adjust stok</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Tanggal Dari</label>
+                                    <input type="date" name="filter_date_from" class="form-control rounded-0"
+                                        value="<?= $filter_date_from ?? '' ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Tanggal Sampai</label>
+                                    <input type="date" name="filter_date_to" class="form-control rounded-0"
+                                        value="<?= $filter_date_to ?? '' ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <div>
+                                        <button type="submit" class="btn btn-primary btn-flat rounded-0">
+                                            <i class="fa fa-search"></i> Filter
+                                        </button>
+                                        <a href="<?= current_url() ?>" class="btn btn-secondary btn-flat rounded-0">
+                                            <i class="fa fa-refresh"></i> Reset
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                     
                     <!-- Stock History Data Table -->

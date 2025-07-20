@@ -289,18 +289,30 @@ class Inventori extends BaseController
         // Get filter parameters
         $filter_gd      = $this->request->getVar('filter_gd');
         $filter_status  = $this->request->getVar('filter_status');
+        $filter_jml     = $this->request->getVar('filter_jml');
+        $filter_ket     = $this->request->getVar('filter_ket');
+        $filter_date_from = $this->request->getVar('filter_date_from');
+        $filter_date_to   = $this->request->getVar('filter_date_to');
         
         // Convert empty strings to null for proper filtering
         $filter_gd      = ($filter_gd === '' || $filter_gd === null) ? null : (int)$filter_gd;
         $filter_status  = ($filter_status === '' || $filter_status === null) ? null : $filter_status;
+        $filter_jml     = ($filter_jml === '' || $filter_jml === null) ? null : (float)$filter_jml;
+        $filter_ket     = ($filter_ket === '' || $filter_ket === null) ? null : trim($filter_ket);
+        $filter_date_from = ($filter_date_from === '' || $filter_date_from === null) ? null : $filter_date_from;
+        $filter_date_to   = ($filter_date_to === '' || $filter_date_to === null) ? null : $filter_date_to;
         
-        // Fetch paginated stock history data
+        // Fetch paginated stock history data with all filters
         $stockHistory = $this->itemHistModel->getWithRelationsPaginated(
                 (int)$id, 
                 $filter_gd, 
                 $filter_status, 
                 $perPage, 
-                $page
+                $page,
+                $filter_jml,
+                $filter_ket,
+                $filter_date_from,
+                $filter_date_to
         );
 
         // Get active warehouses for filter dropdown
@@ -321,6 +333,10 @@ class Inventori extends BaseController
             'total_stok'    => $this->itemStokModel->getTotalStock($id),
             'filter_gd'     => $filter_gd,
             'filter_status' => $filter_status,
+            'filter_jml'    => $filter_jml,
+            'filter_ket'    => $filter_ket,
+            'filter_date_from' => $filter_date_from,
+            'filter_date_to'   => $filter_date_to,
             'warehouses'    => $warehouses,
             'satuan'        => $this->satuanModel->where('status', '1')->findAll(),
             'breadcrumbs'   => '
@@ -330,7 +346,7 @@ class Inventori extends BaseController
             ',
         ];
 
-        // return view($this->theme->getThemePath() . '/gudang/inventori/detail', $data);
+        return view($this->theme->getThemePath() . '/gudang/inventori/detail', $data);
     }
 
     /**
@@ -384,12 +400,12 @@ class Inventori extends BaseController
                 } else {
                     // Create new stock record
                     $insertData = [
-                        'id_item' => $id,
-                        'id_gudang' => $gudangId,
-                        'jml' => $quantity,
-                        'id_user' => $this->ionAuth->user()->row()->id,
-                        'status' => '1',
-                        'created_at' => date('Y-m-d H:i:s')
+                        'id_item'    => $id,
+                        'id_gudang'  => $gudangId,
+                        'jml'        => $quantity,
+                        'id_user'    => $this->ionAuth->user()->row()->id,
+                        'status'     => '1',
+                        'created_at' => date('Y-m-d H:i:s'),
                     ];
 
                     $this->itemStokModel->insert($insertData);

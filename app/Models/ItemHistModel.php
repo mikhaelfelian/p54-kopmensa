@@ -87,9 +87,13 @@ class ItemHistModel extends Model
      * @param string|null $status
      * @param int $perPage
      * @param int $page
+     * @param float|null $jml
+     * @param string|null $keterangan
+     * @param string|null $date_from
+     * @param string|null $date_to
      * @return array
      */
-    public function getWithRelationsPaginated($id_item = null, $id_gudang = null, $status = null, $perPage = 10, $page = 1)
+    public function getWithRelationsPaginated($id_item = null, $id_gudang = null, $status = null, $perPage = 10, $page = 1, $jml = null, $keterangan = null, $date_from = null, $date_to = null)
     {
         // Reset the model to avoid query builder conflicts
         $this->resetQuery();
@@ -115,6 +119,22 @@ class ItemHistModel extends Model
 
         if ($status !== null && $status !== '') {
             $builder->where('tbl_m_item_hist.status', $status);
+        }
+
+        if ($jml !== null && $jml !== '') {
+            $builder->where('tbl_m_item_hist.jml', $jml);
+        }
+
+        if ($keterangan !== null && $keterangan !== '') {
+            $builder->like('tbl_m_item_hist.keterangan', $keterangan);
+        }
+
+        if ($date_from !== null && $date_from !== '') {
+            $builder->where('DATE(tbl_m_item_hist.created_at) >=', $date_from);
+        }
+
+        if ($date_to !== null && $date_to !== '') {
+            $builder->where('DATE(tbl_m_item_hist.created_at) <=', $date_to);
         }
 
         $builder->orderBy('tbl_m_item_hist.created_at', 'DESC');
@@ -144,6 +164,22 @@ class ItemHistModel extends Model
 
         if ($status !== null && $status !== '') {
             $builder->where('tbl_m_item_hist.status', $status);
+        }
+
+        if ($jml !== null && $jml !== '') {
+            $builder->where('tbl_m_item_hist.jml', $jml);
+        }
+
+        if ($keterangan !== null && $keterangan !== '') {
+            $builder->like('tbl_m_item_hist.keterangan', $keterangan);
+        }
+
+        if ($date_from !== null && $date_from !== '') {
+            $builder->where('DATE(tbl_m_item_hist.created_at) >=', $date_from);
+        }
+
+        if ($date_to !== null && $date_to !== '') {
+            $builder->where('DATE(tbl_m_item_hist.created_at) <=', $date_to);
         }
 
         $builder->orderBy('tbl_m_item_hist.created_at', 'DESC');

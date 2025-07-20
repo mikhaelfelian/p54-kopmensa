@@ -44,7 +44,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Gudang</strong></td>
-                                <td>: <?= $gudang ? $gudang->gudang : '-' ?></td>
+                                <td>: <?= $gudang ? $gudang->nama : '-' ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Status</strong></td>
