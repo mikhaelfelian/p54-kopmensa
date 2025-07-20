@@ -177,9 +177,9 @@ class Transfer extends BaseController
 
         try {
             // Save to database
-            $this->transMutasiModel->insert($data);
+            $this->transMutasiModel->save($data);
             
-            return redirect()->to(base_url('gudang/transfer'))
+            return redirect()->to(base_url('gudang/transfer/input/'.$this->transMutasiModel->getInsertID()))
                 ->with('success', 'Data transfer berhasil disimpan!');
         } catch (\Exception $e) {
             return redirect()->to(base_url('gudang/transfer'))
@@ -195,43 +195,9 @@ class Transfer extends BaseController
             return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
         }
 
-        // Get user data
-        $user = $this->ionAuth->user($transfer->id_user)->row();
-        $transfer->user_name = $user ? $user->first_name : 'Unknown User';
-
-        // Get gudang data
-        if(!empty($transfer->id_gd_asal)){
-            $gudangAsal   = $this->gudangModel->find($transfer->id_gd_asal);
-            $gudangTujuan = $this->gudangModel->find($transfer->id_gd_tujuan);
-
-            $gudangAsalName   = ($gudangAsal && isset($gudangAsal->gudang)) ? $gudangAsal->gudang : 'N/A';
-            $gudangTujuanName = ($gudangTujuan && isset($gudangTujuan->gudang)) ? $gudangTujuan->gudang : 'N/A';
-        }else{
-            $gudangAsal         = $this->gudangModel->find($transfer->id_gd_asal);
-            $gudangTujuan       = $this->outletModel->find($transfer->id_outlet);
-            $gudangAsalName     = $gudangAsal->gudang;
-            $gudangTujuanName   = $gudangTujuan->nama;
-        }
-        
-        // Safely get gudang names
-        $gudangAsalName     = 'N/A';
-        $gudangTujuanName   = 'N/A';
-        
-        if ($gudangAsal) {
-            if (is_object($gudangAsal) && isset($gudangAsal->gudang)) {
-                $gudangAsalName = $gudangAsal->gudang;
-            } elseif (is_array($gudangAsal) && isset($gudangAsal['gudang'])) {
-                $gudangAsalName = $gudangAsal['gudang'];
-            }
-        }
-        
-        if ($gudangTujuan) {
-            if (is_object($gudangTujuan) && isset($gudangTujuan->gudang)) {
-                $gudangTujuanName = $gudangTujuan->gudang;
-            } elseif (is_array($gudangTujuan) && isset($gudangTujuan['gudang'])) {
-                $gudangTujuanName = $gudangTujuan['gudang'];
-            }
-        }
+        $mutasi     = $this->transMutasiModel->find($id);
+        $gd_asal    = $this->gudangModel->find($mutasi->id_gd_asal)->nama;
+        $gd_tujuan  = $this->gudangModel->find($mutasi->id_gd_tujuan)->nama;
 
         // Get transfer details
         $transferDetails = $this->getTransferDetails($id);
@@ -241,11 +207,10 @@ class Transfer extends BaseController
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
             'transfer'    => $transfer,
-            'gudangAsal'  => $gudangAsal,
-            'gudangTujuan'=> $gudangTujuan,
-            'gudangAsalName' => $gudangAsalName,
-            'gudangTujuanName' => $gudangTujuanName,
             'details'     => $transferDetails,
+            'mutasi'      => $mutasi,
+            'gd_asal'     => $gd_asal,
+            'gd_tujuan'   => $gd_tujuan,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/transfer') . '">Transfer</a></li>
@@ -502,37 +467,39 @@ class Transfer extends BaseController
                         if (!$updateResult2) {
                             throw new \Exception("Gagal mengupdate stok gudang tujuan untuk item ID: $itemId");
                         }
+                        $sql_wh = $this->gudangModel->find($transfer->id_gd_tujuan);
 
                         // Add history records
                         $historyDataOut = [
-                            'id_item' => $itemId,
-                            'id_gudang' => $transfer->id_gd_asal,
-                            'id_user' => $this->ionAuth->user()->row()->id,
-                            'id_mutasi' => $id,
-                            'tgl_masuk' => date('Y-m-d H:i:s'),
-                            'no_nota' => $transfer->no_nota,
-                            'keterangan' => 'Transfer Keluar: ' . $note,
-                            'jml' => $quantity,
-                            'status' => '8', // Mutasi Antar Gd
-                            'sp' => '0'
+                            'id_item'      => $itemId,
+                            'id_gudang'    => $transfer->id_gd_asal,
+                            'id_user'      => $this->ionAuth->user()->row()->id,
+                            'id_mutasi'    => $id,
+                            'tgl_masuk'    => date('Y-m-d H:i:s'),
+                            'no_nota'      => $transfer->no_nota,
+                            'keterangan'   => 'Transfer Keluar: ' . $sql_wh->nama . ' : ' . (!empty($note) ? $note : '-'),
+                            'jml'          => $quantity,
+                            'status'       => '8', // Mutasi Antar Gudang
+                            'sp'           => '0'
                         ];
                         
                         $historyResult1 = $this->itemHistModel->addHistory($historyDataOut);
                         if (!$historyResult1) {
                             throw new \Exception("Gagal menyimpan history keluar untuk item ID: $itemId");
                         }
+                        $sql_wh = $this->gudangModel->find($transfer->id_gd_tujuan);
 
                         $historyDataIn = [
-                            'id_item' => $itemId,
-                            'id_gudang' => $transfer->id_gd_tujuan,
-                            'id_user' => $this->ionAuth->user()->row()->id,
-                            'id_mutasi' => $id,
-                            'tgl_masuk' => date('Y-m-d H:i:s'),
-                            'no_nota' => $transfer->no_nota,
-                            'keterangan' => 'Transfer Masuk: ' . $note,
-                            'jml' => $quantity,
-                            'status' => '8', // Mutasi Antar Gd
-                            'sp' => '0'
+                            'id_item'      => $itemId,
+                            'id_gudang'    => $transfer->id_gd_tujuan,
+                            'id_user'      => $this->ionAuth->user()->row()->id,
+                            'id_mutasi'    => $id,
+                            'tgl_masuk'    => date('Y-m-d H:i:s'),
+                            'no_nota'      => $transfer->no_nota,
+                            'keterangan'   => 'Transfer Masuk: ' . $sql_wh->nama . ' : ' . (!empty($note) ? $note : '-'),
+                            'jml'          => $quantity,
+                            'status'       => '8', // Mutasi Antar Gd
+                            'sp'           => '0'
                         ];
                         
                         $historyResult2 = $this->itemHistModel->addHistory($historyDataIn);
@@ -550,19 +517,20 @@ class Transfer extends BaseController
                         if (!$updateResult) {
                             throw new \Exception("Gagal mengupdate stok untuk item ID: $itemId");
                         }
+                        $sql_wh = $this->gudangModel->find($transfer->id_gd_tujuan);
 
                         // Add history record
                         $historyData = [
-                            'id_item' => $itemId,
-                            'id_gudang' => $transfer->id_gd_tujuan,
-                            'id_user' => $this->ionAuth->user()->row()->id,
-                            'id_mutasi' => $id,
-                            'tgl_masuk' => date('Y-m-d H:i:s'),
-                            'no_nota' => $transfer->no_nota,
-                            'keterangan' => 'Stok Masuk: ' . $note,
-                            'jml' => $quantity,
-                            'status' => '2', // Stok Masuk
-                            'sp' => '0'
+                            'id_item'      => $itemId,
+                            'id_gudang'    => $transfer->id_gd_tujuan,
+                            'id_user'      => $this->ionAuth->user()->row()->id,
+                            'id_mutasi'    => $id,
+                            'tgl_masuk'    => date('Y-m-d H:i:s'),
+                            'no_nota'      => $transfer->no_nota,
+                            'keterangan'   => 'Stok Masuk: ' . $sql_wh->nama . ' : ' . (!empty($note) ? $note : '-'),
+                            'jml'          => $quantity,
+                            'status'       => '2', // Stok Masuk
+                            'sp'           => '0'
                         ];
                         
                         $historyResult = $this->itemHistModel->addHistory($historyData);
@@ -581,18 +549,20 @@ class Transfer extends BaseController
                             throw new \Exception("Gagal mengupdate stok untuk item ID: $itemId");
                         }
 
+                        $sql_wh = $this->gudangModel->find($transfer->id_gd_tujuan);
+
                         // Add history record
                         $historyData = [
-                            'id_item' => $itemId,
-                            'id_gudang' => $transfer->id_gd_asal,
-                            'id_user' => $this->ionAuth->user()->row()->id,
-                            'id_mutasi' => $id,
-                            'tgl_masuk' => date('Y-m-d H:i:s'),
-                            'no_nota' => $transfer->no_nota,
-                            'keterangan' => 'Stok Keluar: ' . $note,
-                            'jml' => $quantity,
-                            'status' => '7', // Stok Keluar
-                            'sp' => '0'
+                            'id_item'      => $itemId,
+                            'id_gudang'    => $transfer->id_gd_asal,
+                            'id_user'      => $this->ionAuth->user()->row()->id,
+                            'id_mutasi'    => $id,
+                            'tgl_masuk'    => date('Y-m-d H:i:s'),
+                            'no_nota'      => $transfer->no_nota,
+                            'keterangan'   => 'Stok Keluar: ' . $sql_wh->nama . ' : ' . (!empty($note) ? $note : '-'),
+                            'jml'          => $quantity,
+                            'status'       => '7', // Stok Keluar
+                            'sp'           => '0'
                         ];
                         
                         $historyResult = $this->itemHistModel->addHistory($historyData);
@@ -602,27 +572,39 @@ class Transfer extends BaseController
 
                     } elseif ($transfer->tipe == '4') { // Pindah Outlet
                         // Update stock in source warehouse (decrease)
-                        $sourceStock = $this->itemStokModel->getStockByItemAndGudang($itemId, $transfer->id_gd_asal);
-                        $sourceQty = $sourceStock ? floatval($sourceStock->jml) : 0;
+                        $sourceStock  = $this->itemStokModel->getStockByItemAndGudang($itemId, $transfer->id_gd_asal);
+                        $sourceQty    = ($sourceStock) ? floatval($sourceStock->jml) : 0;
                         $newSourceQty = $sourceQty - $quantity;
                         
-                        $updateResult = $this->itemStokModel->updateStock($itemId, $transfer->id_gd_asal, $newSourceQty, $this->ionAuth->user()->row()->id);
-                        if (!$updateResult) {
+                        $updateResultSource = $this->itemStokModel->updateStock($itemId, $transfer->id_gd_asal, $newSourceQty, $this->ionAuth->user()->row()->id);
+                        if (!$updateResultSource) {
                             throw new \Exception("Gagal mengupdate stok gudang untuk item ID: $itemId");
                         }
 
+                        // Update stock in destination outlet (increase)
+                        $destStock  = $this->itemStokModel->getStockByItemAndGudang($itemId, $transfer->id_gd_tujuan);
+                        $destQty    = ($destStock) ? floatval($destStock->jml) : 0;
+                        $newDestQty = $destQty + $quantity;
+
+                        $updateResultDest = $this->itemStokModel->updateStock($itemId, $transfer->id_gd_tujuan, $newDestQty, $this->ionAuth->user()->row()->id);
+                        if (!$updateResultDest) {
+                            throw new \Exception("Gagal mengupdate stok gudang tujuan untuk item ID: $itemId");
+                        }
+
+                        $sql_wh = $this->gudangModel->find($transfer->id_gd_tujuan);
+
                         // Add history record for warehouse
                         $historyData = [
-                            'id_item' => $itemId,
-                            'id_gudang' => $transfer->id_gd_asal,
-                            'id_user' => $this->ionAuth->user()->row()->id,
-                            'id_mutasi' => $id,
-                            'tgl_masuk' => date('Y-m-d H:i:s'),
-                            'no_nota' => $transfer->no_nota,
-                            'keterangan' => 'Pindah ke Outlet: ' . $note,
-                            'jml' => $quantity,
-                            'status' => '7', // Stok Keluar
-                            'sp' => '0'
+                            'id_item'     => $itemId,
+                            'id_gudang'   => $transfer->id_gd_asal,
+                            'id_user'     => $this->ionAuth->user()->row()->id,
+                            'id_mutasi'   => $id,
+                            'tgl_masuk'   => date('Y-m-d H:i:s'),
+                            'no_nota'     => $transfer->no_nota,
+                            'keterangan'  => 'Pindah ke Outlet ' . $sql_wh->nama . ' : ' . (!empty($note) ? $note : '-'),
+                            'jml'         => $quantity,
+                            'status'      => '7', // Stok Keluar
+                            'sp'          => '0'
                         ];
                         
                         $historyResult = $this->itemHistModel->addHistory($historyData);
@@ -630,8 +612,6 @@ class Transfer extends BaseController
                             throw new \Exception("Gagal menyimpan history untuk item ID: $itemId");
                         }
                     }
-
-                    log_message('debug', "Stock updated for item ID: $itemId");
                 }
             }
 

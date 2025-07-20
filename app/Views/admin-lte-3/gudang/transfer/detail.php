@@ -85,7 +85,7 @@
                 <div class="card-footer">
                     <div class="d-flex justify-content-between align-items-center">
                         <a href="<?= base_url('gudang/transfer') ?>" class="btn btn-primary rounded-0">
-                            <i class="fas fa-arrow-left"></i> Kembali
+                            &laquo; Kembali
                         </a>
                         <div class="text-muted small">
                             Total Item: <span class="font-weight-bold"><?= !empty($details) ? count($details) : 0 ?></span>
@@ -112,20 +112,20 @@
                         </div>
                     </div>
                     <div class="mb-2">
-                        <div class="text-muted small">No. Nota</div>
+                        <div class="text-muted small">No. Mutasi</div>
                         <div class="font-weight-bold"><?= $transfer->no_nota ?? '-' ?></div>
                     </div>
                     <div class="mb-2">
                         <div class="text-muted small">Tanggal Transfer</div>
-                        <div class="font-weight-bold"><?= date('d/m/Y', strtotime($transfer->tgl_masuk)) ?></div>
+                        <div class="font-weight-bold"><?= tgl_indo($transfer->tgl_masuk) ?></div>
                     </div>
                     <div class="mb-2">
                         <div class="text-muted small">Dari</div>
-                        <div class="font-weight-bold"><?= $gudangAsalName ?></div>
+                        <div class="font-weight-bold"><?= $gd_asal ?></div>
                     </div>
                     <div class="mb-2">
                         <div class="text-muted small">Kepada Penerima</div>
-                        <div class="font-weight-bold"><?= $gudangTujuanName ?></div>
+                        <div class="font-weight-bold"><?= $gd_tujuan?></div>
                     </div>
                     <div class="mb-2">
                         <div class="text-muted small">Status Nota</div>
@@ -183,9 +183,6 @@
                             <i class="fas fa-plus"></i> Input Item
                         </a>
                     <?php endif; ?>
-                    <a href="<?= base_url('gudang/transfer') ?>" class="btn btn-primary btn-sm rounded-0 ml-2">
-                        <i class="fas fa-arrow-left"></i> Kembali
-                    </a>
                 </div>
             </div>
         </div>

@@ -33,14 +33,16 @@
                     <div class="row">
                         <div class="col-4">
                             <label class="control-label">Jumlah</label>
-                            <input type="text" value="<?= $item->jumlah ?? 0 ?>" class="form-control text-right rounded-0" readonly>
+                            <input type="text" value="<?= $total_stok ?? 0 ?>" class="form-control text-right rounded-0" readonly>
                         </div>
                         <div class="col-8">
                             <div class="form-group ">
                                 <label class="control-label">Satuan</label>
                                 <select class="form-control rounded-0" disabled>
                                     <option value="">- Pilih -</option>
-                                    <option value="<?= $item->id_satuan ?? '' ?>" selected=""><?= $item->id_satuan ?? 'PCS' ?></option>
+                                    <?php foreach ($satuan as $s): ?>
+                                        <option value="<?= $s->id ?>" <?= ($s->id == $item->id_satuan) ? 'selected' : '' ?>><?= $s->satuanBesar ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
@@ -179,33 +181,37 @@
                     </form>
                     
                     <!-- Stock History Data Table -->
-                    <table class="table table-bordered table-striped">
+                    <table class="table table-striped">
                         <thead>
                             <tr>
                                 <th>Tanggal</th>
-                                <th>Gudang</th>
                                 <th class="text-right">Jml</th>
                                 <th>Satuan</th>
                                 <th>Keterangan</th>
                                 <th>Status</th>
-                                <th>No. Nota</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (!empty($stokData)): ?>
                                 <?php foreach ($stokData as $row): ?>
                                     <tr>
-                                        <td><?= date('d/m/Y H:i', strtotime($row->created_at)) ?></td>
-                                        <td><?= $row->gudang_name ?? '-' ?></td>
+                                        <td>
+                                            <?= $row->gudang_name.br() ?? '-' ?>
+                                            <small><i><?= tgl_indo6($row->tgl_masuk) ?></i></small><br/>
+                                            <small>
+                                                <?php if (!empty($user->id)): ?>
+                                                    <span class="text-muted"><?= esc($user->first_name) ?></span>
+                                                <?php endif; ?>
+                                            </small>
+                                        </td>
                                         <td class="text-right"><?= $row->jml; ?></td>
                                         <td><?= $row->satuan_name ?? 'PCS' ?></td>
                                         <td><?= $row->keterangan ?></td>
                                         <td>
                                             <span class="badge badge-<?= in_array($row->status, ['1', '2', '3']) ? 'success' : 'danger' ?>">
-                                                <?= (new \App\Models\ItemHistModel())->getStatusLabel($row->status) ?>
+                                                <?= statusHist($row->status)['label'] ?>
                                             </span>
                                         </td>
-                                        <td><?= $row->no_nota ?? '-' ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
