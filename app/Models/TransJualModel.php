@@ -89,6 +89,43 @@ class TransJualModel extends Model
     protected $afterDelete    = [];
 
     /**
+     * Generate invoice number in SAP style (e.g., 6000004567)
+     * 10 digits, starts with '6', incrementing number per day
+     * Example: 6000000001, 6000000002, etc.
+     * 
+     * @return string
+     */
+    /**
+     * Generate invoice number in SAP style:
+     * Format: 6 + YYMMDD + 4 digit sequence (e.g. 62406190001)
+     *  - 6: static prefix
+     *  - YYMMDD: year, month, day (2 digit each)
+     *  - 4 digit: running number per day (0001, 0002, ...)
+     */
+    public function generateKode()
+    {
+        // Get today's date in YYMMDD
+        $datePart = date('ymdHi');
+        $prefix = '6' . $datePart;
+
+        // Find the last transaction for today with this prefix
+        $last = $this->where('no_nota LIKE', $prefix . '%')
+                     ->orderBy('no_nota', 'DESC')
+                     ->first();
+
+        if ($last && preg_match('/^6\d{6}(\d{4})$/', $last->no_nota, $matches)) {
+            $lastNumber = (int)$matches[1];
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        // Pad to 4 digits
+        $kode = $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return $kode;
+    }
+
+    /**
      * Get sales transaction by ID
      */
     public function getTransactionById($id)
@@ -132,4 +169,21 @@ class TransJualModel extends Model
                     ->where('status', '1')
                     ->first();
     }
-} 
+
+    /**
+     * Get last 5 transactions with customer and user information
+     */
+    public function getLastTransactions($limit = 5)
+    {
+        return $this->select('
+                tbl_trans_jual.*,
+                tbl_m_pelanggan.nama as customer_name,
+                tbl_ion_users.first_name as user_name
+            ')
+            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
+            ->orderBy('tbl_trans_jual.created_at', 'DESC')
+            ->limit($limit)
+            ->findAll();
+    }
+}
