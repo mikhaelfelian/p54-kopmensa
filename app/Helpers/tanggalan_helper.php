@@ -4,7 +4,7 @@ if (!function_exists('tgl_indo')) {
     function tgl_indo($date)
     {
         if (empty($date) || $date == '0000-00-00') return '';
-        return date('m/d/y', strtotime($date));
+        return date('m/d/Y', strtotime($date));
     }
 }
 
@@ -12,7 +12,7 @@ if (!function_exists('tgl_indo2')) {
     function tgl_indo2($date)
     {
         if (empty($date) || $date == '0000-00-00') return '';
-        return date('d/m/y', strtotime($date));
+        return date('d/m/Y', strtotime($date));
     }
 }
 
