@@ -17,6 +17,8 @@ use App\Models\GudangModel;
 use App\Models\OutletModel;
 use App\Models\KategoriModel;
 use App\Models\MerkModel;
+use App\Models\SatuanModel;
+use App\Models\TransMutasiModel;
 
 class Inventori extends BaseController
 {
@@ -27,17 +29,18 @@ class Inventori extends BaseController
     protected $outletModel;
     protected $kategoriModel;
     protected $merkModel;
-
+    protected $satuanModel;
     public function __construct()
     {
         parent::__construct();
-        $this->itemModel = new ItemModel();
-        $this->itemStokModel = new ItemStokModel();
-        $this->itemHistModel = new ItemHistModel();
-        $this->gudangModel = new GudangModel();
-        $this->outletModel = new OutletModel();
-        $this->kategoriModel = new KategoriModel();
-        $this->merkModel = new MerkModel();
+        $this->itemModel        = new ItemModel();
+        $this->itemStokModel    = new ItemStokModel();
+        $this->itemHistModel    = new ItemHistModel();
+        $this->gudangModel      = new GudangModel();
+        $this->outletModel      = new OutletModel();
+        $this->kategoriModel    = new KategoriModel();
+        $this->merkModel        = new MerkModel();
+        $this->satuanModel      = new SatuanModel();
     }
 
     public function index()
@@ -280,51 +283,54 @@ class Inventori extends BaseController
         }
 
         // Get pagination parameters
-        $page = $this->request->getVar('page') ?? 1;
-        $perPage = 10;
+        $page           = $this->request->getVar('page') ?? 1;
+        $perPage        = $this->pengaturan->pagination_limit;
         
         // Get filter parameters
-        $filter_gd = $this->request->getVar('filter_gd');
-        $filter_status = $this->request->getVar('filter_status');
+        $filter_gd      = $this->request->getVar('filter_gd');
+        $filter_status  = $this->request->getVar('filter_status');
         
         // Convert empty strings to null for proper filtering
-        $filter_gd = ($filter_gd === '' || $filter_gd === null) ? null : (int)$filter_gd;
-        $filter_status = ($filter_status === '' || $filter_status === null) ? null : $filter_status;
+        $filter_gd      = ($filter_gd === '' || $filter_gd === null) ? null : (int)$filter_gd;
+        $filter_status  = ($filter_status === '' || $filter_status === null) ? null : $filter_status;
         
         // Fetch paginated stock history data
-            $stockHistory = $this->itemHistModel->getWithRelationsPaginated(
+        $stockHistory = $this->itemHistModel->getWithRelationsPaginated(
                 (int)$id, 
                 $filter_gd, 
                 $filter_status, 
                 $perPage, 
                 $page
-            );
+        );
 
         // Get active warehouses for filter dropdown
         $warehouses = $this->gudangModel->where('status', '1')->where('status_hps', '0')->findAll();
-        
+
+
         $data = [
-            'title'       => 'Detail Stok Item: ' . $item->item,
-            'Pengaturan'  => $this->pengaturan,
-            'user'        => $this->ionAuth->user()->row(),
-            'item'        => $item,
-            'outlets'     => $item_stok,
-            'stokData'    => $stockHistory['data'],
-            'pager'       => $stockHistory['pager'],
-            'current_page' => $stockHistory['current_page'],
-            'per_page'    => $stockHistory['per_page'],
-            'total'       => $stockHistory['total'],
-            'filter_gd'   => $filter_gd,
+            'title'         => 'Detail Stok Item: ' . $item->item,
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'item'          => $item,
+            'outlets'       => $item_stok,
+            'stokData'      => $stockHistory['data'],
+            'pager'         => $stockHistory['pager'],
+            'current_page'  => $stockHistory['current_page'],
+            'per_page'      => $stockHistory['per_page'],
+            'total'         => $stockHistory['total'],
+            'total_stok'    => $this->itemStokModel->getTotalStock($id),
+            'filter_gd'     => $filter_gd,
             'filter_status' => $filter_status,
-            'warehouses'  => $warehouses,
-            'breadcrumbs' => '
+            'warehouses'    => $warehouses,
+            'satuan'        => $this->satuanModel->where('status', '1')->findAll(),
+            'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/stok') . '">Inventori</a></li>
                 <li class="breadcrumb-item active">Detail Stok</li>
-            '
+            ',
         ];
 
-        return view($this->theme->getThemePath() . '/gudang/inventori/detail', $data);
+        // return view($this->theme->getThemePath() . '/gudang/inventori/detail', $data);
     }
 
     /**
