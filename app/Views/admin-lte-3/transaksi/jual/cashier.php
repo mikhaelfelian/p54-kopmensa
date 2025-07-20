@@ -6,6 +6,8 @@
  * Description: Cashier Interface for Sales Transactions
  * This file represents the View.
  */
+
+helper('form');
 ?>
 <?= $this->extend(theme_path('main')) ?>
 
@@ -14,7 +16,7 @@
 <div class="row">
     <!-- Left Column - Product Selection and Cart -->
     <div class="col-md-8">
-        <div class="card">
+        <div class="card rounded-0">
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="fas fa-shopping-cart"></i> Kasir - Transaksi Penjualan
@@ -39,7 +41,7 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <select class="form-control" id="outletSelect">
+                        <select class="form-control rounded-0" id="outletSelect">
                             <option value="">Pilih Outlet</option>
                             <?php foreach ($outlets as $outlet): ?>
                                 <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
@@ -92,7 +94,28 @@
 
     <!-- Right Column - Payment -->
     <div class="col-md-4">
-        <div class="card">
+        <div class="card rounded-0 mb-3">
+            <div class="card-header bg-default">
+                <h5 class="card-title mb-0">5 Transaksi Terakhir</h5>
+            </div>
+            <div class="card-body p-2">
+                <ul class="list-group list-group-flush" id="lastTransactionsList" style="max-height: 120px; overflow-y: auto;">
+                    <?php foreach ($lastTransactions as $transaction): ?>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="font-weight-bold"><?= $transaction->no_nota ?></span>
+                                <br>
+                                <small class="text-muted"><?= $transaction->customer_name ?></small>
+                                <br/>
+                                <small class="text-muted"><?= tgl_indo6($transaction->created_at) ?></small>
+                            </div>
+                            <span class="badge badge-success badge-pill">Rp <?= number_format($transaction->jml_gtotal, 0, ',', '.') ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+        <div class="card rounded-0">
             <div class="card-header">
                 <h4 class="card-title">Pembayaran</h4>
             </div>
@@ -100,45 +123,52 @@
                 <!-- Customer Selection -->
                 <div class="form-group">
                     <label for="customerSelect">Pelanggan</label>
-                    <select class="form-control" id="customerSelect">
-                        <option value="">Umum</option>
+                    <select class="form-control rounded-0 select2" id="customerSelect">
                         <?php foreach ($customers as $customer): ?>
                             <option value="<?= $customer->id ?>"><?= esc($customer->nama) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-
-
-
                 <!-- Payment Summary -->
                 <div class="border rounded p-3 mb-3">
                     <div class="row mb-2">
                         <div class="col-6">Subtotal:</div>
                         <div class="col-6 text-right">
-                            <span id="subtotalDisplay">Rp 0,00</span>
+                            <span id="subtotalDisplay">Rp 0</span>
                         </div>
                     </div>
                     
-                    <div class="row mb-2">
-                        <div class="col-6">Diskon:</div>
-                        <div class="col-6">
-                            <input type="number" class="form-control form-control-sm" id="discountPercent" placeholder="%" step="0.01">
+                        <div class="row mb-2">
+                            <div class="col-6">Diskon:</div>
+                            <div class="col-6">
+                                <?= form_input([
+                                    'type'        => 'number',
+                                    'class'       => 'form-control form-control-sm rounded-0',
+                                    'id'          => 'discountPercent',
+                                    'placeholder' => '%',
+                                    'step'        => '0.01'
+                                ]); ?>
+                            </div>
                         </div>
-                    </div>
                     
                     <div class="row mb-2">
                         <div class="col-6">Voucher:</div>
                         <div class="col-6">
-                            <input type="text" class="form-control form-control-sm" id="voucherCode" placeholder="Kode voucher">
+                            <?= form_input([
+                                'type'        => 'text',
+                                'class'       => 'form-control form-control-sm rounded-0',
+                                'id'          => 'voucherCode',
+                                'placeholder' => 'Kode voucher'
+                            ]); ?>
                             <small class="text-muted" id="voucherInfo"></small>
-                            <input type="hidden" id="voucherDiscount" value="0">
+                            <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
                         </div>
                     </div>
                     
                     <div class="row mb-2">
                         <div class="col-6">PPN (11%):</div>
                         <div class="col-6 text-right">
-                            <span id="taxDisplay">Rp 0,00</span>
+                            <span id="taxDisplay">Rp 0</span>
                         </div>
                     </div>
                     
@@ -147,7 +177,7 @@
                     <div class="row">
                         <div class="col-6"><strong>Total:</strong></div>
                         <div class="col-6 text-right">
-                            <strong><span id="grandTotalDisplay">Rp 0,00</span></strong>
+                            <strong><span id="grandTotalDisplay">Rp 0</span></strong>
                         </div>
                     </div>
                 </div>
@@ -184,18 +214,18 @@
                 <!-- Change -->
                 <div class="form-group">
                     <label>Kembalian</label>
-                    <div class="form-control-plaintext" id="changeDisplay">Rp 0,00</div>
+                    <div class="form-control-plaintext" id="changeDisplay">Rp 0</div>
                 </div>
 
                 <!-- Action Buttons -->
                 <div class="row">
                     <div class="col-6">
-                        <button type="button" class="btn btn-success btn-block" id="completeTransaction">
+                        <button type="button" class="btn btn-success btn-block rounded-0" id="completeTransaction">
                             <i class="fas fa-check"></i> Proses
                         </button>
                     </div>
                     <div class="col-6">
-                        <button type="button" class="btn btn-danger btn-block" id="cancelTransaction">
+                        <button type="button" class="btn btn-danger btn-block rounded-0" id="cancelTransaction">
                             <i class="fas fa-times"></i> Batal
                         </button>
                     </div>
@@ -235,6 +265,26 @@
 
 <?= $this->endSection() ?>
 
+<?= $this->section('css') ?>
+<style>
+/* Select2 rounded-0 style */
+.select2-container .select2-selection--single {
+    height: 36px !important; /* Sesuaikan dengan tinggi input */
+    display: flex;
+    align-items: center; /* Ini akan membuat teks di tengah */
+    vertical-align: middle;
+    padding-left: 10px;
+    border-radius: 0px !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: normal !important; /* Pastikan tidak fix ke line-height tinggi */
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+}
+</style>
+<?= $this->endSection() ?>
+
 <?= $this->section('js') ?>
 <script>
 // Global variables
@@ -242,6 +292,14 @@ let cart = [];
 let currentTransactionId = null;
 
 $(document).ready(function() {
+    // Initialize Select2 for customer dropdown
+    $('#customerSelect').select2({
+        placeholder: 'Pilih pelanggan...',
+        allowClear: true,
+        width: '100%',
+        dropdownParent: $('#customerSelect').parent()
+    });
+    
     // Initialize
     loadProducts();
     
@@ -504,10 +562,16 @@ function completeTransaction() {
         toastr.error('Keranjang belanja kosong');
         return;
     }
-    
+
     const paymentMethod = $('#paymentMethod').val();
     if (!paymentMethod) {
         toastr.error('Pilih metode pembayaran');
+        return;
+    }
+
+    const outletId = $('#outletSelect').val();
+    if (!outletId) {
+        toastr.error('Outlet belum dipilih');
         return;
     }
     
@@ -524,14 +588,14 @@ function completeTransaction() {
         cart: cart,
         customer_id: $('#customerSelect').val() || null,
 
-        warehouse_id: $('#outletSelect').val() || null,
-        discount_percent: parseFloat($('#discountPercent').val()) || 0,
-        voucher_code: $('#voucherCode').val() || null,
-        voucher_discount: parseFloat($('#voucherDiscount').val()) || 0,
-        payment_method: paymentMethod,
-        platform_id: $('#id_platform').val() || null,
-        amount_received: amountReceived,
-        grand_total: grandTotal
+        warehouse_id      : $('#outletSelect').val() || null,
+        discount_percent  : parseFloat($('#discountPercent').val()) || 0,
+        voucher_code      : $('#voucherCode').val() || null,
+        voucher_discount  : parseFloat($('#voucherDiscount').val()) || 0,
+        payment_method    : paymentMethod,
+        platform_id       : $('#id_platform').val() || null,
+        amount_received   : amountReceived,
+        grand_total       : grandTotal
     };
     
     // Show loading state

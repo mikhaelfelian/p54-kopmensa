@@ -326,11 +326,14 @@ class TransJual extends BaseController
         // Get related data for dropdowns (formatted)
         $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
         $sales      = $this->karyawanModel->where('status', '1')->findAll();
-        $warehouses = $this->gudangModel->where('status', '1')->findAll();
-        $outlets    = $this->outletModel->where('status', '1')->findAll();
-
+        $warehouses = $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll();
+        $outlets    = $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll();
+        
         $platforms  = $this->platformModel->where('status', '1')->findAll();
         $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
+        
+        // Get last 5 transactions
+        $lastTransactions = $this->transJualModel->getLastTransactions(5);
 
         $data = [
             'title'         => 'Kasir - Transaksi Penjualan',
@@ -340,9 +343,9 @@ class TransJual extends BaseController
             'sales'         => $sales,
             'warehouses'    => $warehouses,
             'outlets'       => $outlets,
-
             'platforms'     => $platforms,
-            'items'         => $items
+            'items'         => $items,
+            'lastTransactions' => $lastTransactions
         ];
 
         return $this->view($this->theme->getThemePath() . '/transaksi/jual/cashier', $data);
@@ -354,11 +357,12 @@ class TransJual extends BaseController
     public function create()
     {
         // Get related data for dropdowns
-        $customers = $this->pelangganModel->where('status_blokir', '0')->findAll();
-        $sales = $this->karyawanModel->where('status', '1')->findAll();
-        $warehouses = $this->gudangModel->where('status', '1')->findAll();
-        $platforms = $this->platformModel->where('status', '1')->findAll();
-        $items = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
+        $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
+        $sales      = $this->karyawanModel->where('status', '1')->findAll();
+        $warehouses = $this->gudangModel->where('status', '1')->where('status_outlet', '0')->where('status_hps', '0')->findAll();
+        $outlets    = $this->gudangModel->where('status', '1')->where('status_outlet', '1')->where('status_hps', '0')->findAll();
+        $platforms  = $this->platformModel->where('status', '1')->findAll();
+        $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
 
         $data = [
             'title'         => 'Buat Transaksi Penjualan',
@@ -367,6 +371,7 @@ class TransJual extends BaseController
             'customers'     => $customers,
             'sales'         => $sales,
             'warehouses'    => $warehouses,
+            'outlets'       => $outlets,
             'platforms'     => $platforms,
             'items'         => $items
         ];
@@ -555,7 +560,6 @@ class TransJual extends BaseController
         $cart            = $this->request->getPost('cart');
         $customerId      = $this->request->getPost('customer_id')      ?: null;
         $warehouseId     = $this->request->getPost('warehouse_id');
-        $outletId        = $this->request->getPost('outlet_id')        ?: null;
         $discountPercent = $this->request->getPost('discount_percent') ?: 0;
         $voucherCode     = $this->request->getPost('voucher_code')     ?: null;
         $voucherDiscount = $this->request->getPost('voucher_discount') ?: 0;
@@ -585,21 +589,7 @@ class TransJual extends BaseController
             $this->db = \Config\Database::connect();
             $this->db->transStart();
 
-            // Generate nota number
-            $prefix = 'INV';
-            $date = date('Ymd');
-            $lastTransaction = $this->transJualModel->where('DATE(created_at)', date('Y-m-d'))
-                                                   ->orderBy('id', 'DESC')
-                                                   ->first();
-
-            if ($lastTransaction) {
-                $lastNumber = (int) substr($lastTransaction->no_nota, -4);
-                $newNumber = $lastNumber + 1;
-            } else {
-                $newNumber = 1;
-            }
-
-            $noNota = $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+            $noNota = $this->transJualModel->generateKode();
 
             // Calculate totals
             $subtotal = 0;
@@ -678,17 +668,16 @@ class TransJual extends BaseController
 
                 $this->transJualDetModel->insert($detailData);
 
-                // // Update stock (decrease stock)
-                // if ($warehouseId) {
-                //     $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
-                // }
+                // Update stock (decrease stock)
+                if ($warehouseId) {
+                    $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
+                }
 
                 // Insert item history record (Stok Keluar Penjualan - status 4)
                 $historyData = [
                     'id_item'        => $item['id'],
                     'id_satuan'      => $itemDetails->id_satuan,
                     'id_gudang'      => $warehouseId,
-                    'id_outlet'      => $outletId,
                     'id_user'        => $this->ionAuth->user()->row()->id,
                     'id_pelanggan'   => $customerId,
                     'id_penjualan'   => $transactionId,
