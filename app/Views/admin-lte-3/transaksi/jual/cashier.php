@@ -268,6 +268,26 @@ helper('form');
     </div>
 </div>
 
+<!-- Variant Selection Modal -->
+<div class="modal fade" id="variantModal" tabindex="-1" role="dialog" aria-labelledby="variantModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="variantModalLabel">Pilih Varian Produk</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="variantList"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('css') ?>
@@ -399,7 +419,7 @@ function displayProducts(products) {
                 <td>Rp ${numberFormat(price)}</td>
                 <td>${stock}</td>
                 <td>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="addToCart(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
                         <i class="fas fa-plus"></i>
                     </button>
                 </td>
@@ -408,6 +428,39 @@ function displayProducts(products) {
     });
     
     $('#productListTable tbody').html(html);
+}
+
+// Function to check for variants and handle add to cart
+function checkVariant(productId, productName, productCode, price) {
+    $.get('<?= base_url('transaksi/jual/get_variants') ?>/' + productId, function(response) {
+        if (response.success && response.variants && response.variants.length > 0) {
+            // Show modal with variants
+            let variantHtml = '<div class="list-group">';
+            response.variants.forEach(function(variant) {
+                variantHtml += `
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="selectVariantToCart(${productId}, '${productName.replace(/'/g, "\\'")}', '${productCode}', ${variant.id}, '${variant.nama.replace(/'/g, "\\'")}', ${variant.harga_jual_value || 0})">
+                        <span>
+                            <strong>${variant.nama}</strong><br>
+                            <small>Kode: ${variant.kode}</small>
+                        </span>
+                        <span class="badge badge-primary badge-pill">Rp ${numberFormat(variant.harga_jual_value || 0)}</span>
+                    </button>
+                `;
+            });
+            variantHtml += '</div>';
+            $('#variantList').html(variantHtml);
+            $('#variantModal').modal('show');
+        } else {
+            // No variants, add directly
+            addToCart(productId, productName, productCode, price);
+        }
+    }, 'json');
+}
+
+// Function to add selected variant to cart
+function selectVariantToCart(productId, productName, productCode, variantId, variantName, variantPrice) {
+    addToCart(productId + '-' + variantId, productName + ' - ' + variantName, productCode, variantPrice);
+    $('#variantModal').modal('hide');
 }
 
 function addToCart(productId, productName, productCode, price) {

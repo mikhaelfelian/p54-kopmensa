@@ -782,4 +782,29 @@ class TransJual extends BaseController
             ]);
         }
     }
+
+    /**
+     * Get item variants for a given item (AJAX)
+     */
+    public function get_variants($item_id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            $itemVarianModel = new \App\Models\ItemVarianModel();
+            $variants = $itemVarianModel->getVariantsWithPrice($item_id);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'variants' => $variants
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengambil data varian'
+            ]);
+        }
+    }
 } 

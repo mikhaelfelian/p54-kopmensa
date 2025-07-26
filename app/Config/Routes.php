@@ -162,6 +162,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('item/delete_variant/(:num)', 'Item::delete_variant/$1');
 });
 
+// Add route for TransJual get_variants (for cashier)
+$routes->get('transaksi/transjual/get_variants/(:num)', 'Transaksi\\TransJual::get_variants/$1');
+
 // User Module Routes
 $routes->group('users/modules', ['namespace' => 'App\Controllers\Pengaturan', 'filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Modules::index');
@@ -278,6 +281,9 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('jual/generate-nota', 'TransJual::generateNotaNumber');
     $routes->post('jual/validate-voucher', 'TransJual::validateVoucher');
     $routes->post('jual/process-transaction', 'TransJual::processTransaction');
+
+    // Add route for get_variants
+    $routes->get('jual/get_variants/(:num)', 'TransJual::get_variants/$1');
 });
 
 // Public API routes
@@ -291,6 +297,13 @@ $routes->group('publik', function ($routes) {
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
 $routes->get('test/check-table', 'TestController::checkTable');
+$routes->get('transaksi/retur/beli', 'Transaksi\\ReturBeli::index');
+$routes->get('transaksi/retur/beli/create', 'Transaksi\\ReturBeli::create');
+$routes->post('transaksi/retur/beli/store', 'Transaksi\\ReturBeli::store');
+$routes->get('transaksi/retur/beli/edit/(:num)', 'Transaksi\\ReturBeli::edit/$1');
+$routes->post('transaksi/retur/beli/update/(:num)', 'Transaksi\\ReturBeli::update/$1');
+$routes->post('transaksi/retur/beli/delete/(:num)', 'Transaksi\\ReturBeli::delete/$1');
+$routes->get('transaksi/retur/beli/(:num)', 'Transaksi\\ReturBeli::show/$1');
 
 
 

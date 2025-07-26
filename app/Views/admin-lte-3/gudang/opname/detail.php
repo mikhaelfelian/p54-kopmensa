@@ -110,15 +110,15 @@
                                         <td><?= $detail->kode ?></td>
                                         <td><?= $detail->item ?></td>
                                         <td><?= $detail->satuan ?></td>
-                                        <td><?= number_format($detail->jml_sys, 2) ?></td>
-                                        <td><?= number_format($detail->jml_so, 2) ?></td>
+                                        <td><?= format_angka($detail->jml_sys) ?></td>
+                                        <td><?= format_angka($detail->jml_so) ?></td>
                                         <td>
                                             <?php 
                                             $selisih = $detail->jml_sls;
                                             $class = $selisih > 0 ? 'text-success' : ($selisih < 0 ? 'text-danger' : 'text-muted');
                                             ?>
                                             <span class="<?= $class ?>">
-                                                <?= number_format($selisih, 2) ?>
+                                                <?= format_angka($selisih) ?>
                                             </span>
                                         </td>
                                         <td><?= $detail->keterangan ?: '-' ?></td>
