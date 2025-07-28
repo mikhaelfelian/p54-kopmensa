@@ -284,6 +284,30 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
 
     // Add route for get_variants
     $routes->get('jual/get_variants/(:num)', 'TransJual::get_variants/$1');
+
+    // Purchase Return Routes
+    $routes->get('retur/beli', 'ReturBeli::index');
+    $routes->get('retur/beli/create', 'ReturBeli::create');
+    $routes->post('retur/beli/store', 'ReturBeli::store');
+    $routes->get('retur/beli/edit/(:num)', 'ReturBeli::edit/$1');
+    $routes->post('retur/beli/update/(:num)', 'ReturBeli::update/$1');
+    $routes->post('retur/beli/delete/(:num)', 'ReturBeli::delete/$1');
+    $routes->get('retur/beli/(:num)', 'ReturBeli::show/$1');
+
+    // Sales Return Routes
+    $routes->get('retur/jual', 'ReturJual::index');
+    $routes->get('retur/jual/refund', 'ReturJual::refund');
+    $routes->get('retur/jual/exchange', 'ReturJual::exchange');
+    $routes->post('retur/jual/store', 'ReturJual::store');
+    $routes->get('retur/jual/edit/(:num)', 'ReturJual::edit/$1');
+    $routes->post('retur/jual/update/(:num)', 'ReturJual::update/$1');
+    $routes->post('retur/jual/delete/(:num)', 'ReturJual::delete/$1');
+    $routes->get('retur/jual/(:num)', 'ReturJual::show/$1');
+    // AJAX routes for sales return
+    $routes->get('retur/jual/sales-items/(:num)', 'ReturJual::getSalesItems/$1');
+    $routes->get('retur/jual/search-items', 'ReturJual::searchItems');
+    $routes->post('retur/jual/search-items', 'ReturJual::searchItems');
+    $routes->get('retur/jual/test', 'ReturJual::testEndpoint');
 });
 
 // Public API routes
@@ -297,13 +321,7 @@ $routes->group('publik', function ($routes) {
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
 $routes->get('test/check-table', 'TestController::checkTable');
-$routes->get('transaksi/retur/beli', 'Transaksi\\ReturBeli::index');
-$routes->get('transaksi/retur/beli/create', 'Transaksi\\ReturBeli::create');
-$routes->post('transaksi/retur/beli/store', 'Transaksi\\ReturBeli::store');
-$routes->get('transaksi/retur/beli/edit/(:num)', 'Transaksi\\ReturBeli::edit/$1');
-$routes->post('transaksi/retur/beli/update/(:num)', 'Transaksi\\ReturBeli::update/$1');
-$routes->post('transaksi/retur/beli/delete/(:num)', 'Transaksi\\ReturBeli::delete/$1');
-$routes->get('transaksi/retur/beli/(:num)', 'Transaksi\\ReturBeli::show/$1');
+
 
 
 

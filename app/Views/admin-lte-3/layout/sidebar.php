@@ -280,12 +280,38 @@
                                 <p>Data Penjualan</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link <?= isMenuActive('transaksi/retur') ? 'active' : '' ?>">
+                        <li class="nav-item <?= isMenuActive('transaksi/retur/jual') ? 'menu-open' : '' ?>">
+                            <a href="#" class="nav-link <?= isMenuActive('transaksi/retur/jual') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-undo nav-icon"></i>
-                                <p>Retur Penjualan</p>
+                                <p>
+                                    Retur Penjualan
+                                    <i class="right fas fa-angle-left"></i>
+                                </p>
                             </a>
+                            <ul class="nav nav-treeview" <?= isMenuActive('transaksi/retur/jual') ? 'style="display: block;"' : 'style="display: none;"' ?>>
+                                <li class="nav-item">
+                                    <a href="<?= base_url('transaksi/retur/jual') ?>" class="nav-link <?= isMenuActive('transaksi/retur/jual') && !isMenuActive('transaksi/retur/jual/refund') && !isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
+                                        <?= nbs(4) ?>
+                                        <i class="fas fa-list nav-icon"></i>
+                                        <p>Data Retur</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?= base_url('transaksi/retur/jual/refund') ?>" class="nav-link <?= isMenuActive('transaksi/retur/jual/refund') ? 'active' : '' ?>">
+                                        <?= nbs(4) ?>
+                                        <i class="fas fa-money-bill-wave nav-icon"></i>
+                                        <p>Retur Refund</p>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="<?= base_url('transaksi/retur/jual/exchange') ?>" class="nav-link <?= isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
+                                        <?= nbs(4) ?>
+                                        <i class="fas fa-exchange-alt nav-icon"></i>
+                                        <p>Retur Tukar Barang</p>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                     </ul>
                 </li>

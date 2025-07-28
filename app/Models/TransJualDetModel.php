@@ -122,6 +122,22 @@ class TransJualDetModel extends Model
     }
 
     /**
+     * Get sales items for return purposes
+     */
+    public function getSalesItems($salesId)
+    {
+        return $this->select('tbl_trans_jual_det.*, 
+                            tbl_m_item.item as produk,
+                            tbl_m_item.kode,
+                            tbl_m_satuan.satuanBesar')
+                    ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_jual_det.id_item', 'left')
+                    ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_jual_det.id_satuan', 'left')
+                    ->where('tbl_trans_jual_det.id_penjualan', $salesId)
+                    ->orderBy('tbl_trans_jual_det.created_at', 'ASC')
+                    ->findAll();
+    }
+
+    /**
      * Calculate total subtotal for a sales transaction
      */
     public function getTotalSubtotalByPenjualanId($penjualanId)

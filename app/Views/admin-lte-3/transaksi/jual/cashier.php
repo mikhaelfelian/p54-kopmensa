@@ -187,39 +187,47 @@ helper('form');
                     </div>
                 </div>
 
-                <!-- Payment Method -->
-                <div class="form-group">
-                    <label for="paymentMethod">Metode Bayar</label>
-                    <select class="form-control" id="paymentMethod">
-                        <option value="">Pilih metode bayar</option>
-                        <option value="tunai">Tunai</option>
-                        <option value="kartu">Kartu Debit/Credit</option>
-                        <option value="transfer">Transfer Bank</option>
-                        <option value="ewallet">E-Wallet</option>
-                        <option value="qris">QRIS</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="id_platform">Platform Pembayaran</label>
-                    <select class="form-control" id="id_platform" name="id_platform">
-                        <option value="">Pilih Platform</option>
-                        <?php foreach ($platforms as $platform): ?>
-                            <option value="<?= $platform->id ?>"><?= esc($platform->platform) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
-                <!-- Amount Received -->
-                <div class="form-group">
-                    <label for="amountReceived">Jumlah Bayar</label>
-                    <input type="number" class="form-control" id="amountReceived" placeholder="0" step="100">
-                </div>
-
-                <!-- Change -->
-                <div class="form-group">
-                    <label>Kembalian</label>
-                    <div class="form-control-plaintext" id="changeDisplay">Rp 0</div>
+                <!-- Multiple Payment Methods -->
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">Pembayaran</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-success btn-sm rounded-0" id="addPaymentMethod">
+                                <i class="fas fa-plus"></i> Tambah Metode
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="paymentMethods">
+                            <!-- Payment methods will be added here -->
+                        </div>
+                        
+                        <!-- Payment Summary -->
+                        <div class="row mt-3 p-2 bg-light">
+                            <div class="col-6">
+                                <strong>Total Tagihan:</strong><br>
+                                <span id="grandTotalPayment">Rp 0</span>
+                            </div>
+                            <div class="col-6">
+                                <strong>Total Bayar:</strong><br>
+                                <span id="totalPaidAmount">Rp 0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-2 p-2" id="remainingPayment" style="background-color: #ffe6e6;">
+                            <div class="col-12">
+                                <strong>Sisa Bayar:</strong>
+                                <span id="remainingAmount" class="text-danger">Rp 0</span>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-2 p-2" id="changePayment" style="background-color: #e6ffe6; display: none;">
+                            <div class="col-12">
+                                <strong>Kembalian:</strong>
+                                <span id="changeAmount" class="text-success">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -315,6 +323,8 @@ helper('form');
 // Global variables
 let cart = [];
 let currentTransactionId = null;
+let paymentMethods = [];
+let paymentCounter = 0;
 
 $(document).ready(function() {
     // Initialize Select2 for customer dropdown
@@ -327,6 +337,7 @@ $(document).ready(function() {
     
     // Initialize
     loadProducts();
+    addPaymentMethod(); // Add first payment method by default
     
     // Event listeners
     $('#productSearch').on('input', function() {
@@ -342,14 +353,22 @@ $(document).ready(function() {
         validateVoucher($(this).val());
     });
     
-    $('#amountReceived').on('input', calculateChange);
-    $('#paymentMethod').on('change', calculateChange);
+    // Payment method event listeners
+    $('#addPaymentMethod').on('click', addPaymentMethod);
+    $(document).on('click', '.remove-payment', removePaymentMethod);
+    $(document).on('input', '.payment-amount', calculatePaymentTotals);
+    $(document).on('change', '.payment-platform', calculatePaymentTotals);
     
     $('#completeTransaction').on('click', completeTransaction);
     $('#newTransaction').on('click', newTransaction);
     $('#holdTransaction').on('click', holdTransaction);
     $('#cancelTransaction').on('click', cancelTransaction);
     $('#printReceipt').on('click', printReceipt);
+    
+    // Auto clear form when modal is closed
+    $('#completeModal').on('hidden.bs.modal', function() {
+        clearTransactionForm();
+    });
     
     // Enter key to search
     $('#productSearch').on('keypress', function(e) {
@@ -358,6 +377,103 @@ $(document).ready(function() {
         }
     });
 });
+
+// Payment Methods Functions
+function addPaymentMethod() {
+    paymentCounter++;
+    const platforms = <?= json_encode($platforms) ?>;
+    
+    let platformOptions = '<option value="">Pilih Platform</option>';
+    platforms.forEach(platform => {
+        platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
+    });
+    
+    const paymentHtml = `
+        <div class="payment-method-row border rounded p-2 mb-2" data-payment-id="${paymentCounter}">
+            <div class="row">
+                <div class="col-md-4">
+                    <label>Metode Bayar</label>
+                    <select class="form-control form-control-sm rounded-0 payment-type" name="payments[${paymentCounter}][type]">
+                        <option value="">Pilih metode</option>
+                        <option value="tunai">Tunai</option>
+                        <option value="kartu">Kartu Debit/Credit</option>
+                        <option value="transfer">Transfer Bank</option>
+                        <option value="ewallet">E-Wallet</option>
+                        <option value="qris">QRIS</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label>Platform</label>
+                    <select class="form-control form-control-sm rounded-0 payment-platform" name="payments[${paymentCounter}][platform_id]">
+                        ${platformOptions}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>Jumlah</label>
+                    <input type="number" class="form-control form-control-sm rounded-0 payment-amount" 
+                           name="payments[${paymentCounter}][amount]" placeholder="0" step="100" min="0">
+                </div>
+                <div class="col-md-1">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn btn-danger btn-sm rounded-0 remove-payment d-block" 
+                            data-payment-id="${paymentCounter}" ${paymentCounter === 1 ? 'style="display: none !important;"' : ''}>
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="row mt-2" style="display: none;">
+                <div class="col-12">
+                    <input type="text" class="form-control form-control-sm rounded-0" 
+                           name="payments[${paymentCounter}][reference]" placeholder="No. Referensi (opsional)">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    $('#paymentMethods').append(paymentHtml);
+    calculatePaymentTotals();
+}
+
+function removePaymentMethod() {
+    const paymentId = $(this).data('payment-id');
+    $(`.payment-method-row[data-payment-id="${paymentId}"]`).remove();
+    calculatePaymentTotals();
+}
+
+function calculatePaymentTotals() {
+    let totalPaid = 0;
+    // Remove dots (thousand separators) before parsing grand total
+    const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+
+    $('.payment-amount').each(function() {
+        // Allow user to input with dots as thousand separator, remove them for calculation
+        let val = $(this).val();
+        if (typeof val === 'string') {
+            val = val.replace(/\./g, '').replace(',', '.');
+        }
+        const amount = parseFloat(val) || 0;
+        totalPaid += amount;
+    });
+
+    // Update displays with formatted currency (showing dots as thousand separator)
+    $('#grandTotalPayment').text(formatCurrency(grandTotal));
+    $('#totalPaidAmount').text(formatCurrency(totalPaid));
+
+    const remaining = grandTotal - totalPaid;
+
+    if (remaining > 0) {
+        $('#remainingAmount').text(formatCurrency(remaining));
+        $('#remainingPayment').show();
+        $('#changePayment').hide();
+    } else if (remaining < 0) {
+        $('#changeAmount').text(formatCurrency(Math.abs(remaining)));
+        $('#remainingPayment').hide();
+        $('#changePayment').show();
+    } else {
+        $('#remainingPayment').hide();
+        $('#changePayment').hide();
+    }
+}
 
 function loadProducts() {
     $.ajax({
@@ -571,7 +687,8 @@ function calculateTotal() {
     $('#taxDisplay').text(`Rp ${numberFormat(taxAmount)}`);
     $('#grandTotalDisplay').text(`Rp ${numberFormat(grandTotal)}`);
     
-    calculateChange();
+    // Update payment totals when grand total changes
+    calculatePaymentTotals();
 }
 
 function validateVoucher(voucherCode) {
@@ -605,25 +722,14 @@ function validateVoucher(voucherCode) {
     });
 }
 
-function calculateChange() {
-    const grandTotalText = $('#grandTotalDisplay').text();
-    // Remove all non-numeric characters including dots (thousands separators)
-    const grandTotal = parseFloat(grandTotalText.replace(/[^\d]/g, '')) || 0;
-    const amountReceived = parseFloat($('#amountReceived').val()) || 0;
-    const change = amountReceived - grandTotal;
-    
-    $('#changeDisplay').text(`Rp ${numberFormat(change)}`);
+// Currency formatting function
+function formatCurrency(amount) {
+    return `Rp ${numberFormat(amount)}`;
 }
 
 function completeTransaction() {
     if (cart.length === 0) {
         toastr.error('Keranjang belanja kosong');
-        return;
-    }
-
-    const paymentMethod = $('#paymentMethod').val();
-    if (!paymentMethod) {
-        toastr.error('Pilih metode pembayaran');
         return;
     }
 
@@ -633,11 +739,38 @@ function completeTransaction() {
         return;
     }
     
-    const amountReceived = parseFloat($('#amountReceived').val()) || 0;
+    // Validate payment methods
+    const paymentMethods = [];
+    let totalPaymentAmount = 0;
+    let hasValidPayment = false;
+    
+    $('.payment-method-row').each(function() {
+        const type = $(this).find('.payment-type').val();
+        const platformId = $(this).find('.payment-platform').val();
+        const amount = parseFloat($(this).find('.payment-amount').val()) || 0;
+        const reference = $(this).find('input[name*="[reference]"]').val();
+        
+        if (type && amount > 0) {
+            hasValidPayment = true;
+            paymentMethods.push({
+                type: type,
+                platform_id: platformId,
+                amount: amount,
+                reference: reference
+            });
+            totalPaymentAmount += amount;
+        }
+    });
+    
+    if (!hasValidPayment) {
+        toastr.error('Minimal harus ada satu metode pembayaran dengan jumlah > 0');
+        return;
+    }
+    
     const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
     
-    if (amountReceived < grandTotal) {
-        toastr.error('Jumlah bayar kurang dari total');
+    if (totalPaymentAmount < grandTotal) {
+        toastr.error(`Jumlah bayar (${formatCurrency(totalPaymentAmount)}) kurang dari total (${formatCurrency(grandTotal)})`);
         return;
     }
     
@@ -645,15 +778,13 @@ function completeTransaction() {
     const transactionData = {
         cart: cart,
         customer_id: $('#customerSelect').val() || null,
-
-        warehouse_id      : $('#outletSelect').val() || null,
-        discount_percent  : parseFloat($('#discountPercent').val()) || 0,
-        voucher_code      : $('#voucherCode').val() || null,
-        voucher_discount  : parseFloat($('#voucherDiscount').val()) || 0,
-        payment_method    : paymentMethod,
-        platform_id       : $('#id_platform').val() || null,
-        amount_received   : amountReceived,
-        grand_total       : grandTotal
+        warehouse_id: $('#outletSelect').val() || null,
+        discount_percent: parseFloat($('#discountPercent').val()) || 0,
+        voucher_code: $('#voucherCode').val() || null,
+        voucher_discount: parseFloat($('#voucherDiscount').val()) || 0,
+        payment_methods: paymentMethods,
+        total_amount_received: totalPaymentAmount,
+        grand_total: grandTotal
     };
     
     // Show loading state
@@ -670,7 +801,13 @@ function completeTransaction() {
             if (response.success) {
                 // Show completion modal
                 $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
-                $('#finalPaymentMethod').text($('#paymentMethod option:selected').text());
+                
+                // Build payment methods summary
+                let paymentSummary = '';
+                paymentMethods.forEach(pm => {
+                    paymentSummary += `${pm.type}: ${formatCurrency(pm.amount)}<br>`;
+                });
+                $('#finalPaymentMethod').html(paymentSummary);
                 $('#completeModal').modal('show');
                 
                 // Store transaction info for receipt printing
@@ -709,6 +846,41 @@ function newTransaction() {
     $('#paymentMethod').val('');
     $('#amountReceived').val('');
     $('#productSearch').val('').focus();
+}
+
+function clearTransactionForm() {
+    // Clear cart
+    cart = [];
+    updateCartDisplay();
+    
+    // Reset customer selection
+    $('#customerSelect').val('').trigger('change');
+    
+    // Clear discount and voucher fields
+    $('#discountPercent').val('');
+    $('#voucherCode').val('');
+    $('#voucherInfo').text('').removeClass('text-success text-danger');
+    $('#voucherDiscount').val('0');
+    
+    // Reset payment methods
+    $('#paymentMethods').empty();
+    paymentMethods = [];
+    paymentCounter = 0;
+    addPaymentMethod(); // Add first payment method by default
+    
+    // Clear product search
+    $('#productSearch').val('');
+    
+    // Recalculate totals
+    calculateTotal();
+    
+    // Focus on product search for next transaction
+    setTimeout(function() {
+        $('#productSearch').focus();
+    }, 500);
+    
+    // Show success message
+    toastr.success('Form berhasil direset untuk transaksi baru');
 }
 
 function holdTransaction() {

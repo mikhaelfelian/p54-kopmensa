@@ -80,7 +80,10 @@ class Filters extends BaseFilters
                 'gudang/stok/update/*', 
                 'transaksi/jual/process-transaction',
                 'transaksi/jual/validate-voucher',
-                'transaksi/jual/search-items'
+                'transaksi/jual/search-items',
+                'transaksi/retur/jual/search-items',
+                'transaksi/retur/jual/sales-items/*',
+                'transaksi/retur/jual/test'
             ]],
         ],
         'after' => [

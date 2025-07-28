@@ -191,14 +191,16 @@ public function getItemsWithRelations($perPage = 10, $keyword = null, $page = 1,
     return $builder->paginate($perPage, 'items', $page);
 }
 
-public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $page = 1, $kategori = null, $merk = null)
+public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $page = 1, $kategori = null, $merk = null, $gudang = null)
 {
-    $builder = $this->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier')
+    $builder = $this->select('tbl_m_item.*, SUM(tbl_m_item_stok.jml) as stok, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier')
         ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
         ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
         ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left')
+        ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id')
         ->where('tbl_m_item.status_hps', '0')
         ->where('tbl_m_item.status', '1')
+        ->groupBy('tbl_m_item_stok.id_item')
         ->orderBy('tbl_m_item.id', 'DESC');
 
     if ($keyword) {
@@ -218,6 +220,10 @@ public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $pag
 
     if ($merk) {
         $builder->where('tbl_m_item.id_merk', $merk);
+    }
+
+    if ($gudang) {
+        $builder->where('tbl_m_item_stok.id_gudang', $gudang);
     }
 
     return $builder->paginate($perPage, 'items', $page);
@@ -272,4 +278,57 @@ public function getItemWithRelations($id)
         ->where('tbl_m_item.status_hps', '0')
         ->first();
 }
+
+    /**
+     * Search items for exchange (with stock information)
+     */
+    public function searchItems($search = null)
+    {
+        $builder = $this->select('tbl_m_item.*, 
+                                tbl_m_kategori.kategori, 
+                                tbl_m_merk.merk,
+                                tbl_m_item.item as nama,
+                                tbl_m_item_stok.jml as stok,
+                                tbl_m_satuan.satuanBesar as satuan')
+                        ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+                        ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+                        ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id', 'left')
+                        ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                        ->where('tbl_m_item.status_hps', '0')
+                        ->where('tbl_m_item.status', '1')
+                        ->groupBy('tbl_m_item.id')
+                        ->orderBy('tbl_m_item.item', 'ASC');
+
+        if ($search) {
+            $builder->groupStart()
+                    ->like('tbl_m_item.item', $search)
+                    ->orLike('tbl_m_item.kode', $search)
+                    ->orLike('tbl_m_item.barcode', $search)
+                    ->groupEnd();
+        }
+
+        return $builder->findAll();
+    }
+
+    /**
+     * Get items with stock information
+     */
+    public function getItemsWithStock()
+    {
+        return $this->select('tbl_m_item.*, 
+                            tbl_m_kategori.kategori, 
+                            tbl_m_merk.merk,
+                            tbl_m_item.item as nama,
+                            SUM(tbl_m_item_stok.jml) as stok,
+                            tbl_m_satuan.satuanBesar as satuan')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+                    ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+                    ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id', 'left')
+                    ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                    ->where('tbl_m_item.status_hps', '0')
+                    ->where('tbl_m_item.status', '1')
+                    ->groupBy('tbl_m_item.id')
+                    ->orderBy('tbl_m_item.item', 'ASC')
+                    ->findAll();
+    }
 } 

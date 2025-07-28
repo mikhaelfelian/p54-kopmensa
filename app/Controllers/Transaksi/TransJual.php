@@ -563,16 +563,15 @@ class TransJual extends BaseController
         }
 
         // Get transaction data from POST
-        $cart            = $this->request->getPost('cart');
-        $customerId      = $this->request->getPost('customer_id')      ?: null;
-        $warehouseId     = $this->request->getPost('warehouse_id');
-        $discountPercent = $this->request->getPost('discount_percent') ?: 0;
-        $voucherCode     = $this->request->getPost('voucher_code')     ?: null;
-        $voucherDiscount = $this->request->getPost('voucher_discount') ?: 0;
-        $paymentMethod   = $this->request->getPost('payment_method');
-        $platformId      = $this->request->getPost('platform_id')      ?: null;
-        $amountReceived  = $this->request->getPost('amount_received')  ?: 0;
-        $grandTotal      = $this->request->getPost('grand_total')      ?: 0;
+        $cart               = $this->request->getPost('cart');
+        $customerId         = $this->request->getPost('customer_id') ?: null;
+        $warehouseId        = $this->request->getPost('warehouse_id');
+        $discountPercent    = $this->request->getPost('discount_percent') ?: 0;
+        $voucherCode        = $this->request->getPost('voucher_code') ?: null;
+        $voucherDiscount    = $this->request->getPost('voucher_discount') ?: 0;
+        $paymentMethods     = $this->request->getPost('payment_methods') ?: [];
+        $totalAmountReceived = $this->request->getPost('total_amount_received') ?: 0;
+        $grandTotal         = $this->request->getPost('grand_total') ?: 0;
 
         // Validate required data
         if (empty($cart) || !is_array($cart) || count($cart) === 0) {
@@ -583,11 +582,11 @@ class TransJual extends BaseController
             return $this->response->setJSON(['error' => 'Gudang harus dipilih']);
         }
 
-        if (empty($paymentMethod)) {
-            return $this->response->setJSON(['error' => 'Metode pembayaran harus dipilih']);
+        if (empty($paymentMethods) || !is_array($paymentMethods)) {
+            return $this->response->setJSON(['error' => 'Metode pembayaran harus diisi']);
         }
 
-        if ($amountReceived < $grandTotal) {
+        if ($totalAmountReceived < $grandTotal) {
             return $this->response->setJSON(['error' => 'Jumlah bayar kurang dari total']);
         }
 
@@ -609,7 +608,7 @@ class TransJual extends BaseController
             $afterVoucher   = $afterDiscount - $voucherAmount;
             $taxAmount      = $afterVoucher * 0.11; // 11% PPN
             $finalTotal     = $afterVoucher + $taxAmount;
-            $change         = $amountReceived - $finalTotal;
+            $change         = $totalAmountReceived - $finalTotal;
             $change         = $change < 0 ? 0 : $change;
 
             // Prepare transaction data
@@ -627,9 +626,9 @@ class TransJual extends BaseController
                 'ppn'               => 11, // 11%
                 'jml_ppn'           => $taxAmount,
                 'jml_gtotal'        => $finalTotal,
-                'jml_bayar'         => $amountReceived,
+                'jml_bayar'         => $totalAmountReceived,
                 'jml_kembali'       => $change,
-                'metode_bayar'      => $paymentMethod,
+                'metode_bayar'      => 'multiple', // Multiple payment methods
                 'status'            => '1', // Completed
                 'status_nota'       => '1', // Completed
                 'status_bayar'      => '1', // Paid
@@ -703,18 +702,22 @@ class TransJual extends BaseController
                 $this->itemHistModel->insert($historyData);
             }
 
-            // Insert platform payment if specified
-            if ($platformId) {
-                $platformData = [
-                    'id_penjualan' => $transactionId,
-                    'id_platform'  => $platformId,
-                    'no_nota'      => $noNota,
-                    'platform'     => $this->platformModel->find($platformId)->platform ?? 'Unknown',
-                    'keterangan'   => 'Pembayaran via ' . $paymentMethod,
-                    'nominal'      => $finalTotal
-                ];
+            // Insert multiple platform payments
+            foreach ($paymentMethods as $payment) {
+                if (!empty($payment['platform_id']) && !empty($payment['amount'])) {
+                    $platform = $this->platformModel->find($payment['platform_id']);
+                    $platformData = [
+                        'id_penjualan' => $transactionId,
+                        'id_platform'  => $payment['platform_id'],
+                        'no_nota'      => $noNota,
+                        'platform'     => $platform->platform ?? $payment['type'],
+                        'keterangan'   => 'Pembayaran via ' . $payment['type'] . 
+                                        (!empty($payment['reference']) ? ' - ' . $payment['reference'] : ''),
+                        'nominal'      => $payment['amount']
+                    ];
 
-                $this->transJualPlatModel->insert($platformData);
+                    $this->transJualPlatModel->insert($platformData);
+                }
             }
 
             $this->db->transComplete();

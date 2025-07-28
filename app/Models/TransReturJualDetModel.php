@@ -25,11 +25,16 @@ class TransReturJualDetModel extends Model
         'id_retur_jual',
         'id_item',
         'id_satuan',
+        'id_gudang',
+        'kode',
+        'item',
+        'satuan',
         'harga',
         'jml',
         'subtotal',
-        'alasan_item',
-        'status_item'
+        'keterangan',
+        'status_item',
+        'status_terima'
     ];
 
     // Dates
@@ -44,11 +49,16 @@ class TransReturJualDetModel extends Model
         'id_retur_jual' => 'required|integer',
         'id_item' => 'permit_empty|integer',
         'id_satuan' => 'permit_empty|integer',
+        'id_gudang' => 'permit_empty|integer',
+        'kode' => 'permit_empty|string|max_length[100]',
+        'item' => 'permit_empty|string|max_length[255]',
+        'satuan' => 'permit_empty|string|max_length[100]',
         'harga' => 'permit_empty|decimal',
         'jml' => 'permit_empty|integer',
         'subtotal' => 'permit_empty|decimal',
-        'alasan_item' => 'permit_empty|string',
-        'status_item' => 'permit_empty|in_list[1,2]'
+        'keterangan' => 'permit_empty|string',
+        'status_item' => 'permit_empty|in_list[1,2]',
+        'status_terima' => 'permit_empty|in_list[0,1,2]'
     ];
 
     protected $validationMessages = [
@@ -62,6 +72,18 @@ class TransReturJualDetModel extends Model
         'id_satuan' => [
             'integer' => 'ID Satuan harus berupa angka'
         ],
+        'id_gudang' => [
+            'integer' => 'ID Gudang harus berupa angka'
+        ],
+        'kode' => [
+            'max_length' => 'Kode maksimal 100 karakter'
+        ],
+        'item' => [
+            'max_length' => 'Nama item maksimal 255 karakter'
+        ],
+        'satuan' => [
+            'max_length' => 'Satuan maksimal 100 karakter'
+        ],
         'harga' => [
             'decimal' => 'Harga harus berupa angka desimal'
         ],
@@ -73,6 +95,9 @@ class TransReturJualDetModel extends Model
         ],
         'status_item' => [
             'in_list' => 'Status item harus berupa 1 atau 2'
+        ],
+        'status_terima' => [
+            'in_list' => 'Status terima harus berupa 0, 1, atau 2'
         ]
     ];
 
@@ -96,9 +121,11 @@ class TransReturJualDetModel extends Model
     public function getDetailsByReturId($returId)
     {
         return $this->select('tbl_trans_retur_jual_det.*, 
+                            tbl_trans_retur_jual_det.item as produk,
+                            tbl_trans_retur_jual_det.jml as jml_satuan,
                             tbl_m_item.item as item_nama,
                             tbl_m_item.kode as item_kode,
-                            tbl_m_satuan.satuan as satuan_nama')
+                            tbl_m_satuan.satuanBesar as satuan')
                     ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_retur_jual_det.id_item', 'left')
                     ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_retur_jual_det.id_satuan', 'left')
                     ->where('id_retur_jual', $returId)

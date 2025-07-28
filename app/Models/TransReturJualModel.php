@@ -20,7 +20,7 @@ class TransReturJualModel extends Model
     protected $returnType = 'object';
     protected $useSoftDeletes = true;
     protected $protectFields = true;
-    
+
     protected $allowedFields = [
         'id_penjualan',
         'id_user',
@@ -29,10 +29,11 @@ class TransReturJualModel extends Model
         'id_gudang',
         'no_nota',
         'no_retur',
-        'tgl_retur',
-        'alasan',
-        'jml_retur',
-        'status'
+        'tgl_masuk',
+        'keterangan',
+        'status',
+        'status_retur',
+        'status_terima'
     ];
 
     // Dates
@@ -44,35 +45,42 @@ class TransReturJualModel extends Model
 
     // Validation
     protected $validationRules = [
-        'id_penjualan' => 'required|integer',
-        'no_nota' => 'required|max_length[50]',
-        'no_retur' => 'required|max_length[50]|is_unique[tbl_trans_retur_jual.no_retur,id,{id}]',
-        'tgl_retur' => 'required|valid_date',
-        'alasan' => 'permit_empty|string',
-        'jml_retur' => 'permit_empty|decimal',
-        'status' => 'permit_empty|in_list[0,1,2]'
+        'id_penjualan'   => 'required|integer',
+        'no_nota'        => 'permit_empty|max_length[50]',
+        'no_retur'       => 'required|max_length[50]|is_unique[tbl_trans_retur_jual.no_retur,id,{id}]',
+        'tgl_masuk'      => 'permit_empty|valid_date',
+        'keterangan'     => 'permit_empty|string',
+        'status'         => 'permit_empty|in_list[0,1,2]',
+        'status_retur'   => 'permit_empty|in_list[1,2]',
+        'status_terima'  => 'permit_empty|in_list[0,1,2]'
     ];
 
     protected $validationMessages = [
         'id_penjualan' => [
             'required' => 'ID Penjualan harus diisi',
-            'integer' => 'ID Penjualan harus berupa angka'
+            'integer'  => 'ID Penjualan harus berupa angka'
         ],
         'no_nota' => [
-            'required' => 'Nomor nota harus diisi',
+            'required'   => 'Nomor nota harus diisi',
             'max_length' => 'Nomor nota maksimal 50 karakter'
         ],
         'no_retur' => [
-            'required' => 'Nomor retur harus diisi',
+            'required'   => 'Nomor retur harus diisi',
             'max_length' => 'Nomor retur maksimal 50 karakter',
-            'is_unique' => 'Nomor retur sudah digunakan'
+            'is_unique'  => 'Nomor retur sudah digunakan'
         ],
-        'tgl_retur' => [
-            'required' => 'Tanggal retur harus diisi',
-            'valid_date' => 'Format tanggal retur tidak valid'
+        'tgl_masuk' => [
+            'required'   => 'Tanggal masuk harus diisi',
+            'valid_date' => 'Format tanggal masuk tidak valid'
         ],
         'status' => [
             'in_list' => 'Status harus berupa 0, 1, atau 2'
+        ],
+        'status_retur' => [
+            'in_list' => 'Status retur harus berupa 1 (refund) atau 2 (retur barang)'
+        ],
+        'status_terima' => [
+            'in_list' => 'Status terima harus berupa 0, 1, atau 2'
         ]
     ];
 
@@ -97,13 +105,13 @@ class TransReturJualModel extends Model
     {
         $date = date('Y-m-d');
         $prefix = 'RTR-' . date('Ymd') . '-';
-        
+
         // Get last number for today
         $lastRetur = $this->select('no_retur')
-                         ->where('DATE(tgl_retur)', $date)
-                         ->like('no_retur', $prefix, 'after')
-                         ->orderBy('no_retur', 'DESC')
-                         ->first();
+            ->where('DATE(tgl_masuk)', $date)
+            ->like('no_retur', $prefix, 'after')
+            ->orderBy('no_retur', 'DESC')
+            ->first();
 
         if ($lastRetur) {
             $lastNumber = (int) substr($lastRetur->no_retur, -4);
@@ -118,16 +126,43 @@ class TransReturJualModel extends Model
     /**
      * Get returns with relationships
      */
-    public function getReturnsWithRelations()
+    public function getReturnsWithRelations($limit = null, $offset = null, $search = null)
     {
-        return $this->select('tbl_trans_retur_jual.*, 
-                            tbl_trans_jual.no_nota as sales_no_nota,
-                            tbl_m_pelanggan.nama as pelanggan_nama,
-                            tbl_ion_users.first_name, tbl_ion_users.last_name')
-                    ->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_trans_retur_jual.id_penjualan', 'left')
-                    ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_retur_jual.id_pelanggan', 'left')
-                    ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_retur_jual.id_user', 'left')
-                    ->orderBy('tbl_trans_retur_jual.created_at', 'DESC');
+        $builder = $this->builder();
+        $builder->select('
+            tbl_trans_retur_jual.*,
+            tbl_trans_jual.no_nota,
+            tbl_m_pelanggan.nama as customer_nama,
+            tbl_ion_users.first_name, tbl_ion_users.last_name,
+            CONCAT(tbl_ion_users.first_name, " ", tbl_ion_users.last_name) as username
+        ');
+        $builder->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_trans_retur_jual.id_penjualan', 'left');
+        $builder->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_retur_jual.id_pelanggan', 'left');
+        $builder->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_retur_jual.id_user', 'left');
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                ->like('tbl_trans_retur_jual.no_retur', $search)
+                ->orLike('tbl_m_pelanggan.nama', $search)
+                ->orLike('tbl_trans_jual.no_nota', $search)
+                ->groupEnd();
+        }
+
+                $builder->orderBy('tbl_trans_retur_jual.created_at', 'DESC');
+        
+        if ($limit !== null) {
+            $builder->limit($limit, $offset ?? 0);
+        }
+        
+        $results = $builder->get()->getResult();
+        
+        // Add computed fields for each result
+        foreach ($results as $result) {
+            $result->retur_type = $this->getReturType($result->status_retur ?? '1');
+            $result->total_amount = $this->calculateTotalAmount($result->id);
+        }
+        
+        return $results;
     }
 
     /**
@@ -136,20 +171,22 @@ class TransReturJualModel extends Model
     public function getReturWithDetails($id)
     {
         $retur = $this->select('tbl_trans_retur_jual.*, 
-                              tbl_trans_jual.no_nota as sales_no_nota,
-                              tbl_m_pelanggan.nama as pelanggan_nama,
-                              tbl_ion_users.first_name, tbl_ion_users.last_name')
-                      ->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_trans_retur_jual.id_penjualan', 'left')
-                      ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_retur_jual.id_pelanggan', 'left')
-                      ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_retur_jual.id_user', 'left')
-                      ->find($id);
+                              tbl_trans_jual.no_nota,
+                              tbl_m_pelanggan.nama as customer_nama,
+                              tbl_ion_users.first_name, tbl_ion_users.last_name,
+                              CONCAT(tbl_ion_users.first_name, " ", tbl_ion_users.last_name) as username')
+            ->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_trans_retur_jual.id_penjualan', 'left')
+            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_retur_jual.id_pelanggan', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_retur_jual.id_user', 'left')
+            ->find($id);
 
         if ($retur) {
-            // Get return details if detail table exists
-            // $retur->items = $this->db->table('tbl_trans_retur_jual_det')
-            //                         ->where('id_retur', $id)
-            //                         ->get()
-            //                         ->getResult();
+            // Get return details from detail table
+            $detailModel = new \App\Models\TransReturJualDetModel();
+            $retur->items = $detailModel->getDetailsByReturId($id);
+            
+            // Add computed retur_type based on status_retur
+            $retur->retur_type = $this->getReturType($retur->status_retur ?? '1');
         }
 
         return $retur;
@@ -170,6 +207,19 @@ class TransReturJualModel extends Model
     }
 
     /**
+     * Get status_retur label
+     */
+    public function getStatusReturLabel($status_retur)
+    {
+        $labels = [
+            '1' => 'Refund',
+            '2' => 'Retur Barang'
+        ];
+
+        return $labels[$status_retur] ?? 'Unknown';
+    }
+
+    /**
      * Get status badge class
      */
     public function getStatusBadgeClass($status)
@@ -182,4 +232,26 @@ class TransReturJualModel extends Model
 
         return $classes[$status] ?? 'badge-dark';
     }
-} 
+    
+    /**
+     * Get return type based on status_retur
+     */
+    public function getReturType($status_retur)
+    {
+        return $status_retur === '1' ? 'refund' : 'exchange';
+    }
+    
+    /**
+     * Calculate total amount from detail items
+     */
+    public function calculateTotalAmount($returId)
+    {
+        $detailModel = new \App\Models\TransReturJualDetModel();
+        $total = $detailModel->selectSum('subtotal')
+                            ->where('id_retur_jual', $returId)
+                            ->where('jml >', 0) // Only positive quantities (return items, not exchange items)
+                            ->first();
+        
+        return $total->subtotal ?? 0;
+    }
+}
