@@ -175,22 +175,13 @@
                 <!-- Transaksi -->
                 <li class="nav-header">TRANSAKSI</li>
                 <?php
-                    // Integrate isMenuActive with all transaksi menu routes
-                    $transaksiMenus = [
-                        'transaksi/po',
-                        'transaksi/po/create',
-                        'transaksi/beli',
-                        'transaksi/beli/create'
-                    ];
-                    $isTransaksiActive = isMenuActive($transaksiMenus);
-                ?>
-                <?php
                     // Integrate isMenuActive with all transaksi menu routes (Pembelian)
                     $transaksiMenus = [
                         'transaksi/po',
                         'transaksi/po/create',
                         'transaksi/beli',
-                        'transaksi/beli/create'
+                        'transaksi/beli/create',
+                        'transaksi/retur/beli'
                     ];
                     $isTransaksiActive = isMenuActive($transaksiMenus);
 
@@ -200,9 +191,21 @@
                         'transaksi/jual/create',
                         'transaksi/jual/cashier',
                         'transaksi/jual/detail',
-                        'transaksi/jual/edit'
+                        'transaksi/jual/edit',
+                        // Add all retur jual routes for active state
+                        'transaksi/retur/jual',
+                        'transaksi/retur/jual/refund',
+                        'transaksi/retur/jual/exchange'
                     ];
                     $isPenjualanActive = isMenuActive($penjualanMenus);
+
+                    // For Retur Penjualan submenu, check if any of the retur/jual routes are active
+                    $returJualMenus = [
+                        'transaksi/retur/jual',
+                        'transaksi/retur/jual/refund',
+                        'transaksi/retur/jual/exchange'
+                    ];
+                    $isReturJualActive = isMenuActive($returJualMenus);
                 ?>
                 <li class="nav-item has-treeview <?= $isTransaksiActive ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= $isTransaksiActive ? 'active' : '' ?>">
@@ -242,7 +245,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/retur/beli') ?>" class="nav-link <?= isMenuActive('transaksi/retur-beli') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/retur/beli') ?>" class="nav-link <?= isMenuActive('transaksi/retur/beli') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-undo nav-icon"></i>
                                 <p>Retur Pembelian</p>
@@ -280,8 +283,8 @@
                                 <p>Data Penjualan</p>
                             </a>
                         </li>
-                        <li class="nav-item <?= isMenuActive('transaksi/retur/jual') ? 'menu-open' : '' ?>">
-                            <a href="#" class="nav-link <?= isMenuActive('transaksi/retur/jual') ? 'active' : '' ?>">
+                        <li class="nav-item <?= $isReturJualActive ? 'menu-open' : '' ?>">
+                            <a href="#" class="nav-link <?= $isReturJualActive ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-undo nav-icon"></i>
                                 <p>
@@ -289,7 +292,7 @@
                                     <i class="right fas fa-angle-left"></i>
                                 </p>
                             </a>
-                            <ul class="nav nav-treeview" <?= isMenuActive('transaksi/retur/jual') ? 'style="display: block;"' : 'style="display: none;"' ?>>
+                            <ul class="nav nav-treeview" <?= $isReturJualActive ? 'style="display: block;"' : 'style="display: none;"' ?>>
                                 <li class="nav-item">
                                     <a href="<?= base_url('transaksi/retur/jual') ?>" class="nav-link <?= isMenuActive('transaksi/retur/jual') && !isMenuActive('transaksi/retur/jual/refund') && !isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
                                         <?= nbs(4) ?>
