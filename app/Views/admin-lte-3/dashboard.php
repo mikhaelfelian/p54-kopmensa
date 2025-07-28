@@ -1,5 +1,9 @@
 <?= $this->extend(theme_path('main')) ?>
 
+<?= $this->section('css') ?>
+<link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/overlayScrollbars/css/OverlayScrollbars.min.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <!-- Info boxes -->
 <div class="row">
@@ -63,7 +67,7 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">Laporan Bulanan</h5>
+                <h5 class="card-title">Laporan Penjualan 12 Bulan Terakhir</h5>
 
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -74,11 +78,11 @@
                             <i class="fas fa-wrench"></i>
                         </button>
                         <div class="dropdown-menu dropdown-menu-right" role="menu">
-                            <a href="#" class="dropdown-item">Aksi</a>
-                            <a href="#" class="dropdown-item">Aksi Lainnya</a>
-                            <a href="#" class="dropdown-item">Lainnya</a>
+                            <a href="#" class="dropdown-item">Export PDF</a>
+                            <a href="#" class="dropdown-item">Export Excel</a>
+                            <a href="#" class="dropdown-item">Print</a>
                             <a class="dropdown-divider"></a>
-                            <a href="#" class="dropdown-item">Tautan Terpisah</a>
+                            <a href="#" class="dropdown-item">Refresh Data</a>
                         </div>
                     </div>
                     <button type="button" class="btn btn-tool" data-card-widget="remove">
@@ -91,7 +95,7 @@
                 <div class="row">
                     <div class="col-md-8">
                         <p class="text-center">
-                            <strong>Penjualan: 1 Jan, 2014 - 30 Jul, 2014</strong>
+                            <strong>Grafik Penjualan: <?= date('M Y', strtotime('-11 months')) ?> - <?= date('M Y') ?></strong>
                         </p>
 
                         <div class="chart">
@@ -103,41 +107,41 @@
                     <!-- /.col -->
                     <div class="col-md-4">
                         <p class="text-center">
-                            <strong>Pencapaian Tujuan</strong>
+                            <strong>Target Penjualan Bulan Ini</strong>
                         </p>
 
                         <div class="progress-group">
-                            Tambah Produk ke Keranjang
-                            <span class="float-right"><b>160</b>/200</span>
+                            Target Bulanan
+                            <span class="float-right"><b>Rp <?= format_angka($currentMonthSales) ?></b> / Rp <?= format_angka($monthlyTarget) ?></span>
                             <div class="progress progress-sm">
-                                <div class="progress-bar bg-primary" style="width: 80%"></div>
+                                <div class="progress-bar bg-primary" style="width: <?= min($monthlyProgress, 100) ?>%"></div>
                             </div>
                         </div>
                         <!-- /.progress-group -->
 
                         <div class="progress-group">
-                            Selesaikan Pembelian
-                            <span class="float-right"><b>310</b>/400</span>
+                            Target Harian Hari Ini
+                            <span class="float-right"><b>Rp <?= format_angka($todaySales) ?></b> / Rp <?= format_angka($dailyTarget) ?></span>
                             <div class="progress progress-sm">
-                                <div class="progress-bar bg-danger" style="width: 75%"></div>
+                                <div class="progress-bar bg-success" style="width: <?= min($dailyProgress, 100) ?>%"></div>
                             </div>
                         </div>
 
                         <!-- /.progress-group -->
                         <div class="progress-group">
-                            <span class="progress-text">Kunjungi Halaman Premium</span>
-                            <span class="float-right"><b>480</b>/800</span>
+                            <span class="progress-text">Rata-rata Order</span>
+                            <span class="float-right"><b>Rp <?= format_angka($avgOrderValue) ?></b></span>
                             <div class="progress progress-sm">
-                                <div class="progress-bar bg-success" style="width: 60%"></div>
+                                <div class="progress-bar bg-info" style="width: <?= min(($avgOrderValue / 1000000) * 10, 100) ?>%"></div>
                             </div>
                         </div>
 
                         <!-- /.progress-group -->
                         <div class="progress-group">
-                            Kirim Pertanyaan
-                            <span class="float-right"><b>250</b>/500</span>
+                            Pertumbuhan vs Bulan Lalu
+                            <span class="float-right"><b><?= number_format($salesGrowth, 1) ?>%</b></span>
                             <div class="progress progress-sm">
-                                <div class="progress-bar bg-warning" style="width: 50%"></div>
+                                <div class="progress-bar <?= $salesGrowth >= 0 ? 'bg-success' : 'bg-danger' ?>" style="width: <?= min(abs($salesGrowth), 100) ?>%"></div>
                             </div>
                         </div>
                         <!-- /.progress-group -->
@@ -151,8 +155,9 @@
                 <div class="row">
                     <div class="col-sm-3 col-6">
                         <div class="description-block border-right">
-                            <span class="description-percentage text-success"><i class="fas fa-caret-up"></i>
-                                100%</span>
+                            <span class="description-percentage <?= $salesGrowth >= 0 ? 'text-success' : 'text-danger' ?>">
+                                <i class="fas fa-caret-<?= $salesGrowth >= 0 ? 'up' : 'down' ?>"></i>
+                                <?= number_format(abs($salesGrowth), 1) ?>%</span>
                             <h5 class="description-header">Rp <?= format_angka($totalRevenue) ?></h5>
                             <span class="description-text">TOTAL PENDAPATAN</span>
                         </div>
@@ -162,7 +167,7 @@
                     <div class="col-sm-3 col-6">
                         <div class="description-block border-right">
                             <span class="description-percentage text-danger"><i class="fas fa-caret-down"></i>
-                                100%</span>
+                                <?= $totalRevenue > 0 ? number_format(($totalExpenses / $totalRevenue) * 100, 1) : 0 ?>%</span>
                             <h5 class="description-header">Rp <?= format_angka($totalExpenses) ?></h5>
                             <span class="description-text">TOTAL BIAYA</span>
                         </div>
@@ -173,7 +178,7 @@
                         <div class="description-block border-right">
                             <span class="description-percentage <?= $totalProfit >= 0 ? 'text-success' : 'text-danger' ?>">
                                 <i class="fas fa-caret-<?= $totalProfit >= 0 ? 'up' : 'down' ?>"></i>
-                                100%</span>
+                                <?= $totalRevenue > 0 ? number_format(($totalProfit / $totalRevenue) * 100, 1) : 0 ?>%</span>
                             <h5 class="description-header">Rp <?= format_angka($totalProfit) ?></h5>
                             <span class="description-text">TOTAL LABA</span>
                         </div>
@@ -182,10 +187,10 @@
                     <!-- /.col -->
                     <div class="col-sm-3 col-6">
                         <div class="description-block">
-                            <span class="description-percentage text-danger"><i class="fas fa-caret-down"></i>
-                                18%</span>
-                            <h5 class="description-header">1200</h5>
-                            <span class="description-text">TUJUAN TERCAPAI</span>
+                            <span class="description-percentage text-success"><i class="fas fa-caret-up"></i>
+                                <?= number_format($monthlyProgress, 1) ?>%</span>
+                            <h5 class="description-header"><?= $totalPaidSalesTransactions ?></h5>
+                            <span class="description-text">TRANSAKSI LUNAS</span>
                         </div>
                         <!-- /.description-block -->
                     </div>
@@ -204,10 +209,10 @@
 <div class="row">
     <!-- Left col -->
     <div class="col-md-8">
-        <!-- MAP & BOX PANE -->
+        <!-- SALES BY CATEGORY -->
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Laporan Pengunjung</h3>
+                <h3 class="card-title">Penjualan per Kategori</h3>
 
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -222,45 +227,34 @@
             <div class="card-body p-0">
                 <div class="d-md-flex">
                     <div class="p-1 flex-fill" style="overflow: hidden">
-                        <!-- Map will be created here -->
-                        <div id="world-map-markers" style="height: 325px; overflow: hidden">
-                            <div class="map"></div>
+                        <!-- Category Chart will be created here -->
+                        <div class="chart-responsive">
+                            <canvas id="categoryChart" style="height: 300px;"></canvas>
                         </div>
                     </div>
                     <div class="card-pane-right bg-success pt-2 pb-2 pl-4 pr-4">
+                        <?php foreach (array_slice($salesByCategory, 0, 3) as $index => $category): ?>
                         <div class="description-block mb-4">
-                            <div class="sparkbar pad" data-color="#fff">90,70,90,70,75,80,70</div>
-                            <h5 class="description-header">8390</h5>
-                            <span class="description-text">Kunjungan</span>
+                            <h5 class="description-header text-white"><?= format_angka($category->total_sales) ?></h5>
+                            <span class="description-text text-white"><?= esc($category->kategori) ?></span>
                         </div>
-                        <!-- /.description-block -->
-                        <div class="description-block mb-4">
-                            <div class="sparkbar pad" data-color="#fff">90,50,90,70,61,83,63</div>
-                            <h5 class="description-header">30%</h5>
-                            <span class="description-text">Referral</span>
-                        </div>
-                        <!-- /.description-block -->
-                        <div class="description-block">
-                            <div class="sparkbar pad" data-color="#fff">90,50,90,70,61,83,63</div>
-                            <h5 class="description-header">70%</h5>
-                            <span class="description-text">Organik</span>
-                        </div>
-                        <!-- /.description-block -->
+                        <?php endforeach; ?>
                     </div><!-- /.card-pane-right -->
                 </div><!-- /.d-md-flex -->
             </div>
             <!-- /.card-body -->
         </div>
         <!-- /.card -->
+        
         <div class="row">
             <div class="col-md-12">
-                <!-- USERS LIST -->
+                <!-- TOP SELLING PRODUCTS -->
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Anggota Terbaru</h3>
+                        <h3 class="card-title">Produk Terlaris</h3>
 
                         <div class="card-tools">
-                            <span class="badge badge-danger">8 Anggota Baru</span>
+                            <span class="badge badge-success"><?= count($topSellingProducts) ?> Produk Teratas</span>
                             <button type="button" class="btn btn-tool" data-card-widget="collapse">
                                 <i class="fas fa-minus"></i>
                             </button>
@@ -271,53 +265,39 @@
                     </div>
                     <!-- /.card-header -->
                     <div class="card-body p-0">
-                        <ul class="users-list clearfix">
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user1-128x128.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">Alexander Pierce</a>
-                                <span class="users-list-date">Hari Ini</span>
-                            </li>
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user8-128x128.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">Norman</a>
-                                <span class="users-list-date">Kemarin</span>
-                            </li>
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user7-128x128.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">Jane</a>
-                                <span class="users-list-date">12 Jan</span>
-                            </li>
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user6-128x128.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">John</a>
-                                <span class="users-list-date">12 Jan</span>
-                            </li>
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user2-160x160.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">Alexander</a>
-                                <span class="users-list-date">13 Jan</span>
-                            </li>
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user5-128x128.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">Sarah</a>
-                                <span class="users-list-date">14 Jan</span>
-                            </li>
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user4-128x128.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">Nora</a>
-                                <span class="users-list-date">15 Jan</span>
-                            </li>
-                            <li>
-                                <img src="<?= base_url('public/assets/theme/admin-lte-3/dist/img/user3-128x128.jpg') ?>" alt="User Image">
-                                <a class="users-list-name" href="#">Nadia</a>
-                                <span class="users-list-date">15 Jan</span>
-                            </li>
-                        </ul>
-                        <!-- /.users-list -->
+                        <div class="table-responsive">
+                            <table class="table m-0">
+                                <thead>
+                                    <tr>
+                                        <th>Produk</th>
+                                        <th>Terjual</th>
+                                        <th>Transaksi</th>
+                                        <th>Total Penjualan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($topSellingProducts)): ?>
+                                        <?php foreach ($topSellingProducts as $product): ?>
+                                            <tr>
+                                                <td><?= esc($product->produk) ?></td>
+                                                <td><span class="badge badge-success"><?= format_angka($product->total_qty) ?></span></td>
+                                                <td><?= format_angka($product->transactions) ?></td>
+                                                <td>Rp <?= format_angka($product->total_sales) ?></td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="4" class="text-center">Belum ada data penjualan produk</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- /.table-responsive -->
                     </div>
                     <!-- /.card-body -->
                     <div class="card-footer text-center">
-                        <a href="javascript:">Lihat Semua Pengguna</a>
+                        <a href="<?= base_url('master/item') ?>">Lihat Semua Produk</a>
                     </div>
                     <!-- /.card-footer -->
                 </div>
@@ -444,27 +424,27 @@
             <span class="info-box-icon"><i class="far fa-heart"></i></span>
 
             <div class="info-box-content">
-                <span class="info-box-text">Mention</span>
-                <span class="info-box-number"><?= format_angka($totalMentions) ?></span>
+                <span class="info-box-text">Pelanggan Baru</span>
+                <span class="info-box-number"><?= format_angka($totalLikes) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
         <!-- /.info-box -->
         <div class="info-box mb-3 bg-danger">
-            <span class="info-box-icon"><i class="fas fa-cloud-download-alt"></i></span>
+            <span class="info-box-icon"><i class="fas fa-shopping-cart"></i></span>
 
             <div class="info-box-content">
-                <span class="info-box-text">Unduhan</span>
-                <span class="info-box-number"><?= format_angka($totalDownloads) ?></span>
+                <span class="info-box-text">Total Transaksi</span>
+                <span class="info-box-number"><?= format_angka($totalMentions) ?></span>
             </div>
             <!-- /.info-box-content -->
         </div>
         <!-- /.info-box -->
         <div class="info-box mb-3 bg-info">
-            <span class="info-box-icon"><i class="far fa-comment"></i></span>
+            <span class="info-box-icon"><i class="far fa-user"></i></span>
 
             <div class="info-box-content">
-                <span class="info-box-text">Pesan Langsung</span>
+                <span class="info-box-text">Total Pelanggan</span>
                 <span class="info-box-number"><?= format_angka($totalDirectMessages) ?></span>
             </div>
             <!-- /.info-box-content -->
@@ -473,7 +453,7 @@
 
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">Penggunaan Browser</h3>
+                <h3 class="card-title">Penjualan Harian (Bulan Ini)</h3>
 
                 <div class="card-tools">
                     <button type="button" class="btn btn-tool" data-card-widget="collapse">
@@ -486,58 +466,12 @@
             </div>
             <!-- /.card-header -->
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="chart-responsive">
-                            <canvas id="pieChart" height="150"></canvas>
-                        </div>
-                        <!-- ./chart-responsive -->
-                    </div>
-                    <!-- /.col -->
-                    <div class="col-md-4">
-                        <ul class="chart-legend clearfix">
-                            <li><i class="far fa-circle text-danger"></i> Chrome</li>
-                            <li><i class="far fa-circle text-success"></i> IE</li>
-                            <li><i class="far fa-circle text-warning"></i> FireFox</li>
-                            <li><i class="far fa-circle text-info"></i> Safari</li>
-                            <li><i class="far fa-circle text-primary"></i> Opera</li>
-                            <li><i class="far fa-circle text-secondary"></i> Navigator</li>
-                        </ul>
-                    </div>
-                    <!-- /.col -->
+                <div class="chart-responsive">
+                    <canvas id="dailyChart" height="200"></canvas>
                 </div>
-                <!-- /.row -->
+                <!-- ./chart-responsive -->
             </div>
             <!-- /.card-body -->
-            <div class="card-footer p-0">
-                <ul class="nav nav-pills flex-column">
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            Amerika Serikat
-                            <span class="float-right text-danger">
-                                <i class="fas fa-arrow-down text-sm"></i>
-                                12%</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            India
-                            <span class="float-right text-success">
-                                <i class="fas fa-arrow-up text-sm"></i> 4%
-                            </span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            China
-                            <span class="float-right text-warning">
-                                <i class="fas fa-arrow-left text-sm"></i> 0%
-                            </span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <!-- /.footer -->
         </div>
         <!-- /.card -->
 
@@ -592,7 +526,7 @@
             </div>
             <!-- /.card-body -->
             <div class="card-footer text-center">
-                <a href="javascript:void(0)" class="uppercase">Lihat Semua Produk</a>
+                <a href="<?= base_url('master/item') ?>" class="uppercase">Lihat Semua Produk</a>
             </div>
             <!-- /.card-footer -->
         </div>
@@ -601,15 +535,12 @@
     <!-- /.col -->
 </div>
 <!-- /.row -->
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
 <!-- REQUIRED SCRIPTS -->
-<!-- jQuery -->
-<script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery/jquery.min.js') ?>"></script>
-<!-- Bootstrap -->
-<script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
 <!-- overlayScrollbars -->
 <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') ?>"></script>
-<!-- AdminLTE App -->
-<script src="<?= base_url('public/assets/theme/admin-lte-3/dist/js/adminlte.js') ?>"></script>
 
 <!-- PAGE PLUGINS -->
 <!-- jQuery Mapael -->
@@ -621,9 +552,144 @@
 <!-- ChartJS -->
 <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/chart.js/Chart.min.js') ?>"></script>
 
+<script>
+$(document).ready(function() {
+    // Monthly Sales Chart
+    var salesChartData = {
+        labels: [<?php foreach($monthlySalesData as $data): ?>'<?= $data['month'] ?>',<?php endforeach; ?>],
+        datasets: [{
+            label: 'Penjualan',
+            backgroundColor: 'rgba(60,141,188,0.9)',
+            borderColor: 'rgba(60,141,188,0.8)',
+            pointRadius: false,
+            pointColor: '#3b8bba',
+            pointStrokeColor: 'rgba(60,141,188,1)',
+            pointHighlightFill: '#fff',
+            pointHighlightStroke: 'rgba(60,141,188,1)',
+            data: [<?php foreach($monthlySalesData as $data): ?><?= $data['total'] ?>,<?php endforeach; ?>]
+        }]
+    };
+
+    var salesChartCanvas = $('#salesChart').get(0).getContext('2d');
+    var salesChart = new Chart(salesChartCanvas, {
+        type: 'line',
+        data: salesChartData,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            legend: {
+                display: false
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        display: false,
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        display: false,
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rp ' + value.toLocaleString('id-ID');
+                        }
+                    }
+                }]
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        return 'Penjualan: Rp ' + tooltipItem.yLabel.toLocaleString('id-ID');
+                    }
+                }
+            }
+        }
+    });
+
+    // Daily Sales Chart
+    var dailyChartData = {
+        labels: [<?php foreach($dailySalesData as $data): ?>'<?= $data['day'] ?>',<?php endforeach; ?>],
+        datasets: [{
+            label: 'Penjualan Harian',
+            backgroundColor: 'rgba(210, 214, 222, 1)',
+            borderColor: 'rgba(210, 214, 222, 1)',
+            pointRadius: false,
+            pointColor: 'rgba(210, 214, 222, 1)',
+            pointStrokeColor: '#c1c7d1',
+            pointHighlightFill: '#fff',
+            pointHighlightStroke: 'rgba(220,220,220,1)',
+            data: [<?php foreach($dailySalesData as $data): ?><?= $data['total'] ?>,<?php endforeach; ?>]
+        }]
+    };
+
+    var dailyChartCanvas = $('#dailyChart').get(0).getContext('2d');
+    var dailyChart = new Chart(dailyChartCanvas, {
+        type: 'line',
+        data: dailyChartData,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            legend: {
+                display: false
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        display: false,
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        display: false,
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rp ' + value.toLocaleString('id-ID');
+                        }
+                    }
+                }]
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        return 'Hari ' + tooltipItem.xLabel + ': Rp ' + tooltipItem.yLabel.toLocaleString('id-ID');
+                    }
+                }
+            }
+        }
+    });
+
+    // Category Chart (Doughnut)
+    var categoryChartData = {
+        labels: [<?php foreach($salesByCategory as $category): ?>'<?= esc($category->kategori) ?>',<?php endforeach; ?>],
+        datasets: [{
+            data: [<?php foreach($salesByCategory as $category): ?><?= $category->total_sales ?>,<?php endforeach; ?>],
+            backgroundColor: ['#f56954', '#00a65a', '#f39c12', '#00c0ef', '#3c8dbc', '#d2d6de']
+        }]
+    };
+
+    var categoryChartCanvas = $('#categoryChart').get(0).getContext('2d');
+    var categoryChart = new Chart(categoryChartCanvas, {
+        type: 'doughnut',
+        data: categoryChartData,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem, data) {
+                        var label = data.labels[tooltipItem.index];
+                        var value = data.datasets[0].data[tooltipItem.index];
+                        return label + ': Rp ' + value.toLocaleString('id-ID');
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
 <!-- AdminLTE for demo purposes -->
 <script src="<?= base_url('public/assets/theme/admin-lte-3/dist/js/demo.js') ?>"></script>
-<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<script src="<?= base_url('public/assets/theme/admin-lte-3/dist/js/pages/dashboard2.js') ?>"></script>
-
 <?= $this->endSection() ?>
