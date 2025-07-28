@@ -24,67 +24,6 @@ if (!isset($Pengaturan)) {
     <!-- Theme style -->
     <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/dist/css/adminlte.min.css') ?>">
     
-    <!-- Custom Sidebar Toggle Styles -->
-    <style>
-        /* Sidebar toggle animations */
-        .main-sidebar {
-            transition: margin-left 0.3s ease-in-out;
-        }
-        
-        .sidebar-collapse .main-sidebar {
-            margin-left: -250px;
-        }
-        
-        .content-wrapper {
-            transition: margin-left 0.3s ease-in-out;
-        }
-        
-        .sidebar-collapse .content-wrapper {
-            margin-left: 0;
-        }
-        
-        /* Sidebar toggle button hover effect */
-        .navbar-nav .nav-link[data-widget="pushmenu"]:hover {
-            background-color: rgba(0,0,0,0.1);
-            border-radius: 3px;
-        }
-        
-        /* Mini sidebar styles */
-        @media (min-width: 992px) {
-            .sidebar-mini.sidebar-collapse .main-sidebar {
-                margin-left: 0;
-                width: 4.6rem;
-            }
-            
-            .sidebar-mini.sidebar-collapse .content-wrapper {
-                margin-left: 4.6rem;
-            }
-            
-            .sidebar-mini.sidebar-collapse .main-sidebar .nav-link p {
-                display: none;
-            }
-            
-            .sidebar-mini.sidebar-collapse .main-sidebar .nav-header {
-                display: none;
-            }
-            
-            .sidebar-mini.sidebar-collapse .main-sidebar .brand-text {
-                display: none;
-            }
-        }
-        
-        /* Mobile responsive */
-        @media (max-width: 991px) {
-            .sidebar-collapse .main-sidebar {
-                margin-left: -250px;
-            }
-            
-            .sidebar-collapse .content-wrapper {
-                margin-left: 0;
-            }
-        }
-    </style>
-    
     <?= $this->renderSection('css') ?>
 
     <!-- Core Scripts -->
@@ -224,33 +163,18 @@ if (!isset($Pengaturan)) {
                 $.AdminLTE.init();
             }
             
-            // Manual sidebar toggle handler (backup)
-            $('[data-widget="pushmenu"]').on('click', function(e) {
-                e.preventDefault();
-                
-                if ($('body').hasClass('sidebar-collapse')) {
-                    $('body').removeClass('sidebar-collapse');
-                    localStorage.setItem('sidebar-collapsed', 'false');
-                } else {
-                    $('body').addClass('sidebar-collapse');
-                    localStorage.setItem('sidebar-collapsed', 'true');
-                }
-            });
-            
-            // Remember sidebar state
+            // Remember sidebar state on page load
             if (localStorage.getItem('sidebar-collapsed') === 'true') {
                 $('body').addClass('sidebar-collapse');
             }
             
-            // Handle sidebar resize
-            $(window).on('resize', function() {
-                if ($(window).width() <= 991) {
-                    $('body').addClass('sidebar-collapse');
-                } else {
-                    if (localStorage.getItem('sidebar-collapsed') !== 'true') {
-                        $('body').removeClass('sidebar-collapse');
-                    }
-                }
+            // Save sidebar state when toggled (using AdminLTE's built-in events)
+            $(document).on('collapsed.lte.pushmenu', function() {
+                localStorage.setItem('sidebar-collapsed', 'true');
+            });
+            
+            $(document).on('shown.lte.pushmenu', function() {
+                localStorage.setItem('sidebar-collapsed', 'false');
             });
         });
     </script>
