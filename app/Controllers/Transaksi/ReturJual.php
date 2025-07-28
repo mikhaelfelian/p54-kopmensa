@@ -589,25 +589,30 @@ class ReturJual extends BaseController
     }
 
     // Helper Methods
+    /**
+     * Generate Return Number (SAP Style)
+     * Format: RTJ-YYYYMMDD-XXXX
+     * Where XXXX is a zero-padded running number per day
+     */
     private function generateReturNumber()
     {
         $prefix = 'RTJ';
         $date = date('Ymd');
-        
-        // Get last return number for today
+
+        // Get last return number for today (SAP style: RTJ-YYYYMMDD-XXXX)
         $lastRetur = $this->returJualModel
-            ->where('DATE(created_at)', date('Y-m-d'))
+            ->like('no_retur', $prefix . '-' . $date . '-', 'after')
             ->orderBy('id', 'DESC')
             ->first();
-        
-        if ($lastRetur) {
-            // Extract number from last return number
-            $lastNumber = (int)substr($lastRetur->no_retur, -4);
+
+        if ($lastRetur && preg_match('/^' . $prefix . '-' . $date . '-(\d{4})$/', $lastRetur->no_retur, $matches)) {
+            $lastNumber = (int)$matches[1];
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
         }
-        
-        return $prefix . $date . sprintf('%04d', $newNumber);
+
+        $returNumber = sprintf('%s-%s-%04d', $prefix, $date, $newNumber);
+        return $returNumber;
     }
 } 
