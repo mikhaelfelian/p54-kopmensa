@@ -60,6 +60,23 @@
                                 </div>
                             </div>
                             
+                            <!-- Outlet Filter -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Filter Gudang</label>
+                                    <select name="outlet_filter" class="form-control rounded-0">
+                                        <option value="">- Semua Gudang -</option>
+                                        <?php if (isset($outlets) && !empty($outlets)): ?>
+                                            <?php foreach ($outlets as $outlet): ?>
+                                                <option value="<?= $outlet->id ?>" <?= (isset($outlet_filter) && $outlet_filter == $outlet->id) ? 'selected' : '' ?>>
+                                                    <?= esc($outlet->nama) ?> (<?= esc($outlet->kode) ?>)
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                            </div>
+                            
                             <!-- Stockable Filter -->
                             <div class="col-md-3">
                                 <div class="form-group">
@@ -88,7 +105,9 @@
                                     </select>
                                 </div>
                             </div>
-                            
+                        </div>
+                        
+                        <div class="row">
                             <!-- Brand/Merk Filter -->
                             <div class="col-md-3">
                                 <div class="form-group">
