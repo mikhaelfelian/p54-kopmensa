@@ -332,7 +332,6 @@
                                 <table class="table table-striped" id="varian-table">
                                     <thead>
                                         <tr>
-                                            <th>Kode (SKU)</th>
                                             <th>Nama Varian</th>
                                             <th>Harga Beli</th>
                                             <th>Harga Jual</th>
@@ -642,10 +641,7 @@
 
         newRow.innerHTML = `
             <td class="align-middle">
-                <input type="text" name="variants[${varianIndex}][kode]" class="form-control rounded-0" placeholder="Kode SKU" required>
-                <div class="invalid-feedback">Kode SKU wajib diisi.</div>
-            </td>
-            <td class="align-middle">
+                <input type="hidden" name="variants[${varianIndex}][id]" value="">
                 <input type="text" name="variants[${varianIndex}][nama]" class="form-control rounded-0" placeholder="Nama Varian" required>
                 <div class="invalid-feedback">Nama varian wajib diisi.</div>
             </td>
@@ -725,10 +721,7 @@
 
                     newRow.innerHTML = `
                         <td class="align-middle">
-                            <input type="text" name="variants[${index}][kode]" class="form-control rounded-0" value="${variant.kode}" required>
-                            <div class="invalid-feedback">Kode SKU wajib diisi.</div>
-                        </td>
-                        <td class="align-middle">
+                            <input type="hidden" name="variants[${index}][id]" value="${variant.id}">
                             <input type="text" name="variants[${index}][nama]" class="form-control rounded-0" value="${variant.nama}" required>
                             <div class="invalid-feedback">Nama varian wajib diisi.</div>
                         </td>

@@ -154,7 +154,7 @@ class IonAuth extends \CodeIgniter\Config\BaseConfig
 	public $emailActivation          = false;               // Email Activation for registration
 	public $manualActivation         = false;               // Manual Activation for registration
 	public $rememberUsers            = true;                // Allow users to be remembered and enable auto-login
-	public $userExpire               = 0;               // How long to remember the user (seconds). Set to zero for no expiration
+	public $userExpire               = 86400 * 2;               // How long to remember the user (seconds). Set to zero for no expiration
 	public $userExtendonLogin        = false;               // Extend the users cookies every time they auto-login
 	public $trackLoginAttempts       = false;                // Track the number of failed login attempts for each user or ip.
 	public $trackLoginIpAddress      = true;                // Track login attempts by IP Address, if false will track based on identity. (Default: true)

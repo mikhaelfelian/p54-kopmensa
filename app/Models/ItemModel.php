@@ -82,38 +82,48 @@ class ItemModel extends Model
      * @param int|string $type
      * @return string
      */
+    /**
+     * Generate unique 6-digit numeric item code (SAP style)
+     * Format: <category_id(2)><type(2)><running_number(2)>
+     * All numeric, max 6 digits.
+     * Example: 010101 (category=1, type=1, running=01)
+     *
+     * @param int|string $categoryId
+     * @param int|string $type
+     * @return string
+     */
     public function generateKode($categoryId = null, $type = null)
     {
-        // Category code: 4 digits, left padded with 0
-        $categoryCode = $categoryId ? str_pad((int)$categoryId, 4, '0', STR_PAD_LEFT) : '0000';
+        // Category code: 2 digits, left padded with 0
+        $categoryCode = $categoryId ? str_pad((int)$categoryId, 2, '0', STR_PAD_LEFT) : '00';
 
         // Type code: 2 digits, left padded with 0
         $typeCode = $type ? str_pad((int)$type, 2, '0', STR_PAD_LEFT) : '00';
 
-        // Date code: yyyymmdd (8 digits)
-        $dateCode = date('Ymd');
+        // Prefix for searching: 4 digits
+        $prefix = $categoryCode . $typeCode;
 
-        // Find last code for this category, type, and date
-        $lastCode = $this->select('kode')
-            ->where('status_hps', '0')
-            ->where('id_kategori', $categoryId)
-            ->where('tipe', $type)
-            ->like('kode', $categoryCode . $typeCode . $dateCode, 'after')
-            ->orderBy('id', 'DESC')
-            ->first();
+        // Use a query to get the max running number for this category and type
+        $builder = $this->db->table($this->table);
 
-        if ($lastCode && is_numeric(substr($lastCode->kode, -4))) {
-            $lastNumber = (int)substr($lastCode->kode, -4); // Last 4 digits
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        // The running number is the last 4 digits (for 8 digit code)
+        $startPos = strlen($prefix) + 1;
+        $builder->select("MAX(CAST(SUBSTRING(kode, {$startPos}, 4) AS UNSIGNED)) AS max_run", false);
+        $builder->where('status_hps', '0');
+        $builder->where('id_kategori', $categoryId);
+        $builder->where('tipe', $type);
+        $builder->like('kode', $prefix, 'after');
+        $query = $builder->get();
+        $row = $query->getRow();
+
+        $lastNumber = isset($row->max_run) && $row->max_run !== null ? (int)$row->max_run : 0;
+        $newNumber = $lastNumber + 1;
 
         // Running number: 4 digits, left padded with 0
         $runningNumber = str_pad($newNumber, 4, '0', STR_PAD_LEFT);
 
-        // Concatenate all parts: 4+2+8+4 = 18 digits
-        return $categoryCode . $typeCode . $dateCode . $runningNumber;
+        // Concatenate all parts: 2+2+4 = 8 digits
+        return $categoryCode . $typeCode . $runningNumber;
     }
 
     /**

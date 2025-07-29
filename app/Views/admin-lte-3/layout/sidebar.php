@@ -33,8 +33,8 @@
 
                 <!-- Master Data Katalog -->
                 <li class="nav-header">MASTER DATA</li>
-                <li class="nav-item has-treeview <?= isMenuActive(['master/merk', 'master/kategori', 'master/item', 'master/satuan']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/merk', 'master/kategori', 'master/item', 'master/satuan']) ? 'active' : '' ?>">
+                <li class="nav-item has-treeview <?= isMenuActive(['master/merk', 'master/kategori', 'master/varian', 'master/item', 'master/satuan']) ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= isMenuActive(['master/merk', 'master/kategori', 'master/varian', 'master/item', 'master/satuan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-briefcase"></i>
                         <p>
                             Katalog
@@ -56,6 +56,14 @@
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Kategori</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('master/varian') ?>"
+                                class="nav-link <?= isMenuActive('master/varian') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-palette nav-icon"></i>
+                                <p>Varian</p>
                             </a>
                         </li>
                         <li class="nav-item">

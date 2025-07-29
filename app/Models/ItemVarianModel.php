@@ -51,22 +51,38 @@ class ItemVarianModel extends Model
      * @param int $itemId Item ID
      * @return string
      */
-    public function generateKode($itemId)
+    /**
+     * Generate SAP-style variant code: [YYYYMMDD][6-digit running number]
+     * Only numeric, no prefix, running number is sorted in DB per date.
+     * Example: 20240612000001
+     *
+     * @return string
+     */
+    public function generateKode()
     {
-        $prefix = 'VAR';
+        // Format: yymmddxxxN (e.g., 2507290014)
+        $datePart = date('ymd');
+        // Find the last code for today
         $lastKode = $this->select('kode')
-                        ->where('id_item', $itemId)
-                        ->like('kode', $prefix, 'after')
-                        ->orderBy('kode', 'DESC')
-                        ->first();
+            ->like('kode', $datePart, 'after')
+            ->orderBy('kode', 'DESC')
+            ->first();
 
-        if (!$lastKode) {
-            return $prefix . str_pad($itemId, 4, '0', STR_PAD_LEFT) . '001';
+        if (!$lastKode || !preg_match('/^' . $datePart . '(\d{3})$/', $lastKode->kode, $matches)) {
+            $newNumber = 1;
+        } else {
+            $newNumber = intval(substr($lastKode->kode, 6, 3)) + 1;
         }
 
-        $lastNumber = (int)substr($lastKode->kode, -3);
-        $newNumber = $lastNumber + 1;
-        return $prefix . str_pad($itemId, 4, '0', STR_PAD_LEFT) . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+        // Ensure the running number does not exceed 3 digits (max 999)
+        if ($newNumber > 999) {
+            $newNumber = 1; // Reset or handle as needed
+        }
+
+        // Add a random digit at the end for extra uniqueness (0-9)
+        $randomDigit = random_int(0, 9);
+
+        return $datePart . str_pad($newNumber, 3, '0', STR_PAD_LEFT) . $randomDigit;
     }
 
     /**

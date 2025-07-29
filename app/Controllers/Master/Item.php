@@ -781,24 +781,29 @@ class Item extends BaseController
             
             $itemVarianModel = new \App\Models\ItemVarianModel();
             
-            // Delete existing variants for this item
-            $itemVarianModel->where('id_item', $item_id)->delete();
+            // // Delete existing variants for this item
+            // $itemVarianModel->where('id_item', $item_id)->delete();
             
             // Insert new variants
             foreach ($variants as $variant) {
                 if (!empty($variant['nama']) && !empty($variant['kode'])) {
                     $data = [
-                        'id_item' => $item_id,
-                        'id_item_harga' => $variant['id_item_harga'] ?? null,
-                        'kode' => $variant['kode'],
-                        'nama' => $variant['nama'],
-                        'harga_beli' => format_angka_db($variant['harga_beli'] ?? 0),
-                        'harga_jual' => 0, // Will be populated from item_harga
-                        'barcode' => $variant['barcode'] ?? null,
-                        'status' => '1'
+                        'id_item'         => $item_id,
+                        'id_item_harga'   => $variant['id_item_harga'] ?? null,
+                        'kode'            => $itemVarianModel->generateKode(),
+                        'nama'            => $variant['nama'],
+                        'harga_beli'      => format_angka_db($variant['harga_beli'] ?? 0),
+                        'harga_jual'      => 0, // Will be populated from item_harga
+                        'barcode'         => $variant['barcode'] ?? null,
+                        'status'          => '1'
                     ];
                     
-                    $itemVarianModel->insert($data);
+                    // Only include id if it exists (for updating existing variants)
+                    if (!empty($variant['id']) && is_numeric($variant['id'])) {
+                        $data['id'] = $variant['id'];
+                    }
+                    
+                    $itemVarianModel->save($data);
                 }
             }
 
@@ -824,9 +829,9 @@ class Item extends BaseController
 
     public function get_variants($item_id)
     {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
-        }
+        // if (!$this->request->isAJAX()) {
+        //     return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        // }
 
         try {
             $itemVarianModel = new \App\Models\ItemVarianModel();

@@ -689,7 +689,4 @@ $(document).ready(function() {
     });
 });
 </script>
-
-<!-- AdminLTE for demo purposes -->
-<script src="<?= base_url('public/assets/theme/admin-lte-3/dist/js/demo.js') ?>"></script>
 <?= $this->endSection() ?>
