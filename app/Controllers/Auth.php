@@ -55,7 +55,7 @@ class Auth extends BaseController
         
         $username = $this->request->getVar('user');
         $password = $this->request->getVar('pass');
-        $remember = $this->request->getVar('remember');
+        $remember = $this->request->getVar('ingat');
         
         $recaptchaResponse = $this->request->getVar('recaptcha_response');
         
