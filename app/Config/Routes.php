@@ -66,6 +66,16 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('kategori/delete/(:num)', 'Kategori::delete/$1');
 });
 
+// Varian routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
+    $routes->get('varian', 'Varian::index');
+    $routes->get('varian/create', 'Varian::create');
+    $routes->post('varian/store', 'Varian::store');
+    $routes->get('varian/edit/(:num)', 'Varian::edit/$1');
+    $routes->post('varian/update/(:num)', 'Varian::update/$1');
+    $routes->get('varian/delete/(:num)', 'Varian::delete/$1');
+});
+
 
 // Merk routes
 $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
