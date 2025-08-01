@@ -76,6 +76,16 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('varian/delete/(:num)', 'Varian::delete/$1');
 });
 
+// Voucher routes
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
+    $routes->get('voucher', 'Voucher::index');
+    $routes->get('voucher/create', 'Voucher::create');
+    $routes->post('voucher/store', 'Voucher::store');
+    $routes->get('voucher/edit/(:num)', 'Voucher::edit/$1');
+    $routes->post('voucher/update/(:num)', 'Voucher::update/$1');
+    $routes->get('voucher/delete/(:num)', 'Voucher::delete/$1');
+    $routes->get('voucher/detail/(:num)', 'Voucher::detail/$1');
+});
 
 // Merk routes
 $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {

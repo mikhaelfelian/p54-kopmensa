@@ -74,14 +74,22 @@
                                 <p>Item</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="<?= base_url('master/satuan') ?>"
-                                class="nav-link <?= isMenuActive('master/satuan') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-ruler nav-icon"></i>
-                                <p>Satuan</p>
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('master/satuan') ?>"
+                                    class="nav-link <?= isMenuActive('master/satuan') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-ruler nav-icon"></i>
+                                    <p>Satuan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('master/voucher') ?>"
+                                    class="nav-link <?= isMenuActive('master/voucher') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-ticket-alt nav-icon"></i>
+                                    <p>Voucher</p>
+                                </a>
+                            </li>
                     </ul>
                 </li>
 
