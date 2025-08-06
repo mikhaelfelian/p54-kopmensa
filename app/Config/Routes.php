@@ -253,6 +253,10 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         // Outlet endpoints
         $routes->get('outlet', 'Store::index');
         $routes->get('outlet/detail/(:num)', 'Store::detail/$1');
+
+        // Transaction endpoints
+        $routes->get('transaksi', 'Transaksi::getTransaction');
+        $routes->get('transaksi/(:num)', 'Transaksi::getTransaction/$1');
     });
 });
 

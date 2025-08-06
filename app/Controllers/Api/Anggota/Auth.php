@@ -48,7 +48,8 @@ class Auth extends BaseController
                 'username'   => $user->username,
                 'email'      => $user->email,
                 'tipe'       => $tipe,
-                'profile'    => base_url($user->profile)
+                'profile'    => base_url($user->profile),
+                'id'         => $user->id
             ]
         ];
 

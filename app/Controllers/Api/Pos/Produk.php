@@ -30,15 +30,15 @@ class Produk extends BaseController
         $mItemHarga   = new ItemHargaModel();
         $selectPrices = 'id, nama, jml_min, CAST(harga AS FLOAT) AS harga';
 
-        $perPage    = $this->request->getGet('per_page') ?? 10;
-        $keyword    = $this->request->getGet('keyword') ?? null;
-        $page       = $this->request->getGet('page') ?? 1; // Allow any page, default to 1
-        $categoryId = $this->request->getGet('CategoryId') ?? null;
-        $stok       = $this->request->getGet('stok') ?? null;
+        $perPage      = $this->request->getGet('per_page') ?? 10;
+        $keyword      = $this->request->getGet('keyword') ?? null;
+        $page         = $this->request->getGet('page') ?? 1; // Allow any page, default to 1
+        $categoryId   = $this->request->getGet('CategoryId') ?? null;
+        $stok         = $this->request->getGet('stok') ?? null;
 
         // Get items for the specific page
-        $items = $mItem->getItemsWithRelationsActive($perPage, $keyword, $page, $categoryId);
-        $pager = $mItem->pager->getDetails('items');
+        $items        = $mItem->getItemsWithRelationsActive($perPage, $keyword, $page, $categoryId, $stok);
+        $pager        = $mItem->pager->getDetails('items');
 
         // Transform the data to match the desired format
         $formattedItems = [];
