@@ -4,6 +4,7 @@ namespace App\Controllers\Api\Pos;
 
 use App\Controllers\BaseController;
 use App\Models\TransJualModel;
+use App\Models\TransJualDetModel;
 use CodeIgniter\API\ResponseTrait;
 
 /**
@@ -41,9 +42,46 @@ class Transaksi extends BaseController
             // Get transactions from tbl_trans_jual where id_pelanggan matches
             $transactions = $mTransJual->where('id_pelanggan', $id_pelanggan)->findAll();
             
+            // Initialize TransJualDetModel for getting transaction details
+            $mTransJualDet = new TransJualDetModel();
+            
             // Format the response data
             $formattedTransactions = [];
             foreach ($transactions as $transaction) {
+                // Get transaction details from tbl_trans_jual_det where id_penjualan matches
+                $details = $mTransJualDet->where('id_penjualan', $transaction->id)->findAll();
+                
+                // Format transaction details
+                $formattedDetails = [];
+                foreach ($details as $detail) {
+                    $formattedDetails[] = [
+                        'id'             => (int)$detail->id,
+                        'id_penjualan'   => (int)$detail->id_penjualan,
+                        'id_item'        => (int)$detail->id_item,
+                        'id_satuan'      => (int)$detail->id_satuan,
+                        'id_kategori'    => (int)$detail->id_kategori,
+                        'id_merk'        => (int)$detail->id_merk,
+                        'created_at'     => $detail->created_at,
+                        'updated_at'     => $detail->updated_at,
+                        'no_nota'        => $detail->no_nota,
+                        'kode'           => $detail->kode,
+                        'produk'         => $detail->produk,
+                        'satuan'         => $detail->satuan,
+                        'keterangan'     => $detail->keterangan,
+                        'harga'          => (float)$detail->harga,
+                        'harga_beli'     => (float)$detail->harga_beli,
+                        'jml'            => (int)$detail->jml,
+                        'jml_satuan'     => (int)$detail->jml_satuan,
+                        'disk1'          => (float)$detail->disk1,
+                        'disk2'          => (float)$detail->disk2,
+                        'disk3'          => (float)$detail->disk3,
+                        'diskon'         => (float)$detail->diskon,
+                        'potongan'       => (float)$detail->potongan,
+                        'subtotal'       => (float)$detail->subtotal,
+                        'status'         => (int)$detail->status
+                    ];
+                }
+                
                 $formattedTransactions[] = [
                     'id'             => (int)$transaction->id,
                     'id_user'        => (int)$transaction->id_user,
@@ -81,7 +119,8 @@ class Transaksi extends BaseController
                     'status_nota'    => $transaction->status_nota,
                     'status_ppn'     => $transaction->status_ppn,
                     'status_bayar'   => $transaction->status_bayar,
-                    'status_retur'   => $transaction->status_retur
+                    'status_retur'   => $transaction->status_retur,
+                    'details'        => $formattedDetails
                 ];
             }
             

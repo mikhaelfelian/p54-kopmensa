@@ -394,7 +394,6 @@
                                 }
                             ]
                         },
-                        // --- START: Transaksi endpoints ---
                         {
                             "name": "Transaksi",
                             "request": {
@@ -512,7 +511,6 @@
                                 }
                             ]
                         }
-                        // --- END: Transaksi endpoints ---
                     ]
                 }
             ]
