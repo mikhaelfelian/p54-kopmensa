@@ -393,7 +393,126 @@
                                     "body": "{\n    \"id\": 1,\n    \"id_user\": 2,\n    \"kode\": \"OTL-001\",\n    \"nama\": \"Pojok Seduh\",\n    \"deskripsi\": \"TESTING\",\n    \"status\": 1,\n    \"status_hps\": 0,\n    \"created_at\": \"2025-06-18 00:48:45\",\n    \"updated_at\": \"2025-06-18 23:47:58\"\n}"
                                 }
                             ]
+                        },
+                        // --- START: Transaksi endpoints ---
+                        {
+                            "name": "Transaksi",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/pos/transaksi?id_pelanggan=123",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "pos",
+                                        "transaksi"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "id_pelanggan",
+                                            "value": "123",
+                                            "description": "Customer ID (required)"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": [
+                                {
+                                    "name": "Success",
+                                    "originalRequest": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/pos/transaksi?id_pelanggan=123",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "pos",
+                                                "transaksi"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "id_pelanggan",
+                                                    "value": "123"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"message\": \"Transactions retrieved successfully\",\n    \"total\": 2,\n    \"id_pelanggan\": 123,\n    \"transactions\": [\n        {\n            \"id\": 1,\n            \"id_user\": 5,\n            \"id_sales\": 2,\n            \"id_pelanggan\": 123,\n            \"id_gudang\": 1,\n            \"no_nota\": \"TRX-20250801-0001\",\n            \"created_at\": \"2025-08-01 10:00:00\",\n            \"updated_at\": \"2025-08-01 10:05:00\",\n            \"deleted_at\": null,\n            \"tgl_bayar\": \"2025-08-01\",\n            \"tgl_masuk\": \"2025-08-01\",\n            \"tgl_keluar\": null,\n            \"jml_total\": 100000,\n            \"jml_biaya\": 0,\n            \"jml_ongkir\": 0,\n            \"jml_retur\": 0,\n            \"diskon\": 0,\n            \"jml_diskon\": 0,\n            \"jml_subtotal\": 100000,\n            \"ppn\": 0,\n            \"jml_ppn\": 0,\n            \"jml_gtotal\": 100000,\n            \"jml_bayar\": 100000,\n            \"jml_kembali\": 0,\n            \"jml_kurang\": 0,\n            \"disk1\": 0,\n            \"jml_disk1\": 0,\n            \"disk2\": 0,\n            \"jml_disk2\": 0,\n            \"disk3\": 0,\n            \"jml_disk3\": 0,\n            \"metode_bayar\": \"cash\",\n            \"status\": \"selesai\",\n            \"status_nota\": \"lunas\",\n            \"status_ppn\": \"tidak\",\n            \"status_bayar\": \"lunas\",\n            \"status_retur\": \"tidak\"\n        },\n        {\n            \"id\": 2,\n            \"id_user\": 5,\n            \"id_sales\": 2,\n            \"id_pelanggan\": 123,\n            \"id_gudang\": 1,\n            \"no_nota\": \"TRX-20250802-0002\",\n            \"created_at\": \"2025-08-02 11:00:00\",\n            \"updated_at\": \"2025-08-02 11:05:00\",\n            \"deleted_at\": null,\n            \"tgl_bayar\": \"2025-08-02\",\n            \"tgl_masuk\": \"2025-08-02\",\n            \"tgl_keluar\": null,\n            \"jml_total\": 200000,\n            \"jml_biaya\": 0,\n            \"jml_ongkir\": 0,\n            \"jml_retur\": 0,\n            \"diskon\": 0,\n            \"jml_diskon\": 0,\n            \"jml_subtotal\": 200000,\n            \"ppn\": 0,\n            \"jml_ppn\": 0,\n            \"jml_gtotal\": 200000,\n            \"jml_bayar\": 200000,\n            \"jml_kembali\": 0,\n            \"jml_kurang\": 0,\n            \"disk1\": 0,\n            \"jml_disk1\": 0,\n            \"disk2\": 0,\n            \"jml_disk2\": 0,\n            \"disk3\": 0,\n            \"jml_disk3\": 0,\n            \"metode_bayar\": \"transfer\",\n            \"status\": \"selesai\",\n            \"status_nota\": \"lunas\",\n            \"status_ppn\": \"tidak\",\n            \"status_bayar\": \"lunas\",\n            \"status_retur\": \"tidak\"\n        }\n    ]\n}"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Transaksi by ID",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/pos/transaksi/123",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "pos",
+                                        "transaksi",
+                                        "123"
+                                    ]
+                                }
+                            },
+                            "response": [
+                                {
+                                    "name": "Success",
+                                    "originalRequest": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/pos/transaksi/123",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "pos",
+                                                "transaksi",
+                                                "123"
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"message\": \"Transactions retrieved successfully\",\n    \"total\": 2,\n    \"id_pelanggan\": 123,\n    \"transactions\": [\n        {\n            \"id\": 1,\n            \"id_user\": 5,\n            \"id_sales\": 2,\n            \"id_pelanggan\": 123,\n            \"id_gudang\": 1,\n            \"no_nota\": \"TRX-20250801-0001\",\n            \"created_at\": \"2025-08-01 10:00:00\",\n            \"updated_at\": \"2025-08-01 10:05:00\",\n            \"deleted_at\": null,\n            \"tgl_bayar\": \"2025-08-01\",\n            \"tgl_masuk\": \"2025-08-01\",\n            \"tgl_keluar\": null,\n            \"jml_total\": 100000,\n            \"jml_biaya\": 0,\n            \"jml_ongkir\": 0,\n            \"jml_retur\": 0,\n            \"diskon\": 0,\n            \"jml_diskon\": 0,\n            \"jml_subtotal\": 100000,\n            \"ppn\": 0,\n            \"jml_ppn\": 0,\n            \"jml_gtotal\": 100000,\n            \"jml_bayar\": 100000,\n            \"jml_kembali\": 0,\n            \"jml_kurang\": 0,\n            \"disk1\": 0,\n            \"jml_disk1\": 0,\n            \"disk2\": 0,\n            \"jml_disk2\": 0,\n            \"disk3\": 0,\n            \"jml_disk3\": 0,\n            \"metode_bayar\": \"cash\",\n            \"status\": \"selesai\",\n            \"status_nota\": \"lunas\",\n            \"status_ppn\": \"tidak\",\n            \"status_bayar\": \"lunas\",\n            \"status_retur\": \"tidak\"\n        },\n        {\n            \"id\": 2,\n            \"id_user\": 5,\n            \"id_sales\": 2,\n            \"id_pelanggan\": 123,\n            \"id_gudang\": 1,\n            \"no_nota\": \"TRX-20250802-0002\",\n            \"created_at\": \"2025-08-02 11:00:00\",\n            \"updated_at\": \"2025-08-02 11:05:00\",\n            \"deleted_at\": null,\n            \"tgl_bayar\": \"2025-08-02\",\n            \"tgl_masuk\": \"2025-08-02\",\n            \"tgl_keluar\": null,\n            \"jml_total\": 200000,\n            \"jml_biaya\": 0,\n            \"jml_ongkir\": 0,\n            \"jml_retur\": 0,\n            \"diskon\": 0,\n            \"jml_diskon\": 0,\n            \"jml_subtotal\": 200000,\n            \"ppn\": 0,\n            \"jml_ppn\": 0,\n            \"jml_gtotal\": 200000,\n            \"jml_bayar\": 200000,\n            \"jml_kembali\": 0,\n            \"jml_kurang\": 0,\n            \"disk1\": 0,\n            \"jml_disk1\": 0,\n            \"disk2\": 0,\n            \"jml_disk2\": 0,\n            \"disk3\": 0,\n            \"jml_disk3\": 0,\n            \"metode_bayar\": \"transfer\",\n            \"status\": \"selesai\",\n            \"status_nota\": \"lunas\",\n            \"status_ppn\": \"tidak\",\n            \"status_bayar\": \"lunas\",\n            \"status_retur\": \"tidak\"\n        }\n    ]\n}"
+                                }
+                            ]
                         }
+                        // --- END: Transaksi endpoints ---
                     ]
                 }
             ]
