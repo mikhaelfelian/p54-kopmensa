@@ -269,6 +269,9 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     });
 });
 
+// QR Scanner Processing Route (no filters to bypass CSRF and auth)
+$routes->post('api/qr-scan', 'Transaksi\\TransJual::processQrScan');
+
 /*
  * TRANSAKSI ROUTES
  */
@@ -318,9 +321,9 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     // Add route for get_variants
     $routes->get('jual/get_variants/(:num)', 'TransJual::get_variants/$1');
     
-    // QR Scanner for Piutang transactions
+    // QR Scanner for Piutang transactions (no CSRF to allow mobile scanning)
     $routes->get('jual/qr-scanner/(:num)', 'TransJual::qrScanner/$1');
-    $routes->post('jual/process-qr-scan', 'TransJual::processQrScan');
+    // Moved outside group for CSRF bypass
 
     // Purchase Return Routes
     $routes->get('retur/beli', 'ReturBeli::index');

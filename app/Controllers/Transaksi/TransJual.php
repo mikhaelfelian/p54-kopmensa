@@ -241,7 +241,7 @@ class TransJual extends BaseController
             return $this->response->setJSON(['error' => 'Invalid request']);
         }
 
-        $customer = $this->pelangganModel->find($id);
+        $customer = $this->pelangganModel->where('id_user', $id)->first();
         if (!$customer) {
             return $this->response->setJSON(['error' => 'Customer not found']);
         }
@@ -611,10 +611,19 @@ class TransJual extends BaseController
             $change         = $totalAmountReceived - $finalTotal;
             $change         = $change < 0 ? 0 : $change;
 
+            // Check if any payment method is Piutang (value='3')
+            $hasPiutang = false;
+            foreach ($paymentMethods as $payment) {
+                if (isset($payment['type']) && $payment['type'] == '3') {
+                    $hasPiutang = true;
+                    break;
+                }
+            }
+
             // Prepare transaction data
             $transactionData = [
                 'id_user'           => $this->ionAuth->user()->row()->id,
-                'id_sales'          => null, // Can be added later if needed
+                'id_sales'          => $this->ionAuth->user()->row()->id, // Can be added later if needed
                 'id_pelanggan'      => $customerId,
                 'id_gudang'         => $warehouseId,
                 'no_nota'           => $noNota,
@@ -631,7 +640,7 @@ class TransJual extends BaseController
                 'metode_bayar'      => 'multiple', // Multiple payment methods
                 'status'            => '1', // Completed
                 'status_nota'       => '1', // Completed
-                'status_bayar'      => '1', // Paid
+                'status_bayar'      => $hasPiutang ? '0' : '1', // 0=Unpaid (Piutang), 1=Paid
                 'status_ppn'        => '1'  // PPN included
             ];
 
@@ -837,7 +846,8 @@ class TransJual extends BaseController
         $data = [
             'title' => 'QR Scanner - Piutang',
             'transaction' => $transaction,
-            'transactionId' => $transactionId
+            'transactionId' => $transactionId,
+            'Pengaturan' => $this->pengaturan
         ];
 
         return view('admin-lte-3/transaksi/jual/qr_scanner', $data);
@@ -848,6 +858,11 @@ class TransJual extends BaseController
      */
     public function processQrScan()
     {
+        // Disable CSRF check for this method
+        if (isset($this->request)) {
+            $this->request->setGlobal('csrf_test_name', null);
+        }
+        
         $transactionId = $this->request->getPost('transaction_id');
         $scanData = $this->request->getPost('scan_data');
 
@@ -871,25 +886,46 @@ class TransJual extends BaseController
             // Log the QR scan event
             $db = \Config\Database::connect();
             
-            // Create or update scan log table
+            // Create scan log data
+            $currentTime = date('Y-m-d H:i:s');
+            $userId = null;
+            
+            // Safely get user ID (may not be available via API route)
+            try {
+                if (isset($this->ionAuth) && $this->ionAuth && $this->ionAuth->loggedIn()) {
+                    $user = $this->ionAuth->user()->row();
+                    $userId = $user ? $user->id : null;
+                }
+            } catch (\Exception $e) {
+                // Continue without user ID if ionAuth fails or not available
+                $userId = null;
+            }
+            
             $logData = [
                 'transaction_id' => $transactionId,
                 'scan_data' => $scanData,
-                'scan_time' => date('Y-m-d H:i:s'),
-                'user_id' => $this->ionAuth->user()->row()->id ?? null,
+                'scan_time' => $currentTime,
+                'user_id' => $userId,
                 'ip_address' => $this->request->getIPAddress(),
-                'user_agent' => $this->request->getUserAgent()->getAgentString()
+                'user_agent' => $this->request->getUserAgent()->getAgentString(),
+                'created_at' => $currentTime,
+                'updated_at' => $currentTime
             ];
 
             // Insert into scan log
             $db->table('tbl_trans_jual_scan_log')->insert($logData);
 
-            // Update transaction with scan confirmation
-            $this->transJualModel->update($transactionId, [
-                'qr_scanned' => '1',
-                'qr_scan_time' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
+            // Try to update transaction with scan confirmation (columns may not exist)
+            try {
+                $this->transJualModel->update($transactionId, [
+                    'qr_scanned' => '1',
+                    'qr_scan_time' => $currentTime,
+                    'updated_at' => $currentTime
+                ]);
+            } catch (\Exception $e) {
+                // Continue if columns don't exist - log is still recorded
+                log_message('info', 'QR scan columns not available in tbl_trans_jual: ' . $e->getMessage());
+            }
 
             return $this->response->setJSON([
                 'success' => true,

@@ -306,6 +306,8 @@
         let cameras = [];
         let flashOn = false;
         
+        // Note: CSRF disabled for this route to allow mobile scanning
+        
         $(document).ready(function() {
             initializeScanner();
             
@@ -388,7 +390,7 @@
         function processScannedData(data) {
             // Send scanned data to server for processing
             $.ajax({
-                url: '<?= base_url('transaksi/jual/process-qr-scan') ?>',
+                url: '<?= base_url('api/qr-scan') ?>',
                 type: 'POST',
                 data: {
                     transaction_id: <?= $transactionId ?>,
@@ -404,8 +406,20 @@
                         showError(response.message || "Gagal memproses QR Code");
                     }
                 },
-                error: function() {
-                    showError("Terjadi kesalahan saat memproses QR Code");
+                error: function(xhr, status, error) {
+                    console.error('QR Scan Error:', xhr);
+                    let errorMsg = "Terjadi kesalahan saat memproses QR Code";
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            errorMsg = response.message || errorMsg;
+                        } catch (e) {
+                            errorMsg += " (Status: " + xhr.status + ")";
+                        }
+                    }
+                    showError(errorMsg);
                 }
             });
         }
