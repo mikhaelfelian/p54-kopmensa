@@ -812,4 +812,102 @@ class TransJual extends BaseController
             ]);
         }
     }
+
+    /**
+     * QR Scanner page for Piutang transactions
+     * Mobile-optimized barcode/QR scanner interface
+     */
+    public function qrScanner($transactionId = null)
+    {
+        if (!$transactionId) {
+            return redirect()->to('transaksi/jual')->with('error', 'ID Transaksi tidak valid');
+        }
+
+        // Get transaction details
+        $transaction = $this->transJualModel
+            ->select('tbl_trans_jual.*, tbl_m_pelanggan.nama as customer_name')
+            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->where('tbl_trans_jual.id', $transactionId)
+            ->first();
+
+        if (!$transaction) {
+            return redirect()->to('transaksi/jual')->with('error', 'Transaksi tidak ditemukan');
+        }
+
+        $data = [
+            'title' => 'QR Scanner - Piutang',
+            'transaction' => $transaction,
+            'transactionId' => $transactionId
+        ];
+
+        return view('admin-lte-3/transaksi/jual/qr_scanner', $data);
+    }
+
+    /**
+     * Process QR scan data for Piutang transactions
+     */
+    public function processQrScan()
+    {
+        $transactionId = $this->request->getPost('transaction_id');
+        $scanData = $this->request->getPost('scan_data');
+
+        if (!$transactionId || !$scanData) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak lengkap'
+            ]);
+        }
+
+        try {
+            // Get transaction
+            $transaction = $this->transJualModel->find($transactionId);
+            if (!$transaction) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan'
+                ]);
+            }
+
+            // Log the QR scan event
+            $db = \Config\Database::connect();
+            
+            // Create or update scan log table
+            $logData = [
+                'transaction_id' => $transactionId,
+                'scan_data' => $scanData,
+                'scan_time' => date('Y-m-d H:i:s'),
+                'user_id' => $this->ionAuth->user()->row()->id ?? null,
+                'ip_address' => $this->request->getIPAddress(),
+                'user_agent' => $this->request->getUserAgent()->getAgentString()
+            ];
+
+            // Insert into scan log
+            $db->table('tbl_trans_jual_scan_log')->insert($logData);
+
+            // Update transaction with scan confirmation
+            $this->transJualModel->update($transactionId, [
+                'qr_scanned' => '1',
+                'qr_scan_time' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'QR Code berhasil discan dan dicatat',
+                'data' => [
+                    'transaction_id' => $transactionId,
+                    'scan_data' => $scanData,
+                    'scan_time' => date('Y-m-d H:i:s')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'QR Scan Error: ' . $e->getMessage());
+            
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal memproses scan QR'
+            ]);
+        }
+    }
 } 

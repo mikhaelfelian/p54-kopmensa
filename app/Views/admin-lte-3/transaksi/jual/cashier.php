@@ -797,26 +797,48 @@ function completeTransaction() {
         data: transactionData,
         success: function(response) {
             if (response.success) {
-                // Show completion modal
-                $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
+                // Check if payment method includes Piutang (value='3')
+                const hasPiutang = paymentMethods.some(pm => pm.type === '3');
                 
-                // Build payment methods summary
-                let paymentSummary = '';
-                paymentMethods.forEach(pm => {
-                    paymentSummary += `${pm.type}: ${formatCurrency(pm.amount)}<br>`;
-                });
-                $('#finalPaymentMethod').html(paymentSummary);
-                $('#completeModal').modal('show');
-                
-                // Store transaction info for receipt printing
-                window.lastTransaction = {
-                    id: response.transaction_id,
-                    no_nota: response.no_nota,
-                    total: response.total,
-                    change: response.change
-                };
-                
-                toastr.success(response.message);
+                if (hasPiutang) {
+                    // Store transaction info for QR scanner
+                    window.lastTransaction = {
+                        id: response.transaction_id,
+                        no_nota: response.no_nota,
+                        total: response.total,
+                        change: response.change,
+                        payment_type: 'piutang'
+                    };
+                    
+                    // Redirect to mobile QR scanner page
+                    window.open('<?= base_url('transaksi/jual/qr-scanner') ?>/' + response.transaction_id, '_blank');
+                    toastr.success('Transaksi Piutang berhasil! Arahkan ke halaman scan QR.');
+                    
+                    // Clear form for next transaction
+                    clearTransactionForm();
+                } else {
+                    // Normal transaction completion
+                    $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
+                    
+                    // Build payment methods summary
+                    let paymentSummary = '';
+                    paymentMethods.forEach(pm => {
+                        const methodName = pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang';
+                        paymentSummary += `${methodName}: ${formatCurrency(pm.amount)}<br>`;
+                    });
+                    $('#finalPaymentMethod').html(paymentSummary);
+                    $('#completeModal').modal('show');
+                    
+                    // Store transaction info for receipt printing
+                    window.lastTransaction = {
+                        id: response.transaction_id,
+                        no_nota: response.no_nota,
+                        total: response.total,
+                        change: response.change
+                    };
+                    
+                    toastr.success(response.message);
+                }
             } else {
                 toastr.error(response.message || 'Gagal memproses transaksi');
             }

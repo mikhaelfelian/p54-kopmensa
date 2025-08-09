@@ -317,6 +317,10 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
 
     // Add route for get_variants
     $routes->get('jual/get_variants/(:num)', 'TransJual::get_variants/$1');
+    
+    // QR Scanner for Piutang transactions
+    $routes->get('jual/qr-scanner/(:num)', 'TransJual::qrScanner/$1');
+    $routes->post('jual/process-qr-scan', 'TransJual::processQrScan');
 
     // Purchase Return Routes
     $routes->get('retur/beli', 'ReturBeli::index');
