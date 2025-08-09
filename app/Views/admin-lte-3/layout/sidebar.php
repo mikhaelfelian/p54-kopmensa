@@ -293,6 +293,14 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a href="<?= base_url('gudang/input_stok') ?>"
+                                class="nav-link <?= isMenuActive('gudang/input_stok') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-box-open nav-icon"></i>
+                                <p>Input Penerimaan</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a href="<?= base_url('transaksi/jual') ?>" class="nav-link <?= isMenuActive('transaksi/jual') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
@@ -342,6 +350,7 @@
                     $gudangMenus = [
                         'gudang/transfer',
                         'gudang/penerimaan',
+                        'gudang/input_stok',
                         'gudang/stok',
                         'gudang/opname'
                     ];
@@ -386,6 +395,62 @@
                                 <?= nbs(3) ?>
                                 <i class="fas fa-boxes nav-icon"></i>
                                 <p>Stock Opname</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Reports -->
+                <li class="nav-header">LAPORAN</li>
+                <?php
+                    // Integrate isMenuActive with all Laporan menu routes
+                    $laporanMenus = [
+                        'laporan/sale',
+                        'laporan/purchase',
+                        'laporan/stock',
+                        'laporan/outlet'
+                    ];
+                    $isLaporanActive = isMenuActive($laporanMenus);
+                ?>
+                <li class="nav-item has-treeview <?= $isLaporanActive ? 'menu-open' : '' ?>">
+                    <a href="#" class="nav-link <?= $isLaporanActive ? 'active' : '' ?>">
+                        <i class="nav-icon fas fa-chart-bar"></i>
+                        <p>
+                            Laporan
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
+                    </a>
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="<?= base_url('laporan/sale') ?>"
+                                class="nav-link <?= isMenuActive('laporan/sale') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-shopping-cart nav-icon"></i>
+                                <p>Laporan Penjualan</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('laporan/purchase') ?>"
+                                class="nav-link <?= isMenuActive('laporan/purchase') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-shopping-bag nav-icon"></i>
+                                <p>Laporan Pembelian</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('laporan/stock') ?>"
+                                class="nav-link <?= isMenuActive('laporan/stock') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-boxes nav-icon"></i>
+                                <p>Laporan Stok</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('laporan/outlet') ?>"
+                                class="nav-link <?= isMenuActive('laporan/outlet') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-store nav-icon"></i>
+                                <p>Laporan Outlet</p>
                             </a>
                         </li>
                     </ul>

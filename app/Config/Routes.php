@@ -197,6 +197,15 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->post('stok/update/(:num)', 'Inventori::updateStock/$1');
     $routes->get('stok/export_excel', 'Inventori::export_to_excel');
 
+    // Input Stok
+    $routes->get('input_stok', 'InputStok::index');
+    $routes->get('input_stok/create', 'InputStok::create');
+    $routes->post('input_stok/store', 'InputStok::store');
+    $routes->get('input_stok/detail/(:num)', 'InputStok::detail/$1');
+    $routes->get('input_stok/edit/(:num)', 'InputStok::edit/$1');
+    $routes->post('input_stok/update/(:num)', 'InputStok::update/$1');
+    $routes->get('input_stok/delete/(:num)', 'InputStok::delete/$1');
+
     // Transfer / Mutasi
     $routes->get('transfer', 'Transfer::index');
     $routes->get('transfer/create', 'Transfer::create');
@@ -345,6 +354,37 @@ $routes->group('publik', function ($routes) {
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
 $routes->get('test/check-table', 'TestController::checkTable');
+
+/*
+ * LAPORAN ROUTES
+ */
+$routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' => 'auth'], function ($routes) {
+    // Sales Report Routes
+    $routes->get('sale', 'SaleReport::index');
+    $routes->get('sale/detail/(:num)', 'SaleReport::detail/$1');
+    $routes->get('sale/export_excel', 'SaleReport::export_excel');
+
+    // Purchase Report Routes
+    $routes->get('purchase', 'PurchaseReport::index');
+    $routes->get('purchase/detail/(:num)', 'PurchaseReport::detail/$1');
+    $routes->get('purchase/export_excel', 'PurchaseReport::export_excel');
+
+    // Stock Report Routes
+    $routes->get('stock', 'StockReport::index');
+    $routes->get('stock/detail/(:num)', 'StockReport::detail/$1');
+    $routes->get('stock/export_excel', 'StockReport::export_excel');
+
+    // Outlet Report Routes
+    $routes->get('outlet', 'OutletReport::index');
+    $routes->get('outlet/detail/(:num)', 'OutletReport::detail/$1');
+    $routes->get('outlet/export_excel', 'OutletReport::export_excel');
+});
+
+$routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function ($routes) {
+    $routes->get('app', 'Pengaturan::index');
+    $routes->post('app/update', 'Pengaturan::update');
+});
+
 
 
 

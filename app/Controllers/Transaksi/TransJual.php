@@ -717,6 +717,8 @@ class TransJual extends BaseController
                     ];
 
                     $this->transJualPlatModel->insert($platformData);
+
+                    $this->transJualModel->update($transactionId, ['metode_bayar' => $payment['type']]);
                 }
             }
 

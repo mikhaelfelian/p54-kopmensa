@@ -395,11 +395,9 @@ function addPaymentMethod() {
                     <label>Metode Bayar</label>
                     <select class="form-control form-control-sm rounded-0 payment-type" name="payments[${paymentCounter}][type]">
                         <option value="">Pilih metode</option>
-                        <option value="tunai">Tunai</option>
-                        <option value="kartu">Kartu Debit/Credit</option>
-                        <option value="transfer">Transfer Bank</option>
-                        <option value="ewallet">E-Wallet</option>
-                        <option value="qris">QRIS</option>
+                        <option value="1">Tunai</option>
+                        <option value="2">Non Tunai</option>
+                        <option value="3">Piutang</option>
                     </select>
                 </div>
                 <div class="col-md-4">
