@@ -397,7 +397,8 @@ function addPaymentMethod() {
                         <option value="">Pilih metode</option>
                         <option value="1">Tunai</option>
                         <option value="2">Non Tunai</option>
-                        <option value="3">Piutang</option>
+                        <option value="3">Piutang QR</option>
+                        <option value="4">Piutang TTD</option>
                     </select>
                 </div>
                 <div class="col-md-4">
