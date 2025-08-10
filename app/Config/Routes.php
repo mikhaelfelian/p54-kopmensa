@@ -269,9 +269,6 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     });
 });
 
-// QR Scanner Processing Route (no filters to bypass CSRF and auth)
-$routes->post('api/qr-scan', 'Transaksi\\TransJual::processQrScan');
-
 /*
  * TRANSAKSI ROUTES
  */
@@ -357,11 +354,6 @@ $routes->group('publik', function ($routes) {
     $routes->get('satuan', 'Publik::getSatuan');
 });
 
-// untuk test
-$routes->get('home/test', 'Home::test');
-$routes->get('home/test2', 'Home::test2');
-$routes->get('test/check-table', 'TestController::checkTable');
-
 /*
  * LAPORAN ROUTES
  */
@@ -391,6 +383,15 @@ $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'aut
     $routes->get('app', 'Pengaturan::index');
     $routes->post('app/update', 'Pengaturan::update');
 });
+
+
+// QR Scanner Processing Route (no filters to bypass CSRF and auth)
+$routes->post('api/qr-scan', 'Transaksi\\TransJual::processQrScan');
+
+
+// untuk test
+$routes->get('home/test', 'Home::test');
+$routes->get('home/test2', 'Home::test2');
 
 
 

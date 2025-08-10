@@ -71,7 +71,7 @@ class InputStok extends BaseController
         $gudangList = $this->gudangModel->where('status', '1')->findAll();
 
         $data = [
-            'title' => 'Input Stok',
+            'title' => 'Barang Non Stok',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
             'inputStoks' => $inputStoks,
