@@ -171,7 +171,14 @@ helper('form');
                     </div>
                     
                     <div class="row mb-2">
-                        <div class="col-6">PPN (11%):</div>
+                        <div class="col-6">DPP:</div>
+                        <div class="col-6 text-right">
+                            <span id="dppDisplay">Rp 0</span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-2">
+                        <div class="col-6">PPN (<?= $Pengaturan->ppn ?>%):</div>
                         <div class="col-6 text-right">
                             <span id="taxDisplay">Rp 0</span>
                         </div>
@@ -325,6 +332,7 @@ let cart = [];
 let currentTransactionId = null;
 let paymentMethods = [];
 let paymentCounter = 0;
+const PPN_PERCENTAGE = <?= $Pengaturan->ppn ?>; // Dynamic PPN from settings (included in price)
 
 $(document).ready(function() {
     // Initialize Select2 for customer dropdown
@@ -677,12 +685,16 @@ function calculateTotal() {
     const voucherDiscountAmount = afterDiscount * (voucherDiscountPercent / 100);
     const afterVoucherDiscount = afterDiscount - voucherDiscountAmount;
     
-    // Calculate tax
-    const taxAmount = afterVoucherDiscount * 0.11; // 11% PPN
+    // Calculate DPP (Tax Base) - extract PPN from the subtotal
+    const dppAmount = afterVoucherDiscount * (100 / (100 + PPN_PERCENTAGE)); // Calculate DPP from inclusive price
     
-    // Calculate grand total
-    const grandTotal = afterVoucherDiscount + taxAmount;
+    // Calculate tax (PPN is included in the price, so we extract it)
+    const taxAmount = afterVoucherDiscount * (PPN_PERCENTAGE / (100 + PPN_PERCENTAGE)); // Extract PPN from included price
     
+    // Calculate grand total (subtotal already includes PPN, so grand total equals subtotal)
+    const grandTotal = afterVoucherDiscount;
+    
+    $('#dppDisplay').text(`Rp ${numberFormat(dppAmount)}`);
     $('#taxDisplay').text(`Rp ${numberFormat(taxAmount)}`);
     $('#grandTotalDisplay').text(`Rp ${numberFormat(grandTotal)}`);
     
