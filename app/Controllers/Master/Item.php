@@ -779,31 +779,35 @@ class Item extends BaseController
         try {
             $this->db->transStart();
             
-            $itemVarianModel = new \App\Models\ItemVarianModel();
-            
-            // // Delete existing variants for this item
-            // $itemVarianModel->where('id_item', $item_id)->delete();
+            $item       = new \App\Models\ItemModel();
+            $itemVarian = new \App\Models\ItemVarianModel();
             
             // Insert new variants
             foreach ($variants as $variant) {
-                if (!empty($variant['nama']) && !empty($variant['kode'])) {
-                    $data = [
-                        'id_item'         => $item_id,
-                        'id_item_harga'   => $variant['id_item_harga'] ?? null,
-                        'kode'            => $itemVarianModel->generateKode(),
-                        'nama'            => $variant['nama'],
-                        'harga_beli'      => format_angka_db($variant['harga_beli'] ?? 0),
-                        'harga_jual'      => 0, // Will be populated from item_harga
-                        'barcode'         => $variant['barcode'] ?? null,
-                        'status'          => '1'
-                    ];
-                    
-                    // Only include id if it exists (for updating existing variants)
-                    if (!empty($variant['id']) && is_numeric($variant['id'])) {
-                        $data['id'] = $variant['id'];
-                    }
-                    
-                    $itemVarianModel->save($data);
+                $itemRow    = $item->where('id', $item_id)->first();
+                $harga_dsr  = isset($variant['harga_dasar']) ? format_angka_db($variant['harga_dasar']) : 0;
+                $harga_jual = $itemRow->harga_jual + $harga_dsr;
+                
+                // Prepare data for saving
+                $data = [
+                    'id_item'        => $item_id,
+                    'id_item_harga'  => isset($variant['id_item_harga']) ? $variant['id_item_harga'] : 0,
+                    'kode'           => !empty($variant['kode']) ? $variant['kode'] : $itemVarian->generateKode(),
+                    'varian'         => $variant['nama'] ?? '',
+                    'harga_beli'     => isset($variant['harga_beli']) ? format_angka_db($variant['harga_beli']) : 0,
+                    'harga_dasar'    => $harga_dsr,
+                    'harga_jual'     => $harga_jual, // fallback, can be updated later
+                    'barcode'        => $variant['barcode'] ?? null,
+                    'status'         => isset($variant['status']) ? $variant['status'] : '1'
+                ];
+
+                // If updating existing variant, include its id
+                if (!empty($variant['id']) && is_numeric($variant['id'])) {
+                    $data['id'] = $variant['id'];
+                }
+
+                if (!$itemVarian->save($data)) {
+                    throw new \Exception('Failed to save variant: ' . json_encode($itemVarian->errors()));
                 }
             }
 
@@ -815,14 +819,14 @@ class Item extends BaseController
 
             return $this->response->setJSON([
                 'success' => true, 
-                'message' => 'Varian berhasil disimpan',
+                'message' => 'Varian berhasil disimpan. ' . $itemRow->harga_jual,
                 'csrfHash' => csrf_hash()
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Exception $e) {           
             return $this->response->setJSON([
                 'success' => false, 
-                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal menyimpan varian'
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage().$item_id : 'Gagal menyimpan varian'
             ]);
         }
     }

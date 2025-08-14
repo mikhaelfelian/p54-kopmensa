@@ -82,6 +82,18 @@ class CreateTblMVoucher extends Migration
                 'default'    => '1',
                 'comment'    => '1=Active, 0=Inactive',
             ],
+            'jenis_voucher' => [
+                'type'       => 'ENUM',
+                'constraint' => ['nominal', 'persen'],
+                'null'       => false,
+                'comment'    => 'Voucher type: nominal (fixed amount) or persen (percentage)',
+            ],
+            'nominal' => [
+                'type'       => 'DECIMAL',
+                'constraint' => '10,2',
+                'null'       => false,
+                'comment'    => 'Voucher value (amount or percentage)',
+            ],
             'keterangan' => [
                 'type'    => 'TEXT',
                 'null'    => true,

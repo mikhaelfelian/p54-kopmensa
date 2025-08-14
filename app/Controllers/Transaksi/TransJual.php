@@ -15,11 +15,15 @@ use App\Models\TransJualDetModel;
 use App\Models\TransJualPlatModel;
 use App\Models\PelangganModel;
 use App\Models\ItemModel;
+use App\Models\ItemStokModel;
 use App\Models\KaryawanModel;
 use App\Models\GudangModel;
 use App\Models\PlatformModel;
 use App\Models\OutletModel;
 use App\Models\ItemHistModel;
+use App\Models\VoucherModel;
+use App\Models\PengaturanModel;
+use App\Services\PrinterService;
 
 
 class TransJual extends BaseController
@@ -29,11 +33,15 @@ class TransJual extends BaseController
     protected $transJualPlatModel;
     protected $pelangganModel;
     protected $itemModel;
+    protected $itemStokModel;
     protected $karyawanModel;
     protected $gudangModel;
     protected $platformModel;
     protected $outletModel;
     protected $itemHistModel;
+    protected $voucherModel;
+    protected $pengaturanModel;
+    protected $printerService;
 
 
     public function __construct()
@@ -43,11 +51,15 @@ class TransJual extends BaseController
         $this->transJualPlatModel  = new TransJualPlatModel();
         $this->pelangganModel      = new PelangganModel();
         $this->itemModel           = new ItemModel();
+        $this->itemStokModel       = new ItemStokModel();
         $this->karyawanModel       = new KaryawanModel();
         $this->gudangModel         = new GudangModel();
         $this->platformModel       = new PlatformModel();
         $this->outletModel         = new OutletModel();
         $this->itemHistModel       = new ItemHistModel();
+        $this->voucherModel        = new VoucherModel();
+        $this->Pengaturan     = new PengaturanModel();
+        $this->printerService      = new PrinterService();
 
     }
 
@@ -183,53 +195,121 @@ class TransJual extends BaseController
      */
     public function searchItems()
     {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['error' => 'Invalid request']);
-        }
+        // if (!$this->request->isAJAX()) {
+        //     return $this->response->setJSON(['error' => 'Invalid request']);
+        // }
 
         // Handle both GET and POST requests
         $search = $this->request->getVar('search');
         $warehouseId = $this->request->getVar('warehouse_id');
+        
+        // Log the search parameters
+        log_message('info', 'Search request - search: "' . $search . '", warehouse_id: ' . $warehouseId);
 
-        log_message('info', 'Search term: ' . $search . ', Warehouse ID: ' . $warehouseId);
-
-        if (empty($search)) {
-            // If no search term, return items with relations
-            $items = $this->itemModel->getItemsWithRelationsActive(10);
-            log_message('info', 'Returning ' . count($items) . ' items without search');
-            return $this->response->setJSON(['items' => $items]);
-        }
-
-        // Use the getItemsWithRelationsActive method for search
-        $items = $this->itemModel->getItemsWithRelationsActive(10, $search);
-
-        // If warehouse filter is applied, we need to join with stock table
+        // If warehouse filter is applied, use ItemModel to get items by warehouse
         if ($warehouseId) {
-            $builder = $this->itemModel->db->table('tbl_m_item mi');
-            $builder->select('mi.*, mis.stok, mk.kategori, mm.merk, ms.nama as satuan, msup.nama as supplier');
-            $builder->join('tbl_m_item_stok mis', 'mis.id_item = mi.id AND mis.id_gudang = ' . $warehouseId, 'left');
-            $builder->join('tbl_m_kategori mk', 'mk.id = mi.id_kategori', 'left');
-            $builder->join('tbl_m_merk mm', 'mm.id = mi.id_merk', 'left');
-            $builder->join('tbl_m_satuan ms', 'ms.id = mi.id_satuan', 'left');
-            $builder->join('tbl_m_supplier msup', 'msup.id = mi.id_supplier', 'left');
-
-            $builder->groupStart()
-                    ->like('mi.kode', $search)
-                    ->orLike('mi.item', $search)
-                    ->orLike('mi.barcode', $search)
-                    ->orLike('mk.kategori', $search)
-                    ->orLike('mm.merk', $search)
-                    ->orLike('msup.nama', $search)
-                    ->groupEnd();
-            
-            $builder->where('mi.status', '1');
-            $builder->where('mi.status_hps', '0');
-            $builder->limit(10);
-            
-            $items = $builder->get()->getResult();
+            try {
+                $items = $this->itemModel->getItemsByWarehouse($warehouseId, $search);
+            } catch (\Exception $e) {
+                log_message('error', 'Error loading warehouse items: ' . $e->getMessage());
+                log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+                return $this->response->setJSON([
+                    'error' => 'Failed to load warehouse items: ' . $e->getMessage()
+                ])->setStatusCode(500);
+            }
+        } else {
+            // No warehouse selected, use default method
+            if (empty($search)) {
+                // If no search term, return items with relations
+                $items = $this->itemModel->getItemsWithRelationsActive(10);
+            } else {
+                $items = $this->itemModel->getItemsWithRelationsActive(10, $search);
+            }
         }
 
         return $this->response->setJSON(['items' => $items]);
+    }
+
+    /**
+     * Test method to debug warehouse loading
+     */
+    public function testWarehouse($warehouseId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['error' => 'Invalid request']);
+        }
+
+        try {
+            if ($warehouseId) {
+                log_message('info', 'Testing warehouse loading for ID: ' . $warehouseId);
+                
+                // Test database connection
+                $db = \Config\Database::connect();
+                log_message('info', 'Database connected successfully');
+                
+                // Test if tables exist
+                $tables = $db->listTables();
+                log_message('info', 'Available tables: ' . implode(', ', $tables));
+                
+                // Test if specific tables exist
+                $itemStokExists = in_array('tbl_m_item_stok', $tables);
+                $itemExists = in_array('tbl_m_item', $tables);
+                $kategoriExists = in_array('tbl_m_kategori', $tables);
+                $merkExists = in_array('tbl_m_merk', $tables);
+                $satuanExists = in_array('tbl_m_satuan', $tables);
+                
+                log_message('info', 'Table existence - ItemStok: ' . ($itemStokExists ? 'Yes' : 'No') . 
+                           ', Item: ' . ($itemExists ? 'Yes' : 'No') . 
+                           ', Kategori: ' . ($kategoriExists ? 'Yes' : 'No') . 
+                           ', Merk: ' . ($merkExists ? 'Yes' : 'No') . 
+                           ', Satuan: ' . ($satuanExists ? 'Yes' : 'No'));
+                
+                if ($itemStokExists && $itemExists) {
+                    // Test the actual query
+                    $items = $this->itemStokModel->getStockByWarehouse($warehouseId);
+                    log_message('info', 'Query successful, returned ' . count($items) . ' items');
+                    
+                    return $this->response->setJSON([
+                        'success' => true,
+                        'items' => $items,
+                        'count' => count($items),
+                        'debug' => [
+                            'warehouse_id' => $warehouseId,
+                            'tables_exist' => [
+                                'item_stok' => $itemStokExists,
+                                'item' => $itemExists,
+                                'kategori' => $kategoriExists,
+                                'merk' => $merkExists,
+                                'satuan' => $satuanExists
+                            ]
+                        ]
+                    ]);
+                } else {
+                    return $this->response->setJSON([
+                        'error' => 'Required tables do not exist',
+                        'debug' => [
+                            'tables_exist' => [
+                                'item_stok' => $itemStokExists,
+                                'item' => $itemExists,
+                                'kategori' => $kategoriExists,
+                                'merk' => $merkExists,
+                                'satuan' => $satuanExists
+                            ]
+                        ]
+                    ]);
+                }
+            } else {
+                return $this->response->setJSON(['error' => 'Warehouse ID required']);
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Test warehouse error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+            
+            return $this->response->setJSON([
+                'error' => 'Test failed: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ])->setStatusCode(500);
+        }
     }
 
     /**
@@ -300,28 +380,36 @@ class TransJual extends BaseController
             ]);
         }
 
-        // For now, implement a simple voucher validation
-        // You can replace this with actual database lookup
-        $validVouchers = [
-            'DISKON10' => 10,
-            'DISKON20' => 20,
-            'DISKON25' => 25,
-            'HAPPY2024' => 15,
-            'NEWYEAR2024' => 30
-        ];
-
-        if (array_key_exists(strtoupper($voucherCode), $validVouchers)) {
-            return $this->response->setJSON([
-                'valid' => true,
-                'discount' => $validVouchers[strtoupper($voucherCode)],
-                'message' => 'Voucher valid'
-            ]);
-        } else {
+        // Validate voucher using database
+        $voucher = $this->voucherModel->getVoucherByCode($voucherCode);
+        
+        if (!$voucher) {
             return $this->response->setJSON([
                 'valid' => false,
-                'message' => 'Kode voucher tidak valid'
+                'message' => 'Kode voucher tidak ditemukan'
             ]);
         }
+
+        // Check if voucher is valid and available
+        if (!$this->voucherModel->isVoucherValid($voucherCode)) {
+            return $this->response->setJSON([
+                'valid' => false,
+                'message' => 'Voucher tidak valid atau sudah habis'
+            ]);
+        }
+
+        // Return voucher details
+        $discountValue = $voucher->jenis_voucher === 'persen' ? $voucher->nominal : 0;
+        $discountAmount = $voucher->jenis_voucher === 'nominal' ? $voucher->nominal : 0;
+        
+        return $this->response->setJSON([
+            'valid' => true,
+            'discount' => $discountValue, // Percentage for percentage vouchers
+            'discount_amount' => $discountAmount, // Fixed amount for nominal vouchers
+            'jenis_voucher' => $voucher->jenis_voucher,
+            'voucher_id' => $voucher->id,
+            'message' => 'Voucher valid'
+        ]);
     }
 
     /**
@@ -403,6 +491,8 @@ class TransJual extends BaseController
             'pesan_pelanggan'     => 'permit_empty|max_length[500]',
             'catatan'             => 'permit_empty|max_length[500]',
             'subtotal'            => 'required|decimal',
+            'jml_subtotal'        => 'required|decimal',
+            'jml_total'           => 'required|decimal',
             'diskon'              => 'permit_empty|decimal',
             'jml_diskon'          => 'permit_empty|decimal',
             'ppn'                 => 'permit_empty|decimal',
@@ -434,7 +524,8 @@ class TransJual extends BaseController
         $harga_include_pajak = $this->request->getPost('harga_include_pajak');
         $pesan_pelanggan   = $this->request->getPost('pesan_pelanggan') ?: null;
         $catatan           = $this->request->getPost('catatan') ?: null;
-        $jml_subtotal      = $this->request->getPost('subtotal');
+        $jml_subtotal      = $this->request->getPost('jml_subtotal');
+        $jml_total         = $this->request->getPost('jml_total');
         $diskon            = $this->request->getPost('diskon') ?: 0;
         $jml_diskon        = $this->request->getPost('jml_diskon') ?: 0;
         $ppn               = $this->request->getPost('ppn') ?: 0;
@@ -445,6 +536,9 @@ class TransJual extends BaseController
         $print_surat_jalan = $this->request->getPost('print_surat_jalan') ?: 0;
         $voucher_code      = $this->request->getPost('voucher_code') ?: null;
         $voucher_discount  = $this->request->getPost('voucher_discount') ?: 0;
+        $voucher_id        = $this->request->getPost('voucher_id') ?: null;
+        $voucher_type      = $this->request->getPost('voucher_type') ?: null;
+        $voucher_discount_amount = $this->request->getPost('voucher_discount_amount') ?: 0;
         $metode_bayar      = $this->request->getPost('metode_bayar') ?: null;
         $id_platform      = $this->request->getPost('id_platform') ?: null;
 
@@ -456,12 +550,18 @@ class TransJual extends BaseController
             'no_nota'           => $no_nota,
             'tgl_masuk'         => $tgl_order, // tgl_masuk = tgl_order
             'jml_subtotal'      => $jml_subtotal,
+            'jml_total'         => $jml_total,
             'diskon'            => $diskon,
             'jml_diskon'        => $jml_diskon,
             'ppn'               => $ppn,
             'jml_ppn'           => $jml_ppn,
             'jml_gtotal'        => $jml_gtotal,
             'metode_bayar'      => $metode_bayar,
+            'voucher_code'      => $voucher_code,
+            'voucher_discount'  => $voucher_discount,
+            'voucher_id'        => $voucher_id,
+            'voucher_type'      => $voucher_type,
+            'voucher_discount_amount' => $voucher_discount_amount,
             'status'            => '0', // Draft
             'status_bayar'      => '0', // Belum lunas
         ];
@@ -469,6 +569,11 @@ class TransJual extends BaseController
         // Get items data
         $items = $this->request->getPost('items');
         $platforms = $this->request->getPost('platforms');
+        
+        // Decode platforms JSON if it's a string
+        if (is_string($platforms)) {
+            $platforms = json_decode($platforms, true);
+        }
 
         try {
             $this->db->transStart();
@@ -572,6 +677,17 @@ class TransJual extends BaseController
         $paymentMethods     = $this->request->getPost('payment_methods') ?: [];
         $totalAmountReceived = $this->request->getPost('total_amount_received') ?: 0;
         $grandTotal         = $this->request->getPost('grand_total') ?: 0;
+        $isDraft            = $this->request->getPost('is_draft') ?: false;
+        $draftId            = $this->request->getPost('draft_id') ?: null; // ID of draft being converted
+
+        // Convert string boolean to actual boolean
+        if (is_string($isDraft)) {
+            $isDraft = ($isDraft === 'true' || $isDraft === '1');
+        }
+
+        // Debug: Log all POST data
+        log_message('debug', 'POST data - is_draft: ' . ($isDraft ? 'true' : 'false') . ', draft_id: ' . ($draftId ?: 'null'));
+        log_message('debug', 'POST data type - is_draft: ' . gettype($isDraft) . ', draft_id: ' . gettype($draftId));
 
         // Validate required data
         if (empty($cart) || !is_array($cart) || count($cart) === 0) {
@@ -582,19 +698,42 @@ class TransJual extends BaseController
             return $this->response->setJSON(['error' => 'Gudang harus dipilih']);
         }
 
-        if (empty($paymentMethods) || !is_array($paymentMethods)) {
-            return $this->response->setJSON(['error' => 'Metode pembayaran harus diisi']);
-        }
+        // Skip payment validation for drafts
+        if (!$isDraft) {
+            if (empty($paymentMethods) || !is_array($paymentMethods)) {
+                return $this->response->setJSON(['error' => 'Metode pembayaran harus diisi']);
+            }
 
-        if ($totalAmountReceived < $grandTotal) {
-            return $this->response->setJSON(['error' => 'Jumlah bayar kurang dari total']);
+            if ($totalAmountReceived < $grandTotal) {
+                return $this->response->setJSON(['error' => 'Jumlah bayar kurang dari total']);
+            }
         }
 
         try {
             $this->db = \Config\Database::connect();
             $this->db->transStart();
 
+            // Debug: Log the values
+            log_message('debug', 'processTransaction - draftId: ' . ($draftId ?: 'null') . ', isDraft: ' . ($isDraft ? 'true' : 'false'));
+
             $noNota = $this->transJualModel->generateKode();
+            $Pengaturan = $this->Pengaturan->first();
+
+            // If converting from draft, use existing draft data
+            if ($draftId && !$isDraft) {
+                // Get existing draft
+                $existingDraft = $this->transJualModel->find($draftId);
+                if (!$existingDraft || $existingDraft->status != '0') {
+                    throw new \Exception('Draft tidak ditemukan atau sudah diproses');
+                }
+                
+                // Check if user owns this draft
+                if ($existingDraft->id_user != $this->ionAuth->user()->row()->id) {
+                    throw new \Exception('Anda tidak memiliki akses ke draft ini');
+                }
+                
+                $noNota = $existingDraft->no_nota; // Use existing nota number
+            }
 
             // Calculate totals
             $subtotal = 0;
@@ -602,21 +741,46 @@ class TransJual extends BaseController
                 $subtotal += ($item['price'] * $item['quantity']);
             }
 
-            $discountAmount = $subtotal * ($discountPercent / 100);
-            $afterDiscount  = $subtotal - $discountAmount;
-            $voucherAmount  = $afterDiscount * ($voucherDiscount / 100);
-            $afterVoucher   = $afterDiscount - $voucherAmount;
-            $taxAmount      = $afterVoucher * 0.11; // 11% PPN
-            $finalTotal     = $afterVoucher + $taxAmount;
-            $change         = $totalAmountReceived - $finalTotal;
-            $change         = $change < 0 ? 0 : $change;
+            // Calculate jml_total (total cart before voucher input)
+            $jml_total = 0;
+            foreach ($cart as $item) {
+                $jml_total += ($item['price'] * $item['quantity']);
+            }
 
-            // Check if any payment method is Piutang (value='3')
+            // Calculate diskon (discount %)
+            $discountAmount = $jml_total * ($discountPercent / 100);
+
+            // Calculate voucher (assume voucherDiscount is percent, adjust if nominal)
+            $voucherAmount = 0;
+            if ($voucherDiscount > 0) {
+                // If voucherDiscount is percent (e.g. 10 for 10%)
+                $voucherAmount = $jml_total * ($voucherDiscount / 100);
+            }
+
+            // jml_diskon = total diskon (voucher + diskon % or nominal)
+            $jml_diskon = $discountAmount + $voucherAmount;
+
+            // jml_subtotal = jml_total - jml_diskon
+            $jml_subtotal = $jml_total - $jml_diskon;
+
+            // PPN 11%
+            $taxAmount = $jml_subtotal * ($Pengaturan['ppn'] / 100); // 11% PPN
+
+            // Grand total
+            $finalTotal = $jml_subtotal + $taxAmount;
+
+            // Change
+            $change = $totalAmountReceived - $finalTotal;
+            $change = $change < 0 ? 0 : $change;
+
+            // Check if any payment method is Piutang (value='3') - only for non-draft transactions
             $hasPiutang = false;
-            foreach ($paymentMethods as $payment) {
-                if (isset($payment['type']) && $payment['type'] == '3') {
-                    $hasPiutang = true;
-                    break;
+            if (!$isDraft && !empty($paymentMethods)) {
+                foreach ($paymentMethods as $payment) {
+                    if (isset($payment['type']) && $payment['type'] == '3') {
+                        $hasPiutang = true;
+                        break;
+                    }
                 }
             }
 
@@ -628,27 +792,42 @@ class TransJual extends BaseController
                 'id_gudang'         => $warehouseId,
                 'no_nota'           => $noNota,
                 'tgl_masuk'         => date('Y-m-d H:i:s'),
-                'tgl_bayar'         => date('Y-m-d H:i:s'),
-                'jml_subtotal'      => $subtotal,
+                'tgl_bayar'         => $isDraft ? null : date('Y-m-d H:i:s'),
+                'jml_total'         => $jml_total,         // total cart before voucher input
+                'jml_subtotal'      => $jml_subtotal,      // jml_total - jml_diskon
                 'diskon'            => $discountPercent,
-                'jml_diskon'        => $discountAmount,
-                'ppn'               => 11, // 11%
+                'jml_diskon'        => $jml_diskon,        // voucher + diskon % or nominal
+                'ppn'               => $Pengaturan['ppn'], // dinamis dari db
                 'jml_ppn'           => $taxAmount,
                 'jml_gtotal'        => $finalTotal,
-                'jml_bayar'         => $totalAmountReceived,
-                'jml_kembali'       => $change,
-                'metode_bayar'      => 'multiple', // Multiple payment methods
-                'status'            => '1', // Completed
-                'status_nota'       => '1', // Completed
-                'status_bayar'      => $hasPiutang ? '0' : '1', // 0=Unpaid (Piutang), 1=Paid
+                'jml_bayar'         => $isDraft ? 0 : $totalAmountReceived,
+                'jml_kembali'       => $isDraft ? 0 : $change,
+                'metode_bayar'      => $isDraft ? 'draft' : 'multiple', // Draft or Multiple payment methods
+                'status'            => $isDraft ? '0' : '1', // 0=Draft, 1=Completed
+                'status_nota'       => $isDraft ? '0' : '1', // 0=Draft, 1=Completed
+                'status_bayar'      => $isDraft ? '0' : ($hasPiutang ? '0' : '1'), // 0=Unpaid/Draft, 1=Paid
                 'status_ppn'        => '1'  // PPN included
             ];
 
-            // Insert main transaction
-            $this->transJualModel->insert($transactionData);
-            $transactionId = $this->transJualModel->getInsertID();
+            // Insert or update main transaction
+            if ($draftId && !$isDraft) {
+                // Update existing draft to completed transaction
+                log_message('debug', 'Updating existing draft ID: ' . $draftId);
+                $this->transJualModel->update($draftId, $transactionData);
+                $transactionId = $draftId;
+            } else {
+                // Insert new transaction
+                log_message('debug', 'Inserting new transaction - draftId: ' . ($draftId ?: 'null') . ', isDraft: ' . ($isDraft ? 'true' : 'false'));
+                $this->transJualModel->insert($transactionData);
+                $transactionId = $this->transJualModel->getInsertID();
+            }
 
             // Insert transaction details
+            if ($draftId && !$isDraft) {
+                // Delete existing draft details first
+                $this->transJualDetModel->where('id_penjualan', $draftId)->delete();
+            }
+            
             foreach ($cart as $item) {
                 // Get item details from database
                 $itemDetails = $this->itemModel->find($item['id']);
@@ -682,8 +861,8 @@ class TransJual extends BaseController
 
                 $this->transJualDetModel->insert($detailData);
 
-                // Update stock (decrease stock)
-                if ($warehouseId) {
+                // Update stock (decrease stock) - only for completed transactions, not drafts
+                if (!$isDraft && $warehouseId) {
                     $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
                 }
 
@@ -711,23 +890,30 @@ class TransJual extends BaseController
                 $this->itemHistModel->insert($historyData);
             }
 
-            // Insert multiple platform payments
-            foreach ($paymentMethods as $payment) {
-                if (!empty($payment['platform_id']) && !empty($payment['amount'])) {
-                    $platform = $this->platformModel->find($payment['platform_id']);
-                    $platformData = [
-                        'id_penjualan' => $transactionId,
-                        'id_platform'  => $payment['platform_id'],
-                        'no_nota'      => $noNota,
-                        'platform'     => $platform->platform ?? $payment['type'],
-                        'keterangan'   => 'Pembayaran via ' . $payment['type'] . 
-                                        (!empty($payment['reference']) ? ' - ' . $payment['reference'] : ''),
-                        'nominal'      => $payment['amount']
-                    ];
+            // Insert multiple platform payments - only for completed transactions, not drafts
+            if (!$isDraft && !empty($paymentMethods)) {
+                // If converting from draft, delete existing platform payments first
+                if ($draftId) {
+                    $this->transJualPlatModel->where('id_penjualan', $draftId)->delete();
+                }
+                
+                foreach ($paymentMethods as $payment) {
+                    if (!empty($payment['platform_id']) && !empty($payment['amount'])) {
+                        $platform = $this->platformModel->find($payment['platform_id']);
+                        $platformData = [
+                            'id_penjualan' => $transactionId,
+                            'id_platform'  => $payment['platform_id'],
+                            'no_nota'      => $noNota,
+                            'platform'     => $platform->platform ?? $payment['type'],
+                            'keterangan'   => 'Pembayaran via ' . $payment['type'] . 
+                                            (!empty($payment['reference']) ? ' - ' . $payment['reference'] : ''),
+                            'nominal'      => $payment['amount']
+                        ];
 
-                    $this->transJualPlatModel->insert($platformData);
+                        $this->transJualPlatModel->insert($platformData);
 
-                    $this->transJualModel->update($transactionId, ['metode_bayar' => $payment['type']]);
+                        $this->transJualModel->update($transactionId, ['metode_bayar' => $payment['type']]);
+                    }
                 }
             }
 
@@ -854,6 +1040,34 @@ class TransJual extends BaseController
     }
 
     /**
+     * Refresh session to keep authentication alive
+     */
+    public function refreshSession()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        // Check if user is still logged in
+        if (!$this->ionAuth->loggedIn()) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'message' => 'Session expired']);
+        }
+
+        // Get user info to refresh session
+        $user = $this->ionAuth->user()->row();
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Session refreshed',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email
+            ]
+        ]);
+    }
+
+    /**
      * Process QR scan data for Piutang transactions
      */
     public function processQrScan()
@@ -943,6 +1157,358 @@ class TransJual extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal memproses scan QR'
+            ]);
+        }
+    }
+
+    /**
+     * Print receipt for transaction
+     */
+    public function printReceipt($transactionId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            // Get transaction data
+            $transaction = $this->transJualModel->find($transactionId);
+            
+            if (!$transaction) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Transaksi tidak ditemukan']);
+            }
+            
+            // Get transaction details
+            $items = $this->transJualDetModel->where('id_trans_jual', $transactionId)->findAll();
+            
+            // Get customer info
+            $customer = null;
+            if ($transaction->id_pelanggan) {
+                $customer = $this->pelangganModel->find($transaction->id_pelanggan);
+            }
+
+            // Get kasir info
+            $kasir = $this->karyawanModel->find($transaction->id_karyawan);
+
+            // Prepare data for printing
+            $printData = [
+                'no_nota' => $transaction->no_nota,
+                'tgl_masuk' => $transaction->created_at,
+                'kasir' => $kasir ? $kasir->nama : 'Unknown',
+                'customer_name' => $customer ? $customer->nama : null,
+                'jml_subtotal' => $transaction->jml_subtotal,
+                'jml_diskon' => $transaction->jml_diskon,
+                'jml_ppn' => $transaction->jml_ppn,
+                'jml_gtotal' => $transaction->jml_gtotal,
+                'items' => []
+            ];
+
+            // Format items for printing
+            foreach ($items as $item) {
+                $printData['items'][] = [
+                    'name' => $item->nama_item,
+                    'quantity' => $item->qty,
+                    'price' => $item->harga_jual,
+                    'total' => $item->jml_total
+                ];
+            }
+
+            // Print receipt
+            $this->printerService->printReceipt($printData);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Struk berhasil dicetak'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal mencetak struk: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get list of draft transactions
+     */
+    public function getDrafts()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            // Get draft transactions (status = 0)
+            $drafts = $this->transJualModel
+                ->select('tbl_trans_jual.*, tbl_m_outlet.nama as outlet_name')
+                ->join('tbl_m_outlet', 'tbl_m_outlet.id = tbl_trans_jual.id_gudang', 'left')
+                ->where('tbl_trans_jual.status', '0') // Draft status
+                ->where('tbl_trans_jual.id_user', $this->ionAuth->user()->row()->id) // Only current user's drafts
+                ->orderBy('tbl_trans_jual.created_at', 'DESC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'drafts' => $drafts
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal mengambil daftar draft: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get specific draft transaction with details
+     */
+    public function getDraft($draftId)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            // Get draft transaction
+            $draft = $this->transJualModel->find($draftId);
+            if (!$draft) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Draft tidak ditemukan']);
+            }
+
+            // Check if it's a draft
+            if ($draft->status != '0') {
+                return $this->response->setJSON(['success' => false, 'message' => 'Transaksi ini bukan draft']);
+            }
+
+            // Check if user owns this draft
+            if ($draft->id_user != $this->ionAuth->user()->row()->id) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki akses ke draft ini']);
+            }
+
+            // Debug: Log draft object properties
+            log_message('debug', 'Draft object properties: ' . print_r($draft, true));
+
+            // Get transaction details with category and brand names
+            $items = $this->transJualDetModel
+                ->select('tbl_trans_jual_det.*, tbl_m_kategori.kategori as nama_kategori, tbl_m_merk.merk as nama_merk')
+                ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_trans_jual_det.id_kategori', 'left')
+                ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_trans_jual_det.id_merk', 'left')
+                ->where('tbl_trans_jual_det.id_penjualan', $draftId)
+                ->findAll();
+
+            // Debug: Log items
+            log_message('debug', 'Items found: ' . count($items));
+
+            // Format items for cart
+            $cartItems = [];
+            foreach ($items as $item) {
+                $cartItems[] = [
+                    'id' => $item->id_item,
+                    'name' => $item->produk,
+                    'quantity' => $item->jml,
+                    'price' => $item->harga,
+                    'total' => $item->subtotal,
+                    'kode' => $item->kode,
+                    'harga_beli' => $item->harga_beli,
+                    'satuan' => $item->satuan,
+                    'kategori' => $item->nama_kategori ?: '',
+                    'merk' => $item->nama_merk ?: ''
+                ];
+            }
+
+            // Get customer info
+            $customer = null;
+            if ($draft->id_pelanggan) {
+                $customer = $this->pelangganModel->find($draft->id_pelanggan);
+                // Debug: Log customer
+                log_message('debug', 'Customer found: ' . ($customer ? 'yes' : 'no'));
+            }
+
+            $draftData = [
+                'id' => $draft->id,
+                'no_nota' => $draft->no_nota,
+                'customer_id' => $draft->id_pelanggan,
+                'customer_name' => $customer ? $customer->nama : null,
+                'customer_type' => $draft->id_pelanggan ? 'anggota' : 'umum',
+                'items' => $cartItems,
+                'discount_percent' => $draft->jml_diskon > 0 ? ($draft->jml_diskon / $draft->jml_subtotal * 100) : 0,
+                'voucher_code' => $draft->voucher_code,
+                'total' => $draft->jml_gtotal,
+                'created_at' => $draft->created_at
+            ];
+
+            return $this->response->setJSON([
+                'success' => true,
+                'draft' => $draftData
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error in getDraft: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal mengambil draft: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Delete draft transaction
+     */
+    public function deleteDraft($draftId)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        // CSRF validation - temporarily disabled for testing
+        /*
+        if (!$this->validate([
+            'csrf_test_name' => [
+                'rules' => 'required',
+                'errors' => [
+                    'required' => 'CSRF token tidak valid'
+                ]
+            ]
+        ])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'CSRF token tidak valid'
+            ]);
+        }
+        */
+
+        try {
+            // Get draft transaction
+            $draft = $this->transJualModel->find($draftId);
+            if (!$draft) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Draft tidak ditemukan']);
+            }
+
+            // Check if it's a draft
+            if ($draft->status != '0') {
+                return $this->response->setJSON(['success' => false, 'message' => 'Transaksi ini bukan draft']);
+            }
+
+            // Check if user owns this draft
+            if ($draft->id_user != $this->ionAuth->user()->row()->id) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Anda tidak memiliki akses ke draft ini']);
+            }
+
+            $this->db->transStart();
+
+            // Delete transaction details first
+            $this->transJualDetModel->where('id_penjualan', $draftId)->delete();
+
+            // Delete platform payments if any
+            $this->transJualPlatModel->where('id_penjualan', $draftId)->delete();
+
+            // Delete main transaction
+            $this->transJualModel->delete($draftId);
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus draft']);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Draft berhasil dihapus'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menghapus draft: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get transaction data for printing
+     */
+    public function getTransactionForPrint($transactionId)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            // Get transaction data
+            $transaction = $this->transJualModel->find($transactionId);
+            
+            if (!$transaction) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Transaksi tidak ditemukan']);
+            }
+            
+            // Get transaction details - using correct column names
+            $items = $this->transJualDetModel
+                ->select('tbl_trans_jual_det.*')
+                ->where('id_penjualan', $transactionId)
+                ->findAll();
+            
+            // Get payment methods
+            $paymentMethods = $this->transJualPlatModel
+                ->where('id_penjualan', $transactionId)
+                ->findAll();
+            
+            // Get outlet name
+            $outlet = null;
+            if ($transaction->id_gudang) {
+                $outlet = $this->gudangModel->find($transaction->id_gudang);
+            }
+            
+            // Get customer info
+            $customer = null;
+            if ($transaction->id_pelanggan) {
+                $customer = $this->pelangganModel->find($transaction->id_pelanggan);
+            }
+
+            // Prepare data for printing
+            $printData = [
+                'no_nota' => $transaction->no_nota,
+                'customer_name' => $customer ? $customer->nama_pelanggan : 'Umum',
+                'customer_type' => $customer ? $customer->tipe_pelanggan : 'umum',
+                'outlet' => $outlet ? $outlet->nama_gudang : 'Outlet',
+                'date' => date('d/m/Y H:i', strtotime($transaction->created_at)),
+                'subtotal' => $transaction->jml_subtotal,
+                'discount' => $transaction->jml_diskon > 0 ? ($transaction->jml_diskon / $transaction->jml_subtotal) * 100 : 0,
+                'voucher' => $transaction->voucher_code ?? '',
+                'ppn' => 11, // 11% PPN
+                'total' => $transaction->jml_gtotal,
+                'items' => [],
+                'payment_methods' => []
+            ];
+
+            // Format items for printing - using correct column names
+            foreach ($items as $item) {
+                $printData['items'][] = [
+                    'name' => $item->produk, // Using 'produk' instead of 'nama_item'
+                    'quantity' => $item->jml, // Using 'jml' instead of 'qty'
+                    'price' => $item->harga, // Using 'harga' instead of 'harga_jual'
+                    'total' => $item->subtotal // Using 'subtotal' instead of 'jml_total'
+                ];
+            }
+
+            // Format payment methods for printing
+            foreach ($paymentMethods as $payment) {
+                $printData['payment_methods'][] = [
+                    'type' => $payment->type,
+                    'amount' => $payment->amount
+                ];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'transaction' => $printData
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memuat data transaksi: ' . $e->getMessage()
             ]);
         }
     }

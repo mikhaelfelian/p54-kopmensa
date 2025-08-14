@@ -75,6 +75,8 @@ class Voucher extends BaseController
     {
         $kode = $this->request->getPost('kode');
         $jml = $this->request->getPost('jml');
+        $jenis_voucher = $this->request->getPost('jenis_voucher');
+        $nominal = $this->request->getPost('nominal');
         $jml_max = $this->request->getPost('jml_max');
         $tgl_masuk = $this->request->getPost('tgl_masuk');
         $tgl_keluar = $this->request->getPost('tgl_keluar');
@@ -97,6 +99,21 @@ class Voucher extends BaseController
                     'required' => 'Jumlah voucher harus diisi',
                     'integer' => 'Jumlah voucher harus berupa angka',
                     'greater_than' => 'Jumlah voucher harus lebih dari 0'
+                ]
+            ],
+            'jenis_voucher' => [
+                'rules' => 'required|in_list[nominal,persen]',
+                'errors' => [
+                    'required' => 'Jenis voucher harus dipilih',
+                    'in_list' => 'Jenis voucher tidak valid'
+                ]
+            ],
+            'nominal' => [
+                'rules' => 'required|numeric|greater_than[0]',
+                'errors' => [
+                    'required' => 'Nominal voucher harus diisi',
+                    'numeric' => 'Nominal voucher harus berupa angka',
+                    'greater_than' => 'Nominal voucher harus lebih dari 0'
                 ]
             ],
             'jml_max' => [
@@ -148,18 +165,27 @@ class Voucher extends BaseController
                 ->withInput()
                 ->with('error', 'Batas maksimal tidak boleh kurang dari jumlah voucher');
         }
+        
+        // Check if percentage voucher doesn't exceed 100%
+        if ($jenis_voucher === 'persen' && $nominal > 100) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Persentase voucher tidak boleh lebih dari 100%');
+        }
 
         // Generate data
         $data = [
-            'id_user'    => $this->ionAuth->user()->row()->id,
-            'kode'       => $kode,
-            'jml'        => $jml,
-            'jml_keluar' => 0,
-            'jml_max'    => $jml_max,
-            'tgl_masuk'  => $tgl_masuk,
-            'tgl_keluar' => $tgl_keluar,
-            'status'     => $status,
-            'keterangan' => $keterangan
+            'id_user'       => $this->ionAuth->user()->row()->id,
+            'kode'          => $kode,
+            'jml'           => $jml,
+            'jenis_voucher' => $jenis_voucher,
+            'nominal'       => $nominal,
+            'jml_keluar'    => 0,
+            'jml_max'       => $jml_max,
+            'tgl_masuk'     => $tgl_masuk,
+            'tgl_keluar'    => $tgl_keluar,
+            'status'        => $status,
+            'keterangan'    => $keterangan
         ];
 
         if ($this->voucherModel->insert($data)) {
@@ -209,6 +235,8 @@ class Voucher extends BaseController
 
         $kode = $this->request->getPost('kode');
         $jml = $this->request->getPost('jml');
+        $jenis_voucher = $this->request->getPost('jenis_voucher');
+        $nominal = $this->request->getPost('nominal');
         $jml_max = $this->request->getPost('jml_max');
         $tgl_masuk = $this->request->getPost('tgl_masuk');
         $tgl_keluar = $this->request->getPost('tgl_keluar');
@@ -231,6 +259,21 @@ class Voucher extends BaseController
                     'required' => 'Jumlah voucher harus diisi',
                     'integer' => 'Jumlah voucher harus berupa angka',
                     'greater_than' => 'Jumlah voucher harus lebih dari 0'
+                ]
+            ],
+            'jenis_voucher' => [
+                'rules' => 'required|in_list[nominal,persen]',
+                'errors' => [
+                    'required' => 'Jenis voucher harus dipilih',
+                    'in_list' => 'Jenis voucher tidak valid'
+                ]
+            ],
+            'nominal' => [
+                'rules' => 'required|numeric|greater_than[0]',
+                'errors' => [
+                    'required' => 'Nominal voucher harus diisi',
+                    'numeric' => 'Nominal voucher harus berupa angka',
+                    'greater_than' => 'Nominal voucher harus lebih dari 0'
                 ]
             ],
             'jml_max' => [
@@ -282,16 +325,25 @@ class Voucher extends BaseController
                 ->withInput()
                 ->with('error', 'Batas maksimal tidak boleh kurang dari jumlah yang sudah digunakan (' . $voucher->jml_keluar . ')');
         }
+        
+        // Check if percentage voucher doesn't exceed 100%
+        if ($jenis_voucher === 'persen' && $nominal > 100) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Persentase voucher tidak boleh lebih dari 100%');
+        }
 
         // Generate data
         $data = [
-            'kode'       => $kode,
-            'jml'        => $jml,
-            'jml_max'    => $jml_max,
-            'tgl_masuk'  => $tgl_masuk,
-            'tgl_keluar' => $tgl_keluar,
-            'status'     => $status,
-            'keterangan' => $keterangan
+            'kode'          => $kode,
+            'jml'           => $jml,
+            'jenis_voucher' => $jenis_voucher,
+            'nominal'       => $nominal,
+            'jml_max'       => $jml_max,
+            'tgl_masuk'     => $tgl_masuk,
+            'tgl_keluar'    => $tgl_keluar,
+            'status'        => $status,
+            'keterangan'    => $keterangan
         ];
 
         if ($this->voucherModel->update($id, $data)) {

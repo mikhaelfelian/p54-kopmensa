@@ -483,6 +483,14 @@
                                 <p>API Tokens</p>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('pengaturan/printer') ?>"
+                                class="nav-link <?= isMenuActive('pengaturan/printer') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-print nav-icon"></i>
+                                <p>Printer</p>
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>

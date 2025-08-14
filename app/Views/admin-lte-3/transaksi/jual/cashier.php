@@ -13,6 +13,9 @@ helper('form');
 
 <?= $this->section('content') ?>
 
+<!-- Hidden CSRF token for AJAX requests -->
+<input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
+
 <div class="row">
     <!-- Left Column - Product Selection and Cart -->
     <div class="col-md-8">
@@ -22,6 +25,9 @@ helper('form');
                     <i class="fas fa-shopping-cart"></i> Kasir - Transaksi Penjualan
                 </h3>
                 <div class="card-tools">
+                    <button type="button" class="btn btn-info btn-sm me-2" id="refreshSession" title="Refresh Session">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="newTransaction">
                         <i class="fas fa-plus"></i> Transaksi Baru
                     </button>
@@ -39,9 +45,12 @@ helper('form');
                                 </button>
                             </div>
                         </div>
+                        <small class="text-muted">
+                            <i class="fas fa-barcode"></i> Barcode scanner aktif - scan langsung ke field ini
+                        </small>
                     </div>
                     <div class="col-md-4">
-                        <select class="form-control rounded-0" id="outletSelect">
+                        <select class="form-control rounded-0" id="warehouse_id">
                             <option value="">Pilih Outlet</option>
                             <?php foreach ($outlets as $outlet): ?>
                                 <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
@@ -63,7 +72,11 @@ helper('form');
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Products will be loaded here -->
+                            <tr id="noWarehouseMessage">
+                                <td colspan="5" class="text-center text-muted">
+                                    <i class="fas fa-info-circle"></i> Silakan pilih outlet terlebih dahulu untuk melihat produk
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -126,13 +139,91 @@ helper('form');
             </div>
             <div class="card-body">
                 <!-- Customer Selection -->
-                <div class="form-group">
-                    <label for="customerSelect">Pelanggan</label>
-                    <select class="form-control rounded-0 select2" id="customerSelect">
-                        <?php foreach ($customers as $customer): ?>
-                            <option value="<?= $customer->id ?>"><?= esc($customer->nama) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="form-group customer-type-radio">
+                    <label>Jenis Pelanggan</label>
+                    <div class="d-flex align-items-center">
+                        <div class="form-check mr-3 mb-0">
+                            <input class="form-check-input" type="radio" name="customerType" id="customerTypeUmum" value="umum" checked>
+                            <label class="form-check-label" for="customerTypeUmum">Umum</label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="radio" name="customerType" id="customerTypeAnggota" value="anggota">
+                            <label class="form-check-label" for="customerTypeAnggota">Anggota</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Scan Anggota Field (hidden by default) -->
+                <div class="form-group scan-anggota-field" id="scanAnggotaGroup" style="display: none;">
+                    <label for="scanAnggota">Scan QR Code Anggota</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control rounded-0" id="scanAnggota" placeholder="Scan QR code dari mobile atau ketik nomor kartu anggota">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" id="openQrScanner">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="searchAnggota">
+                                <i class="fas fa-qrcode"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Scan QR code dari mobile yang berisi id_pelanggan, atau ketik nomor kartu anggota secara manual
+                    </small>
+                    
+                    <!-- QR Scanner Modal -->
+                    <div class="modal fade qr-scanner-modal" id="qrScannerModal" tabindex="-1" role="dialog">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Scan QR Code Anggota</h5>
+                                    <button type="button" class="close" data-dismiss="modal">
+                                        <span>&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <div id="qrScannerContainer" class="qr-scanner-container">
+                                        <video id="qrVideo" width="100%" height="400" style="border: 1px solid #ddd;"></video>
+                                    </div>
+                                    <div id="qrScannerStatus" class="qr-scanner-status mt-2">
+                                        <p class="text-muted">Mengaktifkan kamera...</p>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                                    <button type="button" class="btn btn-warning" id="testQrScanBtn">Test QR Scan</button>
+                                    <button type="button" class="btn btn-primary" id="manualInputBtn">Input Manual</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
+                        <div class="alert alert-info">
+                            <strong>Anggota:</strong> <span id="anggotaNama"></span><br>
+                            <small>No. Kartu: <span id="anggotaNoKartu"></span></small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Hidden fields for customer data -->
+                <input type="hidden" id="selectedCustomerId" name="selectedCustomerId" value="">
+                <input type="hidden" id="selectedCustomerName" name="selectedCustomerName" value="">
+                <input type="hidden" id="selectedCustomerType" name="selectedCustomerType" value="umum">
+                
+                <!-- Customer Status Display -->
+                <div class="form-group customer-status-display" id="customerStatusDisplay" style="display: none;">
+                    <div class="alert alert-info">
+                        <strong>Status Pelanggan:</strong> 
+                        <span id="customerTypeDisplay">Umum</span>
+                        <div id="customerInfoDisplay" class="mt-1" style="display: none;">
+                            <small>
+                                <strong>Nama:</strong> <span id="displayCustomerName"></span><br>
+                                <strong>No. Kartu:</strong> <span id="displayCustomerCard"></span>
+                            </small>
+                        </div>
+                    </div>
                 </div>
                 <!-- Payment Summary -->
                 <div class="border rounded p-3 mb-3">
@@ -167,6 +258,16 @@ helper('form');
                             ]); ?>
                             <small class="text-muted" id="voucherInfo"></small>
                             <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
+                            <input type="hidden" id="voucherId" name="voucherId" value="">
+                            <input type="hidden" id="voucherType" name="voucherType" value="">
+                            <input type="hidden" id="voucherDiscountAmount" name="voucherDiscountAmount" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-2" id="voucherDiscountRow" style="display: none;">
+                        <div class="col-6">Potongan Voucher:</div>
+                        <div class="col-6 text-right">
+                            <span id="voucherDiscountDisplay">Rp 0</span>
                         </div>
                     </div>
                     
@@ -239,12 +340,27 @@ helper('form');
 
                 <!-- Action Buttons -->
                 <div class="row">
-                    <div class="col-6">
+                    <div class="col-12 mb-2">
+                        <button type="button" class="btn btn-info btn-block rounded-0" id="showDraftList">
+                            <i class="fas fa-list"></i> Daftar Draft
+                        </button>
+                    </div>
+                    <div class="col-3">
                         <button type="button" class="btn btn-success btn-block rounded-0" id="completeTransaction">
                             <i class="fas fa-check"></i> Proses
                         </button>
                     </div>
-                    <div class="col-6">
+                    <div class="col-3">
+                        <button type="button" class="btn btn-warning btn-block rounded-0" id="saveAsDraft">
+                            <i class="fas fa-save"></i> Draft
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" class="btn btn-info btn-block rounded-0" onclick="quickPrint()">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                    </div>
+                    <div class="col-3">
                         <button type="button" class="btn btn-danger btn-block rounded-0" id="cancelTransaction">
                             <i class="fas fa-times"></i> Batal
                         </button>
@@ -275,6 +391,12 @@ helper('form');
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-info" onclick="printReceipt('pdf')">
+                    <i class="fas fa-file-pdf"></i> Print PDF
+                </button>
+                <button type="button" class="btn btn-success" onclick="printReceipt('printer')">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
                 <button type="button" class="btn btn-primary" id="printReceipt">
                     <i class="fas fa-print"></i> Cetak Struk
                 </button>
@@ -294,10 +416,104 @@ helper('form');
         </button>
       </div>
       <div class="modal-body">
-        <div id="variantList"></div>
+        <div id="variantList">
+          <!-- Variants will be loaded here -->
+        </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Print Options Modal -->
+<div class="modal fade" id="printOptionsModal" tabindex="-1" role="dialog" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="printOptionsModalLabel">Pilih Metode Cetak</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card text-center">
+              <div class="card-body">
+                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                <h6>Cetak ke PDF</h6>
+                <p class="text-muted">Simpan sebagai file PDF atau cetak via browser</p>
+                <button type="button" class="btn btn-danger btn-block" onclick="printReceipt('pdf', window.currentPrintData)">
+                  <i class="fas fa-file-pdf"></i> PDF
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card text-center">
+              <div class="card-body">
+                <i class="fas fa-print fa-3x text-success mb-3"></i>
+                <h6>Cetak ke Printer</h6>
+                <p class="text-muted">Cetak langsung ke dot matrix printer</p>
+                <button type="button" class="btn btn-success btn-block" onclick="printReceipt('printer', window.currentPrintData)">
+                  <i class="fas fa-print"></i> Printer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Draft List Modal -->
+<div class="modal fade" id="draftListModal" tabindex="-1" role="dialog" aria-labelledby="draftListModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Daftar Draft Transaksi</h5>
+        <div>
+            <button type="button" class="btn btn-info btn-sm me-2" onclick="printAllDrafts()">
+                <i class="fas fa-print"></i> Print All
+            </button>
+            <button type="button" class="close" data-dismiss="modal">
+                <span>&times;</span>
+            </button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-striped" id="draftTable">
+            <thead>
+              <tr>
+                <th>No. Nota</th>
+                <th>Tanggal</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Outlet</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="draftTableBody">
+              <!-- Draft data will be loaded here -->
+            </tbody>
+          </table>
+        </div>
+        <div id="draftLoading" class="text-center" style="display: none;">
+          <i class="fas fa-spinner fa-spin"></i> Loading...
+        </div>
+        <div id="draftEmpty" class="text-center text-muted" style="display: none;">
+          <i class="fas fa-inbox"></i> Tidak ada draft transaksi
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>
@@ -322,29 +538,213 @@ helper('form');
     padding-left: 0px !important;
     padding-right: 0px !important;
 }
+
+.denomination-inputs {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 15px;
+}
+
+.denomination-tag {
+    background: white;
+    color: #28a745;
+    padding: 20px 15px;
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    min-height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.denomination-tag:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    background: #f8fff9;
+}
+
+.denomination-tag:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.denomination-label {
+    font-size: 16px;
+    font-weight: bold;
+    color: #28a745;
+}
+
+.denomination-tag.clicked {
+    transform: scale(1.05);
+    background: #28a745;
+    color: white;
+}
+
+.denomination-tag.clicked .denomination-label {
+    color: white;
+}
+
+.denomination-tag.reset {
+    transform: scale(0.95);
+    background: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.denomination-tag.reset .denomination-label {
+    color: white;
+}
+
+.denomination-tag.active {
+    transform: scale(1.05);
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+}
+
+.denomination-tag.active .denomination-label {
+    color: white;
+}
+
+/* Uang Pas button styling */
+#uangPas {
+    transition: all 0.3s ease;
+}
+
+#uangPas:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+#uangPas:active {
+    transform: translateY(0);
+}
+
+.customer-type-radio {
+    margin-bottom: 10px;
+}
+
+.customer-type-radio .form-check {
+    margin-bottom: 5px;
+}
+
+.scan-anggota-field {
+    border-left: 3px solid #007bff;
+    padding-left: 15px;
+    margin-top: 10px;
+}
+
+.customer-status-display {
+    border-left: 3px solid #28a745;
+    margin-bottom: 15px;
+}
+
+.anggota-info {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 10px;
+}
+    
+    .qr-scanner-modal .modal-lg {
+        max-width: 800px;
+    }
+    
+    .qr-scanner-container {
+        position: relative;
+        background-color: #000;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .qr-scanner-status {
+        margin-top: 15px;
+        padding: 10px;
+        border-radius: 4px;
+        background-color: #f8f9fa;
+    }
+    
+    .qr-scanner-status .text-success {
+        color: #28a745 !important;
+    }
+    
+    .qr-scanner-status .text-danger {
+        color: #dc3545 !important;
+    }
+    
+    .qr-scanner-status .text-muted {
+        color: #6c757d !important;
+    }
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('js') ?>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
 // Global variables
 let cart = [];
+let paymentCounter = 1;
+let currentDraftId = null; // Store current draft ID when loading a draft
 let currentTransactionId = null;
 let paymentMethods = [];
-let paymentCounter = 0;
 const PPN_PERCENTAGE = <?= $Pengaturan->ppn ?>; // Dynamic PPN from settings (included in price)
 
-$(document).ready(function() {
-    // Initialize Select2 for customer dropdown
-    $('#customerSelect').select2({
-        placeholder: 'Pilih pelanggan...',
-        allowClear: true,
-        width: '100%',
-        dropdownParent: $('#customerSelect').parent()
+// Global AJAX error handler for authentication issues
+$(document).ajaxError(function(event, xhr, settings) {
+    if (xhr.status === 401) {
+        // Authentication failed - show message and redirect to login
+        toastr.error('Sesi Anda telah berakhir. Silakan login ulang.');
+        setTimeout(function() {
+            window.location.href = '<?= base_url('auth/login') ?>';
+        }, 2000);
+    }
+});
+
+// Session keep-alive function - ping server every 5 minutes to keep session active
+function keepSessionAlive() {
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/refresh-session') ?>',
+        type: 'GET',
+        timeout: 5000,
+        success: function(response) {
+            if (response.success) {
+                // Session is still valid
+                console.log('Session refreshed successfully');
+            }
+        },
+        error: function(xhr, status, error) {
+            if (xhr.status === 401) {
+                // Session expired - redirect to login
+                toastr.error('Sesi Anda telah berakhir. Silakan login ulang.');
+                setTimeout(function() {
+                    window.location.href = '<?= base_url('auth/login') ?>';
+                }, 2000);
+            } else {
+                // Other errors - log but don't redirect
+                console.warn('Session check failed:', error);
+            }
+        }
     });
-    
+}
+
+// Start session keep-alive (every 5 minutes)
+setInterval(keepSessionAlive, 5 * 60 * 1000);
+
+$(document).ready(function() {
     // Initialize
-    loadProducts();
+    // Only load products if a warehouse is selected
+    if ($('#warehouse_id').val()) {
+        loadProducts();
+    }
     addPaymentMethod(); // Add first payment method by default
     
     // Event listeners
@@ -354,6 +754,129 @@ $(document).ready(function() {
     
     $('#searchBtn').on('click', function() {
         searchProducts($('#productSearch').val());
+    });
+    
+    // Warehouse selection change event
+    $('#warehouse_id').on('change', function() {
+        loadProducts();
+    });
+    
+    // Barcode scanner integration
+    let barcodeBuffer = '';
+    let barcodeTimeout;
+    let lastInputTime = 0;
+    let inputCount = 0;
+    let lastScannedBarcode = '';
+    let lastScanTime = 0;
+    
+    $('#productSearch').on('input', function() {
+        const currentTime = Date.now();
+        const inputValue = $(this).val();
+        inputCount++;
+        
+        // If input is very fast (typical of barcode scanner), treat it as a scan
+        if (currentTime - lastInputTime < 100 && inputValue.length > 5) {
+            // This is likely a barcode scan - clear the timeout and set a new one
+            clearTimeout(barcodeTimeout);
+            barcodeTimeout = setTimeout(function() {
+                const warehouseId = $('#warehouse_id').val();
+                if (warehouseId) {
+                    // Prevent duplicate scans of the same barcode within 2 seconds
+                    if (inputValue !== lastScannedBarcode || (currentTime - lastScanTime) > 2000) {
+                        lastScannedBarcode = inputValue;
+                        lastScanTime = currentTime;
+                        findProductByBarcode(inputValue, warehouseId);
+                    } else {
+                        console.log('Duplicate barcode scan prevented:', inputValue);
+                    }
+                }
+            }, 300); // Wait 300ms after last input to confirm it's a complete scan
+        }
+        
+        lastInputTime = currentTime;
+        
+        // Also handle normal search input (but only if not a barcode scan)
+        if (inputCount === 1 || currentTime - lastInputTime > 500) {
+            searchProducts(inputValue);
+        }
+    });
+    
+    $('#productSearch').on('keypress', function(e) {
+        if (e.which === 13) {
+            // Enter key pressed - check if this is a barcode scan
+            const scannedValue = $(this).val().trim();
+            
+            if (scannedValue.length > 0) {
+                // Check if warehouse is selected
+                const warehouseId = $('#warehouse_id').val();
+                if (!warehouseId) {
+                    toastr.warning('Silakan pilih outlet terlebih dahulu');
+                    return;
+                }
+                
+                // Try to find product by barcode/code
+                findProductByBarcode(scannedValue, warehouseId);
+            }
+        }
+    });
+    
+    // Reset input count when field is focused or cleared
+    $('#productSearch').on('focus', function() {
+        inputCount = 0;
+        lastScannedBarcode = '';
+    });
+    
+    $('#productSearch').on('blur', function() {
+        inputCount = 0;
+    });
+    
+    // Reset duplicate prevention when field is cleared
+    $('#productSearch').on('input', function() {
+        if ($(this).val() === '') {
+            lastScannedBarcode = '';
+            lastScanTime = 0;
+        }
+    });
+    
+    // Manual session refresh button
+    $('#refreshSession').on('click', function() {
+        const $btn = $(this);
+        const $icon = $btn.find('i');
+        
+        // Show loading state
+        $btn.prop('disabled', true);
+        $icon.removeClass('fa-sync-alt').addClass('fa-spinner fa-spin');
+        
+        // Call session refresh
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/refresh-session') ?>',
+            type: 'GET',
+            timeout: 10000,
+            success: function(response) {
+                if (response.success) {
+                    toastr.success('Session berhasil diperbarui');
+                    // Try to reload products to test if authentication is working
+                    loadProducts();
+                } else {
+                    toastr.error('Gagal memperbarui session');
+                }
+            },
+            error: function(xhr, status, error) {
+                if (xhr.status === 401) {
+                    toastr.error('Session telah berakhir. Silakan login ulang.');
+                    setTimeout(function() {
+                        window.location.href = '<?= base_url('auth/login') ?>';
+                    }, 2000);
+                } else {
+                    toastr.error('Gagal memperbarui session: ' + error);
+                }
+            },
+            complete: function() {
+                // Reset button state
+                $btn.prop('disabled', false);
+                $icon.removeClass('fa-spinner fa-spin').addClass('fa-sync-alt');
+            }
+        });
     });
     
     $('#discountPercent').on('input', calculateTotal);
@@ -366,12 +889,29 @@ $(document).ready(function() {
     $(document).on('click', '.remove-payment', removePaymentMethod);
     $(document).on('input', '.payment-amount', calculatePaymentTotals);
     $(document).on('change', '.payment-platform', calculatePaymentTotals);
+    $(document).on('change', '.payment-type', autoFillPaymentAmount);
+    $(document).on('click', '.denomination-tag', incrementDenomination);
+    $(document).on('contextmenu', '.denomination-tag', resetDenomination);
     
-    $('#completeTransaction').on('click', completeTransaction);
+    $('#completeTransaction').on('click', function(e) {
+        const customerType = $('#selectedCustomerType').val();
+        
+        if (customerType === 'anggota' && !$('#selectedCustomerId').val()) {
+            e.preventDefault();
+            toastr.error('Silakan scan kartu anggota terlebih dahulu');
+            $('#scanAnggota').focus();
+            return false;
+        }
+        
+        // Continue with normal transaction flow
+        completeTransaction(false);
+    });
+    $('#saveAsDraft').on('click', function() { completeTransaction(true); });
     $('#newTransaction').on('click', newTransaction);
     $('#holdTransaction').on('click', holdTransaction);
     $('#cancelTransaction').on('click', cancelTransaction);
-    $('#printReceipt').on('click', printReceipt);
+    $('#printReceipt').on('click', showPrinterModal);
+    $('#showDraftList').on('click', showDraftList);
     
     // Auto clear form when modal is closed
     $('#completeModal').on('hidden.bs.modal', function() {
@@ -384,6 +924,68 @@ $(document).ready(function() {
             searchProducts($(this).val());
         }
     });
+    
+    // Customer type radio button change event
+    $('input[name="customerType"]').on('change', function() {
+        const customerType = $(this).val();
+        $('#selectedCustomerType').val(customerType);
+        
+        if (customerType === 'anggota') {
+            $('#scanAnggotaGroup').show();
+            $('#scanAnggota').focus();
+            // Clear any existing customer data
+            $('#selectedCustomerId').val('');
+            $('#selectedCustomerName').val('');
+            $('#anggotaInfo').hide();
+            $('#customerStatusDisplay').show();
+            $('#customerTypeDisplay').text('Anggota');
+            $('#customerInfoDisplay').hide();
+        } else {
+            $('#scanAnggotaGroup').hide();
+            $('#scanAnggota').val('');
+            $('#anggotaInfo').hide();
+            // Clear customer data for umum
+            $('#selectedCustomerId').val('');
+            $('#selectedCustomerName').val('');
+            $('#customerStatusDisplay').hide();
+            $('#customerTypeDisplay').text('Umum');
+            $('#customerInfoDisplay').hide();
+        }
+    });
+    
+    // Scan anggota input event
+    $('#scanAnggota').on('keypress', function(e) {
+        if (e.which === 13) {
+            searchAnggota();
+        }
+    });
+    
+    // Search anggota button click
+    $('#searchAnggota').on('click', function() {
+        searchAnggota();
+    });
+    
+    // Open QR Scanner button click
+    $('#openQrScanner').on('click', function() {
+        openQrScanner();
+    });
+    
+    // Manual input button in QR scanner modal
+    $('#manualInputBtn').on('click', function() {
+        $('#qrScannerModal').modal('hide');
+        $('#scanAnggota').focus();
+    });
+    
+    // QR Scanner modal events
+    $('#qrScannerModal').on('shown.bs.modal', function() {
+        startQrScanner();
+    });
+    
+    $('#qrScannerModal').on('hidden.bs.modal', function() {
+        stopQrScanner();
+    });
+    
+
 });
 
 // Payment Methods Functions
@@ -428,7 +1030,55 @@ function addPaymentMethod() {
                     </button>
                 </div>
             </div>
-            <div class="row mt-2" style="display: none;">
+            <div class="row mt-2 denomination-inputs" style="display: none;">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="mb-0">Pecahan Uang:</label>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-success me-2" id="uangPas">
+                                <i class="fas fa-money-bill-wave"></i> Uang Pas
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAmount">
+                                <i class="fas fa-eraser"></i> Hapus
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <div class="denomination-tag" data-denomination="15000">
+                                <span class="denomination-label">15.000</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="denomination-tag" data-denomination="20000">
+                                <span class="denomination-label">20.000</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="denomination-tag" data-denomination="30000">
+                                <span class="denomination-label">30.000</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="denomination-tag" data-denomination="50000">
+                                <span class="denomination-label">50.000</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="denomination-tag" data-denomination="75000">
+                                <span class="denomination-label">75.000</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="denomination-tag" data-denomination="100000">
+                                <span class="denomination-label">100.000</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-2 reference-input" style="display: none;">
                 <div class="col-12">
                     <input type="text" class="form-control form-control-sm rounded-0" 
                            name="payments[${paymentCounter}][reference]" placeholder="No. Referensi (opsional)">
@@ -447,19 +1097,100 @@ function removePaymentMethod() {
     calculatePaymentTotals();
 }
 
+function autoFillPaymentAmount() {
+    const selectedValue = $(this).val();
+    const paymentRow = $(this).closest('.payment-method-row');
+    const amountField = paymentRow.find('.payment-amount');
+    const denominationInputs = paymentRow.find('.denomination-inputs');
+    const referenceInput = paymentRow.find('.reference-input');
+    
+    // Hide all input sections first
+    denominationInputs.hide();
+    referenceInput.hide();
+    
+    // Clear denomination selections when switching methods
+    paymentRow.find('.denomination-tag').removeClass('clicked');
+    
+    // If option 1 (Tunai) is selected, show denomination inputs
+    if (selectedValue === '1') {
+        denominationInputs.show();
+        amountField.val(''); // Clear amount field for manual input
+    }
+    // If option 2, 3, or 4 is selected, auto-fill with total bill amount and show reference input
+    else if (selectedValue === '2' || selectedValue === '3' || selectedValue === '4') {
+        // Get the grand total and remove formatting
+        const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+        amountField.val(grandTotal);
+        referenceInput.show();
+        
+        // Trigger calculation update
+        calculatePaymentTotals();
+    }
+}
+
+function incrementDenomination() {
+    const denomination = parseInt($(this).data('denomination')) || 0;
+    const paymentRow = $(this).closest('.payment-method-row');
+    const amountField = paymentRow.find('.payment-amount');
+    
+    // Set the amount to the clicked denomination value
+    amountField.val(denomination);
+    
+    // Remove clicked class from all denomination tags
+    paymentRow.find('.denomination-tag').removeClass('clicked');
+    
+    // Add clicked class to the selected denomination
+    $(this).addClass('clicked');
+    
+    // Trigger payment calculation
+    calculatePaymentTotals();
+}
+
+function resetDenomination(e) {
+    e.preventDefault(); // Prevent context menu
+    const paymentRow = $(this).closest('.payment-method-row');
+    const amountField = paymentRow.find('.payment-amount');
+    
+    // Reset amount field to 0
+    amountField.val('');
+    
+    // Remove clicked class from all denomination tags
+    paymentRow.find('.denomination-tag').removeClass('clicked');
+    
+    // Add visual feedback
+    $(this).addClass('reset');
+    setTimeout(() => $(this).removeClass('reset'), 200);
+    
+    // Trigger payment calculation
+    calculatePaymentTotals();
+}
+
 function calculatePaymentTotals() {
     let totalPaid = 0;
     // Remove dots (thousand separators) before parsing grand total
     const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
 
     $('.payment-amount').each(function() {
-        // Allow user to input with dots as thousand separator, remove them for calculation
-        let val = $(this).val();
-        if (typeof val === 'string') {
-            val = val.replace(/\./g, '').replace(',', '.');
+        const paymentRow = $(this).closest('.payment-method-row');
+        const paymentType = paymentRow.find('.payment-type').val();
+        
+        // If it's cash payment (type 1), use the amount field directly
+        if (paymentType === '1') {
+            let val = $(this).val();
+            if (typeof val === 'string') {
+                val = val.replace(/\./g, '').replace(',', '.');
+            }
+            const amount = parseFloat(val) || 0;
+            totalPaid += amount;
+        } else {
+            // For non-cash payments, use the amount field directly
+            let val = $(this).val();
+            if (typeof val === 'string') {
+                val = val.replace(/\./g, '').replace(',', '.');
+            }
+            const amount = parseFloat(val) || 0;
+            totalPaid += amount;
         }
-        const amount = parseFloat(val) || 0;
-        totalPaid += amount;
     });
 
     // Update displays with formatted currency (showing dots as thousand separator)
@@ -483,9 +1214,25 @@ function calculatePaymentTotals() {
 }
 
 function loadProducts() {
+    const warehouseId = $('#warehouse_id').val();
+    
+    if (!warehouseId) {
+        $('#productListTable tbody').html(`
+            <tr id="noWarehouseMessage">
+                <td colspan="5" class="text-center text-muted">
+                    <i class="fas fa-info-circle"></i> Silakan pilih outlet terlebih dahulu untuk melihat produk
+                </td>
+            </tr>
+        `);
+        return;
+    }
+    
     $.ajax({
         url: '<?= base_url('transaksi/jual/search-items') ?>',
-        type: 'GET',
+        type: 'POST',
+        data: {
+            warehouse_id: warehouseId
+        },
         success: function(response) {
             if (response.items) {
                 displayProducts(response.items);
@@ -493,11 +1240,25 @@ function loadProducts() {
         },
         error: function(xhr, status, error) {
             console.error('Error loading products:', error);
+            $('#productListTable tbody').html(`
+                <tr>
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error memuat produk: ${error}
+                    </td>
+                </tr>
+            `);
         }
     });
 }
 
 function searchProducts(query) {
+    const warehouseId = $('#warehouse_id').val();
+    
+    if (!warehouseId) {
+        toastr.warning('Silakan pilih outlet terlebih dahulu');
+        return;
+    }
+    
     if (query.length < 2) {
         loadProducts();
         return;
@@ -508,7 +1269,7 @@ function searchProducts(query) {
         type: 'POST',
         data: {
             search: query,
-            warehouse_id: $('#warehouseSelect').val()
+            warehouse_id: warehouseId
         },
         success: function(response) {
             if (response.items) {
@@ -517,56 +1278,156 @@ function searchProducts(query) {
         },
         error: function(xhr, status, error) {
             console.error('Error searching products:', error);
+            $('#productListTable tbody').html(`
+                <tr>
+                    <td colspan="5" class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error mencari produk: ${error}
+                    </td>
+                </tr>
+            `);
+        }
+    });
+}
+
+/**
+ * Find product by barcode/code and automatically add to cart
+ * @param {string} barcode - The scanned barcode or product code
+ * @param {string} warehouseId - The selected warehouse ID
+ */
+function findProductByBarcode(barcode, warehouseId) {
+    if (!barcode || !warehouseId) {
+        return;
+    }
+    
+    // Clean barcode input (remove carriage return, line feed, and extra spaces)
+    barcode = barcode.replace(/[\r\n]/g, '').trim();
+    
+    if (!barcode) {
+        return;
+    }
+    
+    // Show loading state
+    $('#productSearch').prop('disabled', true);
+    
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/search-items') ?>',
+        type: 'POST',
+        data: {
+            search: barcode,
+            warehouse_id: warehouseId
+        },
+        success: function(response) {
+            if (response.items && response.items.length > 0) {
+                const product = response.items[0]; // Get first matching product
+                
+                // Check if product already in cart by ID
+                const existingItemIndex = cart.findIndex(item => item.id === product.id);
+                
+                if (existingItemIndex !== -1) {
+                    // Product already exists - increment quantity
+                    cart[existingItemIndex].quantity += 1;
+                    cart[existingItemIndex].total = cart[existingItemIndex].quantity * cart[existingItemIndex].price;
+
+                } else {
+                    // Add new product to cart
+                    const cartItem = {
+                        id: product.id,
+                        name: product.item,
+                        code: product.kode,
+                        price: product.harga_jual || 0,
+                        quantity: 1,
+                        total: product.harga_jual || 0
+                    };
+                    
+                    cart.push(cartItem);
+
+                }
+                
+                // Update cart display and totals
+                updateCartDisplay();
+                calculateTotal();
+                
+                // Clear search field and focus for next scan
+                $('#productSearch').val('').focus();
+                
+            } else {
+                // Product not found
+                toastr.error(`Produk dengan barcode/kode ${barcode} tidak ditemukan`);
+                $('#productSearch').focus();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error finding product by barcode:', error);
+            toastr.error('Gagal mencari produk: ' + error);
+            $('#productSearch').focus();
+        },
+        complete: function() {
+            // Re-enable search field
+            $('#productSearch').prop('disabled', false);
         }
     });
 }
 
 function displayProducts(products) {
     let html = '';
-    products.forEach(function(product) {
-        const itemName = product.item || product.nama || product.produk || '-';
-        const category = product.kategori || '-';
-        const brand = product.merk || '-';
-        const price = product.harga_jual || product.harga || 0;
-        const stock = product.stok || 0;
-        const supplier = '[' + product.supplier + ']' || '-';
-        
-        html += `
+    
+    if (products && products.length > 0) {
+        products.forEach(function(product) {
+            const itemName = product.item || product.nama || product.produk || '-';
+            const category = product.kategori || '-';
+            const brand = product.merk || '-';
+            const price = product.harga_jual || product.harga || 0;
+            const stock = product.stok || 0;
+            
+            html += `
+                <tr>
+                    <td>${product.kode || '-'}</td>
+                    <td>
+                        <strong>${itemName}</strong><br>
+                        <small class="text-muted">${category} - ${brand}</small><br>
+                        <small class="text-muted">Stok: ${stock} ${product.satuan || 'PCS'}</small>
+                    </td>
+                    <td>Rp ${numberFormat(price)}</td>
+                    <td>${stock}</td>
+                    <td>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    } else {
+        html = `
             <tr>
-                <td>${product.kode || '-'}</td>
-                <td>
-                    <strong>${itemName}</strong><br>
-                    <small class="text-muted">${category} - ${brand}</small><br>
-                    ${product.supplier ? `<small class="text-muted">[${product.supplier}]</small>` : ''}
-                </td>
-                <td>Rp ${numberFormat(price)}</td>
-                <td>${stock}</td>
-                <td>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
-                        <i class="fas fa-plus"></i>
-                    </button>
+                <td colspan="5" class="text-center text-muted">
+                    <i class="fas fa-search"></i> Tidak ada produk ditemukan
                 </td>
             </tr>
         `;
-    });
+    }
     
     $('#productListTable tbody').html(html);
 }
 
 // Function to check for variants and handle add to cart
 function checkVariant(productId, productName, productCode, price) {
-    $.get('<?= base_url('transaksi/jual/get_variants') ?>/' + productId, function(response) {
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/get_variants') ?>/' + productId,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
         if (response.success && response.variants && response.variants.length > 0) {
             // Show modal with variants
             let variantHtml = '<div class="list-group">';
             response.variants.forEach(function(variant) {
                 variantHtml += `
-                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="selectVariantToCart(${productId}, '${productName.replace(/'/g, "\\'")}', '${productCode}', ${variant.id}, '${variant.nama.replace(/'/g, "\\'")}', ${variant.harga_jual_value || 0})">
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="selectVariantToCart(${productId}, '${productName.replace(/'/g, "\\'")}', '${productCode}', ${variant.id}, '${variant.nama.replace(/'/g, "\\'")}', ${variant.harga_jual || 0})">
                         <span>
                             <strong>${variant.nama}</strong><br>
                             <small>Kode: ${variant.kode}</small>
                         </span>
-                        <span class="badge badge-primary badge-pill">Rp ${numberFormat(variant.harga_jual_value || 0)}</span>
+                        <span class="badge badge-primary badge-pill">Rp ${numberFormat(variant.harga_jual || 0)}</span>
                     </button>
                 `;
             });
@@ -577,7 +1438,21 @@ function checkVariant(productId, productName, productCode, price) {
             // No variants, add directly
             addToCart(productId, productName, productCode, price);
         }
-    }, 'json');
+        },
+        error: function(xhr, status, error) {
+            if (xhr.status === 401) {
+                // Authentication failed - redirect to login
+                toastr.error('Sesi Anda telah berakhir. Silakan login ulang.');
+                setTimeout(function() {
+                    window.location.href = '<?= base_url('auth/login') ?>';
+                }, 2000);
+            } else {
+                // Other errors - try to add product directly without variants
+                console.warn('Failed to get variants, adding product directly:', error);
+                addToCart(productId, productName, productCode, price);
+            }
+        }
+    });
 }
 
 // Function to add selected variant to cart
@@ -593,6 +1468,7 @@ function addToCart(productId, productName, productCode, price) {
     if (existingItem) {
         existingItem.quantity += 1;
         existingItem.total = existingItem.quantity * existingItem.price;
+
     } else {
         cart.push({
             id: productId,
@@ -602,6 +1478,7 @@ function addToCart(productId, productName, productCode, price) {
             quantity: 1,
             total: price
         });
+
     }
     
     updateCartDisplay();
@@ -681,9 +1558,31 @@ function calculateTotal() {
     const afterDiscount = subtotal - discountAmount;
     
     // Calculate voucher discount
+    const voucherType = $('#voucherType').val();
+    let voucherDiscountAmount = 0;
+    
+    if (voucherType === 'persen') {
+        // Percentage voucher
     const voucherDiscountPercent = parseFloat($('#voucherDiscount').val()) || 0;
-    const voucherDiscountAmount = afterDiscount * (voucherDiscountPercent / 100);
+        voucherDiscountAmount = afterDiscount * (voucherDiscountPercent / 100);
+    } else if (voucherType === 'nominal') {
+        // Nominal voucher (fixed amount)
+        voucherDiscountAmount = parseFloat($('#voucherDiscountAmount').val()) || 0;
+        // Ensure voucher discount doesn't exceed the amount after regular discount
+        if (voucherDiscountAmount > afterDiscount) {
+            voucherDiscountAmount = afterDiscount;
+        }
+    }
+    
     const afterVoucherDiscount = afterDiscount - voucherDiscountAmount;
+    
+    // Show/hide voucher discount row and update display
+    if (voucherDiscountAmount > 0) {
+        $('#voucherDiscountRow').show();
+        $('#voucherDiscountDisplay').text(`Rp ${numberFormat(voucherDiscountAmount)}`);
+    } else {
+        $('#voucherDiscountRow').hide();
+    }
     
     // Calculate DPP (Tax Base) - extract PPN from the subtotal
     const dppAmount = afterVoucherDiscount * (100 / (100 + PPN_PERCENTAGE)); // Calculate DPP from inclusive price
@@ -705,6 +1604,10 @@ function calculateTotal() {
 function validateVoucher(voucherCode) {
     if (!voucherCode) {
         $('#voucherInfo').text('').removeClass('text-success text-danger');
+        $('#voucherDiscount').val(0);
+        $('#voucherId').val('');
+        $('#voucherType').val('');
+        $('#voucherDiscountAmount').val(0);
         return;
     }
     
@@ -716,18 +1619,34 @@ function validateVoucher(voucherCode) {
         },
         success: function(response) {
             if (response.valid) {
-                $('#voucherInfo').text('Voucher valid: ' + response.discount + '%').removeClass('text-danger').addClass('text-success');
+                let displayText = '';
+                if (response.jenis_voucher === 'persen') {
+                    displayText = `Voucher valid: ${response.discount}%`;
+                } else if (response.jenis_voucher === 'nominal') {
+                    displayText = `Voucher valid: Rp ${numberFormat(response.discount_amount)}`;
+                }
+                
+                $('#voucherInfo').text(displayText).removeClass('text-danger').addClass('text-success');
                 $('#voucherDiscount').val(response.discount);
+                $('#voucherId').val(response.voucher_id);
+                $('#voucherType').val(response.jenis_voucher);
+                $('#voucherDiscountAmount').val(response.discount_amount);
                 calculateTotal();
             } else {
-                $('#voucherInfo').text('Voucher tidak valid').removeClass('text-success').addClass('text-danger');
+                $('#voucherInfo').text(response.message || 'Voucher tidak valid').removeClass('text-success').addClass('text-danger');
                 $('#voucherDiscount').val(0);
+                $('#voucherId').val('');
+                $('#voucherType').val('');
+                $('#voucherDiscountAmount').val(0);
                 calculateTotal();
             }
         },
         error: function() {
             $('#voucherInfo').text('Error validasi voucher').removeClass('text-success').addClass('text-danger');
             $('#voucherDiscount').val(0);
+            $('#voucherId').val('');
+            $('#voucherType').val('');
+            $('#voucherDiscountAmount').val(0);
             calculateTotal();
         }
     });
@@ -738,21 +1657,38 @@ function formatCurrency(amount) {
     return `Rp ${numberFormat(amount)}`;
 }
 
-function completeTransaction() {
+function numberFormat(number) {
+    return new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(Math.round(number || 0));
+}
+
+function completeTransaction(isDraft = false) {
     if (cart.length === 0) {
         toastr.error('Keranjang belanja kosong');
         return;
     }
 
-    const outletId = $('#outletSelect').val();
+    const outletId = $('#warehouse_id').val();
     if (!outletId) {
         toastr.error('Outlet belum dipilih');
         return;
     }
     
-    // Validate payment methods
-    const paymentMethods = [];
+    console.log('completeTransaction called - isDraft:', isDraft, 'currentDraftId:', currentDraftId);
+    
+    // Calculate grand total (needed for both draft and completed transactions)
+    const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
+    
+    // Initialize payment variables (needed for both draft and completed transactions)
+    let paymentMethods = [];
     let totalPaymentAmount = 0;
+    
+    // If it's a draft, skip payment validation
+    if (!isDraft) {
+    
+    // Validate payment methods
     let hasValidPayment = false;
     
     $('.payment-method-row').each(function() {
@@ -767,7 +1703,7 @@ function completeTransaction() {
                 type: type,
                 platform_id: platformId,
                 amount: amount,
-                reference: reference
+                reference: reference || ''
             });
             totalPaymentAmount += amount;
         }
@@ -778,79 +1714,113 @@ function completeTransaction() {
         return;
     }
     
-    const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
-    
     if (totalPaymentAmount < grandTotal) {
         toastr.error(`Jumlah bayar (${formatCurrency(totalPaymentAmount)}) kurang dari total (${formatCurrency(grandTotal)})`);
         return;
     }
+    } // End of draft check
     
     // Prepare transaction data
+    // Clean cart data to ensure it can be serialized
+    const cleanCart = cart.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: parseInt(item.quantity) || 0,
+        price: parseFloat(item.price) || 0,
+        total: parseFloat(item.total) || 0,
+        kode: item.kode || '',
+        harga_beli: parseFloat(item.harga_beli) || 0,
+        satuan: item.satuan || 'PCS',
+        kategori: item.kategori || '',
+        merk: item.merk || ''
+    }));
+    
     const transactionData = {
-        cart: cart,
-        customer_id: $('#customerSelect').val() || null,
-        warehouse_id: $('#outletSelect').val() || null,
+        cart: cleanCart,
+        customer_id: $('#selectedCustomerId').val() || null,
+        customer_type: $('#selectedCustomerType').val(),
+        customer_name: $('#selectedCustomerName').val() || null,
+        warehouse_id: $('#warehouse_id').val() || null,
         discount_percent: parseFloat($('#discountPercent').val()) || 0,
         voucher_code: $('#voucherCode').val() || null,
         voucher_discount: parseFloat($('#voucherDiscount').val()) || 0,
-        payment_methods: paymentMethods,
-        total_amount_received: totalPaymentAmount,
-        grand_total: grandTotal
+        voucher_id: $('#voucherId').val() || null,
+        voucher_type: $('#voucherType').val() || null,
+        voucher_discount_amount: parseFloat($('#voucherDiscountAmount').val()) || 0,
+        payment_methods: isDraft ? [] : paymentMethods,
+        total_amount_received: isDraft ? 0 : totalPaymentAmount,
+        grand_total: grandTotal,
+        is_draft: isDraft,
+        draft_id: currentDraftId // Include draft ID if converting from draft
     };
     
     // Show loading state
-    $('#completeTransaction').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Memproses...');
+    const buttonId = isDraft ? '#saveAsDraft' : '#completeTransaction';
+    const buttonText = isDraft ? 'Menyimpan Draft...' : 'Memproses...';
+    $(buttonId).prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${buttonText}`);
     
 
     
     // Send transaction to server
+    console.log('Sending transaction data:', transactionData);
+    console.log('Current draft ID:', currentDraftId);
+    console.log('Is draft:', isDraft);
+    
     $.ajax({
         url: '<?= base_url('transaksi/jual/process-transaction') ?>',
         type: 'POST',
         data: transactionData,
         success: function(response) {
             if (response.success) {
-                // Check if payment method includes Piutang (value='3')
-                const hasPiutang = paymentMethods.some(pm => pm.type === '3');
-                
-                if (hasPiutang) {
-                    // Store transaction info for QR scanner
-                    window.lastTransaction = {
-                        id: response.transaction_id,
-                        no_nota: response.no_nota,
-                        total: response.total,
-                        change: response.change,
-                        payment_type: 'piutang'
-                    };
-                    
-                    // Redirect to mobile QR scanner page
-                    window.open('<?= base_url('transaksi/jual/qr-scanner') ?>/' + response.transaction_id, '_blank');
-                    toastr.success('Transaksi Piutang berhasil! Arahkan ke halaman scan QR.');
+                if (isDraft) {
+                    // Draft transaction saved successfully
+                    toastr.success('Draft transaksi berhasil disimpan!');
                     
                     // Clear form for next transaction
                     clearTransactionForm();
                 } else {
-                    // Normal transaction completion
-                    $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
+                    // Check if payment method includes Piutang (value='3')
+                    const hasPiutang = paymentMethods.some(pm => pm.type === '3');
                     
-                    // Build payment methods summary
-                    let paymentSummary = '';
-                    paymentMethods.forEach(pm => {
-                        const methodName = pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang';
-                        paymentSummary += `${methodName}: ${formatCurrency(pm.amount)}<br>`;
-                    });
-                    $('#finalPaymentMethod').html(paymentSummary);
-                    $('#completeModal').modal('show');
-                    
-                    // Store transaction info for receipt printing
-                    window.lastTransaction = {
-                        id: response.transaction_id,
-                        no_nota: response.no_nota,
-                        total: response.total,
-                        change: response.change
-                    };
-                    
-                    toastr.success(response.message);
+                    if (hasPiutang) {
+                        // Store transaction info for QR scanner
+                        window.lastTransaction = {
+                            id: response.transaction_id,
+                            no_nota: response.no_nota,
+                            total: response.total,
+                            change: response.change,
+                            payment_type: 'piutang'
+                        };
+                        
+                        // Redirect to mobile QR scanner page
+                        window.open('<?= base_url('transaksi/jual/qr-scanner') ?>/' + response.transaction_id, '_blank');
+                        toastr.success('Transaksi Piutang berhasil! Arahkan ke halaman scan QR.');
+                        
+                        // Clear form for next transaction
+                        clearTransactionForm();
+                    } else {
+                        // Normal transaction completion
+                        $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
+                        
+                        // Build payment methods summary
+                        let paymentSummary = '';
+                        paymentMethods.forEach(pm => {
+                            const methodName = pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang';
+                            paymentSummary += `${methodName}: ${formatCurrency(pm.amount)}<br>`;
+                        });
+                        $('#finalPaymentMethod').html(paymentSummary);
+                        $('#completeModal').modal('show');
+                        
+                        // Store transaction info for receipt printing
+                        window.lastTransaction = {
+                            id: response.transaction_id,
+                            no_nota: response.no_nota,
+                            total: response.total,
+                            change: response.change
+                        };
+                        
+                        toastr.success(response.message);
+                    }
                 }
             } else {
                 toastr.error(response.message || 'Gagal memproses transaksi');
@@ -862,38 +1832,71 @@ function completeTransaction() {
         },
         complete: function() {
             // Reset button state
-            $('#completeTransaction').prop('disabled', false).html('<i class="fas fa-check"></i> Selesai');
+            $('#completeTransaction').prop('disabled', false).html('<i class="fas fa-check"></i> Proses');
+            $('#saveAsDraft').prop('disabled', false).html('<i class="fas fa-save"></i> Draft');
         }
     });
 }
 
 function newTransaction() {
     cart = [];
+    currentDraftId = null; // Clear current draft ID
     updateCartDisplay();
     calculateTotal();
-    $('#customerSelect').val('');
-
+    
+    // Reset customer selection
+    $('#customerTypeUmum').prop('checked', true).trigger('change');
+    $('#selectedCustomerId').val('');
+    $('#selectedCustomerName').val('');
+    $('#selectedCustomerType').val('umum');
+    $('#customerStatusDisplay').hide();
+    $('#customerInfoDisplay').hide();
+    
     $('#discountPercent').val('');
     $('#voucherCode').val('');
     $('#voucherInfo').text('');
+    $('#voucherDiscountRow').hide();
     $('#paymentMethod').val('');
-    $('#amountReceived').val('');
-    $('#productSearch').val('').focus();
+    // Clear payment amounts in all payment method rows
+    $('.payment-amount').val('');
+    $('#productSearch').val('');
+    
+    // Reset warehouse selection and show message
+    $('#warehouse_id').val('');
+    $('#productListTable tbody').html(`
+        <tr id="noWarehouseMessage">
+            <td colspan="5" class="text-center text-muted">
+                <i class="fas fa-info-circle"></i> Silakan pilih outlet terlebih dahulu untuk melihat produk
+            </td>
+        </tr>
+    `);
+    
+    $('#productSearch').focus();
 }
 
 function clearTransactionForm() {
     // Clear cart
     cart = [];
+    currentDraftId = null; // Clear current draft ID
     updateCartDisplay();
     
     // Reset customer selection
-    $('#customerSelect').val('').trigger('change');
+    $('#customerTypeUmum').prop('checked', true).trigger('change');
+    $('#selectedCustomerId').val('');
+    $('#selectedCustomerName').val('');
+    $('#selectedCustomerType').val('umum');
+    $('#customerStatusDisplay').hide();
+    $('#customerInfoDisplay').hide();
     
     // Clear discount and voucher fields
     $('#discountPercent').val('');
     $('#voucherCode').val('');
     $('#voucherInfo').text('').removeClass('text-success text-danger');
     $('#voucherDiscount').val('0');
+    $('#voucherId').val('');
+    $('#voucherType').val('');
+    $('#voucherDiscountAmount').val(0);
+    $('#voucherDiscountRow').hide();
     
     // Reset payment methods
     $('#paymentMethods').empty();
@@ -904,6 +1907,16 @@ function clearTransactionForm() {
     // Clear product search
     $('#productSearch').val('');
     
+    // Reset warehouse selection and show message
+    $('#warehouse_id').val('');
+    $('#productListTable tbody').html(`
+        <tr id="noWarehouseMessage">
+            <td colspan="5" class="text-center text-muted">
+                <i class="fas fa-info-circle"></i> Silakan pilih outlet terlebih dahulu untuk melihat produk
+            </td>
+        </tr>
+    `);
+    
     // Recalculate totals
     calculateTotal();
     
@@ -911,16 +1924,15 @@ function clearTransactionForm() {
     setTimeout(function() {
         $('#productSearch').focus();
     }, 500);
-    
-    // Show success message
-    toastr.success('Form berhasil direset untuk transaksi baru');
 }
 
 function holdTransaction() {
     // Save current transaction to session/localStorage for later retrieval
     const transactionData = {
         cart: cart,
-        customer: $('#customerSelect').val(),
+        customer_id: $('#selectedCustomerId').val(),
+        customer_type: $('#selectedCustomerType').val(),
+        customer_name: $('#selectedCustomerName').val(),
         discount: $('#discountPercent').val(),
         voucher: $('#voucherCode').val(),
         paymentMethod: $('#paymentMethod').val()
@@ -933,27 +1945,970 @@ function holdTransaction() {
 
 function cancelTransaction() {
     if (confirm('Yakin ingin membatalkan transaksi ini?')) {
+        currentDraftId = null; // Clear current draft ID
         newTransaction();
     }
 }
 
-function printReceipt() {
-    // Implement receipt printing logic
-    toastr.success('Struk berhasil dicetak');
-    $('#completeModal').modal('hide');
-    newTransaction();
+/**
+ * Print function that supports both PDF and dot matrix printers
+ * @param {string} type - 'pdf' for browser PDF, 'printer' for dot matrix
+ * @param {object} transactionData - Transaction data to print
+ */
+function printReceipt(type = 'pdf', transactionData = null) {
+    // If no transaction data provided, use current transaction
+    if (!transactionData) {
+        transactionData = {
+            no_nota: $('#noNotaDisplay').text() || 'DRAFT',
+            customer_name: $('#selectedCustomerName').val() || 'Umum',
+            customer_type: $('#selectedCustomerType').val() || 'umum',
+            items: cart,
+            subtotal: parseFloat($('#subtotalDisplay').text().replace(/[^\d]/g, '')) || 0,
+            discount: parseFloat($('#discountPercent').val()) || 0,
+            voucher: $('#voucherCode').val() || '',
+            ppn: PPN_PERCENTAGE,
+            total: parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0,
+            payment_methods: paymentMethods,
+            date: new Date().toLocaleString('id-ID'),
+            outlet: $('#warehouse_id option:selected').text() || 'Outlet'
+        };
+    }
+    
+    if (type === 'pdf') {
+        printToPDF(transactionData);
+    } else {
+        printToPrinter(transactionData);
+    }
 }
 
-function numberFormat(number) {
-    return new Intl.NumberFormat('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(Math.round(number || 0));
+/**
+ * Print to PDF using browser's print functionality
+ */
+function printToPDF(transactionData) {
+    // Create print window with receipt HTML
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    const receiptHTML = generateReceiptHTML(transactionData);
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Struk - ${transactionData.no_nota}</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 10px; }
+                    .no-print { display: none; }
+                    .receipt { font-family: 'Courier New', monospace; font-size: 12px; }
+                }
+                .receipt { 
+                    font-family: 'Courier New', monospace; 
+                    font-size: 12px; 
+                    max-width: 300px; 
+                    margin: 0 auto; 
+                    padding: 10px;
+                }
+                .header { text-align: center; margin-bottom: 15px; }
+                .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                .item { margin: 5px 0; }
+                .total { font-weight: bold; margin: 10px 0; }
+                .footer { text-align: center; margin-top: 15px; font-size: 10px; }
+                .btn { 
+                    background: #007bff; 
+                    color: white; 
+                    padding: 10px 20px; 
+                    border: none; 
+                    border-radius: 5px; 
+                    cursor: pointer; 
+                    margin: 5px;
+                }
+                .btn:hover { background: #0056b3; }
+            </style>
+        </head>
+        <body>
+            ${receiptHTML}
+            <div class="no-print" style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="window.print()">Print PDF</button>
+                <button class="btn" onclick="window.close()">Close</button>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+}
+
+/**
+ * Print to dot matrix printer using HTML
+ */
+function printToPrinter(transactionData) {
+    // Create print window optimized for dot matrix printers
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    const receiptHTML = generateReceiptHTML(transactionData);
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Print - ${transactionData.no_nota}</title>
+            <style>
+                @media print {
+                    body { margin: 0; padding: 5px; }
+                    .no-print { display: none; }
+                    .receipt { 
+                        font-family: 'Courier New', monospace; 
+                        font-size: 10px; 
+                        line-height: 1.2;
+                        max-width: 200px;
+                    }
+                }
+                .receipt { 
+                    font-family: 'Courier New', monospace; 
+                    font-size: 10px; 
+                    line-height: 1.2;
+                    max-width: 200px; 
+                    margin: 0 auto; 
+                    padding: 5px;
+                }
+                .header { text-align: center; margin-bottom: 10px; }
+                .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                .item { margin: 3px 0; }
+                .total { font-weight: bold; margin: 8px 0; }
+                .footer { text-align: center; margin-top: 10px; font-size: 8px; }
+                .btn { 
+                    background: #28a745; 
+                    color: white; 
+                    padding: 8px 16px; 
+                    border: none; 
+                    border-radius: 4px; 
+                    cursor: pointer; 
+                    margin: 3px;
+                    font-size: 12px;
+                }
+                .btn:hover { background: #218838; }
+            </style>
+        </head>
+        <body>
+            ${receiptHTML}
+            <div class="no-print" style="text-align: center; margin-top: 15px;">
+                <button class="btn" onclick="window.print()">Print to Dot Matrix</button>
+                <button class="btn" onclick="window.close()">Close</button>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+}
+
+/**
+ * Generate receipt HTML content
+ */
+function generateReceiptHTML(transactionData) {
+    const { no_nota, customer_name, customer_type, items, subtotal, discount, voucher, ppn, total, payment_methods, date, outlet } = transactionData;
+    
+    let itemsHTML = '';
+    items.forEach(item => {
+        itemsHTML += `
+            <div class="item">
+                <div>${item.name}</div>
+                <div>${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}</div>
+            </div>
+        `;
+    });
+    
+    let paymentHTML = '';
+    if (payment_methods && payment_methods.length > 0) {
+        payment_methods.forEach(pm => {
+            const methodName = pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang';
+            paymentHTML += `<div>${methodName}: ${formatCurrency(pm.amount)}</div>`;
+        });
+    }
+    
+    return `
+        <div class="receipt">
+            <div class="header">
+                <h3>KOPMENSA</h3>
+                <div>${outlet}</div>
+                <div>${date}</div>
+                <div>No: ${no_nota}</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="customer">
+                <div>Customer: ${customer_name}</div>
+                <div>Type: ${customer_type}</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="items">
+                ${itemsHTML}
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="summary">
+                <div>Subtotal: ${formatCurrency(subtotal)}</div>
+                ${discount > 0 ? `<div>Diskon: ${discount}%</div>` : ''}
+                ${voucher ? `<div>Voucher: ${voucher}</div>` : ''}
+                <div>PPN (${ppn}%): ${formatCurrency(subtotal * ppn / 100)}</div>
+                <div class="total">TOTAL: ${formatCurrency(total)}</div>
+            </div>
+            
+            ${paymentHTML ? `
+                <div class="divider"></div>
+                <div class="payment">
+                    <div><strong>Pembayaran:</strong></div>
+                    ${paymentHTML}
+                </div>
+            ` : ''}
+            
+            <div class="divider"></div>
+            
+            <div class="footer">
+                <div>Terima kasih atas kunjungan Anda</div>
+                <div>Barang yang sudah dibeli tidak dapat dikembalikan</div>
+                <div>Powered by Kopmensa System</div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Quick print function for current transaction
+ */
+function quickPrint() {
+    if (cart.length === 0) {
+        toastr.error('Tidak ada transaksi untuk dicetak');
+        return;
+    }
+    
+    // Show print options modal
+    $('#printOptionsModal').modal('show');
+}
+
+/**
+ * Print draft transaction
+ */
+function printDraft(draftId) {
+    // Get draft data and print
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/get-draft/') ?>' + draftId,
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                const draft = response.draft;
+                const transactionData = {
+                    no_nota: draft.no_nota,
+                    customer_name: draft.customer_name || 'Umum',
+                    customer_type: draft.customer_type || 'umum',
+                    items: draft.items,
+                    subtotal: draft.total * (100 / (100 + PPN_PERCENTAGE)), // Calculate subtotal from total
+                    discount: draft.discount_percent || 0,
+                    voucher: draft.voucher_code || '',
+                    ppn: PPN_PERCENTAGE,
+                    total: draft.total,
+                    payment_methods: [],
+                    date: new Date(draft.created_at).toLocaleString('id-ID'),
+                    outlet: 'Draft'
+                };
+                
+                // Show print options
+                $('#printOptionsModal').modal('show');
+                // Store draft data for printing
+                window.currentPrintData = transactionData;
+            } else {
+                toastr.error('Gagal memuat data draft');
+            }
+        },
+        error: function(xhr, status, error) {
+            toastr.error('Gagal memuat data draft: ' + error);
+        }
+    });
 }
 
 function viewTransaction(transactionId) {
     // Redirect to the main transaction list with a filter for this specific transaction
     window.open('<?= base_url('transaksi/jual') ?>?search=' + transactionId, '_blank');
+}
+
+// Denomination click functionality for uang pas
+$(document).ready(function() {
+    $('.denomination-tag').on('click', function() {
+        const denomination = parseInt($(this).data('denomination'));
+        // Find the payment amount field in the same row
+        const paymentRow = $(this).closest('.payment-method-row');
+        const amountField = paymentRow.find('.payment-amount');
+        const currentAmount = parseFloat(amountField.val()) || 0;
+        const newAmount = currentAmount + denomination;
+        
+        amountField.val(newAmount);
+        
+        // Trigger change event to recalculate totals
+        amountField.trigger('change');
+        
+        // Add visual feedback
+        $(this).addClass('active');
+        setTimeout(() => {
+            $(this).removeClass('active');
+        }, 200);
+        
+        // Show success message
+        toastr.success(`Ditambahkan: Rp ${numberFormat(denomination)}`);
+    });
+    
+    // Clear amount button functionality
+    $('#clearAmount').on('click', function() {
+        // Find the payment amount field in the same row
+        const paymentRow = $(this).closest('.payment-method-row');
+        const amountField = paymentRow.find('.payment-amount');
+        
+        amountField.val('');
+        amountField.trigger('change');
+        toastr.info('Jumlah uang diterima berhasil dihapus');
+    });
+    
+    // Uang Pas button functionality - sets amount received equal to grand total
+    $('#uangPas').on('click', function() {
+        const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
+        
+        console.log('Uang Pas clicked. Grand total:', grandTotal);
+        
+        if (grandTotal > 0) {
+            // Find the current payment method row (first one or active one)
+            const currentPaymentRow = $('.payment-method-row').first();
+            const amountField = currentPaymentRow.find('.payment-amount');
+            
+            console.log('Payment row found:', currentPaymentRow.length > 0);
+            console.log('Amount field found:', amountField.length > 0);
+            
+            if (amountField.length > 0) {
+                // Set the amount to grand total
+                amountField.val(grandTotal);
+                // Trigger change to recalculate totals
+                amountField.trigger('change');
+                toastr.success(`Uang pas: Rp ${numberFormat(grandTotal)}`);
+                console.log('Amount set successfully to:', grandTotal);
+            } else {
+                toastr.error('Field jumlah pembayaran tidak ditemukan');
+                console.error('Amount field not found');
+            }
+        } else {
+            toastr.warning('Grand total belum dihitung. Silakan tambahkan produk terlebih dahulu.');
+            console.warn('Grand total is 0 or not calculated');
+        }
+    });
+    
+    // Load available printers
+    loadPrinters();
+});
+
+// Printer functionality
+function loadPrinters() {
+    $.ajax({
+        url: '<?= base_url('pengaturan/printer') ?>',
+        type: 'GET',
+        success: function(response) {
+            // Parse the HTML response to extract printer data
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(response, 'text/html');
+            const printerRows = doc.querySelectorAll('tbody tr');
+            
+            const printerSelect = $('#printerSelect');
+            printerSelect.empty();
+            printerSelect.append('<option value="">Gunakan Printer Default</option>');
+            
+            printerRows.forEach(function(row) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 8) {
+                    const printerId = row.querySelector('a[href*="/edit/"]')?.href.match(/\/edit\/(\d+)/)?.[1];
+                    const printerName = cells[1]?.textContent?.trim();
+                    
+                    if (printerId && printerName) {
+                        printerSelect.append(`<option value="${printerId}">${printerName}</option>`);
+                    }
+                }
+            });
+        },
+        error: function() {
+            console.warn('Failed to load printers');
+        }
+    });
+}
+
+function showPrinterModal() {
+    $('#printerModal').modal('show');
+}
+
+function testPrinterConnection() {
+    const selectedPrinter = $('#printerSelect').val();
+    const $btn = $('#testPrinter');
+    const $icon = $btn.find('i');
+    
+    if (!selectedPrinter) {
+        toastr.warning('Pilih printer terlebih dahulu');
+        return;
+    }
+    
+    // Show loading state
+    $btn.prop('disabled', true);
+    $icon.removeClass('fa-plug').addClass('fa-spinner fa-spin');
+    
+    $.ajax({
+        url: '<?= base_url('pengaturan/printer/test') ?>/' + selectedPrinter,
+        type: 'GET',
+        success: function(response) {
+            if (response.success) {
+                toastr.success('Test printer berhasil!');
+            } else {
+                toastr.error('Test printer gagal: ' + response.message);
+            }
+        },
+        error: function() {
+            toastr.error('Gagal melakukan test printer');
+        },
+        complete: function() {
+            // Reset button state
+            $btn.prop('disabled', false);
+            $icon.removeClass('fa-spinner fa-spin').addClass('fa-plug');
+        }
+    });
+}
+
+function printReceiptWithPrinter() {
+    const selectedPrinter = $('#printerSelect').val();
+    const transactionId = getCurrentTransactionId(); // You'll need to implement this
+    
+    if (!transactionId) {
+        toastr.error('Tidak ada transaksi yang aktif');
+        return;
+    }
+    
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/print-receipt') ?>/' + transactionId,
+        type: 'POST',
+        data: {
+            printer_id: selectedPrinter
+        },
+        success: function(response) {
+            if (response.success) {
+                toastr.success('Struk berhasil dicetak');
+                $('#printerModal').modal('hide');
+            } else {
+                toastr.error('Gagal mencetak struk: ' + response.message);
+            }
+        },
+        error: function() {
+            toastr.error('Gagal mencetak struk');
+        }
+    });
+}
+
+function getCurrentTransactionId() {
+    // This should return the current transaction ID
+    // For now, we'll use a placeholder
+    return $('#currentTransactionId').val() || null;
+}
+
+// Search Anggota function
+function searchAnggota() {
+    let kartuNumber = $('#scanAnggota').val().trim();
+    
+    if (!kartuNumber) {
+        toastr.warning('Masukkan nomor kartu anggota atau scan QR code');
+        return;
+    }
+    
+    // Try to parse QR code data if it looks like JSON or contains id_pelanggan
+    let customerId = null;
+    
+    // Check if the input looks like JSON data
+    if (kartuNumber.startsWith('{') || kartuNumber.startsWith('[')) {
+        try {
+            const qrData = JSON.parse(kartuNumber);
+            
+            // Look for id_pelanggan in the QR data
+            if (qrData.id_pelanggan) {
+                customerId = qrData.id_pelanggan;
+                console.log('QR Code parsed, found id_pelanggan:', customerId);
+            } else if (qrData.id) {
+                customerId = qrData.id;
+                console.log('QR Code parsed, found id:', customerId);
+            } else {
+                // If no id found, try to use the original input
+                customerId = kartuNumber;
+                console.log('QR Code parsed but no id found, using original input:', customerId);
+            }
+        } catch (e) {
+            console.log('Failed to parse QR data as JSON, treating as plain text');
+            customerId = kartuNumber;
+        }
+    } else {
+        // Plain text input (manual entry)
+        customerId = kartuNumber;
+    }
+    
+    // Show loading state
+    $('#searchAnggota').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+    
+    $.ajax({
+        url: '<?= base_url('api/anggota/search') ?>',
+        type: 'GET',
+        data: { kartu: customerId },
+        success: function(response) {
+            if (response.success && response.data) {
+                const anggota = response.data;
+                
+                // Store customer data
+                $('#selectedCustomerId').val(anggota.id);
+                $('#selectedCustomerName').val(anggota.nama);
+                
+                // Show anggota info
+                $('#displayCustomerName').text(anggota.nama);
+                $('#displayCustomerCard').text(anggota.nomor_kartu || customerId);
+                $('#customerInfoDisplay').show();
+                
+                // Clear scan input
+                $('#scanAnggota').val('');
+                
+                toastr.success('Anggota ditemukan: ' + anggota.nama);
+                
+                // Log successful scan
+                console.log('Successfully found anggota:', anggota);
+            } else {
+                toastr.error('Anggota tidak ditemukan');
+                $('#customerInfoDisplay').hide();
+                $('#selectedCustomerId').val('');
+                $('#selectedCustomerName').val('');
+            }
+        },
+        error: function(xhr, status, error) {
+            if (xhr.status === 401) {
+                toastr.error('Session telah berakhir. Silakan login ulang.');
+                setTimeout(function() {
+                    window.location.href = '<?= base_url('auth/login') ?>';
+                }, 2000);
+            } else {
+                toastr.error('Gagal mencari anggota: ' + error);
+            }
+        },
+        complete: function() {
+            // Reset button state
+            $('#searchAnggota').prop('disabled', false).html('<i class="fas fa-qrcode"></i>');
+        }
+    });
+}
+
+    // Event listeners for printer modal
+    $(document).ready(function() {
+        $('#testPrinter').on('click', testPrinterConnection);
+        $('#confirmPrint').on('click', printReceiptWithPrinter);
+    });
+    
+    // Load available printers
+    loadPrinters();
+
+// QR Scanner Functions
+let qrScanner = null;
+let qrStream = null;
+
+// NOTE: This is a basic QR scanner implementation
+// To make it fully functional, you need to integrate with a QR code library
+// Recommended libraries:
+// 1. jsQR: https://github.com/cozmo/jsQR (Pure JavaScript)
+// 2. ZXing: https://github.com/zxing-js/library (More comprehensive)
+// 3. QuaggaJS: https://github.com/serratus/quaggajs (Barcode/QR scanner)
+
+function openQrScanner() {
+    $('#qrScannerModal').modal('show');
+    
+    // Show helpful message
+    setTimeout(() => {
+        const status = document.getElementById('qrScannerStatus');
+        if (status) {
+            status.innerHTML = '<p class="text-info"><i class="fas fa-info-circle"></i> Klik tombol kamera untuk memulai scanning</p>';
+        }
+    }, 500);
+}
+
+function startQrScanner() {
+    const video = document.getElementById('qrVideo');
+    const status = document.getElementById('qrScannerStatus');
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        status.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Kamera tidak didukung di browser ini</p>';
+        return;
+    }
+    
+    status.innerHTML = '<p class="text-muted"><i class="fas fa-spinner fa-spin"></i> Mengaktifkan kamera...</p>';
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        } 
+    })
+        .then(function(stream) {
+            qrStream = stream;
+            video.srcObject = stream;
+            video.play();
+            
+            status.innerHTML = '<p class="text-success"><i class="fas fa-camera"></i> Kamera aktif. Arahkan ke QR code</p>';
+            
+            // Start QR code detection
+            startQrDetection(video);
+        })
+        .catch(function(err) {
+            console.error('Camera error:', err);
+            let errorMessage = 'Gagal mengaktifkan kamera';
+            
+            if (err.name === 'NotAllowedError') {
+                errorMessage = 'Izin kamera ditolak. Silakan izinkan akses kamera.';
+            } else if (err.name === 'NotFoundError') {
+                errorMessage = 'Kamera tidak ditemukan.';
+            } else if (err.name === 'NotReadableError') {
+                errorMessage = 'Kamera sedang digunakan aplikasi lain.';
+            }
+            
+            status.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> ' + errorMessage + '</p>';
+        });
+}
+
+function startQrDetection(video) {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    
+    function scanFrame() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // QR code detection using jsQR library
+            detectQrCode(canvas, context);
+        }
+        
+        if (qrScanner) {
+            requestAnimationFrame(scanFrame);
+        }
+    }
+    
+    qrScanner = true;
+    scanFrame();
+}
+
+function detectQrCode(canvas, context) {
+    // QR code detection using jsQR library
+    // This function processes video frames to detect QR codes
+    
+    // Check if jsQR library is loaded
+    if (typeof jsQR === 'undefined') {
+        console.error('jsQR library not loaded. Please include the jsQR script.');
+        return;
+    }
+    
+    try {
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code) {
+            console.log('QR Code detected:', code.data);
+            
+            // Try to parse the QR data
+            let qrData;
+            try {
+                qrData = JSON.parse(code.data);
+            } catch (e) {
+                // If not JSON, treat as plain text
+                qrData = { id_pelanggan: code.data };
+            }
+            
+            // Handle the QR scan result
+            handleQrScanResult(qrData);
+        }
+    } catch (error) {
+        console.error('QR detection error:', error);
+    }
+}
+
+function stopQrScanner() {
+    if (qrScanner) {
+        qrScanner = false;
+    }
+    
+    if (qrStream) {
+        qrStream.getTracks().forEach(track => track.stop());
+        qrStream = null;
+    }
+    
+    const video = document.getElementById('qrVideo');
+    if (video.srcObject) {
+        video.srcObject = null;
+    }
+    
+    const status = document.getElementById('qrScannerStatus');
+    status.innerHTML = '<p class="text-muted">Kamera dinonaktifkan</p>';
+}
+
+// Function to handle QR code scan result (called by QR library)
+function handleQrScanResult(qrData) {
+    console.log('QR Code detected:', qrData);
+    
+    // Close the scanner modal
+    $('#qrScannerModal').modal('hide');
+    
+    // Set the scanned data in the input field
+    $('#scanAnggota').val(JSON.stringify(qrData));
+    
+    // Automatically search for the customer
+    searchAnggota();
+    
+    // Show success message
+    toastr.success('QR Code berhasil di-scan!');
+}
+
+// Draft List Functions
+function showDraftList() {
+    $('#draftListModal').modal('show');
+    loadDraftList();
+}
+
+function loadDraftList() {
+    const $loading = $('#draftLoading');
+    const $empty = $('#draftEmpty');
+    const $tableBody = $('#draftTableBody');
+    
+    $loading.show();
+    $empty.hide();
+    $tableBody.empty();
+    
+    console.log('Loading drafts...');
+    
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/get-drafts') ?>',
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            console.log('Draft response:', response);
+            $loading.hide();
+            
+            if (response.success && response.drafts && response.drafts.length > 0) {
+                console.log('Found', response.drafts.length, 'drafts');
+                response.drafts.forEach(function(draft) {
+                    const row = `
+                        <tr>
+                            <td>${draft.no_nota}</td>
+                            <td>${formatDate(draft.created_at)}</td>
+                            <td>${draft.customer_name || 'Umum'}</td>
+                            <td>Rp ${numberFormat(draft.jml_gtotal)}</td>
+                            <td>${draft.outlet_name || '-'}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-primary" onclick="loadDraftToForm(${draft.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button type="button" class="btn btn-sm btn-info" onclick="printDraft(${draft.id})">
+                                    <i class="fas fa-print"></i> Print
+                                </button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteDraft(${draft.id})">
+                                    <i class="fas fa-trash"></i> Hapus
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    $tableBody.append(row);
+                });
+            } else {
+                console.log('No drafts found or empty response');
+                $empty.show();
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Draft loading error:', xhr, status, error);
+            $loading.hide();
+            toastr.error('Gagal memuat daftar draft: ' + error);
+        }
+    });
+}
+
+function loadDraftToForm(draftId) {
+    if (confirm('Apakah Anda yakin ingin memuat draft ini? Data transaksi saat ini akan hilang.')) {
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/get-draft/') ?>' + draftId,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    const draft = response.draft;
+                    
+                    // Clear current form
+                    clearTransactionForm();
+                    
+                    // Load draft data
+                    if (draft.customer_id) {
+                        $('#selectedCustomerId').val(draft.customer_id);
+                        $('#selectedCustomerName').val(draft.customer_name);
+                        if (draft.customer_type === 'anggota') {
+                            $('#customerTypeAnggota').prop('checked', true).trigger('change');
+                        } else {
+                            $('#customerTypeUmum').prop('checked', true).trigger('change');
+                        }
+                    }
+                    
+                    // Load cart items
+                    if (draft.items && draft.items.length > 0) {
+                        cart = draft.items;
+                        currentDraftId = draft.id; // Store draft ID for later processing
+                        console.log('Draft loaded - ID:', currentDraftId, 'Items:', draft.items.length);
+                        updateCartDisplay();
+                        calculateTotal();
+                    }
+                    
+                    // Load discount and voucher
+                    if (draft.discount_percent) {
+                        $('#discountPercent').val(draft.discount_percent);
+                    }
+                    if (draft.voucher_code) {
+                        $('#voucherCode').val(draft.voucher_code);
+                        validateVoucher(draft.voucher_code);
+                    }
+                    
+                    // Close modal and show success message
+                    $('#draftListModal').modal('hide');
+                    toastr.success('Draft berhasil dimuat!');
+                } else {
+                    toastr.error(response.message || 'Gagal memuat draft');
+                }
+            },
+            error: function(xhr, status, error) {
+                toastr.error('Gagal memuat draft: ' + error);
+            }
+        });
+    }
+}
+
+function deleteDraft(draftId) {
+    if (confirm('Apakah Anda yakin ingin menghapus draft ini? Tindakan ini tidak dapat dibatalkan.')) {
+        const csrfTokenName = $('input[name^="csrf"]').attr('name');
+        const csrfToken = $('input[name^="csrf"]').val();
+        console.log('CSRF Token Name:', csrfTokenName);
+        console.log('CSRF Token:', csrfToken);
+        console.log('Draft ID to delete:', draftId);
+        
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/delete-draft/') ?>' + draftId,
+            type: 'POST',
+            data: {
+                [csrfTokenName]: csrfToken
+            },
+            dataType: 'json',
+            success: function(response) {
+                console.log('Delete response:', response);
+                if (response.success) {
+                    toastr.success('Draft berhasil dihapus!');
+                    loadDraftList(); // Reload the list
+                } else {
+                    toastr.error(response.message || 'Gagal menghapus draft');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Delete error:', xhr, status, error);
+                console.error('Response text:', xhr.responseText);
+                toastr.error('Gagal menghapus draft: ' + error);
+            }
+        });
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+/**
+ * Print all drafts
+ */
+function printAllDrafts() {
+    $.ajax({
+        url: '<?= base_url('transaksi/jual/get-drafts') ?>',
+        type: 'GET',
+        dataType: 'json',
+        success: function(response) {
+            if (response.success && response.drafts && response.drafts.length > 0) {
+                const allDraftsHTML = response.drafts.map(draft => {
+                    return `
+                        <div style="page-break-after: always; margin-bottom: 20px;">
+                            ${generateReceiptHTML({
+                                no_nota: draft.no_nota,
+                                customer_name: 'Draft',
+                                customer_type: 'draft',
+                                items: [], // We don't have item details in the list
+                                subtotal: draft.jml_gtotal * (100 / (100 + PPN_PERCENTAGE)),
+                                discount: 0,
+                                voucher: '',
+                                ppn: PPN_PERCENTAGE,
+                                total: draft.jml_gtotal,
+                                payment_methods: [],
+                                date: new Date(draft.created_at).toLocaleString('id-ID'),
+                                outlet: draft.outlet_name || 'Draft'
+                            })}
+                        </div>
+                    `;
+                }).join('');
+                
+                // Create print window for all drafts
+                const printWindow = window.open('', '_blank', 'width=800,height=600');
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>All Drafts - Print</title>
+                        <style>
+                            @media print {
+                                body { margin: 0; padding: 10px; }
+                                .no-print { display: none; }
+                            }
+                            .draft-item { margin-bottom: 20px; }
+                            .btn { 
+                                background: #007bff; 
+                                color: white; 
+                                padding: 10px 20px; 
+                                border: none; 
+                                border-radius: 5px; 
+                                cursor: pointer; 
+                                margin: 5px;
+                            }
+                            .btn:hover { background: #0056b3; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+                            <h3>Print All Drafts</h3>
+                            <button class="btn" onclick="window.print()">Print All</button>
+                            <button class="btn" onclick="window.close()">Close</button>
+                        </div>
+                        ${allDraftsHTML}
+                    </body>
+                    </html>
+                `);
+                
+                printWindow.document.close();
+            } else {
+                toastr.warning('Tidak ada draft untuk dicetak');
+            }
+        },
+        error: function(xhr, status, error) {
+            toastr.error('Gagal memuat daftar draft: ' + error);
+        }
+    });
 }
 </script>
 <?= $this->endSection() ?> 

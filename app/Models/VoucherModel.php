@@ -31,7 +31,9 @@ class VoucherModel extends Model
         'tgl_masuk',
         'tgl_keluar',
         'status',
-        'keterangan'
+        'keterangan',
+        'jenis_voucher',
+        'nominal'
     ];
 
     // Dates
@@ -42,13 +44,15 @@ class VoucherModel extends Model
 
     // Validation
     protected $validationRules      = [
-        'kode'       => 'required|max_length[50]|is_unique[tbl_m_voucher.kode,id,{id}]',
-        'jml'        => 'required|integer|greater_than[0]',
-        'jml_keluar' => 'integer|greater_than_equal_to[0]',
-        'jml_max'    => 'required|integer|greater_than[0]',
-        'tgl_masuk'  => 'required|valid_date',
-        'tgl_keluar' => 'required|valid_date',
-        'status'     => 'in_list[0,1]'
+        'kode'           => 'required|max_length[50]|is_unique[tbl_m_voucher.kode,id,{id}]',
+        'jml'            => 'required|integer|greater_than[0]',
+        'jml_keluar'     => 'integer|greater_than_equal_to[0]',
+        'jml_max'        => 'required|integer|greater_than[0]',
+        'tgl_masuk'      => 'required|valid_date',
+        'tgl_keluar'     => 'required|valid_date',
+        'status'         => 'in_list[0,1]',
+        'jenis_voucher'  => 'required|in_list[nominal,persen]',
+        'nominal'        => 'required|numeric|greater_than[0]'
     ];
 
     protected $validationMessages   = [
@@ -100,22 +104,33 @@ class VoucherModel extends Model
      */
     public function generateCode()
     {
-        $prefix = 'VOC';
-        $date = date('Ymd');
+        // Generate random alphanumeric code with minimum 4 characters
+        $length = 6; // Minimum 4 digits as requested
+        $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         
-        // Get last number for today
-        $lastVoucher = $this->where('kode LIKE', $prefix . $date . '%')
-                           ->orderBy('id', 'DESC')
-                           ->first();
+        $maxAttempts = 100; // Prevent infinite loop
+        $attempts = 0;
         
-        if ($lastVoucher) {
-            $lastNumber = (int) substr($lastVoucher->kode, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
+        do {
+            $code = '';
+            
+            // Ensure at least 2 letters and 2 numbers
+            $code .= substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 2);
+            $code .= substr(str_shuffle('0123456789'), 0, 2);
+            
+            // Fill remaining with random characters
+            for ($i = 4; $i < $length; $i++) {
+                $code .= $characters[rand(0, strlen($characters) - 1)];
+            }
+            
+            // Shuffle the code to make it more random
+            $code = str_shuffle($code);
+            
+            $attempts++;
+            
+        } while ($this->where('kode', $code)->first() && $attempts < $maxAttempts);
         
-        return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return $code;
     }
 
     /**

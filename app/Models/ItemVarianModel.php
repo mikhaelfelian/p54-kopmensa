@@ -20,8 +20,19 @@ class ItemVarianModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_item', 'id_item_harga', 'kode', 'nama', 'harga_beli', 'harga_jual', 
-        'barcode', 'foto', 'status'
+        'id_item',
+        'id_item_harga',
+        'kode',
+        'barcode',
+        'varian',
+        'harga_beli',
+        'harga_dasar',
+        'harga_jual',
+        'foto',
+        'status',
+        'created_at',
+        'updated_at',
+        'deleted_at'
     ];
 
     // Dates
@@ -33,13 +44,6 @@ class ItemVarianModel extends Model
     // Validation
     protected $validationRules      = [
         'id_item' => 'required|integer',
-        'id_item_harga' => 'required|integer',
-        'kode'    => 'required|max_length[50]',
-        'nama'    => 'required|max_length[255]',
-        'harga_beli' => 'permit_empty|decimal',
-        'harga_jual' => 'permit_empty|decimal',
-        'barcode' => 'permit_empty|max_length[100]',
-        'status' => 'permit_empty|in_list[0,1]'
     ];
     protected $validationMessages   = [];
     protected $skipValidation       = false;
@@ -116,11 +120,11 @@ class ItemVarianModel extends Model
     public function getVariantsWithPrice($itemId)
     {
         $builder = $this->builder();
-        $builder->select('tbl_m_item_varian.*, tbl_m_item_harga.nama as harga_nama, tbl_m_item_harga.harga as harga_jual_value');
+        $builder->select('tbl_m_item_varian.id, tbl_m_item_varian.id_item, tbl_m_item_varian.kode, tbl_m_item_varian.barcode, tbl_m_item_varian.varian as nama, tbl_m_item_varian.harga_beli, tbl_m_item_varian.harga_dasar, tbl_m_item_varian.harga_jual, tbl_m_item_varian.foto, tbl_m_item_varian.status, tbl_m_item_varian.id_item_harga, tbl_m_item_harga.nama as harga_nama, tbl_m_item_harga.harga as harga_jual_value');
         $builder->join('tbl_m_item_harga', 'tbl_m_item_harga.id = tbl_m_item_varian.id_item_harga', 'left');
         $builder->where('tbl_m_item_varian.id_item', $itemId);
         $builder->where('tbl_m_item_varian.status', '1');
-        $builder->orderBy('tbl_m_item_varian.nama', 'ASC');
+        $builder->orderBy('tbl_m_item_varian.varian', 'ASC');
         
         return $builder->get()->getResultArray();
     }
@@ -135,7 +139,7 @@ class ItemVarianModel extends Model
     {
         return $this->where('id_item', $itemId)
                    ->where('status', '1')
-                   ->orderBy('nama', 'ASC')
+                   ->orderBy('varian', 'ASC')
                    ->findAll();
     }
 

@@ -85,4 +85,44 @@ class Auth extends BaseController
             'data'    => $user,
         ]);
     }
+    
+    public function search()
+    {
+        $kartu = $this->request->getGet('kartu');
+        
+        if (empty($kartu)) {
+            return $this->failValidationError('Nomor kartu harus diisi');
+        }
+        
+        // Load PelangganModel to search for customers
+        $pelangganModel = new \App\Models\PelangganModel();
+        
+        // Search for anggota (tipe = 1) by kode, nama, or id
+        $customer = $pelangganModel->where('tipe', '1') // Only anggota koperasi
+                                  ->where('status', '1') // Only active
+                                  ->where('status_hps', '0') // Not deleted
+                                  ->groupStart()
+                                    ->where('kode', $kartu)
+                                    ->orWhere('nama', $kartu)
+                                    ->orWhere('id', $kartu)
+                                  ->groupEnd()
+                                  ->first();
+        
+        if (!$customer) {
+            return $this->failNotFound('Anggota tidak ditemukan');
+        }
+        
+        return $this->respond([
+            'success' => true,
+            'data' => [
+                'id' => $customer->id,
+                'nama' => $customer->nama,
+                'nomor_kartu' => $customer->kode,
+                'alamat' => $customer->alamat ?? '',
+                'telepon' => $customer->no_telp ?? '',
+                'kota' => $customer->kota ?? '',
+                'provinsi' => $customer->provinsi ?? ''
+            ]
+        ]);
+    }
 } 

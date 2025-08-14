@@ -124,9 +124,12 @@
                         <div class="form-group">
                             <label class="control-label">Tipe</label>
                             <select name="tipe" class="form-control rounded-0">
-                                <option value="1" <?= old('tipe', $item->tipe ?? '1') == '1' ? 'selected' : '' ?>>Item</option>
-                                <option value="2" <?= old('tipe', $item->tipe ?? '1') == '2' ? 'selected' : '' ?>>Jasa</option>
-                                <option value="3" <?= old('tipe', $item->tipe ?? '1') == '3' ? 'selected' : '' ?>>Paket</option>
+                                <option value="1" <?= old('tipe', $item->tipe ?? '1') == '1' ? 'selected' : '' ?>>Item
+                                </option>
+                                <option value="2" <?= old('tipe', $item->tipe ?? '1') == '2' ? 'selected' : '' ?>>Jasa
+                                </option>
+                                <option value="3" <?= old('tipe', $item->tipe ?? '1') == '3' ? 'selected' : '' ?>>Paket
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -261,9 +264,9 @@
                                                             placeholder="Keterangan tambahan (opsional)">
                                                     </td>
                                                     <td class="align-middle text-center">
-                                                        <button type="button" class="btn btn-danger btn-sm rounded-0 delete-price-btn"
-                                                            data-price-id="<?= $price->id ?>"
-                                                            data-toggle="tooltip"
+                                                        <button type="button"
+                                                            class="btn btn-danger btn-sm rounded-0 delete-price-btn"
+                                                            data-price-id="<?= $price->id ?>" data-toggle="tooltip"
                                                             title="Hapus data ini">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
@@ -296,7 +299,8 @@
                                                         placeholder="Keterangan tambahan (opsional)">
                                                 </td>
                                                 <td class="align-middle text-center">
-                                                    <button type="button" class="btn btn-danger btn-sm rounded-0 remove-price-btn"
+                                                    <button type="button"
+                                                        class="btn btn-danger btn-sm rounded-0 remove-price-btn"
                                                         data-toggle="tooltip" title="Hapus baris ini">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
@@ -329,14 +333,16 @@
                                 </button>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-striped" id="varian-table">
+                                <table class="table table-striped varian-table" id="varian-table">
                                     <thead>
                                         <tr>
                                             <th>Nama Varian</th>
-                                            <th>Harga Beli</th>
-                                            <th>Harga Jual</th>
                                             <th>Barcode</th>
-                                            <th style="width:120px;">ACTIONS</th>
+                                            <th>Harga Beli</th>
+                                            <th>Harga Dasar</th>
+                                            <th>Foto Varian</th>
+                                            <th>Status</th>
+                                            <th style="width:120px;">AKSI</th>
                                         </tr>
                                     </thead>
                                     <tbody id="varian-tbody">
@@ -374,6 +380,39 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
+<style>
+    .varian-table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .varian-table td {
+        vertical-align: middle;
+    }
+
+    .photo-preview {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .varian-row:hover {
+        background-color: #f8f9fa;
+    }
+
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+
 <script type="text/javascript">
     $(document).ready(function () {
         // Initialize Select2 for supplier dropdown
@@ -384,15 +423,15 @@
 
         // AutoNumeric for price inputs
         $("input[id=harga]").autoNumeric({ aSep: '.', aDec: ',', aPad: false });
-        
+
         // Initialize existing price inputs with AutoNumeric
         $('.price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
 
         // Set initial price index
         window.priceIndex = $('.price-row').length;
-        
+
         // Add price row button event
-        $('#add-price-btn').on('click', function() {
+        $('#add-price-btn').on('click', function () {
             addPriceRow();
         });
     });
@@ -401,7 +440,7 @@
     function addPriceRow() {
         const $container = $('#price-container');
         const currentIndex = window.priceIndex || 0;
-        
+
         const newRowHtml = `
             <tr class="price-row" data-index="${currentIndex}" style="display: none;">
             <td class="align-middle">
@@ -449,21 +488,21 @@
 
         const $newRow = $(newRowHtml);
         $container.append($newRow);
-        
+
         // Show with animation
         $newRow.fadeIn(300);
 
         // Initialize AutoNumeric for new price input
-        $newRow.find('.price-input').autoNumeric({ 
-            aSep: '.', 
-            aDec: ',', 
+        $newRow.find('.price-input').autoNumeric({
+            aSep: '.',
+            aDec: ',',
             aPad: false,
             vMin: '0'
         });
-        
+
         // Initialize tooltip
         $newRow.find('[data-toggle="tooltip"]').tooltip();
-        
+
         // Focus on first input
         setTimeout(() => {
             $newRow.find('input[name*="[nama]"]').focus();
@@ -473,12 +512,12 @@
     }
 
     // Event delegation for remove buttons
-    $(document).on('click', '.remove-price-btn', function() {
+    $(document).on('click', '.remove-price-btn', function () {
         removePriceRow(this);
     });
-    
+
     // Event delegation for delete buttons (existing records)
-    $(document).on('click', '.delete-price-btn', function() {
+    $(document).on('click', '.delete-price-btn', function () {
         const priceId = $(this).data('price-id');
         if (confirm('Apakah Anda yakin ingin menghapus data ini?')) {
             deletePriceRow(this, priceId);
@@ -488,11 +527,11 @@
     function removePriceRow(button) {
         const $priceRows = $('.price-row');
         const $currentRow = $(button).closest('.price-row');
-        
+
         if ($priceRows.length > 1) {
             // Confirm deletion
             if (confirm('Apakah Anda yakin ingin menghapus baris ini?')) {
-                $currentRow.fadeOut(300, function() {
+                $currentRow.fadeOut(300, function () {
                     $(this).remove();
                     // Re-index remaining rows
                     reindexPriceRows();
@@ -508,12 +547,12 @@
             removePriceRow(btn);
             return;
         }
-        
+
         // Show loading state
         const $btn = $(btn);
         const originalHtml = $btn.html();
         $btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
-        
+
         $.ajax({
             url: '<?= base_url('master/item/delete_price/') ?>' + priceId,
             type: 'POST',
@@ -521,23 +560,23 @@
                 '<?= csrf_token() ?>': $('input[name="<?= csrf_token() ?>"]').val()
             },
             dataType: 'json',
-            success: function(response) {
-            if (response.success) {
-                toastr.success(response.message);
-                    $btn.closest('.price-row').fadeOut(300, function() {
+            success: function (response) {
+                if (response.success) {
+                    toastr.success(response.message);
+                    $btn.closest('.price-row').fadeOut(300, function () {
                         $(this).remove();
                         reindexPriceRows();
                     });
-            } else {
-                toastr.error(response.message || 'Gagal menghapus harga!');
+                } else {
+                    toastr.error(response.message || 'Gagal menghapus harga!');
                     $btn.html(originalHtml).prop('disabled', false);
-            }
-                
-            if (response.csrfHash) {
+                }
+
+                if (response.csrfHash) {
                     $('input[name="<?= csrf_token() ?>"]').val(response.csrfHash);
-            }
+                }
             },
-            error: function() {
+            error: function () {
                 toastr.error('Terjadi kesalahan server!');
                 $btn.html(originalHtml).prop('disabled', false);
             }
@@ -546,22 +585,22 @@
 
     // Re-index price rows after deletion
     function reindexPriceRows() {
-        $('.price-row').each(function(index) {
+        $('.price-row').each(function (index) {
             const $row = $(this);
             $row.attr('data-index', index);
-            
+
             // Update input names
             $row.find('input[name*="[nama]"]').attr('name', `prices[${index}][nama]`);
             $row.find('input[name*="[jml_min]"]').attr('name', `prices[${index}][jml_min]`);
             $row.find('input[name*="[harga]"]').attr('name', `prices[${index}][harga]`);
             $row.find('input[name*="[keterangan]"]').attr('name', `prices[${index}][keterangan]`);
         });
-        
+
         window.priceIndex = $('.price-row').length;
     }
 
     // Add keyboard shortcuts
-    $(document).on('keydown', '.price-row input', function(e) {
+    $(document).on('keydown', '.price-row input', function (e) {
         // Enter key to add new row
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -608,10 +647,45 @@
             e.preventDefault();
             var $form = $(this);
             var url = '<?= base_url('master/item/store_variant/' . $item->id) ?>';
+
+            // Generate kode for variants that don't have one
+            $('.varian-row').each(function (index) {
+                var $kodeInput = $(this).find('input[name*="[kode]"]');
+                var $namaInput = $(this).find('input[name*="[nama]"]');
+
+                if (!$kodeInput.val() && $namaInput.val()) {
+                    // Generate base SKU: Convert to uppercase, remove special chars, limit to 8 chars
+                    let baseSku = $namaInput.val().toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
+
+                    // Check if SKU already exists and make it unique
+                    let finalSku = baseSku;
+                    let counter = 1;
+
+                    while (skuExists(finalSku)) {
+                        finalSku = baseSku + counter.toString().padStart(2, '0');
+                        counter++;
+                    }
+
+                    $kodeInput.val(finalSku);
+                }
+            });
+
+            // Only add CSRF token if not already present in the serialized data
             var data = $form.serializeArray();
-            // Add CSRF token
-            data.push({ name: '<?= csrf_token() ?>', value: $('input[name=<?= csrf_token() ?>]').val() });
+            var csrfName = '<?= csrf_token() ?>';
+            var csrfValue = $('input[name=<?= csrf_token() ?>]').val();
+            var hasCsrf = data.some(function (field) {
+                return field.name === csrfName;
+            });
+            if (!hasCsrf) {
+                data.push({ name: csrfName, value: csrfValue });
+            }
+
+            // Debug: Log the data being sent
+            console.log('Form data being sent:', data);
+
             $.post(url, data, function (response) {
+                console.log('Server response:', response);
                 if (response.success) {
                     toastr.success(response.message);
                     loadVariants(); // Reload variants after saving
@@ -623,13 +697,14 @@
                     $('input[name=<?= csrf_token() ?>]').val(response.csrfHash);
                 }
             }, 'json').fail(function (xhr) {
+                console.error('AJAX request failed:', xhr);
                 toastr.error('Terjadi kesalahan server!');
             });
         });
-
-        // Load existing variants on page load
-        loadVariants();
     });
+
+    // Load existing variants on page load
+    loadVariants();
 
     let varianIndex = 0;
 
@@ -642,24 +717,28 @@
         newRow.innerHTML = `
             <td class="align-middle">
                 <input type="hidden" name="variants[${varianIndex}][id]" value="">
-                <input type="text" name="variants[${varianIndex}][nama]" class="form-control rounded-0" placeholder="Nama Varian" required>
-                <div class="invalid-feedback">Nama varian wajib diisi.</div>
+                <input type="hidden" name="variants[${varianIndex}][kode]" value="">
+                <input type="text" name="variants[${varianIndex}][nama]" class="form-control rounded-0" placeholder="Example: ICED, HOT, Size L, Color Red" required>
+                <div class="invalid-feedback">Variant name is required.</div>
             </td>
             <td class="align-middle">
-                <input type="text" name="variants[${varianIndex}][harga_beli]" class="form-control rounded-0 varian-price-input" placeholder="Harga Beli" required>
-                <div class="invalid-feedback">Harga beli wajib diisi.</div>
+                <input type="text" name="variants[${varianIndex}][barcode]" class="form-control rounded-0" placeholder="Barcode (optional)">
             </td>
             <td class="align-middle">
-                <select name="variants[${varianIndex}][id_item_harga]" class="form-control rounded-0" required>
-                    <option value="">Pilih Harga Jual</option>
-                    <?php foreach ($item_harga_list ?? [] as $harga): ?>
-                    <option value="<?= $harga->id ?>"><?= $harga->nama ?> - <?= number_format($harga->harga, 0, ',', '.') ?></option>
-                    <?php endforeach; ?>
+                <input type="text" name="variants[${varianIndex}][harga_beli]" class="form-control rounded-0 varian-price-input" placeholder="Purchase price (optional)">
+            </td>
+            <td class="align-middle">
+                <input type="text" name="variants[${varianIndex}][harga_dasar]" class="form-control rounded-0 varian-base-price-input" placeholder="Base price fallback (optional)">
+            </td>
+            <td class="align-middle">
+                <input type="file" name="variants[${varianIndex}][foto]" class="form-control rounded-0" accept="image/*">
+                <small class="text-muted">Optional: Different appearance</small>
+            </td>
+            <td class="align-middle">
+                <select name="variants[${varianIndex}][status]" class="form-control rounded-0">
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
                 </select>
-                <div class="invalid-feedback">Harga jual wajib dipilih.</div>
-            </td>
-            <td class="align-middle">
-                <input type="text" name="variants[${varianIndex}][barcode]" class="form-control rounded-0" placeholder="Barcode (opsional)">
             </td>
             <td class="align-middle text-center">
                 <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="removeVarianRow(this)" title="Delete">
@@ -670,8 +749,32 @@
 
         tbody.appendChild(newRow);
 
-        // Initialize autoNumeric for the new price input
+        // Initialize autoNumeric for the new price inputs
         $(newRow).find('.varian-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+        $(newRow).find('.varian-base-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+
+        // Auto-generate SKU when variant name is entered
+        const kodeInput = $(newRow).find('input[name*="[kode]"]');
+        const namaInput = $(newRow).find('input[name*="[nama]"]');
+
+        namaInput.on('input', function () {
+            const nama = $(this).val();
+            if (nama) {
+                // Generate base SKU: Convert to uppercase, remove special chars, limit to 8 chars
+                let baseSku = nama.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
+
+                // Check if SKU already exists and make it unique
+                let finalSku = baseSku;
+                let counter = 1;
+
+                while (skuExists(finalSku)) {
+                    finalSku = baseSku + counter.toString().padStart(2, '0');
+                    counter++;
+                }
+
+                kodeInput.val(finalSku);
+            }
+        });
 
         varianIndex++;
     }
@@ -722,26 +825,27 @@
                     newRow.innerHTML = `
                         <td class="align-middle">
                             <input type="hidden" name="variants[${index}][id]" value="${variant.id}">
-                            <input type="text" name="variants[${index}][nama]" class="form-control rounded-0" value="${variant.nama}" required>
-                            <div class="invalid-feedback">Nama varian wajib diisi.</div>
+                            <input type="text" name="variants[${index}][nama]" class="form-control rounded-0" value="${variant.nama || ''}" required>
+                            <div class="invalid-feedback">Variant name is required.</div>
                         </td>
                         <td class="align-middle">
-                            <input type="text" name="variants[${index}][harga_beli]" class="form-control rounded-0 varian-price-input" value="${variant.harga_beli}" required>
-                            <div class="invalid-feedback">Harga beli wajib diisi.</div>
+                            <input type="text" name="variants[${index}][barcode]" class="form-control rounded-0" value="${variant.barcode || ''}" placeholder="Barcode (optional)">
                         </td>
                         <td class="align-middle">
-                            <select name="variants[${index}][id_item_harga]" class="form-control rounded-0" required>
-                                <option value="">Pilih Harga Jual</option>
-                                <?php foreach ($item_harga_list ?? [] as $harga): ?>
-                                <option value="<?= $harga->id ?>" ${variant.id_item_harga == <?= $harga->id ?> ? 'selected' : ''}>
-                                    <?= $harga->nama ?> - <?= number_format($harga->harga, 0, ',', '.') ?>
-                                </option>
-                                <?php endforeach; ?>
+                            <input type="text" name="variants[${index}][harga_beli]" class="form-control rounded-0 varian-price-input" value="${variant.harga_beli || ''}" placeholder="Purchase price (optional)">
+                        </td>
+                        <td class="align-middle">
+                            <input type="text" name="variants[${index}][harga_dasar]" class="form-control rounded-0 varian-base-price-input" value="${variant.harga_dasar || ''}" placeholder="Base price fallback (optional)">
+                        </td>
+                        <td class="align-middle">
+                            <input type="file" name="variants[${index}][foto]" class="form-control rounded-0" accept="image/*">
+                            ${variant.foto ? `<small class="text-muted">Current: ${variant.foto}</small>` : '<small class="text-muted">Optional: Different appearance</small>'}
+                        </td>
+                        <td class="align-middle">
+                            <select name="variants[${index}][status]" class="form-control rounded-0">
+                                <option value="1" ${variant.status == 1 ? 'selected' : ''}>Active</option>
+                                <option value="0" ${variant.status == 0 ? 'selected' : ''}>Inactive</option>
                             </select>
-                            <div class="invalid-feedback">Harga jual wajib dipilih.</div>
-                        </td>
-                        <td class="align-middle">
-                            <input type="text" name="variants[${index}][barcode]" class="form-control rounded-0" value="${variant.barcode || ''}" placeholder="Barcode (opsional)">
                         </td>
                         <td class="align-middle text-center">
                             <button type="button" class="btn btn-danger btn-sm rounded-0" onclick="deleteVarianRow(this, ${variant.id})" title="Delete">
@@ -755,9 +859,89 @@
 
                 // Initialize autoNumeric for all price inputs
                 $('.varian-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+                $('.varian-base-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
+
+                // Generate SKUs for variants that don't have them
+                response.variants.forEach(function (variant, index) {
+                    if (!variant.kode) {
+                        const namaInput = $(`input[name="variants[${index}][nama]"]`);
+                        const kodeInput = $(`input[name="variants[${index}][kode]"]`);
+
+                        if (namaInput.val()) {
+                            let baseSku = namaInput.val().toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
+                            let finalSku = baseSku;
+                            let counter = 1;
+
+                            while (skuExists(finalSku)) {
+                                finalSku = baseSku + counter.toString().padStart(2, '0');
+                                counter++;
+                            }
+
+                            kodeInput.val(finalSku);
+                        }
+                    }
+                });
+
                 varianIndex = response.variants.length;
             }
         }, 'json');
+    }
+
+    // Handle variant photo upload and preview
+    function handleVariantPhotoUpload(input) {
+        const file = input.files[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                toastr.error('Please select an image file');
+                input.value = '';
+                return;
+            }
+
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                toastr.error('Image size should be less than 2MB');
+                input.value = '';
+                return;
+            }
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const preview = input.parentNode.querySelector('.photo-preview');
+                if (preview) {
+                    preview.remove();
+                }
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'photo-preview mt-2';
+                img.style.maxWidth = '100px';
+                img.style.maxHeight = '100px';
+                img.style.objectFit = 'cover';
+                img.style.borderRadius = '4px';
+
+                input.parentNode.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    // Add photo preview functionality to existing variant rows
+    $(document).on('change', 'input[name*="[foto]"]', function () {
+        handleVariantPhotoUpload(this);
+    });
+
+    // Function to check if SKU already exists
+    function skuExists(sku) {
+        const existingSkus = [];
+        $('input[name*="[kode]"]').each(function () {
+            const existingSku = $(this).val();
+            if (existingSku && existingSku !== sku) {
+                existingSkus.push(existingSku);
+            }
+        });
+        return existingSkus.includes(sku);
     }
 </script>
 

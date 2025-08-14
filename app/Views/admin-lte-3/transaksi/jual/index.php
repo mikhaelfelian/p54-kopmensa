@@ -192,7 +192,7 @@
                                                 <?php endif; ?>
                                                 <?php if (isset($row->status) && $row->status == '1'): ?>
                                                     <button type="button" class="btn btn-success btn-sm"
-                                                        onclick="printReceipt(<?= $row->id ?>)" title="Cetak">
+                                                        onclick="showPrintOptions(<?= $row->id ?>)" title="Cetak">
                                                         <i class="fas fa-print"></i>
                                                     </button>
                                                 <?php endif; ?>
@@ -638,9 +638,267 @@
         window.location.href = '<?= base_url('transaksi/jual/edit') ?>/' + id;
     }
 
-    function printReceipt(id) {
-        // Open print window for receipt
-        window.open('<?= base_url('transaksi/jual/print') ?>/' + id, '_blank');
+    // Global variables
+    let currentTransactionData = null;
+
+    function showPrintOptions(id) {
+        // Store transaction ID for printing
+        $('#printTransactionId').val(id);
+        
+        // Fetch transaction data and store it globally
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/get-transaction-for-print') ?>/' + id,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    currentTransactionData = response.transaction;
+                    // Open print options modal
+                    $('#printOptionsModal').modal('show');
+                } else {
+                    toastr.error('Gagal memuat data transaksi: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                toastr.error('Gagal memuat data transaksi: ' + error);
+            }
+        });
+    }
+
+    function printReceipt(type, transactionData) {
+        // If no transaction data provided, fetch it
+        if (!transactionData) {
+            const transactionId = $('#printTransactionId').val();
+            if (!transactionId) {
+                toastr.error('Transaksi tidak ditemukan.');
+                return;
+            }
+
+            // Fetch transaction data first
+            $.ajax({
+                url: '<?= base_url('transaksi/jual/get-transaction-for-print') ?>/' + transactionId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const data = response.transaction;
+                        
+                        if (type === 'pdf') {
+                            printToPDF(data);
+                        } else if (type === 'printer') {
+                            printToPrinter(data);
+                        }
+                        
+                        $('#printOptionsModal').modal('hide'); // Close print options modal
+                    } else {
+                        toastr.error('Gagal memuat data transaksi: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    toastr.error('Gagal memuat data transaksi: ' + error);
+                }
+            });
+        } else {
+            // Use provided transaction data
+            if (type === 'pdf') {
+                printToPDF(transactionData);
+            } else if (type === 'printer') {
+                printToPrinter(transactionData);
+            }
+        }
+    }
+
+    function printToPDF(transactionData) {
+        // Create print window with receipt HTML
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        const receiptHTML = generateReceiptHTML(transactionData);
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Struk - ${transactionData.no_nota}</title>
+                <style>
+                    @media print {
+                        body { margin: 0; padding: 10px; }
+                        .no-print { display: none; }
+                        .receipt { font-family: 'Courier New', monospace; font-size: 12px; }
+                    }
+                    .receipt { 
+                        font-family: 'Courier New', monospace; 
+                        font-size: 12px; 
+                        max-width: 300px; 
+                        margin: 0 auto; 
+                        padding: 10px;
+                    }
+                    .header { text-align: center; margin-bottom: 15px; }
+                    .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                    .item { margin: 5px 0; }
+                    .total { font-weight: bold; margin: 10px 0; }
+                    .footer { text-align: center; margin-top: 15px; font-size: 10px; }
+                    .btn { 
+                        background: #007bff; 
+                        color: white; 
+                        padding: 10px 20px; 
+                        border: none; 
+                        border-radius: 5px; 
+                        cursor: pointer; 
+                        margin: 5px;
+                    }
+                    .btn:hover { background: #0056b3; }
+                </style>
+            </head>
+            <body>
+                ${receiptHTML}
+                <div class="no-print" style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="window.print()">Print PDF</button>
+                    <button class="btn" onclick="window.close()">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+    }
+
+    function printToPrinter(transactionData) {
+        // Create print window optimized for dot matrix printers
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        const receiptHTML = generateReceiptHTML(transactionData);
+        
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print - ${transactionData.no_nota}</title>
+                <style>
+                    @media print {
+                        body { margin: 0; padding: 5px; }
+                        .no-print { display: none; }
+                        .receipt { 
+                            font-family: 'Courier New', monospace; 
+                            font-size: 10px; 
+                            line-height: 1.2;
+                            max-width: 200px;
+                        }
+                    }
+                    .receipt { 
+                        font-family: 'Courier New', monospace; 
+                        font-size: 10px; 
+                        line-height: 1.2;
+                        max-width: 200px; 
+                        margin: 0 auto; 
+                        padding: 5px;
+                    }
+                    .header { text-align: center; margin-bottom: 10px; }
+                    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                    .item { margin: 3px 0; }
+                    .total { font-weight: bold; margin: 10px 0; }
+                    .footer { text-align: center; margin-top: 10px; font-size: 8px; }
+                    .btn { 
+                        background: #28a745; 
+                        color: white; 
+                        padding: 8px 16px; 
+                        border: none; 
+                        border-radius: 4px; 
+                        cursor: pointer; 
+                        margin: 3px;
+                        font-size: 12px;
+                    }
+                    .btn:hover { background: #218838; }
+                </style>
+            </head>
+            <body>
+                ${receiptHTML}
+                <div class="no-print" style="text-align: center; margin-top: 15px;">
+                    <button class="btn" onclick="window.print()">Print to Dot Matrix</button>
+                    <button class="btn" onclick="window.close()">Close</button>
+                </div>
+            </body>
+            </html>
+        `);
+        
+        printWindow.document.close();
+    }
+
+    function generateReceiptHTML(transactionData) {
+        const { no_nota, customer_name, customer_type, items, subtotal, discount, voucher, ppn, total, payment_methods, date, outlet } = transactionData;
+        
+        let itemsHTML = '';
+        if (items && items.length > 0) {
+            items.forEach(item => {
+                itemsHTML += `
+                    <div class="item">
+                        <div>${item.name}</div>
+                        <div>${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}</div>
+                    </div>
+                `;
+            });
+        } else {
+            itemsHTML = '<div class="item">No items available</div>';
+        }
+        
+        let paymentHTML = '';
+        if (payment_methods && payment_methods.length > 0) {
+            payment_methods.forEach(pm => {
+                const methodName = pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang';
+                paymentHTML += `<div>${methodName}: ${formatCurrency(pm.amount)}</div>`;
+            });
+        }
+        
+        return `
+            <div class="receipt">
+                <div class="header">
+                    <h3>KOPMENSA</h3>
+                    <div>${outlet || 'OUTLET'}</div>
+                    <div>${date || new Date().toLocaleString('id-ID')}</div>
+                    <div>No: ${no_nota || 'DRAFT'}</div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="customer">
+                    <div>Customer: ${customer_name || 'UMUM'}</div>
+                    <div>Type: ${customer_type || 'UMUM'}</div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="items">
+                    ${itemsHTML}
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="summary">
+                    <div>Subtotal: ${formatCurrency(subtotal || 0)}</div>
+                    ${discount > 0 ? `<div>Diskon: ${discount}%</div>` : ''}
+                    ${voucher ? `<div>Voucher: ${voucher}</div>` : ''}
+                    <div>PPN (${ppn || 11}%): ${formatCurrency((subtotal || 0) * (ppn || 11) / 100)}</div>
+                    <div class="total">TOTAL: ${formatCurrency(total || 0)}</div>
+                </div>
+                
+                ${paymentHTML ? `
+                    <div class="divider"></div>
+                    <div class="payment">
+                        <div><strong>Pembayaran:</strong></div>
+                        ${paymentHTML}
+                    </div>
+                ` : ''}
+                
+                <div class="divider"></div>
+                
+                <div class="footer">
+                    <div>Terima kasih atas kunjungan Anda</div>
+                    <div>Barang yang sudah dibeli tidak dapat dikembalikan</div>
+                    <div>Powered by Kopmensa System</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function formatCurrency(amount) {
+        return `Rp ${numberFormat(amount)}`;
     }
 
     function openSO() {
@@ -658,4 +916,52 @@
         window.location.href = '<?= base_url('transaksi/jual/returns') ?>';
     }
 </script>
+
+<!-- Print Options Modal -->
+<div class="modal fade" id="printOptionsModal" tabindex="-1" role="dialog" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="printOptionsModalLabel">Pilih Metode Cetak</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card text-center">
+              <div class="card-body">
+                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                <h6>Cetak ke PDF</h6>
+                <p class="text-muted">Simpan sebagai file PDF atau cetak via browser</p>
+                <button type="button" class="btn btn-danger btn-block" onclick="printReceipt('pdf', currentTransactionData)">
+                  <i class="fas fa-file-pdf"></i> PDF
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card text-center">
+              <div class="card-body">
+                <i class="fas fa-print fa-3x text-success mb-3"></i>
+                <h6>Cetak ke Printer</h6>
+                <p class="text-muted">Cetak langsung ke dot matrix printer</p>
+                <button type="button" class="btn btn-success btn-block" onclick="printReceipt('printer', currentTransactionData)">
+                  <i class="fas fa-print"></i> Printer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Hidden field to store transaction ID -->
+        <input type="hidden" id="printTransactionId" value="">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?= $this->endSection() ?>

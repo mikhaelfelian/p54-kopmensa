@@ -198,6 +198,8 @@
                                 <div class="col-6 text-right">
                                     <span id="subtotalDisplay">Rp 0,00</span>
                                     <input type="hidden" id="subtotal" name="subtotal" value="0">
+                                    <input type="hidden" id="jml_subtotal" name="jml_subtotal" value="0">
+                                    <input type="hidden" id="jml_total" name="jml_total" value="0">
                                 </div>
                             </div>
                             
@@ -250,6 +252,16 @@
                                     <input type="text" class="form-control form-control-sm" id="voucher_code" name="voucher_code" placeholder="Kode voucher">
                                     <small class="text-muted" id="voucher_info"></small>
                                     <input type="hidden" id="voucher_discount" name="voucher_discount" value="0">
+                                    <input type="hidden" id="voucher_id" name="voucher_id" value="">
+                                    <input type="hidden" id="voucher_type" name="voucher_type" value="">
+                                    <input type="hidden" id="voucher_discount_amount" name="voucher_discount_amount" value="0">
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-2" id="voucherDiscountRow" style="display: none;">
+                                <div class="col-6">Potongan Voucher:</div>
+                                <div class="col-6 text-right">
+                                    <span id="voucherDiscountDisplay">Rp 0</span>
                                 </div>
                             </div>
                             
@@ -278,6 +290,9 @@
                                     </select>
                                 </div>
                             </div>                            
+                            
+                            <!-- Hidden platform data for controller -->
+                            <input type="hidden" id="platform_data" name="platforms" value="">                            
                             <hr>                            
                             <div class="row">
                                 <div class="col-6"><strong>Total:</strong></div>
@@ -401,6 +416,28 @@ $(document).ready(function() {
     $('#voucher_code').on('blur', function() {
         validateVoucher($(this).val());
     });
+    
+            // Clear voucher when input is cleared
+        $('#voucher_code').on('input', function() {
+            if (!$(this).val()) {
+                clearVoucher();
+            }
+        });
+        
+        // Recalculate totals when discount inputs change
+        $('#diskonPercent, #diskonAmount').on('input', function() {
+            calculateDiscount();
+        });
+        
+        // Recalculate totals when adjustment changes
+        $('#penyesuaian').on('input', function() {
+            calculateTotal();
+        });
+        
+        // Recalculate totals when tax checkbox changes
+        $('#includeTax').on('change', function() {
+            calculateTotal();
+    });
 });
 
 let productRowCounter = 0;
@@ -447,6 +484,17 @@ function addProductRow() {
                 <input type="hidden" name="items[${productRowCounter}][id_item]" class="product-id">
                 <input type="hidden" name="items[${productRowCounter}][produk]" class="product-name">
                 <input type="hidden" name="items[${productRowCounter}][kode]" class="product-code">
+                <input type="hidden" name="items[${productRowCounter}][id_satuan]" class="product-satuan-id" value="">
+                <input type="hidden" name="items[${productRowCounter}][id_kategori]" class="product-kategori-id" value="">
+                <input type="hidden" name="items[${productRowCounter}][id_merk]" class="product-merk-id" value="">
+                <input type="hidden" name="items[${productRowCounter}][satuan]" class="product-satuan" value="">
+                <input type="hidden" name="items[${productRowCounter}][keterangan]" class="product-keterangan" value="">
+                <input type="hidden" name="items[${productRowCounter}][harga_beli]" class="product-harga-beli" value="0">
+                <input type="hidden" name="items[${productRowCounter}][qty_satuan]" class="product-qty-satuan" value="1">
+                <input type="hidden" name="items[${productRowCounter}][disk1]" class="product-disk1" value="0">
+                <input type="hidden" name="items[${productRowCounter}][disk2]" class="product-disk2" value="0">
+                <input type="hidden" name="items[${productRowCounter}][disk3]" class="product-disk3" value="0">
+                <input type="hidden" name="items[${productRowCounter}][potongan]" class="product-potongan" value="0">
             </td>
             <td>
                 <input type="number" class="form-control product-qty" name="items[${productRowCounter}][qty]" 
@@ -485,6 +533,7 @@ function addProductRow() {
     `;
     
     $('#productsTableBody').append(rowHtml);
+    calculateTotal();
 }
 
 function removeProductRow(rowId) {
@@ -497,6 +546,8 @@ function removeAllRows() {
     $('#productsTableBody').empty();
     productRowCounter = 0;
     addProductRow();
+    clearVoucher();
+    calculateTotal();
 }
 
 function renumberRows() {
@@ -615,6 +666,19 @@ function selectProduct(productId, productName, productCode, productPrice, catego
         $(`#productRow_${currentEditingRow} .product-code`).val(productCode);
         $(`#productRow_${currentEditingRow} .product-price`).val(productPrice);
         
+        // Set additional fields with default values
+        $(`#productRow_${currentEditingRow} .product-satuan`).val('PCS');
+        $(`#productRow_${currentEditingRow} .product-kategori-id`).val('');
+        $(`#productRow_${currentEditingRow} .product-merk-id`).val('');
+        $(`#productRow_${currentEditingRow} .product-satuan-id`).val('');
+        $(`#productRow_${currentEditingRow} .product-keterangan`).val('');
+        $(`#productRow_${currentEditingRow} .product-harga-beli`).val(0);
+        $(`#productRow_${currentEditingRow} .product-qty-satuan`).val(1);
+        $(`#productRow_${currentEditingRow} .product-disk1`).val(0);
+        $(`#productRow_${currentEditingRow} .product-disk2`).val(0);
+        $(`#productRow_${currentEditingRow} .product-disk3`).val(0);
+        $(`#productRow_${currentEditingRow} .product-potongan`).val(0);
+        
         calculateRowTotal(currentEditingRow);
         $('#productModal').modal('hide');
     }
@@ -667,16 +731,38 @@ function calculateTotal() {
     });
     
     $('#subtotal').val(subtotal);
+    $('#jml_subtotal').val(subtotal);
     $('#subtotalDisplay').text(`Rp ${numberFormat(subtotal)}`);
     
     // Calculate discount
     const discountAmount = parseFloat($('#jml_diskon').val()) || 0;
     const afterDiscount = subtotal - discountAmount;
     
+    // Set jml_total (total after discount, before tax)
+    $('#jml_total').val(afterDiscount);
+    
     // Calculate voucher discount
+    const voucherType = $('#voucher_type').val();
+    let voucherDiscountAmount = 0;
+
+    if (voucherType === 'persen') {
     const voucherDiscountPercent = parseFloat($('#voucher_discount').val()) || 0;
-    const voucherDiscountAmount = afterDiscount * (voucherDiscountPercent / 100);
+        voucherDiscountAmount = afterDiscount * (voucherDiscountPercent / 100);
+    } else if (voucherType === 'nominal') {
+        voucherDiscountAmount = parseFloat($('#voucher_discount_amount').val()) || 0;
+        if (voucherDiscountAmount > afterDiscount) {
+            voucherDiscountAmount = afterDiscount;
+        }
+    }
     const afterVoucherDiscount = afterDiscount - voucherDiscountAmount;
+
+    // Show/hide voucher discount row
+    if (voucherDiscountAmount > 0) {
+        $('#voucherDiscountRow').show();
+        $('#voucherDiscountDisplay').text(`Rp ${numberFormat(voucherDiscountAmount)}`);
+    } else {
+        $('#voucherDiscountRow').hide();
+    }
     
     // Calculate tax
     let taxAmount = 0;
@@ -708,31 +794,63 @@ function numberFormat(number) {
     }).format(number || 0);
 }
 
+function clearVoucher() {
+    $('#voucher_info').text('').removeClass('text-success text-danger');
+    $('#voucher_discount').val(0);
+    $('#voucher_id').val('');
+    $('#voucher_type').val('');
+    $('#voucher_discount_amount').val(0);
+    $('#voucherDiscountRow').hide();
+    calculateTotal();
+}
+
 function validateVoucher(voucherCode) {
     if (!voucherCode) {
         $('#voucher_info').text('').removeClass('text-success text-danger');
+        $('#voucher_discount').val(0);
+        $('#voucher_id').val('');
+        $('#voucher_type').val('');
+        $('#voucher_discount_amount').val(0);
+        $('#voucherDiscountRow').hide();
+        calculateTotal();
         return;
     }
     
-    // Simulate voucher validation (you can replace this with actual API call)
     $.ajax({
         url: '<?= base_url('transaksi/jual/validate-voucher') ?>',
         type: 'POST',
         data: { voucher_code: voucherCode },
         success: function(response) {
             if (response.valid) {
-                $('#voucher_info').text('Voucher valid: ' + response.discount + '%').removeClass('text-danger').addClass('text-success');
+                let displayText = '';
+                if (response.jenis_voucher === 'persen') {
+                    displayText = `Voucher valid: ${response.discount}%`;
+                } else if (response.jenis_voucher === 'nominal') {
+                    displayText = `Voucher valid: Rp ${numberFormat(response.discount_amount)}`;
+                }
+                $('#voucher_info').text(displayText).removeClass('text-danger').addClass('text-success');
                 $('#voucher_discount').val(response.discount);
+                $('#voucher_id').val(response.voucher_id);
+                $('#voucher_type').val(response.jenis_voucher);
+                $('#voucher_discount_amount').val(response.discount_amount);
                 calculateTotal();
             } else {
-                $('#voucher_info').text('Voucher tidak valid').removeClass('text-success').addClass('text-danger');
+                $('#voucher_info').text(response.message || 'Voucher tidak valid').removeClass('text-success').addClass('text-danger');
                 $('#voucher_discount').val(0);
+                $('#voucher_id').val('');
+                $('#voucher_type').val('');
+                $('#voucher_discount_amount').val(0);
+                $('#voucherDiscountRow').hide();
                 calculateTotal();
             }
         },
         error: function() {
             $('#voucher_info').text('Error validasi voucher').removeClass('text-success').addClass('text-danger');
             $('#voucher_discount').val(0);
+            $('#voucher_id').val('');
+            $('#voucher_type').val('');
+            $('#voucher_discount_amount').val(0);
+            $('#voucherDiscountRow').hide();
             calculateTotal();
         }
     });
@@ -740,6 +858,9 @@ function validateVoucher(voucherCode) {
 
 // Form validation
 $('#salesForm').on('submit', function(e) {
+    // Ensure all totals are calculated before submission
+    calculateTotal();
+    
     const warehouse = $('#id_gudang').val();
     const orderDate = $('#tgl_order').val();
     
@@ -768,6 +889,69 @@ $('#salesForm').on('submit', function(e) {
         e.preventDefault();
         toastr.error('Minimal satu produk harus ditambahkan');
         return false;
+    }
+    
+    // Validate required total fields
+    const subtotal = parseFloat($('#jml_subtotal').val()) || 0;
+    const total = parseFloat($('#jml_total').val()) || 0;
+    const discount = parseFloat($('#jml_diskon').val()) || 0;
+    const grandTotal = parseFloat($('#jml_gtotal').val()) || 0;
+    
+    if (subtotal <= 0) {
+        e.preventDefault();
+        toastr.error('Subtotal tidak boleh kosong atau 0');
+        return false;
+    }
+    
+    if (total <= 0) {
+        e.preventDefault();
+        toastr.error('Total setelah diskon tidak boleh kosong atau 0');
+        return false;
+    }
+    
+    if (grandTotal <= 0) {
+        e.preventDefault();
+        toastr.error('Total tidak boleh kosong atau 0');
+        return false;
+    }
+    
+    // Add voucher fields to form data
+    const voucherCode = $('#voucher_code').val();
+    if (voucherCode) {
+        // Add voucher fields to the form
+        if (!$('#voucher_id').length) {
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'voucher_id',
+                value: $('#voucher_id').val()
+            }).appendTo('#salesForm');
+        }
+        if (!$('#voucher_type').length) {
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'voucher_type',
+                value: $('#voucher_type').val()
+            }).appendTo('#salesForm');
+        }
+        if (!$('#voucher_discount_amount').length) {
+            $('<input>').attr({
+                type: 'hidden',
+                name: 'voucher_discount_amount',
+                value: $('#voucher_discount_amount').val()
+            }).appendTo('#salesForm');
+        }
+    }
+    
+    // Add platform data
+    const platformId = $('#id_platform').val();
+    if (platformId) {
+        const platformData = [{
+            id_platform: platformId,
+            platform: $('#id_platform option:selected').text(),
+            nominal: parseFloat($('#jml_gtotal').val()) || 0,
+            keterangan: 'Pembayaran via ' + $('#id_platform option:selected').text()
+        }];
+        $('#platform_data').val(JSON.stringify(platformData));
     }
     
     return true;

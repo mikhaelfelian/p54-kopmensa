@@ -211,7 +211,7 @@ public function getItemsWithRelationsActive($perPage = 10, $keyword = null, $pag
         ->where('tbl_m_item.status_hps', '0')
         ->where('tbl_m_item.status', '1')
         ->groupBy('tbl_m_item_stok.id_item')
-        ->orderBy('tbl_m_item.id', 'DESC');
+        ->orderBy('tbl_m_item.item', 'DESC');
 
     if ($keyword) {
         $builder->groupStart()
@@ -340,5 +340,42 @@ public function getItemWithRelations($id)
                     ->groupBy('tbl_m_item.id')
                     ->orderBy('tbl_m_item.item', 'ASC')
                     ->findAll();
+    }
+
+    /**
+     * Get items with stock information for a specific warehouse
+     *
+     * @param int $warehouseId
+     * @param string|null $search
+     * @return array
+     */
+    public function getItemsByWarehouse($warehouseId, $search = null)
+    {
+        $builder = $this->select('
+                    tbl_m_item.*,
+                    COALESCE(tbl_m_item_stok.jml, 0) as stok,
+                    tbl_m_kategori.kategori,
+                    tbl_m_merk.merk,
+                    tbl_m_satuan.satuanBesar as satuan
+                ')
+                ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+                ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id AND tbl_m_item_stok.id_gudang = ' . (int)$warehouseId, 'left')
+                ->where('tbl_m_item.status_hps', '0')
+                ->where('tbl_m_item.status', '1');
+
+        // Add search conditions if search term is provided
+        if (!empty($search)) {
+            $builder->groupStart()
+                    ->like('tbl_m_item.item', $search)
+                    ->orLike('tbl_m_item.kode', $search)
+                    ->orLike('tbl_m_item.barcode', $search)
+                    ->orLike('tbl_m_kategori.kategori', $search)
+                    ->orLike('tbl_m_merk.merk', $search)
+                    ->groupEnd();
+        }
+
+        return $builder->orderBy('tbl_m_item.item', 'DESC')->findAll();
     }
 } 

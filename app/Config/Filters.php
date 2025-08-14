@@ -81,6 +81,7 @@ class Filters extends BaseFilters
                 'transaksi/jual/process-transaction',
                 'transaksi/jual/validate-voucher',
                 'transaksi/jual/search-items',
+                'transaksi/jual/delete-draft/*',
                 'transaksi/retur/jual/search-items',
                 'transaksi/retur/jual/sales-items/*',
                 'transaksi/retur/jual/test'

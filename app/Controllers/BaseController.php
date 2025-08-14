@@ -115,7 +115,7 @@ abstract class BaseController extends Controller
     /**
      * Override view() to automatically include default data
      */
-    protected function view(string $name, array $data = [], array $options = []): string
+    protected function view(string $name, array $data = [], array $options = [])
     {
         // Merge default data with passed data
         $data = array_merge($this->data, $data);

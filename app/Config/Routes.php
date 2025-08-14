@@ -242,6 +242,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     // API Authentication routes
     $routes->group('anggota', function ($routes) {
         $routes->post('login', 'Anggota\Auth::login');
+        $routes->get('search', 'Anggota\Auth::search');
     });
 
     // Protected API routes (require JWT authentication)
@@ -318,6 +319,17 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     // Add route for get_variants
     $routes->get('jual/get_variants/(:num)', 'TransJual::get_variants/$1');
     
+    // Draft management routes
+    $routes->get('jual/get-drafts', 'TransJual::getDrafts');
+    $routes->get('jual/get-draft/(:num)', 'TransJual::getDraft/$1');
+    $routes->post('jual/delete-draft/(:num)', 'TransJual::deleteDraft/$1');
+    
+    // Print transaction data route
+    $routes->get('jual/get-transaction-for-print/(:num)', 'TransJual::getTransactionForPrint/$1');
+    
+    // Session refresh endpoint
+    $routes->get('jual/refresh-session', 'TransJual::refreshSession');
+    
     // QR Scanner for Piutang transactions (no CSRF to allow mobile scanning)
     $routes->get('jual/qr-scanner/(:num)', 'TransJual::qrScanner/$1');
     // Moved outside group for CSRF bypass
@@ -382,6 +394,18 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
 $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function ($routes) {
     $routes->get('app', 'Pengaturan::index');
     $routes->post('app/update', 'Pengaturan::update');
+    
+    // Printer management routes
+    $routes->group('printer', ['namespace' => 'App\Controllers\Pengaturan'], function ($routes) {
+        $routes->get('/', 'Printer::index');
+        $routes->get('create', 'Printer::create');
+        $routes->post('store', 'Printer::store');
+        $routes->get('edit/(:num)', 'Printer::edit/$1');
+        $routes->post('update/(:num)', 'Printer::update/$1');
+        $routes->get('delete/(:num)', 'Printer::delete/$1');
+        $routes->get('set-default/(:num)', 'Printer::setDefault/$1');
+        $routes->get('test/(:num)', 'Printer::testConnection/$1');
+    });
 });
 
 

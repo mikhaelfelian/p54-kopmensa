@@ -13,13 +13,13 @@ use CodeIgniter\Model;
  */
 class ItemStokModel extends Model
 {
-    protected $table            = 'tbl_m_item_stok';
-    protected $primaryKey       = 'id';
+    protected $table = 'tbl_m_item_stok';
+    protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType       = 'object';
-    protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
-    protected $allowedFields    = [
+    protected $returnType = 'object';
+    protected $useSoftDeletes = false;
+    protected $protectFields = true;
+    protected $allowedFields = [
         'id_item',
         'id_gudang',
         'id_outlet',
@@ -30,14 +30,14 @@ class ItemStokModel extends Model
 
     // Dates
     protected $useTimestamps = true;
-    protected $dateFormat    = 'datetime';
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
+    protected $dateFormat = 'datetime';
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
 
     // Validation
-    protected $validationRules      = [];
-    protected $validationMessages   = [];
-    protected $skipValidation       = false;
+    protected $validationRules = [];
+    protected $validationMessages = [];
+    protected $skipValidation = false;
     protected $cleanValidationRules = true;
 
     /**
@@ -49,7 +49,7 @@ class ItemStokModel extends Model
     public function getStockByItem($itemId)
     {
         return $this->where('id_item', $itemId)
-                    ->findAll();
+            ->findAll();
     }
 
     /**
@@ -62,8 +62,8 @@ class ItemStokModel extends Model
     public function getStockByItemAndGudang($itemId, $gudangId)
     {
         return $this->where('id_item', $itemId)
-                    ->where('id_gudang', $gudangId)
-                    ->first();
+            ->where('id_gudang', $gudangId)
+            ->first();
     }
 
     /**
@@ -76,11 +76,87 @@ class ItemStokModel extends Model
     public function getStockByItemAndOutlet($itemId, $outletId)
     {
         return $this->select('tbl_m_item_stok.*, tbl_m_satuan.satuanBesar as satuan_nama, tbl_m_item.item as item_nama')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+            ->where('tbl_m_item_stok.id_item', $itemId)
+            ->where('tbl_m_item_stok.id_outlet', $outletId)
+            ->first();
+    }
+
+    /**
+     * Get all stock data for a specific outlet
+     *
+     * @param int $outletId
+     * @return array
+     */
+    public function getStockByOutlet($outletId)
+    {
+        return $this->select('tbl_m_item_stok.*, tbl_m_satuan.satuanBesar as satuan_nama, tbl_m_item.item as item_nama')
                     ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
-                    ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-                    ->where('tbl_m_item_stok.id_item', $itemId)
+                    ->join('tbl_m_satuan', 'tbl_m_item.id_satuan', 'left')
                     ->where('tbl_m_item_stok.id_outlet', $outletId)
-                    ->first();
+                    ->findAll();
+    }
+
+    /**
+     * Get all stock data for a specific warehouse
+     *
+     * @param int $gudangId
+     * @return array
+     */
+    public function getStockByWarehouse($gudangId)
+    {
+        // Use a simpler approach - start from tbl_m_item and join to stock
+        $builder = $this->select('tbl_m_item.*, COALESCE(tbl_m_item_stok.jml, 0) as stok, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_satuan.satuanBesar as satuan')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'right')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+            ->where('tbl_m_item_stok.id_gudang', $gudangId)
+            ->where('tbl_m_item.status_hps', '0')
+            ->where('tbl_m_item.status', '1')
+            ->orderBy('tbl_m_item.item', 'DESC');
+
+        return $builder->findAll();
+    }
+
+    /**
+     * Get all stock data for a specific outlet (same as getStockByWarehouse but using id_outlet)
+     *
+     * @param int $outletId
+     * @param int $perPage
+     * @param string|null $keyword
+     * @param int $page
+     * @return array
+     */
+    public function getStockByOutletPaginate($gudangId, $perPage = 10, $keyword = null, $page = 1)
+    {
+        $builder = $this->select('tbl_m_item.*, SUM(tbl_m_item_stok.jml) as stok, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left')
+            ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id')
+            ->where('tbl_m_item.status_hps', '0')
+            ->where('tbl_m_item.status', '1')
+            ->groupBy('tbl_m_item_stok.id_item')
+            ->orderBy('tbl_m_item.item', 'DESC');
+
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('tbl_m_item.item', $keyword)
+                ->orLike('tbl_m_item.kode', $keyword)
+                ->orLike('tbl_m_item.barcode', $keyword)
+                ->orLike('tbl_m_kategori.kategori', $keyword)
+                ->orLike('tbl_m_merk.merk', $keyword)
+                ->orLike('tbl_m_supplier.nama', $keyword)
+                ->groupEnd();
+        }
+
+        if ($gudangId) {
+            $builder->where('tbl_m_item_stok.id_gudang', $gudangId);
+        }
+
+        return $builder->paginate($perPage, 'items', $page);
     }
 
     /**
@@ -95,7 +171,7 @@ class ItemStokModel extends Model
     public function updateStock($itemId, $gudangId, $quantity, $userId = 1)
     {
         $existingStock = $this->getStockByItemAndGudang($itemId, $gudangId);
-        
+
         if ($existingStock) {
             // Update existing stock
             return $this->update($existingStock->id, [
@@ -126,7 +202,7 @@ class ItemStokModel extends Model
     public function updateStockOutlet($itemId, $outletId, $quantity, $userId = 1)
     {
         $existingStock = $this->getStockByItemAndOutlet($itemId, $outletId);
-        
+
         if ($existingStock) {
             // Update existing stock
             return $this->update($existingStock->id, [
@@ -154,10 +230,10 @@ class ItemStokModel extends Model
     public function getTotalStock($itemId)
     {
         $result = $this->selectSum('jml')
-                       ->where('id_item', $itemId)
-                       ->where('status', '1')
-                       ->first();
-        
+            ->where('id_item', $itemId)
+            ->where('status', '1')
+            ->first();
+
         return $result ? (float) $result->jml : 0;
     }
 }

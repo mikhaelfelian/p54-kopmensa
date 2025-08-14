@@ -39,7 +39,8 @@ class CreateTblMItemVarian extends Migration
                 'type'       => 'INT',
                 'constraint' => 11,
                 'unsigned'   => true,
-                'null'       => false,
+                'null'       => true,
+                'default'    => null,
             ],
             'created_at' => [
                 'type'    => 'TIMESTAMP',
@@ -47,7 +48,13 @@ class CreateTblMItemVarian extends Migration
                 'default' => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
             ],
             'updated_at' => [
-                'type'    => 'DATETIME',
+                'type'    => 'TIMESTAMP',
+                'null'    => true,
+                'default' => null,
+                'on_update' => new \CodeIgniter\Database\RawSql('CURRENT_TIMESTAMP'),
+            ],
+            'deleted_at' => [
+                'type'    => 'TIMESTAMP',
                 'null'    => true,
                 'default' => null,
             ],
@@ -57,22 +64,6 @@ class CreateTblMItemVarian extends Migration
                 'null'       => false,
                 'collate'    => 'utf8mb4_general_ci',
             ],
-            'nama' => [
-                'type'       => 'VARCHAR',
-                'constraint' => 255,
-                'null'       => false,
-                'collate'    => 'utf8mb4_general_ci',
-            ],
-            'harga_beli' => [
-                'type'       => 'FLOAT',
-                'null'       => true,
-                'default'    => 0,
-            ],
-            'harga_jual' => [
-                'type'       => 'FLOAT',
-                'null'       => true,
-                'default'    => 0,
-            ],
             'barcode' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 100,
@@ -80,31 +71,68 @@ class CreateTblMItemVarian extends Migration
                 'default'    => null,
                 'collate'    => 'utf8mb4_general_ci',
             ],
-            'foto' => [
+            'varian' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 255,
+                'null'       => false,
+                'collate'    => 'utf8mb4_general_ci',
+            ],
+            'harga_beli' => [
+                'type'       => 'DECIMAL',
+                'constraint' => '18,2',
+                'null'       => true,
+                'default'    => null,
+            ],
+            'harga_dasar' => [
+                'type'       => 'DECIMAL',
+                'constraint' => '18,2',
+                'null'       => true,
+                'default'    => null,
+            ],
+            'harga_jual' => [
+                'type'       => 'DECIMAL',
+                'constraint' => '18,2',
+                'null'       => true,
+                'default'    => null,
+            ],
+            'foto' => [
+                'type'       => 'VARCHAR',
+                'constraint' => 160,
                 'null'       => true,
                 'default'    => null,
                 'collate'    => 'utf8mb4_general_ci',
             ],
             'status' => [
-                'type'       => 'ENUM',
-                'constraint' => ['0', '1'],
-                'null'       => true,
-                'default'    => '1',
-                'collate'    => 'utf8mb4_general_ci',
+                'type'       => 'TINYINT',
+                'constraint' => 1,
+                'null'       => false,
+                'default'    => 1,
             ],
         ]);
 
-        // Use unique key names to avoid "Duplicate key name" error
-        $this->forge->addKey('id', true, true, 'PRIMARY'); // Primary key
-        $this->forge->addKey('id_item', false, false, 'idx_id_item');
-        $this->forge->addKey('id_item_harga', false, false, 'idx_id_item_harga');
-        $this->forge->addForeignKey('id_item', 'tbl_m_item', 'id', 'CASCADE', 'CASCADE', 'tbl_m_item_varian_id_item_foreign');
-        $this->forge->addForeignKey('id_item_harga', 'tbl_m_item_harga', 'id', 'CASCADE', 'CASCADE', 'tbl_m_item_varian_id_item_harga_foreign');
+        // Primary key
+        $this->forge->addKey('id', true, true, 'PRIMARY'); // PRIMARY KEY (`id`) USING BTREE
+
+        // Unique indexes
+        $this->forge->addUniqueKey('kode', 'uq_kode'); // UNIQUE INDEX `uq_kode` (`kode`)
+
+        // Indexes
+        $this->forge->addKey('id_item', false, false, 'idx_id_item'); // INDEX `idx_id_item` (`id_item`) USING BTREE
+
+        // Foreign key
+        $this->forge->addForeignKey(
+            'id_item',
+            'tbl_m_item',
+            'id',
+            'CASCADE',
+            'CASCADE',
+            'tbl_m_item_varian_id_item_foreign'
+        );
+
+        // Create table
         $this->forge->createTable('tbl_m_item_varian', false, [
-            'ENGINE' => 'InnoDB',
-            'COLLATE' => 'utf8mb4_general_ci',
+            'ENGINE'   => 'InnoDB',
+            'COLLATE'  => 'utf8mb4_general_ci',
         ]);
     }
 
@@ -112,4 +140,4 @@ class CreateTblMItemVarian extends Migration
     {
         $this->forge->dropTable('tbl_m_item_varian');
     }
-} 
+}
