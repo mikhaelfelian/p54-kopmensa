@@ -249,6 +249,13 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
         $routes->get('profile', 'Anggota\\Auth::profile');
         $routes->get('logout', 'Anggota\\Auth::logout');
+        
+        // PIN Management routes
+        $routes->post('set-pin', 'Anggota\\Auth::setPin');
+        $routes->post('validate-pin', 'Anggota\\Auth::validatePin');
+        $routes->post('change-pin', 'Anggota\\Auth::changePin');
+        $routes->get('pin-status', 'Anggota\\Auth::pinStatus');
+        $routes->post('reset-pin', 'Anggota\\Auth::resetPin');
     });
 
     $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {

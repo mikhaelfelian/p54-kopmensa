@@ -24,6 +24,26 @@
                                 <td>: <span class="badge badge-primary"><?= esc($voucher->kode) ?></span></td>
                             </tr>
                             <tr>
+                                <td><strong>Jenis Voucher</strong></td>
+                                <td>: 
+                                    <?php if ($voucher->jenis_voucher === 'nominal'): ?>
+                                        <span class="badge badge-primary">Nominal (Rp)</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-info">Persentase (%)</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Nominal Voucher</strong></td>
+                                <td>: 
+                                    <?php if ($voucher->jenis_voucher === 'nominal'): ?>
+                                        <strong class="text-success">Rp <?= number_format($voucher->nominal) ?></strong>
+                                    <?php else: ?>
+                                        <strong class="text-info"><?= $voucher->nominal ?>%</strong>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
                                 <td><strong>Jumlah</strong></td>
                                 <td>: <?= number_format($voucher->jml) ?></td>
                             </tr>

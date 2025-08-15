@@ -169,7 +169,7 @@ helper('form');
                     </div>
                     <small class="text-muted">
                         <i class="fas fa-info-circle"></i> 
-                        Scan QR code dari mobile yang berisi id_pelanggan, atau ketik nomor kartu anggota secara manual
+                        Scan QR code dari aplikasi mobile, atau ketik nomor kartu anggota secara manual
                     </small>
                     
                     <!-- QR Scanner Modal -->
@@ -208,9 +208,43 @@ helper('form');
                 </div>
                 
                 <!-- Hidden fields for customer data -->
-                <input type="hidden" id="selectedCustomerId" name="selectedCustomerId" value="">
+                <input type="hidden" id="selectedCustomerId" name="selectedCustomerId" value="2">
                 <input type="hidden" id="selectedCustomerName" name="selectedCustomerName" value="">
                 <input type="hidden" id="selectedCustomerType" name="selectedCustomerType" value="umum">
+
+                <script>
+                // Set selectedCustomerId to '2' if Umum, else set to id_user anggota
+                function setCustomerFields(type, anggotaData = null) {
+                    if (type === 'umum') {
+                        document.getElementById('selectedCustomerId').value = '2';
+                        document.getElementById('selectedCustomerType').value = 'umum';
+                        document.getElementById('selectedCustomerName').value = '';
+                    } else if (type === 'anggota' && anggotaData) {
+                        // anggotaData should contain at least id_user and nama
+                        document.getElementById('selectedCustomerId').value = anggotaData.id_user;
+                        document.getElementById('selectedCustomerType').value = 'anggota';
+                        document.getElementById('selectedCustomerName').value = anggotaData.nama || '';
+                    }
+                }
+
+                // On page load, set default to Umum
+                document.addEventListener('DOMContentLoaded', function() {
+                    setCustomerFields('umum');
+                });
+
+                // Listen for radio change
+                document.querySelectorAll('input[name="customerType"]').forEach(function(radio) {
+                    radio.addEventListener('change', function() {
+                        if (this.value === 'umum') {
+                            document.getElementById('scanAnggotaGroup').style.display = 'none';
+                            setCustomerFields('umum');
+                        } else {
+                            document.getElementById('scanAnggotaGroup').style.display = '';
+                            // Wait for anggota scan/input to set fields
+                        }
+                    });
+                });
+                </script>
                 
                 <!-- Customer Status Display -->
                 <div class="form-group customer-status-display" id="customerStatusDisplay" style="display: none;">

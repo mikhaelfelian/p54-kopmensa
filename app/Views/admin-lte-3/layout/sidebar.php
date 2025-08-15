@@ -293,14 +293,6 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('gudang/input_stok') ?>"
-                                class="nav-link <?= isMenuActive('gudang/input_stok') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-box-open nav-icon"></i>
-                                <p>Input Penerimaan</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a href="<?= base_url('transaksi/jual') ?>" class="nav-link <?= isMenuActive('transaksi/jual') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
@@ -395,6 +387,14 @@
                                 <?= nbs(3) ?>
                                 <i class="fas fa-boxes nav-icon"></i>
                                 <p>Stock Opname</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('gudang/input_stok') ?>"
+                                class="nav-link <?= isMenuActive('gudang/input_stok') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-box-open nav-icon"></i>
+                                <p>Input Penerimaan</p>
                             </a>
                         </li>
                     </ul>

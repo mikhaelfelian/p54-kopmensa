@@ -42,6 +42,7 @@ class Voucher extends BaseController
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
             'keyword'       => $keyword,
+            'summary'       => $this->voucherModel->getVoucherSummary(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -171,6 +172,20 @@ class Voucher extends BaseController
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Persentase voucher tidak boleh lebih dari 100%');
+        }
+
+        // Check if nominal voucher has reasonable minimum amount
+        if ($jenis_voucher === 'nominal' && $nominal < 1000) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Nominal voucher minimal Rp 1.000');
+        }
+
+        // Check if nominal voucher doesn't exceed reasonable maximum (e.g., 10 million)
+        if ($jenis_voucher === 'nominal' && $nominal > 10000000) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Nominal voucher tidak boleh lebih dari Rp 10.000.000');
         }
 
         // Generate data
@@ -331,6 +346,20 @@ class Voucher extends BaseController
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Persentase voucher tidak boleh lebih dari 100%');
+        }
+
+        // Check if nominal voucher has reasonable minimum amount
+        if ($jenis_voucher === 'nominal' && $nominal < 1000) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Nominal voucher minimal Rp 1.000');
+        }
+
+        // Check if nominal voucher doesn't exceed reasonable maximum (e.g., 10 million)
+        if ($jenis_voucher === 'nominal' && $nominal > 10000000) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Nominal voucher tidak boleh lebih dari Rp 10.000.000');
         }
 
         // Generate data

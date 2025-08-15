@@ -195,9 +195,9 @@ class TransJual extends BaseController
      */
     public function searchItems()
     {
-        // if (!$this->request->isAJAX()) {
-        //     return $this->response->setJSON(['error' => 'Invalid request']);
-        // }
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['error' => 'Invalid request']);
+        }
 
         // Handle both GET and POST requests
         $search = $this->request->getVar('search');
@@ -211,8 +211,6 @@ class TransJual extends BaseController
             try {
                 $items = $this->itemModel->getItemsByWarehouse($warehouseId, $search);
             } catch (\Exception $e) {
-                log_message('error', 'Error loading warehouse items: ' . $e->getMessage());
-                log_message('error', 'Stack trace: ' . $e->getTraceAsString());
                 return $this->response->setJSON([
                     'error' => 'Failed to load warehouse items: ' . $e->getMessage()
                 ])->setStatusCode(500);
@@ -228,88 +226,6 @@ class TransJual extends BaseController
         }
 
         return $this->response->setJSON(['items' => $items]);
-    }
-
-    /**
-     * Test method to debug warehouse loading
-     */
-    public function testWarehouse($warehouseId = null)
-    {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['error' => 'Invalid request']);
-        }
-
-        try {
-            if ($warehouseId) {
-                log_message('info', 'Testing warehouse loading for ID: ' . $warehouseId);
-                
-                // Test database connection
-                $db = \Config\Database::connect();
-                log_message('info', 'Database connected successfully');
-                
-                // Test if tables exist
-                $tables = $db->listTables();
-                log_message('info', 'Available tables: ' . implode(', ', $tables));
-                
-                // Test if specific tables exist
-                $itemStokExists = in_array('tbl_m_item_stok', $tables);
-                $itemExists = in_array('tbl_m_item', $tables);
-                $kategoriExists = in_array('tbl_m_kategori', $tables);
-                $merkExists = in_array('tbl_m_merk', $tables);
-                $satuanExists = in_array('tbl_m_satuan', $tables);
-                
-                log_message('info', 'Table existence - ItemStok: ' . ($itemStokExists ? 'Yes' : 'No') . 
-                           ', Item: ' . ($itemExists ? 'Yes' : 'No') . 
-                           ', Kategori: ' . ($kategoriExists ? 'Yes' : 'No') . 
-                           ', Merk: ' . ($merkExists ? 'Yes' : 'No') . 
-                           ', Satuan: ' . ($satuanExists ? 'Yes' : 'No'));
-                
-                if ($itemStokExists && $itemExists) {
-                    // Test the actual query
-                    $items = $this->itemStokModel->getStockByWarehouse($warehouseId);
-                    log_message('info', 'Query successful, returned ' . count($items) . ' items');
-                    
-                    return $this->response->setJSON([
-                        'success' => true,
-                        'items' => $items,
-                        'count' => count($items),
-                        'debug' => [
-                            'warehouse_id' => $warehouseId,
-                            'tables_exist' => [
-                                'item_stok' => $itemStokExists,
-                                'item' => $itemExists,
-                                'kategori' => $kategoriExists,
-                                'merk' => $merkExists,
-                                'satuan' => $satuanExists
-                            ]
-                        ]
-                    ]);
-                } else {
-                    return $this->response->setJSON([
-                        'error' => 'Required tables do not exist',
-                        'debug' => [
-                            'tables_exist' => [
-                                'item_stok' => $itemStokExists,
-                                'item' => $itemExists,
-                                'kategori' => $kategoriExists,
-                                'merk' => $merkExists,
-                                'satuan' => $satuanExists
-                            ]
-                        ]
-                    ]);
-                }
-            } else {
-                return $this->response->setJSON(['error' => 'Warehouse ID required']);
-            }
-        } catch (\Exception $e) {
-            log_message('error', 'Test warehouse error: ' . $e->getMessage());
-            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
-            
-            return $this->response->setJSON([
-                'error' => 'Test failed: ' . $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ])->setStatusCode(500);
-        }
     }
 
     /**
@@ -787,8 +703,8 @@ class TransJual extends BaseController
             // Prepare transaction data
             $transactionData = [
                 'id_user'           => $this->ionAuth->user()->row()->id,
-                'id_sales'          => $this->ionAuth->user()->row()->id, // Can be added later if needed
-                'id_pelanggan'      => $customerId,
+                'id_sales'          => $warehouseId ?? 0, // Can be added later if needed
+                'id_pelanggan'      => $customerId ?? 2,
                 'id_gudang'         => $warehouseId,
                 'no_nota'           => $noNota,
                 'tgl_masuk'         => date('Y-m-d H:i:s'),
@@ -1469,9 +1385,9 @@ class TransJual extends BaseController
             // Prepare data for printing
             $printData = [
                 'no_nota' => $transaction->no_nota,
-                'customer_name' => $customer ? $customer->nama_pelanggan : 'Umum',
-                'customer_type' => $customer ? $customer->tipe_pelanggan : 'umum',
-                'outlet' => $outlet ? $outlet->nama_gudang : 'Outlet',
+                'customer_name' => $customer ? $customer->nama : 'Umum', // Fixed: using 'nama' instead of 'nama_pelanggan'
+                'customer_type' => $customer ? $customer->tipe : 'umum', // Fixed: using 'tipe' instead of 'tipe_pelanggan'
+                'outlet' => $outlet ? $outlet->nama : 'Outlet', // Fixed: using 'nama' instead of 'nama_gudang'
                 'date' => date('d/m/Y H:i', strtotime($transaction->created_at)),
                 'subtotal' => $transaction->jml_subtotal,
                 'discount' => $transaction->jml_diskon > 0 ? ($transaction->jml_diskon / $transaction->jml_subtotal) * 100 : 0,
@@ -1495,8 +1411,8 @@ class TransJual extends BaseController
             // Format payment methods for printing
             foreach ($paymentMethods as $payment) {
                 $printData['payment_methods'][] = [
-                    'type' => $payment->type,
-                    'amount' => $payment->amount
+                    'type' => $payment->platform, // Fixed: using 'platform' instead of 'type'
+                    'amount' => $payment->nominal // Fixed: using 'nominal' instead of 'amount'
                 ];
             }
 

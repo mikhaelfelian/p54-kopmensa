@@ -31,12 +31,65 @@
                 </div>
             </div>
             <!-- /.card-header -->
+            
+            <!-- Summary Dashboard -->
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-info">
+                            <div class="inner">
+                                <h3><?= number_format($summary['total']) ?></h3>
+                                <p>Total Voucher</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-ticket-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-success">
+                            <div class="inner">
+                                <h3><?= number_format($summary['active']) ?></h3>
+                                <p>Voucher Aktif</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-primary">
+                            <div class="inner">
+                                <h3><?= number_format($summary['nominal']) ?></h3>
+                                <p>Voucher Nominal</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-warning">
+                            <div class="inner">
+                                <h3><?= number_format($summary['percentage']) ?></h3>
+                                <p>Voucher Persen</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <div class="card-body table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
                             <th width="50">No</th>
                             <th>Kode Voucher</th>
+                            <th>Jenis</th>
+                            <th>Nominal</th>
                             <th>Jumlah</th>
                             <th>Terpakai</th>
                             <th>Maksimal</th>
@@ -52,6 +105,20 @@
                                     <td><?= (($currentPage - 1) * $perPage) + $key + 1 ?></td>
                                     <td>
                                         <span class="badge badge-secondary"><?= esc($voucher->kode) ?></span>
+                                    </td>
+                                    <td>
+                                        <?php if ($voucher->jenis_voucher === 'nominal'): ?>
+                                            <span class="badge badge-primary">Nominal</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-info">Persen</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($voucher->jenis_voucher === 'nominal'): ?>
+                                            Rp <?= number_format($voucher->nominal) ?>
+                                        <?php else: ?>
+                                            <?= $voucher->nominal ?>%
+                                        <?php endif; ?>
                                     </td>
                                     <td><?= number_format($voucher->jml) ?></td>
                                     <td>
@@ -108,7 +175,7 @@
                             <?php endforeach; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center">
+                                <td colspan="10" class="text-center">
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle"></i> Belum ada data voucher
                                     </div>

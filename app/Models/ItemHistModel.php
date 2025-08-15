@@ -33,6 +33,7 @@ class ItemHistModel extends Model
         'id_pembelian',
         'id_pembelian_det',
         'id_so',
+        'id_mutasi',
         'created_at',
         'updated_at',
         'tgl_masuk',

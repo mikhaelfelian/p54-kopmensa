@@ -232,4 +232,39 @@ class VoucherModel extends Model
 
         return $this->orderBy('id', 'DESC')->paginate($perPage);
     }
+
+    /**
+     * Get vouchers by type (nominal or percentage)
+     */
+    public function getVouchersByType($type, $activeOnly = true)
+    {
+        $this->where('jenis_voucher', $type);
+        
+        if ($activeOnly) {
+            $this->where('status', '1')
+                 ->where('tgl_masuk <=', date('Y-m-d'))
+                 ->where('tgl_keluar >=', date('Y-m-d'));
+        }
+        
+        return $this->findAll();
+    }
+
+    /**
+     * Get voucher summary statistics
+     */
+    public function getVoucherSummary()
+    {
+        $totalVouchers = $this->countAll();
+        $activeVouchers = $this->where('status', '1')->countAllResults();
+        $nominalVouchers = $this->where('jenis_voucher', 'nominal')->countAllResults();
+        $percentageVouchers = $this->where('jenis_voucher', 'persen')->countAllResults();
+        
+        return [
+            'total' => $totalVouchers,
+            'active' => $activeVouchers,
+            'nominal' => $nominalVouchers,
+            'percentage' => $percentageVouchers,
+            'inactive' => $totalVouchers - $activeVouchers
+        ];
+    }
 }
