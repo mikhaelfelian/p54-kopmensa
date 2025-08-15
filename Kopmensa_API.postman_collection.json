@@ -119,6 +119,507 @@
                                     ]
                                 }
                             }
+                        },
+                        {
+                            "name": "Set PIN (First Time)",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/x-www-form-urlencoded"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/anggota/set-pin",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "anggota",
+                                        "set-pin"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "urlencoded",
+                                    "urlencoded": [
+                                        {
+                                            "key": "pin",
+                                            "value": "123456",
+                                            "description": "6-digit PIN (numeric only)"
+                                        },
+                                        {
+                                            "key": "confirm_pin",
+                                            "value": "123456",
+                                            "description": "Confirm 6-digit PIN (must match)"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": [
+                                {
+                                    "name": "Success",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/set-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "set-pin"
+                                            ]
+                                        },
+                                        "body": {
+                                            "mode": "urlencoded",
+                                            "urlencoded": [
+                                                {
+                                                    "key": "pin",
+                                                    "value": "123456"
+                                                },
+                                                {
+                                                    "key": "confirm_pin",
+                                                    "value": "123456"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"message\": \"PIN berhasil diatur\",\n    \"data\": {\n        \"user_id\": 123,\n        \"pin_set\": true\n    }\n}"
+                                },
+                                {
+                                    "name": "Error - PIN Already Exists",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/set-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "set-pin"
+                                            ]
+                                        }
+                                    },
+                                    "status": "Bad Request",
+                                    "code": 400,
+                                    "body": "{\n    \"status\": 400,\n    \"error\": \"PIN sudah diatur sebelumnya. Gunakan fungsi ubah PIN untuk mengubah PIN yang ada.\"\n}"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Validate PIN",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/x-www-form-urlencoded"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/anggota/validate-pin",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "anggota",
+                                        "validate-pin"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "urlencoded",
+                                    "urlencoded": [
+                                        {
+                                            "key": "pin",
+                                            "value": "123456",
+                                            "description": "6-digit PIN to validate"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": [
+                                {
+                                    "name": "Success",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/validate-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "validate-pin"
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"message\": \"PIN valid\",\n    \"data\": {\n        \"user_id\": 123,\n        \"pin_valid\": true,\n        \"user_info\": {\n            \"first_name\": \"John\",\n            \"username\": \"john_doe\",\n            \"email\": \"john@example.com\",\n            \"tipe\": \"1\"\n        }\n    }\n}"
+                                },
+                                {
+                                    "name": "Error - Invalid PIN",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/validate-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "validate-pin"
+                                            ]
+                                        }
+                                    },
+                                    "status": "Unauthorized",
+                                    "code": 401,
+                                    "body": "{\n    \"status\": 401,\n    \"error\": \"PIN tidak valid\"\n}"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Change PIN",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/x-www-form-urlencoded"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/anggota/change-pin",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "anggota",
+                                        "change-pin"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "urlencoded",
+                                    "urlencoded": [
+                                        {
+                                            "key": "current_pin",
+                                            "value": "123456",
+                                            "description": "Current 6-digit PIN"
+                                        },
+                                        {
+                                            "key": "new_pin",
+                                            "value": "654321",
+                                            "description": "New 6-digit PIN"
+                                        },
+                                        {
+                                            "key": "confirm_new_pin",
+                                            "value": "654321",
+                                            "description": "Confirm new 6-digit PIN (must match)"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": [
+                                {
+                                    "name": "Success",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/change-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "change-pin"
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"message\": \"PIN berhasil diubah\",\n    \"data\": {\n        \"user_id\": 123,\n        \"pin_changed\": true\n    }\n}"
+                                },
+                                {
+                                    "name": "Error - Current PIN Invalid",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/change-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "change-pin"
+                                            ]
+                                        }
+                                    },
+                                    "status": "Unauthorized",
+                                    "code": 401,
+                                    "body": "{\n    \"status\": 401,\n    \"error\": \"PIN saat ini tidak valid\"\n}"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Check PIN Status",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/anggota/pin-status",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "anggota",
+                                        "pin-status"
+                                    ]
+                                }
+                            },
+                            "response": [
+                                {
+                                    "name": "Success - PIN Set",
+                                    "originalRequest": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/pin-status",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "pin-status"
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"data\": {\n        \"user_id\": 123,\n        \"pin_set\": true,\n        \"user_info\": {\n            \"first_name\": \"John\",\n            \"username\": \"john_doe\",\n            \"email\": \"john@example.com\",\n            \"tipe\": \"1\"\n        }\n    }\n}"
+                                },
+                                {
+                                    "name": "Success - No PIN Set",
+                                    "originalRequest": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/pin-status",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "pin-status"
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"data\": {\n        \"user_id\": 123,\n        \"pin_set\": false,\n        \"user_info\": {\n            \"first_name\": \"John\",\n            \"username\": \"john_doe\",\n            \"email\": \"john@example.com\",\n            \"tipe\": \"1\"\n        }\n    }\n}"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Reset PIN (Forgot PIN)",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{jwt_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/x-www-form-urlencoded"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/api/anggota/reset-pin",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "api",
+                                        "anggota",
+                                        "reset-pin"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "urlencoded",
+                                    "urlencoded": [
+                                        {
+                                            "key": "email",
+                                            "value": "user@example.com",
+                                            "description": "User email (or use username instead)"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": [
+                                {
+                                    "name": "Success",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/reset-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "reset-pin"
+                                            ]
+                                        }
+                                    },
+                                    "status": "OK",
+                                    "code": 200,
+                                    "body": "{\n    \"success\": true,\n    \"message\": \"PIN berhasil direset\",\n    \"data\": {\n        \"user_id\": 123,\n        \"new_pin\": \"789012\",\n        \"pin_reset\": true,\n        \"note\": \"Simpan PIN baru ini dengan aman. PIN akan di-hash setelah digunakan.\"\n    }\n}"
+                                },
+                                {
+                                    "name": "Error - User Not Found",
+                                    "originalRequest": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{jwt_token}}"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/x-www-form-urlencoded"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{baseUrl}}/api/anggota/reset-pin",
+                                            "host": [
+                                                "{{baseUrl}}"
+                                            ],
+                                            "path": [
+                                                "api",
+                                                "anggota",
+                                                "reset-pin"
+                                            ]
+                                        }
+                                    },
+                                    "status": "Not Found",
+                                    "code": 404,
+                                    "body": "{\n    \"status\": 404,\n    \"error\": \"User tidak ditemukan\"\n}"
+                                }
+                            ]
                         }
                     ]
                 },
