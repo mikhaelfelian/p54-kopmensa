@@ -293,3 +293,143 @@ Transaksi
 			// ... (same as above)
 		]
 	}
+
+PIN Management
+	Note: All PIN endpoints require JWT authentication. Include JWT token in Authorization header:
+	Authorization: Bearer <your_jwt_token>
+
+	Set PIN (First Time Setup)
+	URI 	: <base_url>/api/anggota/set-pin
+	Method	: POST
+	Body 	: x-www-form-urlencoded
+	pin		: <6_digit_pin>
+	confirm_pin	: <6_digit_pin_confirmation>
+	
+	Format (Success - 200):
+	{
+		"success": true,
+		"message": "PIN berhasil diatur",
+		"data": {
+			"user_id": 123,
+			"pin_set": true
+		}
+	}
+	
+	Format (Error - 400):
+	{
+		"status": 400,
+		"error": "PIN sudah diatur sebelumnya. Gunakan fungsi ubah PIN untuk mengubah PIN yang ada."
+	}
+
+	Validate PIN
+	URI 	: <base_url>/api/anggota/validate-pin
+	Method	: POST
+	Body 	: x-www-form-urlencoded
+	pin		: <6_digit_pin>
+	
+	Format (Success - 200):
+	{
+		"success": true,
+		"message": "PIN valid",
+		"data": {
+			"user_id": 123,
+			"pin_valid": true,
+			"user_info": {
+				"first_name": "John",
+				"username": "john_doe",
+				"email": "john@example.com",
+				"tipe": "1"
+			}
+		}
+	}
+	
+	Format (Error - 401):
+	{
+		"status": 401,
+		"error": "PIN tidak valid"
+	}
+
+	Change PIN
+	URI 	: <base_url>/api/anggota/change-pin
+	Method	: POST
+	Body 	: x-www-form-urlencoded
+	current_pin		: <current_6_digit_pin>
+	new_pin		: <new_6_digit_pin>
+	confirm_new_pin	: <new_6_digit_pin_confirmation>
+	
+	Format (Success - 200):
+	{
+		"success": true,
+		"message": "PIN berhasil diubah",
+		"data": {
+			"user_id": 123,
+			"pin_changed": true
+		}
+	}
+	
+	Format (Error - 401):
+	{
+		"status": 401,
+		"error": "PIN saat ini tidak valid"
+	}
+
+	Check PIN Status
+	URI 	: <base_url>/api/anggota/pin-status
+	Method	: GET
+	Headers	: Authorization: Bearer <your_jwt_token>
+	
+	Format (Success - 200):
+	{
+		"success": true,
+		"data": {
+			"user_id": 123,
+			"pin_set": true,
+			"user_info": {
+				"first_name": "John",
+				"username": "john_doe",
+				"email": "john@example.com",
+				"tipe": "1"
+			}
+		}
+	}
+
+	Reset PIN (Forgot PIN)
+	URI 	: <base_url>/api/anggota/reset-pin
+	Method	: POST
+	Body 	: x-www-form-urlencoded
+	email		: <your_email> (or username: <your_username>)
+	
+	Format (Success - 200):
+	{
+		"success": true,
+		"message": "PIN berhasil direset",
+		"data": {
+			"user_id": 123,
+			"new_pin": "789012",
+			"pin_reset": true,
+			"note": "Simpan PIN baru ini dengan aman. PIN akan di-hash setelah digunakan."
+		}
+	}
+
+	PIN Requirements:
+	- Length: Exactly 6 digits
+	- Format: Numeric only (0-9)
+	- Cannot be empty or null
+	- PIN and confirm PIN must match
+	- Cannot set PIN if already exists
+	- Current PIN must be valid for changes
+	- New PIN must be different from current PIN
+
+	PIN Security Features:
+	- PINs are securely hashed using bcrypt algorithm
+	- Automatic salting for each PIN
+	- Original PIN never stored in database
+	- All endpoints require JWT authentication
+	- Users can only access their own PIN data
+
+	Common Error Responses:
+	- 400: Validation Error (PIN format, confirmation mismatch, etc.)
+	- 401: Unauthorized (Invalid PIN, PIN not set, etc.)
+	- 403: Forbidden (Access denied)
+	- 404: Not Found (User not found)
+	- 500: Internal Server Error (Server issues)
