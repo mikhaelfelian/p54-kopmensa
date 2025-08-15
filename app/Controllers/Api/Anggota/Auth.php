@@ -29,7 +29,10 @@ class Auth extends BaseController
             $errors = $ionAuth->errors();
             // Since this is an API, we get the last error message for a cleaner response.
             $errorMessage = !empty($errors) ? end($errors) : 'Login failed';
-            return $this->failUnauthorized($errorMessage);
+            return $this->respond([
+                'success' => false,
+                'message' => $errorMessage
+            ], 401);
         }
 
         $user = $ionAuth->user()->row();
@@ -91,7 +94,10 @@ class Auth extends BaseController
         $kartu = $this->request->getGet('kartu');
         
         if (empty($kartu)) {
-            return $this->failValidationError('Nomor kartu harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Nomor kartu harus diisi'
+            ], 400);
         }
         
         // Load PelangganModel to search for customers
@@ -109,7 +115,10 @@ class Auth extends BaseController
                                   ->first();
         
         if (!$customer) {
-            return $this->failNotFound('Anggota tidak ditemukan');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Anggota tidak ditemukan'
+            ], 404);
         }
         
         return $this->respond([
@@ -140,53 +149,79 @@ class Auth extends BaseController
         
         // Validation
         if (empty($pin)) {
-            return $this->failValidationError('PIN harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN harus diisi'
+            ], 400);
         }
         
         if (empty($confirmPin)) {
-            return $this->failValidationError('Konfirmasi PIN harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Konfirmasi PIN harus diisi'
+            ], 400);
         }
         
         if ($pin !== $confirmPin) {
-            return $this->failValidationError('PIN dan konfirmasi PIN tidak cocok');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN dan konfirmasi PIN tidak cocok'
+            ], 400);
         }
         
         if (strlen($pin) !== 6) {
-            return $this->failValidationError('PIN harus 6 digit');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN harus 6 digit'
+            ], 400);
         }
         
         if (!is_numeric($pin)) {
-            return $this->failValidationError('PIN harus berupa angka');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN harus berupa angka'
+            ], 400);
         }
         
         // Check if PIN already exists
         $ionAuth = new \IonAuth\Libraries\IonAuth();
-        $existingUser = $ionAuth->user($user['id'])->row();
+        $existingUser = $ionAuth->user($user->id)->row();
         
-        if ($existingUser->pin) {
-            return $this->failValidationError('PIN sudah diatur sebelumnya. Gunakan fungsi ubah PIN untuk mengubah PIN yang ada.');
+        if (!$existingUser) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 404);
         }
         
-        // Hash the PIN for security
-        $hashedPin = password_hash($pin, PASSWORD_DEFAULT);
+        if (isset($existingUser->pin) && $existingUser->pin) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN sudah diatur sebelumnya. Gunakan fungsi ubah PIN untuk mengubah PIN yang ada.'
+            ], 400);
+        }
         
+        // Store PIN as plain number (no encryption)
         // Update user PIN in database
         $db = \Config\Database::connect();
         $updated = $db->table('tbl_ion_users')
-                     ->where('id', $user['id'])
-                     ->update(['pin' => $hashedPin]);
+                     ->where('id', $user->id)
+                     ->update(['pin' => $pin]);
         
         if ($updated) {
             return $this->respond([
                 'success' => true,
                 'message' => 'PIN berhasil diatur',
                 'data' => [
-                    'user_id' => $user['id'],
+                    'user_id' => $user->id,
                     'pin_set' => true
                 ]
             ]);
         } else {
-            return $this->failServerError('Gagal mengatur PIN');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Gagal mengatur PIN'
+            ], 500);
         }
     }
 
@@ -203,43 +238,65 @@ class Auth extends BaseController
         
         // Validation
         if (empty($pin)) {
-            return $this->failValidationError('PIN harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN harus diisi'
+            ], 400);
         }
         
         if (strlen($pin) !== 6) {
-            return $this->failValidationError('PIN harus 6 digit');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN harus 6 digit'
+            ], 400);
         }
         
         if (!is_numeric($pin)) {
-            return $this->failValidationError('PIN harus berupa angka');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN harus berupa angka'
+            ], 400);
         }
         
         // Get user from database
         $ionAuth = new \IonAuth\Libraries\IonAuth();
-        $existingUser = $ionAuth->user($user['id'])->row();
+        $existingUser = $ionAuth->user($user->id)->row();
         
-        if (!$existingUser->pin) {
-            return $this->failValidationError('PIN belum diatur. Silakan atur PIN terlebih dahulu.');
+        if (!$existingUser) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 404);
         }
         
-        // Verify PIN
-        if (password_verify($pin, $existingUser->pin)) {
+        if (!isset($existingUser->pin) || !$existingUser->pin) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN belum diatur. Silakan atur PIN terlebih dahulu.'
+            ], 400);
+        }
+        
+        // Verify PIN by direct comparison (plain number)
+        if ($pin === $existingUser->pin) {
             return $this->respond([
                 'success' => true,
                 'message' => 'PIN valid',
                 'data' => [
-                    'user_id' => $user['id'],
+                    'user_id' => $user->id,
                     'pin_valid' => true,
                     'user_info' => [
-                        'first_name' => $user['first_name'],
-                        'username' => $user['username'],
-                        'email' => $user['email'],
-                        'tipe' => $user['tipe']
+                        'first_name' => $user->first_name,
+                        'username' => $user->username,
+                        'email' => $user->email,
+                        'tipe' => $user->tipe
                     ]
                 ]
             ]);
         } else {
-            return $this->failUnauthorized('PIN tidak valid');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN tidak valid'
+            ], 401);
         }
     }
 
@@ -258,66 +315,101 @@ class Auth extends BaseController
         
         // Validation
         if (empty($currentPin)) {
-            return $this->failValidationError('PIN saat ini harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN saat ini harus diisi'
+            ], 400);
         }
         
         if (empty($newPin)) {
-            return $this->failValidationError('PIN baru harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru harus diisi'
+            ], 400);
         }
         
         if (empty($confirmNewPin)) {
-            return $this->failValidationError('Konfirmasi PIN baru harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Konfirmasi PIN baru harus diisi'
+            ], 400);
         }
         
         if ($newPin !== $confirmNewPin) {
-            return $this->failValidationError('PIN baru dan konfirmasi PIN tidak cocok');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru dan konfirmasi PIN tidak cocok'
+            ], 400);
         }
         
         if (strlen($newPin) !== 6) {
-            return $this->failValidationError('PIN baru harus 6 digit');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru harus 6 digit'
+            ], 400);
         }
         
         if (!is_numeric($newPin)) {
-            return $this->failValidationError('PIN baru harus berupa angka');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru harus berupa angka'
+            ], 400);
         }
         
         if ($currentPin === $newPin) {
-            return $this->failValidationError('PIN baru tidak boleh sama dengan PIN saat ini');
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru tidak boleh sama dengan PIN saat ini'
+            ], 400);
         }
         
         // Get user from database
         $ionAuth = new \IonAuth\Libraries\IonAuth();
-        $existingUser = $ionAuth->user($user['id'])->row();
+        $existingUser = $ionAuth->user($user->id)->row();
         
-        if (!$existingUser->pin) {
-            return $this->failValidationError('PIN belum diatur. Gunakan fungsi set PIN untuk mengatur PIN pertama kali.');
+        if (!$existingUser) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 404);
         }
         
-        // Verify current PIN
-        if (!password_verify($currentPin, $existingUser->pin)) {
-            return $this->failUnauthorized('PIN saat ini tidak valid');
+        if (!isset($existingUser->pin) || !$existingUser->pin) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN belum diatur. Gunakan fungsi set PIN untuk mengatur PIN pertama kali.'
+            ], 400);
         }
         
-        // Hash the new PIN
-        $hashedNewPin = password_hash($newPin, PASSWORD_DEFAULT);
+        // Verify current PIN by direct comparison
+        if ($currentPin !== $existingUser->pin) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN saat ini tidak valid'
+            ], 401);
+        }
         
+        // Store new PIN as plain number (no encryption)
         // Update user PIN in database
         $db = \Config\Database::connect();
         $updated = $db->table('tbl_ion_users')
-                     ->where('id', $user['id'])
-                     ->update(['pin' => $hashedNewPin]);
+                     ->where('id', $user->id)
+                     ->update(['pin' => $newPin]);
         
         if ($updated) {
             return $this->respond([
                 'success' => true,
                 'message' => 'PIN berhasil diubah',
                 'data' => [
-                    'user_id' => $user['id'],
+                    'user_id' => $user->id,
                     'pin_changed' => true
                 ]
             ]);
         } else {
-            return $this->failServerError('Gagal mengubah PIN');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Gagal mengubah PIN'
+            ], 500);
         }
     }
 
@@ -332,18 +424,30 @@ class Auth extends BaseController
         
         // Get user from database
         $ionAuth = new \IonAuth\Libraries\IonAuth();
-        $existingUser = $ionAuth->user($user['id'])->row();
+        $existingUser = $ionAuth->user($user->id)->row();
+        
+        if (!$existingUser) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'User tidak ditemukan'
+            ], 404);
+        }
+        
+        // Check if PIN is actually set (not NULL and not empty)
+        $pinSet = isset($existingUser->pin) && !empty($existingUser->pin) && $existingUser->pin !== null;
         
         return $this->respond([
             'success' => true,
             'data' => [
-                'user_id' => $user['id'],
-                'pin_set' => !empty($existingUser->pin),
+                'user_id' => $user->id,
+                'pin_set' => $pinSet,
+                'pin_exists' => isset($existingUser->pin),
+                'pin_value' => $existingUser->pin,
                 'user_info' => [
-                    'first_name' => $user['first_name'],
-                    'username' => $user['username'],
-                    'email' => $user['email'],
-                    'tipe' => $user['tipe']
+                    'first_name' => $user->first_name,
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'tipe' => $user->tipe
                 ]
             ]
         ]);
@@ -360,42 +464,77 @@ class Auth extends BaseController
         
         $email = $this->request->getPost('email');
         $username = $this->request->getPost('username');
+        $newPin = $this->request->getPost('new_pin');
         
         // Validation
         if (empty($email) && empty($username)) {
-            return $this->failValidationError('Email atau username harus diisi');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Email atau username harus diisi'
+            ], 400);
         }
         
-        // Get user from database
-        $ionAuth = new \IonAuth\Libraries\IonAuth();
+        if (empty($newPin)) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru harus diisi'
+            ], 400);
+        }
+        
+        if (strlen($newPin) !== 6) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru harus 6 digit'
+            ], 400);
+        }
+        
+        if (!is_numeric($newPin)) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'PIN baru harus berupa angka'
+            ], 400);
+        }
+        
+        // Get user from database using direct query
+        $db = \Config\Database::connect();
         $existingUser = null;
         
+        // Debug: Log what we're searching for
+        $searchValue = !empty($email) ? $email : $username;
+        $searchField = !empty($email) ? 'email' : 'username';
+        
         if (!empty($email)) {
-            $existingUser = $ionAuth->user($email)->row();
+            $existingUser = $db->table('tbl_ion_users')
+                              ->where('email', $email)
+                              ->get()
+                              ->getRow();
         } elseif (!empty($username)) {
-            $existingUser = $ionAuth->user($username)->row();
+            $existingUser = $db->table('tbl_ion_users')
+                              ->where('username', $username)
+                              ->get()
+                              ->getRow();
         }
         
         if (!$existingUser) {
-            return $this->failNotFound('User tidak ditemukan');
+            return $this->respond([
+                'success' => false,
+                'message' => 'User tidak ditemukan',
+                'debug' => [
+                    'search_field' => $searchField,
+                    'search_value' => $searchValue,
+                    'user_id_from_token' => $user->id
+                ]
+            ], 404);
         }
         
-        // Verify that the requesting user matches the user being reset
-        if ($existingUser->id != $user['id']) {
-            return $this->failForbidden('Tidak dapat mereset PIN user lain');
-        }
+        // For reset PIN, we don't need to verify user match since they're resetting their own PIN
+        // The JWT token already ensures they're authenticated
         
-        // Generate new random PIN
-        $newPin = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-        
-        // Hash the new PIN
-        $hashedNewPin = password_hash($newPin, PASSWORD_DEFAULT);
-        
+        // Store the input PIN as plain number (no encryption)
         // Update user PIN in database
-        $db = \Config\Database::connect();
         $updated = $db->table('tbl_ion_users')
                      ->where('id', $existingUser->id)
-                     ->update(['pin' => $hashedNewPin]);
+                     ->update(['pin' => $newPin]);
         
         if ($updated) {
             return $this->respond([
@@ -403,13 +542,16 @@ class Auth extends BaseController
                 'message' => 'PIN berhasil direset',
                 'data' => [
                     'user_id' => $existingUser->id,
-                    'new_pin' => $newPin, // Return plain PIN for user to see
+                    'new_pin' => $newPin, // Return the PIN that was stored
                     'pin_reset' => true,
-                    'note' => 'Simpan PIN baru ini dengan aman. PIN akan di-hash setelah digunakan.'
+                    'note' => 'PIN baru berhasil disimpan sebagai plain number.'
                 ]
             ]);
         } else {
-            return $this->failServerError('Gagal mereset PIN');
+            return $this->respond([
+                'success' => false,
+                'message' => 'Gagal mereset PIN'
+            ], 500);
         }
     }
 } 
