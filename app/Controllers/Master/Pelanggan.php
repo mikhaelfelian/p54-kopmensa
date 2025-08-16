@@ -359,7 +359,7 @@ class Pelanggan extends BaseController
 
                 $user_id = $this->ionAuth->register(
                     $safeUsername,
-                    $password ?: $safeUsername,
+                    $safeUsername,
                     $safeEmail,
                     $additional_data,
                     [3] // group 3 = pelanggan/anggota, adjust as needed
