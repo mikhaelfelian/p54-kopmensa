@@ -54,6 +54,15 @@ class Auth extends BaseController
 
         $jwtConfig = new JWTConfig();
         $issuedAt = time();
+
+        // Handle profile URL safely: if $user->profile is empty/null, don't call base_url(null)
+        $profileUrl = null;
+        if (!empty($user->profile)) {
+            $profileUrl = base_url($user->profile);
+        } else {
+            $profileUrl = null;
+        }
+
         $payload = [
             'iat' => $issuedAt,
             'exp' => $issuedAt + $jwtConfig->exp,
@@ -62,7 +71,7 @@ class Auth extends BaseController
                 'username'   => $user->username,
                 'email'      => $user->email,
                 'tipe'       => $tipe,
-                'profile'    => base_url($user->profile),
+                'profile'    => $profileUrl,
                 'id'         => $user->id
             ]
         ];
