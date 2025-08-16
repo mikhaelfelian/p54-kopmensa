@@ -9,7 +9,7 @@
 
 helper('form');
 ?>
-<?= $this->extend(theme_path('main')) ?>
+<?= $this->extend('admin-lte-3/layout/main_no_sidebar') ?>
 
 <?= $this->section('content') ?>
 
@@ -36,8 +36,14 @@ helper('form');
             <div class="card-body">
                 <!-- Cart -->
                 <div class="mt-3">
-                    <h5>Keranjang Belanja</h5>
-                    <div class="table-responsive">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Keranjang Belanja</h5>
+                        <span class="badge badge-info badge-lg">
+                            <i class="fas fa-shopping-cart"></i> 
+                            Total Items: <span id="totalItemsCount">0</span>
+                        </span>
+                    </div>
+                    <div class="table-responsive cart-table-container">
                         <table class="table table-bordered" id="cartTable">
                             <thead class="thead-dark">
                                 <tr>
@@ -51,7 +57,69 @@ helper('form');
                             <tbody id="cartTableBody">
                                 <!-- Cart items will be added here -->
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-right">DPP:</td>
+                                    <td colspan="1" class="text-right">
+                                        <span id="dppDisplay">Rp 0</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-right">
+                                        PPN (<span id="cartPpnPercent"><?= $Pengaturan->ppn ?></span>%):
+                                    </td>
+                                    <td colspan="1" class="text-right">
+                                        <span id="taxDisplay">Rp 0</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                                    <td colspan="1" class="text-right">
+                                        <strong><span id="grandTotalDisplay">Rp 0</span></strong>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <th colspan="3" class="text-right">Total Bayar:</th>
+                                    <th colspan="1" class="text-right"><span id="totalPaidAmount">Rp 0</span></th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Multiple Payment Methods -->
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">Pembayaran</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-success btn-sm rounded-0" id="addPaymentMethod">
+                        <i class="fas fa-plus"></i> Tambah Metode
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-2">
+                <div id="paymentMethods">
+                    <!-- Payment methods will be added here -->
+                </div>
+
+                <div class="row mt-2 p-2" id="remainingPayment" style="background-color: #ffe6e6;">
+                    <div class="col-12">
+                        <strong>Sisa Bayar:</strong>
+                        <span id="remainingAmount" class="text-danger">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="row mt-2 p-2" id="changePayment" style="background-color: #e6ffe6; display: none;">
+                    <div class="col-12">
+                        <strong>Kembalian:</strong>
+                        <span id="changeAmount" class="text-success">Rp 0</span>
                     </div>
                 </div>
             </div>
@@ -90,7 +158,7 @@ helper('form');
                         </select>
                     </div>
                 </div>
-                
+
                 <!-- Product List -->
                 <div class="table-responsive" style="max-height: 300px;">
                     <table class="table table-hover" id="productListTable">
@@ -281,72 +349,6 @@ helper('form');
                         <div class="col-6">Potongan Voucher:</div>
                         <div class="col-6 text-right">
                             <span id="voucherDiscountDisplay">Rp 0</span>
-                        </div>
-                    </div>
-
-                    <div class="row mb-2">
-                        <div class="col-6">DPP:</div>
-                        <div class="col-6 text-right">
-                            <span id="dppDisplay">Rp 0</span>
-                        </div>
-                    </div>
-
-                    <div class="row mb-2">
-                        <div class="col-6">PPN (<?= $Pengaturan->ppn ?>%):</div>
-                        <div class="col-6 text-right">
-                            <span id="taxDisplay">Rp 0</span>
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <div class="row">
-                        <div class="col-6"><strong>Total:</strong></div>
-                        <div class="col-6 text-right">
-                            <strong><span id="grandTotalDisplay">Rp 0</span></strong>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Multiple Payment Methods -->
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">Pembayaran</h3>
-                        <div class="card-tools">
-                            <button type="button" class="btn btn-success btn-sm rounded-0" id="addPaymentMethod">
-                                <i class="fas fa-plus"></i> Tambah Metode
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body p-2">
-                        <div id="paymentMethods">
-                            <!-- Payment methods will be added here -->
-                        </div>
-
-                        <!-- Payment Summary -->
-                        <div class="row mt-3 p-2 bg-light">
-                            <div class="col-6">
-                                <strong>Total Tagihan:</strong><br>
-                                <span id="grandTotalPayment">Rp 0</span>
-                            </div>
-                            <div class="col-6">
-                                <strong>Total Bayar:</strong><br>
-                                <span id="totalPaidAmount">Rp 0</span>
-                            </div>
-                        </div>
-
-                        <div class="row mt-2 p-2" id="remainingPayment" style="background-color: #ffe6e6;">
-                            <div class="col-12">
-                                <strong>Sisa Bayar:</strong>
-                                <span id="remainingAmount" class="text-danger">Rp 0</span>
-                            </div>
-                        </div>
-
-                        <div class="row mt-2 p-2" id="changePayment" style="background-color: #e6ffe6; display: none;">
-                            <div class="col-12">
-                                <strong>Kembalian:</strong>
-                                <span id="changeAmount" class="text-success">Rp 0</span>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -704,6 +706,56 @@ helper('form');
 
     .qr-scanner-status .text-muted {
         color: #6c757d !important;
+    }
+
+    /* Cart table scrollable styles */
+    .cart-table-container {
+        max-height: 400px; /* Height for approximately 5 items + header + footer */
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+
+    .cart-table-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .cart-table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .cart-table-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .cart-table-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Ensure thead stays fixed */
+    .cart-table-container thead th {
+        position: sticky;
+        top: 0;
+        background: #343a40;
+        color: white;
+        z-index: 10;
+    }
+
+    /* Ensure tfoot stays fixed */
+    .cart-table-container tfoot th,
+    .cart-table-container tfoot td {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        z-index: 10;
+        border-top: 2px solid #dee2e6;
+    }
+
+    /* Add some spacing for better readability */
+    .cart-table-container tbody tr:last-child {
+        border-bottom: none;
     }
 </style>
 <?= $this->endSection() ?>
@@ -1527,7 +1579,10 @@ helper('form');
 
     function updateCartDisplay() {
         let html = '';
+        let totalItems = 0;
+        
         cart.forEach(function (item, index) {
+            totalItems += item.quantity;
             html += `
             <tr>
                 <td>${item.name}</td>
@@ -1561,6 +1616,7 @@ helper('form');
         });
 
         $('#cartTableBody').html(html);
+        $('#totalItemsCount').text(totalItems);
     }
 
     function updateQuantity(index, change) {
