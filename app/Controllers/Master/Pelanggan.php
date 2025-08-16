@@ -110,31 +110,142 @@ class Pelanggan extends BaseController
      */
     public function store()
     {
+        // Ambil input dari form
+        $nama      = $this->request->getPost('nama');
+        $no_telp   = $this->request->getPost('no_telp');
+        $alamat    = $this->request->getPost('alamat');
+        $kota      = $this->request->getPost('kota');
+        $provinsi  = $this->request->getPost('provinsi');
+        $limit     = $this->request->getPost('limit') ?? 0;
+        $email     = $this->request->getPost('email');
+        $username  = $this->request->getPost('username');
+        $password  = $this->request->getPost('password');
+        // tipe pelanggan/anggota = 2 (anggota/pelanggan)
+        $tipe      = '2';
+
+        // Validasi input
+        $rules = [
+            'nama' => [
+                'rules' => 'required|max_length[100]',
+                'errors' => [
+                    'required' => 'Nama pelanggan harus diisi',
+                    'max_length' => 'Nama maksimal 100 karakter'
+                ]
+            ],
+            'no_telp' => [
+                'rules' => 'permit_empty|max_length[20]',
+                'errors' => [
+                    'max_length' => 'No. Telp maksimal 20 karakter'
+                ]
+            ],
+            'alamat' => [
+                'rules' => 'required|max_length[255]',
+                'errors' => [
+                    'required' => 'Alamat harus diisi',
+                    'max_length' => 'Alamat maksimal 255 karakter'
+                ]
+            ],
+            'kota' => [
+                'rules' => 'required|max_length[100]',
+                'errors' => [
+                    'required' => 'Kota harus diisi',
+                    'max_length' => 'Kota maksimal 100 karakter'
+                ]
+            ],
+            'provinsi' => [
+                'rules' => 'permit_empty|max_length[100]',
+                'errors' => [
+                    'max_length' => 'Provinsi maksimal 100 karakter'
+                ]
+            ],
+            'email' => [
+                'rules' => 'required|valid_email|is_unique[users.email]',
+                'errors' => [
+                    'required' => 'Email harus diisi',
+                    'valid_email' => 'Format email tidak valid',
+                    'is_unique' => 'Email sudah terdaftar'
+                ]
+            ],
+            'username' => [
+                'rules' => 'required|alpha_numeric|min_length[4]|max_length[50]|is_unique[users.username]',
+                'errors' => [
+                    'required' => 'Username harus diisi',
+                    'alpha_numeric' => 'Username hanya boleh huruf dan angka',
+                    'min_length' => 'Username minimal 4 karakter',
+                    'max_length' => 'Username maksimal 50 karakter',
+                    'is_unique' => 'Username sudah terdaftar'
+                ]
+            ],
+            'password' => [
+                'rules' => 'required|min_length[6]',
+                'errors' => [
+                    'required' => 'Password harus diisi',
+                    'min_length' => 'Password minimal 6 karakter'
+                ]
+            ]
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('validation', $this->validator);
+        }
+
         try {
+            // Cek user by email/username
+            $userByEmail = $this->ionAuth->where('email', $email)->users()->row();
+            $userByUsername = $this->ionAuth->where('username', $username)->users()->row();
+            if ($userByEmail || $userByUsername) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'User dengan email atau username tersebut sudah terdaftar.');
+            }
+
+            // Buat user baru (ion_auth)
+            $additional_data = [
+                'first_name' => $nama,
+                'phone'      => $no_telp,
+                'tipe'       => $tipe // tipe 2 = pelanggan/anggota
+            ];
+            // Group pelanggan/anggota, misal group id 3 (ubah sesuai kebutuhan)
+            $group = 3;
+            $user_id = $this->ionAuth->register($username, $password, $email, $additional_data, [$group]);
+            if (!$user_id) {
+                log_message('error', '[Pelanggan::store] Gagal membuat user ion_auth: ' . implode(', ', $this->ionAuth->errors_array()));
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Gagal membuat user login. Silakan cek data user.');
+            }
+
+            // Buat data pelanggan/anggota
             $data = [
+                'id_user'    => $user_id,
                 'kode'       => $this->pelangganModel->generateKode(),
-                'nama'       => $this->request->getPost('nama'),
-                'no_telp'    => $this->request->getPost('no_telp'),
-                'alamat'     => $this->request->getPost('alamat'),
-                'kota'       => $this->request->getPost('kota'),
-                'provinsi'   => $this->request->getPost('provinsi'),
-                'tipe'       => $this->request->getPost('tipe'),
+                'nama'       => $nama,
+                'no_telp'    => $no_telp,
+                'alamat'     => $alamat,
+                'kota'       => $kota,
+                'provinsi'   => $provinsi,
+                'tipe'       => $tipe,
                 'status'     => '1',
-                'limit'      => $this->request->getPost('limit') ?? 0
+                'limit'      => $limit
             ];
 
-            if (!$this->pelangganModel->insert($data)) {
-                throw new \RuntimeException('Gagal menyimpan data pelanggan');
+            if (!$this->pelangganModel->save($data)) {
+                // Rollback user jika perlu
+                log_message('error', '[Pelanggan::store] Gagal menyimpan data pelanggan');
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Gagal menyimpan data pelanggan');
             }
 
             return redirect()->to(base_url('master/customer'))
-                           ->with('success', 'Data pelanggan berhasil ditambahkan');
-
+                ->with('success', 'Data pelanggan dan user login berhasil ditambahkan');
         } catch (\Exception $e) {
             log_message('error', '[Pelanggan::store] ' . $e->getMessage());
             return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Gagal menyimpan data pelanggan');
+                ->withInput()
+                ->with('error', 'Gagal menyimpan data pelanggan');
         }
     }
 
@@ -177,28 +288,100 @@ class Pelanggan extends BaseController
     {
         if (!$id) {
             return redirect()->to('master/customer')
-                           ->with('error', 'ID pelanggan tidak ditemukan');
+                ->with('error', 'ID pelanggan tidak ditemukan');
         }
 
         try {
-            $nama    = $this->request->getPost('nama');
-            $no_tlp  = $this->request->getPost('no_telp');
-            $alamat  = $this->request->getPost('alamat');
-            $kota    = $this->request->getPost('kota');
-            $provinsi= $this->request->getPost('provinsi');
-            $tipe    = $this->request->getPost('tipe');
-            $status  = $this->request->getPost('status');
-            $limit   = $this->request->getPost('limit') ?? 0;
+            // Use variables for all input post
+            $nama      = $this->request->getPost('nama');
+            $no_telp   = $this->request->getPost('no_telp');
+            $alamat    = $this->request->getPost('alamat');
+            $kota      = $this->request->getPost('kota');
+            $provinsi  = $this->request->getPost('provinsi');
+            $tipe      = $this->request->getPost('tipe');
+            $status    = $this->request->getPost('status');
+            $limit     = $this->request->getPost('limit') ?? 0;
+            $email     = $this->request->getPost('email');
+            $username  = $this->request->getPost('username');
+            $password  = $this->request->getPost('password');
 
+            // Get pelanggan data
+            $pelanggan = $this->pelangganModel->find($id);
+            if (!$pelanggan) {
+                return redirect()->to('master/customer')
+                    ->with('error', 'Data pelanggan tidak ditemukan');
+            }
+
+            // Pastikan username dan email tidak null sebelum register
+            // Generate username from first name (no space)
+            if (!empty($nama)) {
+                // Take first word (first name), remove spaces, and generate username
+                $firstName      = preg_replace('/[^a-zA-Z0-9]/', '', trim($nama));
+                $safeUsername   = generateUsername($firstName);
+            } else {
+                $safeUsername = null;
+            }
+            $safeEmail = $email ?: $safeUsername . '@' . env('app.domain');
+
+            // Find user by email or username
+            $userByEmail    = $safeEmail ? $this->ionAuth->where('email', $safeEmail)->users()->row() : null;
+            $userByUsername = $safeUsername ? $this->ionAuth->where('username', $safeUsername)->users()->row() : null;
+            $user           = $userByEmail ?: $userByUsername;
+
+            // Prepare additional data for ion_auth
+            $additional_data = [
+                'first_name' => $nama,
+                'phone'      => $no_telp,
+                'tipe'       => '2'
+            ];
+
+            if ($user) {
+                // Update user
+                $user_id = $user->id;
+                $update_data = [
+                    'email'      => $safeEmail,
+                    'username'   => $safeUsername,
+                    'first_name' => $nama,
+                    'phone'      => $no_telp,
+                    'tipe'       => '2'
+                ];
+                if (!empty($password)) {
+                    $update_data['password'] = $password;
+                }
+                if (!$this->ionAuth->update($user_id, $update_data)) {
+                    throw new \RuntimeException('Gagal mengupdate user login: ' . implode(', ', $this->ionAuth->errors_array()));
+                }
+            } else {
+                // Only register if username and email are not null
+                if (!$safeUsername || !$safeEmail) {
+                    throw new \RuntimeException('Username dan Email tidak boleh kosong untuk membuat user login.');
+                }
+
+                $user_id = $this->ionAuth->register(
+                    $safeUsername,
+                    $password ?: $safeUsername,
+                    $safeEmail,
+                    $additional_data,
+                    [3] // group 3 = pelanggan/anggota, adjust as needed
+                );
+                if (!$user_id) {
+                    throw new \RuntimeException('Gagal membuat user login: ' . implode(', ', $this->ionAuth->errors_array()));
+                }
+            }
+
+            // Update pelanggan data
             $data = [
-                'nama'     => $nama,
-                'no_telp'  => $no_tlp,
-                'alamat'   => $alamat,
-                'kota'     => $kota,
-                'provinsi' => $provinsi,
-                'tipe'     => $tipe,
-                'status'   => $status,
-                'limit'    => format_angka_db($limit),
+                'id_user'   => $user_id,
+                'nama'      => $nama,
+                'no_telp'   => $no_telp,
+                'alamat'    => $alamat,
+                'kota'      => $kota,
+                'provinsi'  => $provinsi,
+                'tipe'      => $tipe,
+                'status'    => $status,
+                'limit'     => format_angka_db($limit),
+                'email'     => $safeEmail,
+                'username'  => $safeUsername
             ];
 
             if (!$this->pelangganModel->update($id, $data)) {
@@ -206,13 +389,12 @@ class Pelanggan extends BaseController
             }
 
             return redirect()->to(base_url('master/customer'))
-                           ->with('success', 'Data pelanggan berhasil diupdate');
-
+                ->with('success', 'Data pelanggan berhasil diupdate');
         } catch (\Exception $e) {
             log_message('error', '[Pelanggan::update] ' . $e->getMessage());
             return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Gagal mengupdate data pelanggan');
+                ->withInput()
+                ->with('error', 'Gagal mengupdate data pelanggan');
         }
     }
 

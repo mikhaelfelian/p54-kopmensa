@@ -332,7 +332,8 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->post('jual/delete-draft/(:num)', 'TransJual::deleteDraft/$1');
     
     // Print transaction data route
-    $routes->get('jual/get-transaction-for-print/(:num)', 'TransJual::getTransactionForPrint/$1');
+            $routes->get('jual/get-transaction-for-print/(:num)', 'TransJual::getTransactionForPrint/$1');
+        $routes->get('jual/print-receipt-view', 'TransJual::printReceiptView');
     
     // Session refresh endpoint
     $routes->get('jual/refresh-session', 'TransJual::refreshSession');

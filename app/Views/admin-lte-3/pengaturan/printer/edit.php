@@ -14,6 +14,7 @@
             </div>
             <form action="<?= base_url('pengaturan/printer/update/' . $printer->id) ?>" method="post">
                 <div class="card-body">
+                    <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
                     <?php if (session()->getFlashdata('errors')): ?>
                         <div class="alert alert-danger alert-dismissible">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>

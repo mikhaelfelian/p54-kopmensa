@@ -1428,4 +1428,48 @@ class TransJual extends BaseController
             ]);
         }
     }
+
+    /**
+     * Display shared print receipt view
+     */
+    public function printReceiptView()
+    {
+        // Get GET data (changed from POST to GET)
+        $transactionDataJson = $this->request->getGet('transactionData');
+        $printType = $this->request->getGet('printType') ?? 'pdf';
+        $showButtons = $this->request->getGet('showButtons') ?? true;
+
+        if (!$transactionDataJson) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Transaction data is required']);
+        }
+
+        try {
+            // Decode JSON data
+            $transactionData = json_decode($transactionDataJson);
+            
+            if (!$transactionData) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Invalid transaction data format']);
+            }
+
+            // Convert to object if it's an array
+            if (is_array($transactionData)) {
+                $transactionData = (object) $transactionData;
+            }
+
+            // Render the shared print view
+            $data = [
+                'transactionData' => $transactionData,
+                'printType' => $printType,
+                'showButtons' => $showButtons
+            ];
+
+            return view('admin-lte-3/transaksi/jual/print_receipt', $data);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memuat view print: ' . $e->getMessage()
+            ]);
+        }
+    }
 } 

@@ -709,49 +709,107 @@
     }
 
     function printToPDF(transactionData) {
-        // Create URL with query parameters
-        const url = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
-        const params = new URLSearchParams();
+        // Create a form to submit data to the shared view
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
+        form.target = '_blank';
+        form.style.display = 'none';
         
         // Add transaction data
-        params.append('transactionData', JSON.stringify(transactionData));
-        params.append('printType', 'pdf');
-        params.append('showButtons', 'true');
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'transactionData';
+        dataInput.value = JSON.stringify(transactionData);
+        form.appendChild(dataInput);
         
-        // Open in new window
-        const printWindow = window.open(url + '?' + params.toString(), '_blank', 'width=800,height=600');
+        // Add print type
+        const typeInput = document.createElement('input');
+        typeInput.type = 'hidden';
+        typeInput.name = 'printType';
+        typeInput.value = 'pdf';
+        form.appendChild(typeInput);
         
-        if (!printWindow) {
-            toastr.error('Pop-up blocked. Please allow pop-ups for this site.');
-        }
+        // Add show buttons
+        const buttonsInput = document.createElement('input');
+        buttonsInput.type = 'hidden';
+        buttonsInput.name = 'showButtons';
+        buttonsInput.value = 'true';
+        form.appendChild(buttonsInput);
+        
+        // Submit form
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
     }
 
     function printToPrinter(transactionData) {
-        // Create URL with query parameters
-        const url = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
-        const params = new URLSearchParams();
+        // Create a form to submit data to the shared view
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
+        form.target = '_blank';
+        form.style.display = 'none';
         
         // Add transaction data
-        params.append('transactionData', JSON.stringify(transactionData));
-        params.append('printType', 'printer');
-        params.append('showButtons', 'true');
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'transactionData';
+        dataInput.value = JSON.stringify(transactionData);
+        form.appendChild(dataInput);
         
-        // Open in new window
-        const printWindow = window.open(url + '?' + params.toString(), '_blank', 'width=400,height=600');
+        // Add print type
+        const typeInput = document.createElement('input');
+        typeInput.type = 'hidden';
+        typeInput.name = 'printType';
+        typeInput.value = 'printer';
+        form.appendChild(typeInput);
         
-        if (!printWindow) {
-            toastr.error('Pop-up blocked. Please allow pop-ups for this site.');
-        }
+        // Add show buttons
+        const buttonsInput = document.createElement('input');
+        buttonsInput.type = 'hidden';
+        buttonsInput.name = 'showButtons';
+        buttonsInput.value = 'true';
+        form.appendChild(buttonsInput);
+        
+        // Submit form
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
     }
 
-    function openSO() {
-        // Redirect to sales order creation page
-        window.location.href = '<?= base_url('transaksi/jual/create') ?>';
-    }
 
-    function openCashier() {
-        // Redirect to cashier page
-        window.location.href = '<?= base_url('transaksi/jual/cashier') ?>';
+
+                    .header { text-align: center; margin-bottom: 10px; }
+                    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                    .item { margin: 3px 0; }
+                    .total { font-weight: bold; margin: 10px 0; }
+                    .footer { text-align: center; margin-top: 10px; font-size: 8px; }
+                    .btn { 
+                        background: #28a745; 
+                        color: white; 
+                        padding: 8px 16px; 
+                        border: none; 
+                        border-radius: 4px; 
+                        cursor: pointer; 
+                        margin: 3px;
+                        font-size: 12px;
+                    }
+                    .btn:hover { background: #218838; }
+                </style>
+            </head>
+            <body>
+                ${receiptHTML}
+                <div class="no-print" style="text-align: center; margin-top: 15px;">
+                    <button class="btn" onclick="window.print()">Print to Dot Matrix</button>
+                    <button class="btn" onclick="window.close()">Close</button>
+                </div>
+            </body>
+            </html>
+                `);
+                printWindow.document.close();
+            }
+        });
     }
 
     function generateReceiptHTML(transactionData) {
@@ -832,6 +890,11 @@
 
     function formatCurrency(amount) {
         return `Rp ${numberFormat(amount)}`;
+    }
+
+    function openSO() {
+        // Redirect to sales order creation page
+        window.location.href = '<?= base_url('transaksi/jual/create') ?>';
     }
 
     function viewReports() {

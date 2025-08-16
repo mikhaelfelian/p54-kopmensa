@@ -22,7 +22,6 @@
                                 'name' => 'kode',
                                 'class' => 'form-control rounded-0',
                                 'value' => $kode,
-                                'readonly' => true,
                                 'placeholder' => 'Kode voucher otomatis'
                             ]) ?>
                         </div>

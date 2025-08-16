@@ -76,32 +76,40 @@ class Printer extends BaseController
                             ->with('errors', $this->validator->getErrors());
         }
 
+        $nama_printer  = $this->request->getPost('nama_printer');
+        $tipe_printer  = $this->request->getPost('tipe_printer');
+        $ip_address    = $this->request->getPost('ip_address') ?: null;
+        $port          = $this->request->getPost('port') ?: null;
+        $path          = $this->request->getPost('path') ?: null;
+        $driver        = $this->request->getPost('driver');
+        $width_paper   = $this->request->getPost('width_paper');
+        $status        = $this->request->getPost('status');
+        $is_default    = $this->request->getPost('is_default') ? '1' : '0';
+        $keterangan    = $this->request->getPost('keterangan') ?: null;
+
         $data = [
-            'nama_printer' => $this->request->getPost('nama_printer'),
-            'tipe_printer' => $this->request->getPost('tipe_printer'),
-            'ip_address' => $this->request->getPost('ip_address') ?: null,
-            'port' => $this->request->getPost('port') ?: null,
-            'path' => $this->request->getPost('path') ?: null,
-            'driver' => $this->request->getPost('driver'),
-            'width_paper' => $this->request->getPost('width_paper'),
-            'status' => $this->request->getPost('status'),
-            'is_default' => $this->request->getPost('is_default') ? '1' : '0',
-            'keterangan' => $this->request->getPost('keterangan') ?: null
+            'id'            => $this->request->getPost('id') ?: null,
+            'nama_printer'  => $nama_printer,
+            'tipe_printer'  => $tipe_printer,
+            'ip_address'    => $ip_address,
+            'port'          => $port,
+            'path'          => $path,
+            'driver'        => $driver,
+            'width_paper'   => $width_paper,
+            'status'        => $status,
+            'is_default'    => $is_default,
+            'keterangan'    => $keterangan,
         ];
 
-        // If this is the first printer or marked as default, set as default
-        if ($data['is_default'] === '1') {
-            $this->printerModel->setDefaultPrinter(0); // This will clear all defaults
-        }
-
-        if ($this->printerModel->insert($data)) {
+        try {
+            $this->printerModel->save($data);
             return redirect()->to('pengaturan/printer')
                             ->with('success', 'Printer berhasil ditambahkan');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'Gagal menambahkan printer: ' . $e->getMessage());
         }
-
-        return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Gagal menambahkan printer');
     }
 
     /**

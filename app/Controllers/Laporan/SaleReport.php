@@ -84,7 +84,7 @@ class SaleReport extends BaseController
         }
 
         // Get filter options
-        $gudangList     = $this->gudangModel->where('status', '1')->findAll();
+        $gudangList     = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $pelangganList  = $this->pelangganModel->where('status', '0')->findAll();
         $salesList      = $this->karyawanModel->where('status', '0')->findAll();
 
@@ -119,7 +119,7 @@ class SaleReport extends BaseController
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
                 tbl_m_pelanggan.alamat as pelanggan_alamat,
-                tbl_m_pelanggan.telepon as pelanggan_telepon,
+                tbl_m_pelanggan.no_telp as pelanggan_telepon,
                 tbl_m_gudang.nama as gudang_nama,
                 tbl_m_karyawan.nama as sales_nama
             ')
@@ -178,8 +178,7 @@ class SaleReport extends BaseController
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
-            ->where('tbl_trans_jual.status_nota', '1')
-            ->where('tbl_trans_jual.status_hps', '0');
+            ->where('tbl_trans_jual.status_nota', '1');
 
         // Apply filters
         if ($startDate && $endDate) {

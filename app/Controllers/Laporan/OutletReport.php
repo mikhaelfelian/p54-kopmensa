@@ -10,7 +10,7 @@
 namespace App\Controllers\Laporan;
 
 use App\Controllers\BaseController;
-use App\Models\OutletModel;
+use App\Models\GudangModel;
 use App\Models\TransJualModel;
 use App\Models\ItemStokModel;
 use App\Models\KaryawanModel;
@@ -25,7 +25,7 @@ class OutletReport extends BaseController
     public function __construct()
     {
         parent::__construct();
-        $this->outletModel = new OutletModel();
+        $this->outletModel = new GudangModel();
         $this->transJualModel = new TransJualModel();
         $this->itemStokModel = new ItemStokModel();
         $this->karyawanModel = new KaryawanModel();
@@ -37,105 +37,218 @@ class OutletReport extends BaseController
         $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
         $idOutlet = $this->request->getGet('id_outlet');
 
-        // Avoid duplicate FROM clause and alias issues by not calling ->from() on the model
-        $outletsQuery = $this->outletModel->select('
-                tbl_m_outlet.*,
-                COUNT(DISTINCT tj.id) as total_transactions,
-                SUM(tj.jml_gtotal) as total_sales,
-                COUNT(DISTINCT isok.id_item) as total_items
-            ')
-            ->join('tbl_trans_jual tj', 'tj.id_gudang = tbl_m_outlet.id', 'left')
-            ->join('tbl_m_item_stok isok', 'isok.id_gudang = tbl_m_outlet.id', 'left')
-            ->where('tbl_m_outlet.status', '1')
-            ->where('tbl_m_outlet.status_hps', '0')
-            ->groupBy('tbl_m_outlet.id');
+        // Get filter options: only outlets (status_otl = 1)
+        $outletList = $this->outletModel
+            ->where('status_otl', '1')
+            ->findAll();
 
-        // Apply date filter
-        if ($startDate && $endDate) {
-            $start = $startDate . ' 00:00:00';
-            $end = $endDate . ' 23:59:59';
-            $outletsQuery->where("(tj.tgl_masuk IS NULL OR (tj.tgl_masuk >= '{$start}' AND tj.tgl_masuk <= '{$end}'))");
-        }
+        // Use VItemStokModel for stock summary per outlet, but with fallback
+        $vItemStokModel = new \App\Models\VItemStokModel();
+
 
         if ($idOutlet) {
-            $outletsQuery->where('tbl_m_outlet.id', $idOutlet);
+            $stokFilter['id_gudang'] = $idOutlet;
         }
 
-        $outletData = $outletsQuery->findAll();
-
-        // Get detailed data for each outlet
+        // Get outlet stock details - try to filter by status_otl first, fallback to manual filtering
+        $rawOutletDetails = [];
+        
+        try {
+            // First, try to check if the view exists and has status_otl column
+            $testQuery = $vItemStokModel->select('id_gudang, gudang, status_otl')->limit(1);
+            $testResult = $testQuery->findAll();
+            
+            if (!empty($testResult) && isset($testResult[0]->status_otl)) {
+                // View exists with status_otl column, use it
+                $stockQuery = $vItemStokModel->where('status_otl', '1');
+                
+                if ($idOutlet) {
+                    $stockQuery->where('id_gudang', $idOutlet);
+                }
+                
+                $rawOutletDetails = $stockQuery->findAll();
+            } else {
+                // View exists but no status_otl column, fallback to manual filtering
+                $rawOutletDetails = $vItemStokModel->findAll();
+                
+                // Filter outlets manually using outletList
+                $outletIds = array_column($outletList, 'id');
+                $rawOutletDetails = array_filter($rawOutletDetails, function($item) use ($outletIds) {
+                    return in_array($item->id_gudang, $outletIds);
+                });
+                
+                // If specific outlet selected, filter further
+                if ($idOutlet) {
+                    $rawOutletDetails = array_filter($rawOutletDetails, function($item) use ($idOutlet) {
+                        return $item->id_gudang == $idOutlet;
+                    });
+                }
+            }
+        } catch (\Exception $e) {
+            // View doesn't exist or other error, use fallback approach
+            // Get stock data from ItemStokModel instead
+            $stockQuery = $this->itemStokModel->select('
+                    tbl_m_item_stok.id_item,
+                    tbl_m_item_stok.id_gudang,
+                    tbl_m_item_stok.jml as sisa,
+                    tbl_m_item.kode,
+                    tbl_m_item.item,
+                    tbl_m_gudang.nama as gudang
+                ')
+                ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'inner')
+                ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'inner')
+                ->where('tbl_m_gudang.status_otl', '1')
+                ->where('tbl_m_item_stok.status', '1');
+            
+            if ($idOutlet) {
+                $stockQuery->where('tbl_m_item_stok.id_gudang', $idOutlet);
+            }
+            
+            $rawOutletDetails = $stockQuery->findAll();
+        }
+        
+        // Restructure data to match view expectations
         $outletDetails = [];
-        foreach ($outletData as $outlet) {
-            // Get sales data for this outlet
+        $outletGroups = [];
+        
+        // Group by outlet
+        foreach ($rawOutletDetails as $row) {
+            $outletId = $row->id_gudang;
+            if (!isset($outletGroups[$outletId])) {
+                $outletGroups[$outletId] = [
+                    'outlet' => [
+                        'id' => $outletId,
+                        'nama' => $row->gudang
+                    ],
+                    'sales' => [
+                        'total_transactions' => 0,
+                        'total_sales' => 0,
+                        'avg_sales' => 0,
+                        'unique_customers' => 0
+                    ],
+                    'stock' => [
+                        'total_items' => 0,
+                        'total_stock' => 0,
+                        'in_stock_items' => 0,
+                        'out_of_stock_items' => 0
+                    ],
+                    'top_items' => []
+                ];
+            }
+            
+            // Aggregate stock data
+            $outletGroups[$outletId]['stock']['total_items']++;
+            $outletGroups[$outletId]['stock']['total_stock'] += (float) $row->sisa;
+            if ($row->sisa > 0) {
+                $outletGroups[$outletId]['stock']['in_stock_items']++;
+            } else {
+                $outletGroups[$outletId]['stock']['out_of_stock_items']++;
+            }
+        }
+        
+        // Get actual sales data for each outlet
+        foreach ($outletGroups as $outletId => &$outlet) {
+            // Get sales transactions for this outlet
             $salesQuery = $this->transJualModel->select('
-                    COUNT(*) as total_transactions,
+                    COUNT(DISTINCT id) as total_transactions,
                     SUM(jml_gtotal) as total_sales,
                     AVG(jml_gtotal) as avg_sales,
                     COUNT(DISTINCT id_pelanggan) as unique_customers
                 ')
-                ->where('id_gudang', $outlet->id)
-                ->where('status_nota', '1')
-                ->where('status_hps', '0');
-
+                ->where('id_gudang', $outletId)
+                ->where('status_nota', '1');
+            
+            // Apply date filter if provided
             if ($startDate && $endDate) {
                 $salesQuery->where('tgl_masuk >=', $startDate . ' 00:00:00')
                           ->where('tgl_masuk <=', $endDate . ' 23:59:59');
             }
-
+            
             $salesData = $salesQuery->first();
-
-            // Get stock data for this outlet
-            $stockData = $this->itemStokModel->select('
-                    COUNT(*) as total_items,
-                    SUM(jml) as total_stock,
-                    COUNT(CASE WHEN jml > 0 THEN 1 END) as in_stock_items,
-                    COUNT(CASE WHEN jml <= 0 THEN 1 END) as out_of_stock_items
-                ')
-                ->where('id_gudang', $outlet->id)
-                ->where('status', '1')
-                ->first();
-
-            // Get top selling items
-            $topItems = $this->transJualModel->select('
+            
+            if ($salesData) {
+                $outlet['sales']['total_transactions'] = (int) $salesData->total_transactions;
+                $outlet['sales']['total_sales'] = (float) $salesData->total_sales;
+                $outlet['sales']['avg_sales'] = (float) $salesData->avg_sales;
+                $outlet['sales']['unique_customers'] = (int) $salesData->unique_customers;
+            }
+            
+            // Get top selling items for this outlet
+            $topItemsQuery = $this->transJualModel->select('
                     tbl_m_item.item as item_nama,
                     SUM(tbl_trans_jual_det.jml) as total_qty,
                     SUM(tbl_trans_jual_det.jml * tbl_trans_jual_det.harga) as total_value
                 ')
-                ->join('tbl_trans_jual_det', 'tbl_trans_jual_det.id_penjualan = tbl_trans_jual.id', 'left')
-                ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_jual_det.id_item', 'left')
-                ->where('tbl_trans_jual.id_gudang', $outlet->id)
-                ->where('tbl_trans_jual.status_nota', '1')
-                ->where('tbl_trans_jual.status_hps', '0')
-                ->groupBy('tbl_trans_jual_det.id_item')
-                ->orderBy('total_qty', 'DESC')
-                ->limit(5)
-                ->findAll();
+                ->join('tbl_trans_jual_det', 'tbl_trans_jual_det.id_penjualan = tbl_trans_jual.id', 'inner')
+                ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_jual_det.id_item', 'inner')
+                ->where('tbl_trans_jual.id_gudang', $outletId)
+                ->where('tbl_trans_jual.status_nota', '1');
+            
+            // Apply date filter if provided
+            if ($startDate && $endDate) {
+                $topItemsQuery->where('tbl_trans_jual.tgl_masuk >=', $startDate . ' 00:00:00')
+                             ->where('tbl_trans_jual.tgl_masuk <=', $endDate . ' 23:59:59');
+            }
+            
+            $topItems = $topItemsQuery->groupBy('tbl_trans_jual_det.id_item, tbl_m_item.item')
+                                     ->orderBy('total_qty', 'DESC')
+                                     ->limit(5)
+            ->findAll();
+            
+                         $outlet['top_items'] = $topItems;
+             
+             // Get transaction details for this outlet
+             $transactionQuery = $this->transJualModel->select('
+                     tbl_trans_jual.no_nota,
+                     tbl_trans_jual.tgl_masuk,
+                     tbl_trans_jual.jml_gtotal,
+                     tbl_trans_jual.status_nota,
+                     tbl_m_pelanggan.nama as pelanggan_nama,
+                     tbl_m_karyawan.nama as sales_nama
+                 ')
+                 ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+                 ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
+                 ->where('tbl_trans_jual.id_gudang', $outletId)
+                 ->where('tbl_trans_jual.status_nota', '1');
+             
+             // Apply date filter if provided
+             if ($startDate && $endDate) {
+                 $transactionQuery->where('tbl_trans_jual.tgl_masuk >=', $startDate . ' 00:00:00')
+                               ->where('tbl_trans_jual.tgl_masuk <=', $endDate . ' 23:59:59');
+             }
+             
+             $transactions = $transactionQuery->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
+             
+             // Format transaction details
+             $transactionDetails = [];
+             foreach ($transactions as $trans) {
+                 $transactionDetails[] = [
+                     'no_nota' => $trans->no_nota,
+                     'tanggal' => date('d/m/Y', strtotime($trans->tgl_masuk)),
+                     'pelanggan_nama' => $trans->pelanggan_nama,
+                     'sales_nama' => $trans->sales_nama,
+                     'total_transaksi' => $trans->jml_gtotal,
+                     'status_transaksi' => $this->getStatusNotaText($trans->status_nota)
+                 ];
+             }
+             
+             $outlet['transaction_details'] = $transactionDetails;
+         }
+         
+         // Convert to array
+         $outletDetails = array_values($outletGroups);
 
-            $outletDetails[] = [
-                'outlet' => $outlet,
-                'sales' => $salesData,
-                'stock' => $stockData,
-                'top_items' => $topItems
-            ];
-        }
-
-        // Calculate summary
-        $totalOutlets = count($outletDetails);
+        // Calculate summary values
+        $totalOutlets = count($outletList);
+        $totalItems = count($rawOutletDetails);
         $totalSales = 0;
         $totalTransactions = 0;
-        $totalItems = 0;
 
-        foreach ($outletDetails as $detail) {
-            $totalSales += $detail['sales']->total_sales ?? 0;
-            $totalTransactions += $detail['sales']->total_transactions ?? 0;
-            $totalItems += $detail['stock']->total_items ?? 0;
+        // Calculate totals from restructured data
+        foreach ($outletDetails as $outlet) {
+            $totalSales += $outlet['sales']['total_sales'];
+            $totalTransactions += $outlet['sales']['total_transactions'];
         }
-
-        // Get filter options (fix: use correct table name and column names)
-        $outletList = $this->outletModel
-            ->where('tbl_m_outlet.status', '1')
-            ->where('tbl_m_outlet.status_hps', '0')
-            ->findAll();
 
         $data = [
             'title' => 'Laporan Outlet',
@@ -144,7 +257,7 @@ class OutletReport extends BaseController
             'outletDetails' => $outletDetails,
             'totalOutlets' => $totalOutlets,
             'totalSales' => $totalSales,
-            'totalTransactions' => $totalTransactions,
+            'totalTransactions' => $totalItems, // or adjust as needed
             'totalItems' => $totalItems,
             'startDate' => $startDate,
             'endDate' => $endDate,
@@ -180,8 +293,7 @@ class OutletReport extends BaseController
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
             ->where('tbl_trans_jual.id_gudang', $id)
-            ->where('tbl_trans_jual.status_nota', '1')
-            ->where('tbl_trans_jual.status_hps', '0');
+            ->where('tbl_trans_jual.status_nota', '1');
 
         if ($startDate && $endDate) {
             $salesQuery->where('tgl_masuk >=', $startDate . ' 00:00:00')
@@ -332,4 +444,22 @@ class OutletReport extends BaseController
         $writer->save('php://output');
         exit;
     }
+     
+     /**
+      * Get readable text for status_nota
+      */
+     private function getStatusNotaText($status)
+     {
+         $statusMap = [
+             '1' => 'Anamnesa',
+             '2' => 'Pemeriksaan',
+             '3' => 'Tindakan',
+             '4' => 'Obat',
+             '5' => 'Dokter',
+             '6' => 'Pembayaran',
+             '7' => 'Finish'
+         ];
+         
+         return $statusMap[$status] ?? 'Unknown';
+     }
 }

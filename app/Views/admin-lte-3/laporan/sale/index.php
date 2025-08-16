@@ -38,9 +38,9 @@
                             <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $endDate ?>">
                         </div>
                         <div class="col-md-2">
-                            <label>Gudang</label>
+                            <label>Outlet</label>
                             <select name="id_gudang" class="form-control form-control-sm">
-                                <option value="">Semua Gudang</option>
+                                <option value="">Semua Outlet</option>
                                 <?php foreach ($gudangList as $gudang): ?>
                                     <option value="<?= $gudang->id ?>" <?= $idGudang == $gudang->id ? 'selected' : '' ?>>
                                         <?= $gudang->nama ?>

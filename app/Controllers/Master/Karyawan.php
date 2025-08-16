@@ -95,112 +95,162 @@ class Karyawan extends BaseController
      */
     public function store()
     {
-        // // Validation rules
-        // $rules = [
-        //     'nik' => [
-        //         'rules'  => 'required|max_length[100]',
-        //         'errors' => [
-        //             'required'   => 'NIK harus diisi',
-        //             'max_length' => 'NIK maksimal 100 karakter'
-        //         ]
-        //     ],
-        //     'nama' => [
-        //         'rules'  => 'required|max_length[100]',
-        //         'errors' => [
-        //             'required'   => 'Nama lengkap harus diisi',
-        //             'max_length' => 'Nama lengkap maksimal 100 karakter'
-        //         ]
-        //     ],
-        //     'jns_klm' => [
-        //         'rules'  => 'required|in_list[L,P]',
-        //         'errors' => [
-        //             'required'  => 'Jenis kelamin harus dipilih',
-        //             'in_list'   => 'Jenis kelamin tidak valid'
-        //         ]
-        //     ],
-        //     'tmp_lahir' => [
-        //         'rules'  => 'required|max_length[100]',
-        //         'errors' => [
-        //             'required'   => 'Tempat lahir harus diisi',
-        //             'max_length' => 'Tempat lahir maksimal 100 karakter'
-        //         ]
-        //     ],
-        //     'tgl_lahir' => [
-        //         'rules'  => 'required|valid_date',
-        //         'errors' => [
-        //             'required'    => 'Tanggal lahir harus diisi',
-        //             'valid_date'  => 'Format tanggal lahir tidak valid'
-        //         ]
-        //     ],
-        //     'jabatan' => [
-        //         'rules'  => 'required|max_length[100]',
-        //         'errors' => [
-        //             'required'   => 'Jabatan harus diisi',
-        //             'max_length' => 'Jabatan maksimal 100 karakter'
-        //         ]
-        //     ],
-        //     'no_hp' => [
-        //         'rules'  => 'required|max_length[20]',
-        //         'errors' => [
-        //             'required'   => 'Nomor HP harus diisi',
-        //             'max_length' => 'Nomor HP maksimal 20 karakter'
-        //         ]
-        //     ]
-        // ];
+        // Validation rules
+        $rules = [
+            'nik' => [
+                'rules'  => 'required|max_length[100]',
+                'errors' => [
+                    'required'   => 'NIK harus diisi',
+                    'max_length' => 'NIK maksimal 100 karakter'
+                ]
+            ],
+            'nama' => [
+                'rules'  => 'required|max_length[100]',
+                'errors' => [
+                    'required'   => 'Nama lengkap harus diisi',
+                    'max_length' => 'Nama lengkap maksimal 100 karakter'
+                ]
+            ],
+            'jns_klm' => [
+                'rules'  => 'required|in_list[L,P]',
+                'errors' => [
+                    'required'  => 'Jenis kelamin harus dipilih',
+                    'in_list'   => 'Jenis kelamin tidak valid'
+                ]
+            ],
+            'tmp_lahir' => [
+                'rules'  => 'required|max_length[100]',
+                'errors' => [
+                    'required'   => 'Tempat lahir harus diisi',
+                    'max_length' => 'Tempat lahir maksimal 100 karakter'
+                ]
+            ],
+            'tgl_lahir' => [
+                'rules'  => 'required|valid_date',
+                'errors' => [
+                    'required'    => 'Tanggal lahir harus diisi',
+                    'valid_date'  => 'Format tanggal lahir tidak valid'
+                ]
+            ],
+            'jabatan' => [
+                'rules'  => 'required|max_length[100]',
+                'errors' => [
+                    'required'   => 'Jabatan harus diisi',
+                    'max_length' => 'Jabatan maksimal 100 karakter'
+                ]
+            ],
+            'no_hp' => [
+                'rules'  => 'required|max_length[20]',
+                'errors' => [
+                    'required'   => 'Nomor HP harus diisi',
+                    'max_length' => 'Nomor HP maksimal 20 karakter'
+                ]
+            ]
+        ];
 
-        // if (!$this->validate($rules)) {
-        //     return redirect()->back()
-        //                    ->withInput()
-        //                    ->with('validation', $this->validator);
-        // }
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('validation', $this->validator);
+        }
 
         try {
-            $nama_dpn = $this->request->getPost('nama_dpn');
-            $nama     = $this->request->getPost('nama');
-            $nama_blk = $this->request->getPost('nama_blk');
-            $nama_pgl = (isset($nama_dpn) ? $nama_dpn.'. ' : '').$nama.(isset($nama_blk) ? ', '.$nama_blk : '');
-            $groups   = $this->ionAuth->group($this->request->getPost('id_user_group'))->row();
+            // Get all input post variables
+            $id_user_group      = $this->request->getPost('id_user_group');
+            $kode               = $this->karyawanModel->generateKode();
+            $nik                = $this->request->getPost('nik');
+            $nama               = $this->request->getPost('nama');
+            $nama_pgl           = $this->request->getPost('nama_pgl');
+            $jns_klm            = $this->request->getPost('jns_klm');
+            $tmp_lahir          = $this->request->getPost('tmp_lahir');
+            $tgl_lahir          = $this->request->getPost('tgl_lahir');
+            $alamat             = $this->request->getPost('alamat');
+            $alamat_domisili    = $this->request->getPost('alamat_domisili');
+            $no_hp              = $this->request->getPost('no_hp');
+            $rt                 = $this->request->getPost('rt');
+            $rw                 = $this->request->getPost('rw');
+            $kelurahan          = $this->request->getPost('kelurahan');
+            $kecamatan          = $this->request->getPost('kecamatan');
+            $kota               = $this->request->getPost('kota');
+            $email              = $this->request->getPost('email');
+            $username           = $this->request->getPost('username');
+            $password           = $this->request->getPost('password');
+            $jabatan            = $this->request->getPost('jabatan');
+            $status             = $this->request->getPost('status');
 
+            // Prepare user data for ion_auth
+            $user_email    = $email ?: strtolower(str_replace(' ', '', $nama)) . '@example.com';
+            $user_username = $username ?: strtolower(str_replace(' ', '', $nama_pgl));
+            $user_password = $password ?: 'password123'; // Default password, should be changed
+            $additional_data = [
+                'first_name' => $nama,
+                'last_name'  => $nama_pgl,
+                'phone'      => $no_hp,
+                'tipe'       => '1'
+            ];
+            $group = $id_user_group;
+
+            // Only create user if not already exists (by email or username)
+            $userByEmail    = $this->ionAuth->where('email', $user_email)->users()->row();
+            $userByUsername = $this->ionAuth->where('username', $user_username)->users()->row();
+            $userExists     = ($userByEmail !== null) || ($userByUsername !== null);
+
+            if ($userExists) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'User dengan email atau username tersebut sudah terdaftar.');
+            }
+
+            // Create user first
+            $user_id = $this->ionAuth->register($user_username, $user_password, $user_email, $additional_data, [$group]);
+            if (!$user_id) {
+                log_message('error', '[Karyawan::store] Gagal membuat user ion_auth: ' . implode(', ', $this->ionAuth->errors_array()));
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Gagal membuat user login. Silakan cek data user.');
+            }
+
+            // Get group description for jabatan
+            $groups = $this->ionAuth->group($id_user_group)->row();
+
+            // Prepare karyawan data, including id_user from ion_auth
             $data = [
-                'id_user_group'   => $this->request->getPost('id_user_group'),
-                'kode'            => $this->karyawanModel->generateKode(),
-                'nik'             => $this->request->getPost('nik'),
-                'sip'             => $this->request->getPost('sip'),
-                'str'             => $this->request->getPost('str'),
-                'nama_dpn'        => $this->request->getPost('nama_dpn'),
-                'nama'            => $this->request->getPost('nama'),
-                'nama_blk'        => $this->request->getPost('nama_blk'),
+                'id_user'         => $user_id,
+                'id_user_group'   => $id_user_group,
+                'kode'            => $kode,
+                'nik'             => $nik,
+                'nama'            => $nama,
                 'nama_pgl'        => $nama_pgl,
-                'jns_klm'         => $this->request->getPost('jns_klm'),
-                'tmp_lahir'       => $this->request->getPost('tmp_lahir'),
-                'tgl_lahir'       => $this->request->getPost('tgl_lahir'),
-                'alamat'          => $this->request->getPost('alamat'),
-                'alamat_domisili' => $this->request->getPost('alamat_domisili'),
-                'jabatan'         => $this->request->getPost('jabatan'),
-                'no_hp'           => $this->request->getPost('no_hp'),
-                'rt'              => $this->request->getPost('rt'),
-                'rw'              => $this->request->getPost('rw'),
-                'kelurahan'       => $this->request->getPost('kelurahan'),
-                'kecamatan'       => $this->request->getPost('kecamatan'),
-                'kota'            => $this->request->getPost('kota'),
-                'jabatan'         => $groups->description,
-                'status_aps'      => '0'
+                'jns_klm'         => $jns_klm,
+                'tmp_lahir'       => $tmp_lahir,
+                'tgl_lahir'       => $tgl_lahir,
+                'alamat'          => $alamat,
+                'alamat_domisili' => $alamat_domisili,
+                'jabatan'         => $jabatan,
+                'no_hp'           => $no_hp,
+                'rt'              => $rt,
+                'rw'              => $rw,
+                'kelurahan'       => $kelurahan,
+                'kecamatan'       => $kecamatan,
+                'kota'            => $kota,
+                'status'          => $status
             ];
 
-            pre($data);
+            if (!$this->karyawanModel->save($data)) {
+                // Optionally, you may want to rollback user creation here
+                log_message('error', '[Karyawan::store] Gagal menyimpan data karyawan');
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Gagal menyimpan data karyawan');
+            }
 
-            // if (!$this->karyawanModel->insert($data)) {
-            //     throw new \RuntimeException('Gagal menyimpan data karyawan');
-            // }
-
-            // return redirect()->to(base_url('master/karyawan'))
-            //                ->with('success', 'Data karyawan berhasil ditambahkan');
-
+            return redirect()->to(base_url('master/karyawan'))
+                ->with('success', 'Data karyawan dan user login berhasil ditambahkan');
         } catch (\Exception $e) {
             log_message('error', '[Karyawan::store] ' . $e->getMessage());
             return redirect()->back()
-                           ->withInput()
-                           ->with('error', 'Gagal menyimpan data karyawan');
+                ->withInput()
+                ->with('error', 'Gagal menyimpan data karyawan');
         }
     }
 
@@ -246,20 +296,14 @@ class Karyawan extends BaseController
         }
 
         try {
-            $nama_dpn = $this->request->getPost('nama_dpn');
-            $nama     = $this->request->getPost('nama');
-            $nama_blk = $this->request->getPost('nama_blk');
-            $nama_pgl = (isset($nama_dpn) ? $nama_dpn.'. ' : '').$nama.(isset($nama_blk) ? ', '.$nama_blk : '');
+            $nama = $this->request->getPost('nama');
+            $nama_pgl = $this->request->getPost('nama_pgl');
             $groups   = $this->ionAuth->group($this->request->getPost('id_user_group'))->row();
 
             $data = [
                 'id_user_group'   => $this->request->getPost('id_user_group'),
                 'nik'             => $this->request->getPost('nik'),
-                'sip'             => $this->request->getPost('sip'),
-                'str'             => $this->request->getPost('str'),
-                'nama_dpn'        => $this->request->getPost('nama_dpn'),
                 'nama'            => $this->request->getPost('nama'),
-                'nama_blk'        => $this->request->getPost('nama_blk'),
                 'nama_pgl'        => $nama_pgl,
                 'jns_klm'         => $this->request->getPost('jns_klm'),
                 'tmp_lahir'       => $this->request->getPost('tmp_lahir'),
@@ -271,8 +315,9 @@ class Karyawan extends BaseController
                 'kelurahan'       => $this->request->getPost('kelurahan'),
                 'kecamatan'       => $this->request->getPost('kecamatan'),
                 'kota'            => $this->request->getPost('kota'),
-                'jabatan'         => $groups->description,
-                'no_hp'           => $this->request->getPost('no_hp')
+                'jabatan'         => $this->request->getPost('jabatan'),
+                'no_hp'           => $this->request->getPost('no_hp'),
+                'status'          => $this->request->getPost('status')
             ];
 
             if (!$this->karyawanModel->update($id, $data)) {

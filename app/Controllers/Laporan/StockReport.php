@@ -10,309 +10,200 @@
 namespace App\Controllers\Laporan;
 
 use App\Controllers\BaseController;
-use App\Models\ItemStokModel;
-use App\Models\ItemModel;
+use App\Models\VItemStokModel;
 use App\Models\GudangModel;
-use App\Models\KategoriModel;
-use App\Models\MerkModel;
-use App\Models\ItemHistModel;
 
 class StockReport extends BaseController
 {
-    protected $itemStokModel;
-    protected $itemHistModel;
-    protected $itemModel;
+    protected $vItemStokModel;
     protected $gudangModel;
-    protected $kategoriModel;
-    protected $merkModel;
 
     public function __construct()
     {
-        parent::__construct();
-        $this->itemStokModel = new ItemStokModel();
-        $this->itemHistModel = new ItemHistModel();
-        $this->itemModel = new ItemModel();
+        $this->vItemStokModel = new VItemStokModel();
         $this->gudangModel = new GudangModel();
-        $this->kategoriModel = new KategoriModel();
-        $this->merkModel = new MerkModel();
     }
 
+    /**
+     * Display stock report index
+     */
     public function index()
     {
-        $idGudang = $this->request->getGet('id_gudang');
-        $idKategori = $this->request->getGet('id_kategori');
-        $idMerk = $this->request->getGet('id_merk');
+        $gudangId = $this->request->getGet('gudang_id');
         $keyword = $this->request->getGet('keyword');
-        $stockType = $this->request->getGet('stock_type') ?? 'all';
+        $stockStatus = $this->request->getGet('stock_status');
+        $outletType = $this->request->getGet('outlet_type'); // 'warehouse', 'outlet', or null
+        $sortBy = $this->request->getGet('sort_by') ?: 'item';
+        $sortOrder = $this->request->getGet('sort_order') ?: 'ASC';
 
-        // Build query
-        $builder = $this->itemStokModel->select('
-                tbl_m_item_stok.*,
-                tbl_m_item.item as item_nama,
-                tbl_m_item.kode as item_kode,
-                tbl_m_item.harga_beli,
-                tbl_m_item.harga_jual,
-                tbl_m_kategori.kategori as kategori_nama,
-                tbl_m_merk.merk as merk_nama,
-                tbl_m_gudang.nama as gudang_nama,
-                tbl_m_satuan.satuanBesar as satuan_nama
-            ')
-            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
-            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
-            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'left')
-            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-            ->where('tbl_m_item_stok.status', '1')
-            ->where('tbl_m_item.status_hps', '0');
+        // Build search criteria
+        $criteria = [
+            'gudang_id' => $gudangId,
+            'keyword' => $keyword,
+            'stock_status' => $stockStatus,
+            'outlet_type' => $outletType,
+            'sort_by' => $sortBy,
+            'sort_order' => $sortOrder
+        ];
 
-        // Apply filters
-        if ($idGudang) {
-            $builder->where('tbl_m_item_stok.id_gudang', $idGudang);
+        // Get stock data
+        $stock = $this->vItemStokModel->searchItems($criteria, 20);
+        
+        // Get summary data
+        $summary = $this->vItemStokModel->getStockMovementSummary($gudangId);
+        $warehouseSummary = $this->vItemStokModel->getStockSummaryByWarehouse($gudangId, $outletType);
+        $stockAging = $this->vItemStokModel->getStockAgingAnalysis($gudangId);
+        $outletTypeSummary = $this->vItemStokModel->getStockSummaryByOutletType($gudangId);
+        
+        // Get low stock alerts based on outlet type
+        if ($outletType === 'outlet') {
+            $lowStock = $this->vItemStokModel->getLowStockItemsInOutlets($gudangId, 10);
+            $outOfStock = $this->vItemStokModel->getOutOfStockItems($gudangId);
+            $negativeStock = $this->vItemStokModel->getNegativeStockItems($gudangId);
+        } elseif ($outletType === 'warehouse') {
+            $lowStock = $this->vItemStokModel->getLowStockItemsInWarehouses($gudangId, 10);
+            $outOfStock = $this->vItemStokModel->getOutOfStockItems($gudangId);
+            $negativeStock = $this->vItemStokModel->getNegativeStockItems($gudangId);
+        } else {
+            $lowStock = $this->vItemStokModel->getLowStockItems($gudangId, 10);
+            $outOfStock = $this->vItemStokModel->getOutOfStockItems($gudangId);
+            $negativeStock = $this->vItemStokModel->getNegativeStockItems($gudangId);
         }
-
-        if ($idKategori) {
-            $builder->where('tbl_m_item.id_kategori', $idKategori);
-        }
-
-        if ($idMerk) {
-            $builder->where('tbl_m_item.id_merk', $idMerk);
-        }
-
-        if ($keyword) {
-            $builder->groupStart()
-                ->like('tbl_m_item.item', $keyword)
-                ->orLike('tbl_m_item.kode', $keyword)
-                ->groupEnd();
-        }
-
-        // Apply stock type filter
-        if ($stockType === 'in_stock') {
-            $builder->where('tbl_m_item_stok.jml >', 0);
-        } elseif ($stockType === 'out_of_stock') {
-            $builder->where('tbl_m_item_stok.jml <=', 0);
-        }
-
-        $stocks = $builder->orderBy('tbl_m_item.item', 'ASC')->findAll();
-
-        // Calculate summary
-        $totalItems = count($stocks);
-        $totalStock = 0;
-        $totalValue = 0;
-        $inStockCount = 0;
-        $outOfStockCount = 0;
-
-        foreach ($stocks as $stock) {
-            $stockQty = $stock->jml ?? 0;
-            $totalStock += $stockQty;
-            $totalValue += ($stockQty * ($stock->harga_beli ?? 0));
-            
-            if ($stockQty > 0) {
-                $inStockCount++;
-            } else {
-                $outOfStockCount++;
-            }
-        }
-
-        // Get filter options
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
-        $kategoriList = $this->kategoriModel->where('status', '1')->findAll();
-        $merkList = $this->merkModel->where('status', '1')->findAll();
 
         $data = [
             'title' => 'Laporan Stok',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
-            'stocks' => $stocks,
-            'totalItems' => $totalItems,
-            'totalStock' => $totalStock,
-            'totalValue' => $totalValue,
-            'inStockCount' => $inStockCount,
-            'outOfStockCount' => $outOfStockCount,
-            'idGudang' => $idGudang,
-            'idKategori' => $idKategori,
-            'idMerk' => $idMerk,
+            'stock' => $stock,
+            'summary' => $summary,
+            'warehouseSummary' => $warehouseSummary,
+            'stockAging' => $stockAging,
+            'outletTypeSummary' => $outletTypeSummary,
+            'lowStock' => $lowStock,
+            'outOfStock' => $outOfStock,
+            'negativeStock' => $negativeStock,
+            'gudang' => $this->gudangModel->findAll(),
+            'selectedGudang' => $gudangId,
             'keyword' => $keyword,
-            'stockType' => $stockType,
-            'gudangList' => $gudangList,
-            'kategoriList' => $kategoriList,
-            'merkList' => $merkList,
-            'breadcrumbs' => '
-                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
-                <li class="breadcrumb-item">Laporan</li>
-                <li class="breadcrumb-item active">Laporan Stok</li>
-            '
+            'stockStatus' => $stockStatus,
+            'outletType' => $outletType,
+            'sortBy' => $sortBy,
+            'sortOrder' => $sortOrder
         ];
 
         return view($this->theme->getThemePath() . '/laporan/stock/index', $data);
     }
 
-    public function detail($id)
+    /**
+     * Display stock detail for specific item
+     */
+    public function detail($itemId = null)
     {
-        $item = $this->itemStokModel->select('
-                tbl_m_item_stok.*,
-                tbl_m_item.item as item_nama,
-                tbl_m_item.kode as item_kode,
-                tbl_m_item.harga_beli,
-                tbl_m_item.harga_jual,
-                tbl_m_kategori.kategori as kategori_nama,
-                tbl_m_merk.merk as merk_nama,
-                tbl_m_gudang.nama as gudang_nama,
-                tbl_m_satuan.satuanBesar as satuan_nama
-            ')
-            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
-            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
-            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'left')
-            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-            ->where('tbl_m_item_stok.id', $id)
-            ->first();
+        if (!$itemId) {
+            return redirect()->to('laporan/stock')->with('error', 'ID Item tidak valid');
+        }
 
-        if (!$item) {
+        $gudangId = $this->request->getGet('gudang_id');
+        
+        // Get stock data for specific item across all warehouses
+        $stockData = $this->vItemStokModel->where('id_item', $itemId)->findAll();
+        
+        if (empty($stockData)) {
             return redirect()->to('laporan/stock')->with('error', 'Data stok tidak ditemukan');
         }
 
-        // Get stock history
-        $stockHistory = $this->itemHistModel->select('
-                tbl_m_item_hist.*,
-                tbl_m_item.item as item_nama,
-                tbl_m_gudang.nama as gudang_nama
-            ')
-            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_hist.id_item', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_hist.id_gudang', 'left')
-            ->where('tbl_m_item_hist.id_item', $item->id_item)
-            ->where('tbl_m_item_hist.id_gudang', $item->id_gudang)
-            ->orderBy('tbl_m_item_hist.created_at', 'DESC')
-            ->limit(20)
-            ->findAll();
-
         $data = [
-            'title' => 'Detail Stok - ' . $item->item_nama,
+            'title' => 'Detail Stok Item',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
-            'item' => $item,
-            'stockHistory' => $stockHistory,
-            'breadcrumbs' => '
-                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
-                <li class="breadcrumb-item"><a href="' . base_url('laporan/stock') . '">Laporan Stok</a></li>
-                <li class="breadcrumb-item active">Detail</li>
-            '
+            'stockData' => $stockData,
+            'item' => $stockData[0], // First record for item info
+            'selectedGudang' => $gudangId
         ];
 
         return view($this->theme->getThemePath() . '/laporan/stock/detail', $data);
     }
 
+    /**
+     * Export stock report to Excel
+     */
     public function export_excel()
     {
-        $idGudang = $this->request->getGet('id_gudang');
-        $idKategori = $this->request->getGet('id_kategori');
-        $idMerk = $this->request->getGet('id_merk');
+        $gudangId = $this->request->getGet('gudang_id');
         $keyword = $this->request->getGet('keyword');
-        $stockType = $this->request->getGet('stock_type') ?? 'all';
+        $stockStatus = $this->request->getGet('stock_status');
 
-        // Build query
-        $builder = $this->itemStokModel->select('
-                tbl_m_item_stok.*,
-                tbl_m_item.item as item_nama,
-                tbl_m_item.kode as item_kode,
-                tbl_m_item.harga_beli,
-                tbl_m_item.harga_jual,
-                tbl_m_kategori.kategori as kategori_nama,
-                tbl_m_merk.merk as merk_nama,
-                tbl_m_gudang.nama as gudang_nama,
-                tbl_m_satuan.satuanBesar as satuan_nama
-            ')
-            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
-            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
-            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'left')
-            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-            ->where('tbl_m_item_stok.status', '1')
-            ->where('tbl_m_item.status_hps', '0');
+        // Build search criteria
+        $criteria = [
+            'gudang_id' => $gudangId,
+            'keyword' => $keyword,
+            'stock_status' => $stockStatus
+        ];
 
-        // Apply filters
-        if ($idGudang) {
-            $builder->where('tbl_m_item_stok.id_gudang', $idGudang);
+        // Get all data for export (no pagination)
+        $stock = $this->vItemStokModel->searchItems($criteria, 10000, 1);
+        
+        // Get warehouse name
+        $gudangName = 'Semua Gudang';
+        if ($gudangId) {
+            $gudang = $this->gudangModel->find($gudangId);
+            $gudangName = $gudang ? $gudang->nama : 'Gudang Tidak Diketahui';
         }
-
-        if ($idKategori) {
-            $builder->where('tbl_m_item.id_kategori', $idKategori);
-        }
-
-        if ($idMerk) {
-            $builder->where('tbl_m_item.id_merk', $idMerk);
-        }
-
-        if ($keyword) {
-            $builder->groupStart()
-                ->like('tbl_m_item.item', $keyword)
-                ->orLike('tbl_m_item.kode', $keyword)
-                ->groupEnd();
-        }
-
-        // Apply stock type filter
-        if ($stockType === 'in_stock') {
-            $builder->where('tbl_m_item_stok.jml >', 0);
-        } elseif ($stockType === 'out_of_stock') {
-            $builder->where('tbl_m_item_stok.jml <=', 0);
-        }
-
-        $stocks = $builder->orderBy('tbl_m_item.item', 'ASC')->findAll();
 
         // Create Excel file
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
+        // Set title
+        $sheet->setCellValue('A1', 'LAPORAN STOK - ' . strtoupper($gudangName));
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+
         // Set headers
-        $sheet->setCellValue('A1', 'LAPORAN STOK');
-        $sheet->setCellValue('A2', 'Tanggal: ' . date('d/m/Y H:i:s'));
-        
-        $sheet->setCellValue('A4', 'No');
-        $sheet->setCellValue('B4', 'Kode Item');
-        $sheet->setCellValue('C4', 'Nama Item');
-        $sheet->setCellValue('D4', 'Kategori');
-        $sheet->setCellValue('E4', 'Merk');
-        $sheet->setCellValue('F4', 'Gudang');
-        $sheet->setCellValue('G4', 'Stok');
-        $sheet->setCellValue('H4', 'Satuan');
-        $sheet->setCellValue('I4', 'Harga Beli');
-        $sheet->setCellValue('J4', 'Harga Jual');
-        $sheet->setCellValue('K4', 'Total Nilai');
+        $headers = [
+            'No', 'Kode Item', 'Nama Item', 'Gudang', 'SO', 'Stok Masuk', 'Stok Keluar', 'Sisa'
+        ];
+        $col = 'A';
+        $row = 3;
+        foreach ($headers as $header) {
+            $sheet->setCellValue($col . $row, $header);
+            $sheet->getStyle($col . $row)->getFont()->setBold(true);
+            $col++;
+        }
 
-        $row = 5;
-        $totalValue = 0;
-
-        foreach ($stocks as $index => $stock) {
-            $stockQty = $stock->jml ?? 0;
-            $itemValue = $stockQty * ($stock->harga_beli ?? 0);
-            $totalValue += $itemValue;
-
-            $sheet->setCellValue('A' . $row, $index + 1);
-            $sheet->setCellValue('B' . $row, $stock->item_kode ?? '-');
-            $sheet->setCellValue('C' . $row, $stock->item_nama ?? '-');
-            $sheet->setCellValue('D' . $row, $stock->kategori_nama ?? '-');
-            $sheet->setCellValue('E' . $row, $stock->merk_nama ?? '-');
-            $sheet->setCellValue('F' . $row, $stock->gudang_nama ?? '-');
-            $sheet->setCellValue('G' . $row, number_format($stockQty, 0, ',', '.'));
-            $sheet->setCellValue('H' . $row, $stock->satuan_nama ?? '-');
-            $sheet->setCellValue('I' . $row, number_format($stock->harga_beli ?? 0, 0, ',', '.'));
-            $sheet->setCellValue('J' . $row, number_format($stock->harga_jual ?? 0, 0, ',', '.'));
-            $sheet->setCellValue('K' . $row, number_format($itemValue, 0, ',', '.'));
-            
+        // Set data
+        $row = 4;
+        $no = 1;
+        foreach ($stock as $item) {
+            $sheet->setCellValue('A' . $row, $no++);
+            $sheet->setCellValue('B' . $row, $item->kode);
+            $sheet->setCellValue('C' . $row, $item->item);
+            $sheet->setCellValue('D' . $row, $item->gudang);
+            $sheet->setCellValue('E' . $row, $item->so ?? 0);
+            $sheet->setCellValue('F' . $row, $item->stok_masuk ?? 0);
+            $sheet->setCellValue('G' . $row, $item->stok_keluar ?? 0);
+            $sheet->setCellValue('H' . $row, $item->sisa ?? 0);
             $row++;
         }
 
-        // Add total
-        $sheet->setCellValue('A' . $row, 'TOTAL NILAI');
-        $sheet->setCellValue('K' . $row, number_format($totalValue, 0, ',', '.'));
-
-        // Auto size columns
-        foreach (range('A', 'K') as $col) {
+        // Auto-size columns
+        foreach (range('A', 'H') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
+        // Add borders
+        $styleArray = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A3:H' . ($row - 1))->applyFromArray($styleArray);
+
         // Create response
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
-        $filename = 'Laporan_Stok_' . date('Y-m-d') . '.xlsx';
+        $filename = 'Laporan_Stok_' . $gudangName . '_' . date('Y-m-d_H-i-s') . '.xlsx';
 
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
@@ -320,5 +211,89 @@ class StockReport extends BaseController
 
         $writer->save('php://output');
         exit;
+    }
+
+    /**
+     * Get stock summary for dashboard
+     */
+    public function getStockSummary()
+    {
+        $gudangId = $this->request->getGet('gudang_id');
+        
+        $summary = $this->vItemStokModel->getStockMovementSummary($gudangId);
+        $warehouseSummary = $this->vItemStokModel->getStockSummaryByWarehouse($gudangId);
+        $stockAging = $this->vItemStokModel->getStockAgingAnalysis($gudangId);
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'summary' => $summary,
+                'warehouseSummary' => $warehouseSummary,
+                'stockAging' => $stockAging
+            ]
+        ]);
+    }
+
+    /**
+     * Get low stock alerts
+     */
+    public function getLowStockAlerts()
+    {
+        $gudangId = $this->request->getGet('gudang_id');
+        $threshold = $this->request->getGet('threshold') ?: 10;
+        
+        $lowStock = $this->vItemStokModel->getLowStockItems($gudangId, $threshold);
+        $outOfStock = $this->vItemStokModel->getOutOfStockItems($gudangId);
+        $negativeStock = $this->vItemStokModel->getNegativeStockItems($gudangId);
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'lowStock' => $lowStock,
+                'outOfStock' => $outOfStock,
+                'negativeStock' => $negativeStock,
+                'totalAlerts' => count($lowStock) + count($outOfStock) + count($negativeStock)
+            ]
+        ]);
+    }
+
+    /**
+     * Get stock comparison between warehouses
+     */
+    public function getStockComparison()
+    {
+        $gudangIds = $this->request->getGet('gudang_ids');
+        
+        if (!$gudangIds) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID Gudang tidak boleh kosong'
+            ]);
+        }
+        
+        $gudangIds = explode(',', $gudangIds);
+        $comparison = $this->vItemStokModel->getStockComparison($gudangIds);
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $comparison
+        ]);
+    }
+
+    /**
+     * Get top items by stock quantity
+     */
+    public function getTopItems()
+    {
+        $gudangId = $this->request->getGet('gudang_id');
+        $limit = $this->request->getGet('limit') ?: 20;
+        $order = $this->request->getGet('order') ?: 'DESC';
+        
+        $topItems = $this->vItemStokModel->getTopItemsByStock($gudangId, $limit, $order);
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $topItems
+        ]);
     }
 }

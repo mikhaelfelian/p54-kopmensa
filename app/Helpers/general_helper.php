@@ -352,9 +352,6 @@ if (!function_exists('tipeOpn')) {
     }
 }
 
-
-
-
 if (!function_exists('isItemActive')) {
     function isItemActive($status)
     {
@@ -476,6 +473,35 @@ if (!function_exists('tipeMutasi')) {
                     'badge' => 'secondary'
                 ];
         }
+    }
+}
+
+if (!function_exists('generateUsername')) {
+    /**
+     * Generate a safe username from input string
+     * 
+     * Creates a username using first name only, with alphabetic characters,
+     * lowercase, max 6 chars, and adds numeric characters.
+     * 
+     * @param string $input Input string to generate username from
+     * @return string Generated username
+     */
+    function generateUsername($input)
+    {
+        // Get first name only (before first space)
+        $firstName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', trim($input)));
+
+        // Limit to 4 characters for the name part
+        $namePart = substr($firstName, 0, 4);
+
+        // Generate 4 random digits
+        $numberPart = '';
+        for ($i = 0; $i < 3; $i++) {
+            $numberPart .= random_int(0, 9);
+        }
+
+        // Concatenate and return (max 8 chars: 4 name + 4 number)
+        return $namePart . $numberPart;
     }
 }
 

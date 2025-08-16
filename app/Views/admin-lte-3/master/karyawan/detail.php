@@ -32,12 +32,6 @@
                     <li class="list-group-item">
                         <b>NIK</b> <a class="float-right"><?= esc($karyawan->nik) ?></a>
                     </li>
-                    <li class="list-group-item">
-                        <b>SIP</b> <a class="float-right"><?= esc($karyawan->sip) ?: '-' ?></a>
-                    </li>
-                    <li class="list-group-item">
-                        <b>STR</b> <a class="float-right"><?= esc($karyawan->str) ?: '-' ?></a>
-                    </li>
                 </ul>
             </div>
         </div>
@@ -89,8 +83,8 @@
                         <p class="text-muted"><?= esc($karyawan->no_hp) ?></p>
                         <hr>
 
-                        <strong>Status</strong>
-                        <p class="text-muted"><?= $karyawan->status_aps == '1' ? 'Aktif' : 'Non-Aktif' ?></p>
+                        <strong>Jabatan</strong>
+                        <p class="text-muted"><?= esc($karyawan->jabatan) ?: '-' ?></p>
                         <hr>
                     </div>
                 </div>
