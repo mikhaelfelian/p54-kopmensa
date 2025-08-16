@@ -2674,9 +2674,6 @@ helper('form');
 
         // Automatically search for the customer
         searchAnggota();
-
-        // Show success message
-        toastr.success('QR Code berhasil di-scan!');
     }
 
     // Draft List Functions
