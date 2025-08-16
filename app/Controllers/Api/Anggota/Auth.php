@@ -130,7 +130,7 @@ class Auth extends BaseController
                                   ->groupStart()
                                     ->where('kode', $kartu)
                                     ->orWhere('nama', $kartu)
-                                    ->orWhere('id', $kartu)
+                                    ->orWhere('id_user', $kartu)
                                   ->groupEnd()
                                   ->first();
         
