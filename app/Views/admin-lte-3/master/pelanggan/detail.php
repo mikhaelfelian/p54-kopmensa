@@ -25,7 +25,29 @@
                         <?= esc($pelanggan->kode) ?>
                     </div>
                 </div>
-
+                <div class="form-group">
+                    <label class="control-label">Kode</label>
+                    <div class="form-control rounded-0 bg-light" readonly>
+                        <?= esc($pelanggan->kode) ?>
+                    </div>
+                </div>
+                <?php
+                    // Ambil username dari Ion Auth berdasarkan $pelanggan->id_user
+                    $ionAuthUsername = '-';
+                    if (!empty($pelanggan->id_user)) {
+                        $ionAuthModel = new \IonAuth\Models\IonAuthModel();
+                        $ionAuthUser = $ionAuthModel->user($pelanggan->id_user)->row();
+                        if ($ionAuthUser && !empty($ionAuthUser->username)) {
+                            $ionAuthUsername = $ionAuthUser->username;
+                        }
+                    }
+                ?>
+                <div class="form-group">
+                    <label class="control-label">Username</label>
+                    <div class="form-control rounded-0 bg-light" readonly>
+                        <?= esc($ionAuthUsername) ?>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label class="control-label">Nama</label>
                     <div class="form-control rounded-0 bg-light" readonly>
