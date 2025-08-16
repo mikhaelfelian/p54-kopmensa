@@ -107,32 +107,6 @@ helper('form');
 
     <!-- Right Column - Payment -->
     <div class="col-md-4">
-        <div class="card rounded-0 mb-3">
-            <div class="card-header bg-default">
-                <h5 class="card-title mb-0">5 Transaksi Terakhir</h5>
-            </div>
-            <div class="card-body p-2">
-                <ul class="list-group list-group-flush" id="lastTransactionsList" style="max-height: 120px; overflow-y: auto;">
-                    <?php foreach ($lastTransactions as $transaction): ?>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="font-weight-bold"><?= $transaction->no_nota ?></span>
-                                <br>
-                                <small class="text-muted"><?= $transaction->customer_name ?></small>
-                                <br/>
-                                <small class="text-muted"><?= tgl_indo6($transaction->created_at) ?></small>
-                            </div>
-                            <div class="d-flex flex-column align-items-end">
-                                <span class="badge badge-success badge-pill mb-1">Rp <?= number_format($transaction->jml_gtotal, 0, ',', '.') ?></span>
-                                <button type="button" class="btn btn-sm btn-info" onclick="viewTransaction(<?= $transaction->id ?>)" title="Lihat Detail">
-                                    <i class="fa fa-eye"></i> View
-                                </button>
-                            </div>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        </div>
         <div class="card rounded-0">
             <div class="card-header">
                 <h4 class="card-title">Pembayaran</h4>
