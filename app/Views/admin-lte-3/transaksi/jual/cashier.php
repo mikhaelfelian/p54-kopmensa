@@ -2485,10 +2485,7 @@ helper('form');
                     // Clear scan input
                     $('#scanAnggota').val('');
 
-                    toastr.success('Anggota ditemukan: ' + anggota.nama);
-
-                    // Log successful scan
-                    console.log('Successfully found anggota:', anggota);
+                    /* toastr.success('Anggota ditemukan: ' + anggota.nama); */
                 } else {
                     toastr.error('Anggota tidak ditemukan');
                     $('#customerInfoDisplay').hide();
