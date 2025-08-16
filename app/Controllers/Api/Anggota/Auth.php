@@ -27,8 +27,19 @@ class Auth extends BaseController
         $ionAuth = new \IonAuth\Libraries\IonAuth();
         if (!$ionAuth->login($identity, $password)) {
             $errors = $ionAuth->errors();
-            // Since this is an API, we get the last error message for a cleaner response.
-            $errorMessage = !empty($errors) ? end($errors) : 'Login failed';
+            // $errors may be a string (HTML) or an array, depending on IonAuth config.
+            // For API, we want a plain message, not HTML.
+            // If $errors is a string (HTML), strip tags and get the first line.
+            if (is_array($errors)) {
+                $errorMessage = !empty($errors) ? end($errors) : 'Login failed';
+            } elseif (is_string($errors)) {
+                // Remove HTML tags and get the first non-empty line
+                $plain = trim(strip_tags($errors));
+                $lines = array_filter(array_map('trim', explode("\n", $plain)));
+                $errorMessage = !empty($lines) ? array_shift($lines) : 'Login failed';
+            } else {
+                $errorMessage = 'Login failed';
+            }
             return $this->respond([
                 'success' => false,
                 'message' => $errorMessage
