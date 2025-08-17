@@ -996,7 +996,6 @@ helper('form');
             success: function (response) {
                 if (response.success) {
                     // Session is still valid
-                    console.log('Session refreshed successfully');
                 }
             },
             error: function (xhr, status, error) {
@@ -1071,8 +1070,6 @@ helper('form');
                             lastScannedBarcode = inputValue;
                             lastScanTime = currentTime;
                             findProductByBarcode(inputValue, warehouseId);
-                        } else {
-                            console.log('Duplicate barcode scan prevented:', inputValue);
                         }
                     }
                 }, 300); // Wait 300ms after last input to confirm it's a complete scan
@@ -1243,15 +1240,10 @@ helper('form');
         $('#uangPas').on('click', function () {
             const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
 
-            console.log('Uang Pas clicked. Grand total:', grandTotal);
-
             if (grandTotal > 0) {
                 // Find the current payment method row (first one or active one)
                 const currentPaymentRow = $('.payment-method-row').first();
                 const amountField = currentPaymentRow.find('.payment-amount');
-
-                console.log('Payment row found:', currentPaymentRow.length > 0);
-                console.log('Amount field found:', amountField.length > 0);
 
                 if (amountField.length > 0) {
                     // Set the amount to grand total
@@ -1259,14 +1251,11 @@ helper('form');
                     // Trigger change to recalculate totals
                     amountField.trigger('change');
                     toastr.success(`Uang pas: Rp ${numberFormat(grandTotal)}`);
-                    console.log('Amount set successfully to:', grandTotal);
                 } else {
                     toastr.error('Field jumlah pembayaran tidak ditemukan');
-                    console.error('Amount field not found');
                 }
             } else {
                 toastr.warning('Grand total belum dihitung. Silakan tambahkan produk terlebih dahulu.');
-                console.warn('Grand total is 0 or not calculated');
             }
         });
 
@@ -1366,7 +1355,6 @@ helper('form');
                 nama: 'Test Anggota',
                 nomor_kartu: 'TEST001'
             };
-            console.log('Test QR scan triggered with data:', testData);
             handleQrScanResult(testData);
         });
 
@@ -1381,7 +1369,6 @@ helper('form');
             ];
 
             const randomFormat = testFormats[Math.floor(Math.random() * testFormats.length)];
-            console.log('Testing QR format:', randomFormat.type, 'with data:', randomFormat.data);
             handleQrScanResult(randomFormat.data);
         });
 
@@ -1420,7 +1407,7 @@ helper('form');
 
         // Test search button
         $('#testSearch').on('click', function () {
-            console.log('Test search clicked');
+    
             const warehouseId = $('#warehouse_id').val();
             if (!warehouseId) {
                 toastr.warning('Silakan pilih outlet terlebih dahulu');
@@ -1439,7 +1426,6 @@ helper('form');
                 },
                 dataType: 'json',
                 success: function (response) {
-                    console.log('Test search success:', response);
                     if (response.items && response.items.length > 0) {
                         toastr.success('Test search successful! Found ' + response.items.length + ' products');
                         displayProducts(response.items);
@@ -1675,20 +1661,17 @@ helper('form');
             $('#remainingAmount').text(formatCurrency(remaining));
             $('#remainingPayment').show();
             $('#changePayment').hide();
-                console.log('Showing remaining payment:', formatCurrency(remaining));
             }
         } else if (remaining < 0) {
             if ($('#changeAmount').length) {
             $('#changeAmount').text(formatCurrency(Math.abs(remaining)));
             $('#remainingPayment').hide();
             $('#changePayment').show();
-                console.log('Showing change:', formatCurrency(Math.abs(remaining)));
             }
         } else {
             if ($('#remainingPayment').length && $('#changePayment').length) {
             $('#remainingPayment').hide();
             $('#changePayment').hide();
-                console.log('Payment is exact - no remaining or change');
             }
         }
     }
@@ -1955,8 +1938,8 @@ helper('form');
         // Also update payment totals
         calculatePaymentTotals();
 
-                    // Clear search field and focus for next scan
-                    $('#productSearch').val('').focus();
+                    // Clear search field but don't focus to prevent mobile keyboard
+                    $('#productSearch').val('');
 
                     // Reset barcode scan flag
                     isBarcodeScan = false;
@@ -2044,8 +2027,6 @@ helper('form');
             loadProductsByCategoryId(actualCategoryId);
         } else if (categoryId === 'all-tab') {
             loadProducts(); // Load all products
-        } else {
-            console.log('Unknown category ID format:', categoryId);
         }
     }
 
@@ -2065,14 +2046,7 @@ helper('form');
         // Clear existing products
         $('#productGrid').empty();
 
-        console.log('Loading products for category:', categoryId);
-        console.log('Warehouse ID:', warehouseId);
-        console.log('Request data:', {
-            search: '',
-            warehouse_id: warehouseId,
-            category_id: categoryId,
-            limit: <?= $Pengaturan->pagination_limit ?? 20 ?>
-        });
+
 
         $.ajax({
             url: '<?= base_url('transaksi/jual/search-items') ?>',
@@ -2085,7 +2059,6 @@ helper('form');
             },
             dataType: 'json',
             success: function (response) {
-                console.log('Success response:', response);
                 if (response.items && response.items.length > 0) {
                     displayProducts(response.items);
 
@@ -2290,7 +2263,7 @@ helper('form');
 
         updateCartDisplay();
         calculateTotal();
-        $('#productSearch').val('').focus();
+        $('#productSearch').val('');
     }
 
     function updateCartDisplay() {
@@ -2487,7 +2460,7 @@ helper('form');
             return;
         }
 
-        console.log('completeTransaction called - isDraft:', isDraft, 'currentDraftId:', currentDraftId);
+
 
         // Calculate grand total (needed for both draft and completed transactions)
         const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
@@ -2573,12 +2546,6 @@ helper('form');
 
 
         // Send transaction to server
-        console.log('Sending transaction data:', transactionData);
-        console.log('Current draft ID:', currentDraftId);
-        console.log('Is draft:', isDraft);
-        console.log('Cart length:', cart.length);
-        console.log('Payment methods:', paymentMethods);
-        console.log('Grand total:', grandTotal);
 
         $.ajax({
             url: '<?= base_url('transaksi/jual/process-transaction') ?>',
@@ -2750,10 +2717,7 @@ helper('form');
         // Recalculate totals
         calculateTotal();
 
-        // Focus on product search for next transaction
-        setTimeout(function () {
-            $('#productSearch').focus();
-        }, 500);
+        // Don't focus on product search to prevent mobile keyboard
     }
 
     function holdTransaction() {
@@ -3167,17 +3131,13 @@ helper('form');
                 // Look for id_pelanggan in the QR data
                 if (qrData.id_pelanggan) {
                     customerId = qrData.id_pelanggan;
-                    console.log('QR Code parsed, found id_pelanggan:', customerId);
                 } else if (qrData.id) {
                     customerId = qrData.id;
-                    console.log('QR Code parsed, found id:', customerId);
                 } else {
                     // If no id found, try to use the original input
                     customerId = kartuNumber;
-                    console.log('QR Code parsed but no id found, using original input:', customerId);
                 }
             } catch (e) {
-                console.log('Failed to parse QR data as JSON, treating as plain text');
                 customerId = kartuNumber;
             }
         } else {
@@ -3394,12 +3354,7 @@ helper('form');
 
                 status.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> ' + errorMessage + '</p>';
 
-                // Add debug info
-                console.log('Camera error details:', {
-                    name: err.name,
-                    message: err.message,
-                    constraint: err.constraint
-                });
+
             });
     }
 
@@ -3438,8 +3393,7 @@ helper('form');
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (code) {
-                console.log('QR Code detected:', code.data);
-                console.log('QR Code format check...');
+                
 
                 // Stop scanning to prevent multiple detections
                 stopQrScanner();
@@ -3448,10 +3402,8 @@ helper('form');
                 let qrData;
                 try {
                     qrData = JSON.parse(code.data);
-                    console.log('QR data parsed as JSON:', qrData);
                 } catch (e) {
                     // If not JSON, treat as plain text
-                    console.log('QR data is plain text:', code.data);
                     qrData = code.data;
                 }
 
@@ -3518,9 +3470,6 @@ helper('form');
 
     // Function to handle QR code scan result (called by QR library)
     function handleQrScanResult(qrData) {
-        console.log('QR Code detected:', qrData);
-        console.log('QR Data type:', typeof qrData);
-        console.log('QR Data keys:', Object.keys(qrData || {}));
 
         // Close the scanner modal
         $('#qrScannerModal').modal('hide');
@@ -3533,7 +3482,6 @@ helper('form');
         if (typeof qrData === 'string') {
             // Plain text QR code
             customerId = qrData.trim();
-            console.log('Plain text QR code detected:', customerId);
         } else if (qrData && typeof qrData === 'object') {
             // JSON/object QR code
             if (qrData.id_pelanggan) {
@@ -3595,11 +3543,9 @@ helper('form');
             type: 'GET',
             dataType: 'json',
             success: function (response) {
-                console.log('Draft response:', response);
                 $loading.hide();
 
                 if (response.success && response.drafts && response.drafts.length > 0) {
-                    console.log('Found', response.drafts.length, 'drafts');
                     response.drafts.forEach(function (draft) {
                         const row = `
                         <tr>
@@ -3624,7 +3570,6 @@ helper('form');
                         $tableBody.append(row);
                     });
                 } else {
-                    console.log('No drafts found or empty response');
                     $empty.show();
                 }
             },
@@ -3664,7 +3609,6 @@ helper('form');
                         if (draft.items && draft.items.length > 0) {
                             cart = draft.items;
                             currentDraftId = draft.id; // Store draft ID for later processing
-                            console.log('Draft loaded - ID:', currentDraftId, 'Items:', draft.items.length);
                             updateCartDisplay();
                             calculateTotal();
                         }
@@ -3696,9 +3640,6 @@ helper('form');
         if (confirm('Apakah Anda yakin ingin menghapus draft ini? Tindakan ini tidak dapat dibatalkan.')) {
             const csrfTokenName = $('input[name^="csrf"]').attr('name');
             const csrfToken = $('input[name^="csrf"]').val();
-            console.log('CSRF Token Name:', csrfTokenName);
-            console.log('CSRF Token:', csrfToken);
-            console.log('Draft ID to delete:', draftId);
 
             $.ajax({
                 url: '<?= base_url('transaksi/jual/delete-draft/') ?>' + draftId,
