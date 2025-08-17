@@ -103,5 +103,6 @@ class Autoload extends AutoloadConfig
         'angka',
         'tanggalan',
         'permission',
+        'akses',
     ];
 }
