@@ -38,6 +38,9 @@ helper('form');
                         </div>
                     </div>
                     <div class="d-flex align-items-center">
+                        <a href="<?= base_url('transaksi/jual/cashier-data') ?>" class="btn btn-outline-primary ml-2" title="Lihat Data Penjualan">
+                            <i class="fas fa-list"></i> Data Penjualan
+                        </a>
                     </div>
                 </div>
             </div>
@@ -166,14 +169,14 @@ helper('form');
                                             <p class="text-muted">Mengaktifkan kamera...</p>
                                         </div>
                                     </div>
-                                                                    <div class="modal-footer">
+                                    <div class="modal-footer">
                                         <button type="button" class="btn btn-info rounded-0 me-2" id="flipCamera">
                                             <i class="fas fa-sync-alt"></i> Flip Camera
                                         </button>
                                         <button type="button" class="btn btn-secondary rounded-0"
                                             data-dismiss="modal">Tutup
                                         </button>
-                                </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3268,7 +3271,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
     let qrStream = null;
     let currentCameraFacing = 'environment'; // 'environment' for back camera, 'user' for front camera
 
-        function openQrScanner() {
+    function openQrScanner() {
         // Reset scanner state first
         qrScanner = false;
         if (qrStream) {
@@ -3277,7 +3280,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 
         // Reset camera facing to back camera by default
         currentCameraFacing = 'environment';
-        
+
         // Update button text
         $('#flipCamera').html('<i class="fas fa-sync-alt"></i> Front Camera');
 
@@ -3287,7 +3290,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         // Wait for modal to be fully visible before starting scanner
         $('#qrScannerModal').on('shown.bs.modal', function () {
             // Small delay to ensure modal is fully rendered
-        setTimeout(() => {
+            setTimeout(() => {
                 startQrScanner();
             }, 300);
         });
@@ -3488,19 +3491,19 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 
         // Toggle camera facing mode
         currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
-        
+
         // Update button text
         const buttonText = currentCameraFacing === 'environment' ? 'Front Camera' : 'Back Camera';
         $('#flipCamera').html(`<i class="fas fa-sync-alt"></i> ${buttonText}`);
-        
+
         // Stop current stream
         stopQrScanner();
-        
+
         // Restart scanner with new camera
         setTimeout(() => {
             startQrScanner();
         }, 500);
-        
+
         toastr.info(`Switched to ${currentCameraFacing === 'environment' ? 'back' : 'front'} camera`);
     }
 
@@ -3643,8 +3646,8 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 
                         // Load cart items
                         if (draft.items && draft.items.length > 0) {
-                            cart            = draft.items;
-                            currentDraftId  = draft.id; // Store draft ID for later processing
+                            cart = draft.items;
+                            currentDraftId = draft.id; // Store draft ID for later processing
                             updateCartDisplay();
                             calculateTotal();
                         }

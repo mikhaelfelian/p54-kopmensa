@@ -77,6 +77,14 @@ class TransJual extends BaseController
     }
 
     /**
+     * Test method to verify route is working
+     */
+    public function test_route()
+    {
+        return "Route is working! Method: " . __METHOD__;
+    }
+
+    /**
      * Display cashier interface for sales transactions
      */
     public function index()
@@ -170,6 +178,103 @@ class TransJual extends BaseController
         ];
 
         return $this->view($this->theme->getThemePath() . '/transaksi/jual/index', $data);
+    }
+
+    /**
+     * Display Data Penjualan (Sales Data) page without sidebar
+     */
+    public function data_penjualan_kasir()
+    {
+        // Get current page for pagination
+        $currentPage = $this->request->getVar('page_transjual') ?? 1;
+        $perPage     = $this->pengaturan->pagination_limit ?? 10;
+
+        // Get filter parameters
+        $search   = $this->request->getVar('search');
+        $status   = $this->request->getVar('status');
+        $dateFrom = $this->request->getVar('date_from');
+        $dateTo   = $this->request->getVar('date_to');
+
+        // Build query
+        $builder = $this->transJualModel;
+        
+        if ($search) {
+            $builder = $builder->like('no_nota', $search)
+                              ->orLike('id_pelanggan', $search);
+        }
+        
+        if ($status !== null && $status !== '') {
+            $builder = $builder->where('status', $status);
+        }
+        
+        if ($dateFrom) {
+            $builder = $builder->where('DATE(created_at) >=', $dateFrom);
+        }
+        
+        if ($dateTo) {
+            $builder = $builder->where('DATE(created_at) <=', $dateTo);
+        }
+
+        // Get paginated results
+        $transactions = $builder->orderBy('created_at', 'DESC')
+                               ->paginate($perPage, 'transjual');
+
+        // Get summary data
+        $totalSales = $this->transJualModel->selectSum('jml_gtotal')
+                                          ->where('status', '1')
+                                          ->where('DATE(created_at)', date('Y-m-d'))
+                                          ->first();
+
+        $totalTransactions = $this->transJualModel->where('status', '1')
+                                                 ->where('DATE(created_at)', date('Y-m-d'))
+                                                 ->countAllResults();
+
+        // Get related data for dropdowns
+        $customers  = $this->pelangganModel
+                          ->where('status_blokir', '0')
+                          ->findAll();
+
+        $sales      = $this->karyawanModel
+                          ->where('status', '1')
+                          ->findAll();
+
+        $warehouses = $this->gudangModel
+                          ->where('status', '1')
+                          ->findAll();
+
+        $platforms  = $this->platformModel
+                          ->where('status', '1')
+                          ->findAll();
+
+        $data = [
+            'title'             => 'Data Penjualan',
+            'Pengaturan'        => $this->pengaturan,
+            'user'              => $this->ionAuth->user()->row(),
+            'transactions'      => $transactions,
+            'pager'             => $this->transJualModel->pager,
+            'currentPage'       => $currentPage,
+            'perPage'           => $perPage,
+            'search'            => $search,
+            'status'            => $status,
+            'dateFrom'          => $dateFrom,
+            'dateTo'            => $dateTo,
+            'totalSales'        => $totalSales->jml_gtotal ?? 0,
+            'totalTransactions' => $totalTransactions,
+            'customers'         => $customers,
+            'sales'             => $sales,
+            'warehouses'        => $warehouses,
+            'platforms'         => $platforms,
+            'statusOptions'     => [
+                '0' => 'Draft',
+                '1' => 'Selesai',
+                '2' => 'Batal',
+                '3' => 'Retur',
+                '4' => 'Pending'
+            ]
+        ];
+
+        // Use a layout without sidebar
+        return $this->view($this->theme->getThemePath() . '/transaksi/jual/index_no_sidebar', $data);
     }
 
     /**

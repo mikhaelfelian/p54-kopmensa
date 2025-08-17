@@ -33,8 +33,10 @@
 
                 <!-- Master Data Katalog -->
                 <li class="nav-header">MASTER DATA</li>
-                <li class="nav-item has-treeview <?= isMenuActive(['master/merk', 'master/kategori', 'master/varian', 'master/item', 'master/satuan']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/merk', 'master/kategori', 'master/varian', 'master/item', 'master/satuan']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['master/merk', 'master/kategori', 'master/varian', 'master/item', 'master/satuan']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['master/merk', 'master/kategori', 'master/varian', 'master/item', 'master/satuan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-briefcase"></i>
                         <p>
                             Katalog
@@ -74,28 +76,30 @@
                                 <p>Item</p>
                             </a>
                         </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('master/satuan') ?>"
-                                    class="nav-link <?= isMenuActive('master/satuan') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-ruler nav-icon"></i>
-                                    <p>Satuan</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('master/voucher') ?>"
-                                    class="nav-link <?= isMenuActive('master/voucher') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-ticket-alt nav-icon"></i>
-                                    <p>Voucher</p>
-                                </a>
-                            </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('master/satuan') ?>"
+                                class="nav-link <?= isMenuActive('master/satuan') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-ruler nav-icon"></i>
+                                <p>Satuan</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('master/voucher') ?>"
+                                class="nav-link <?= isMenuActive('master/voucher') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-ticket-alt nav-icon"></i>
+                                <p>Voucher</p>
+                            </a>
+                        </li>
                     </ul>
                 </li>
 
                 <!-- Outlet -->
-                <li class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-building"></i>
                         <p>
                             Outlet
@@ -123,8 +127,10 @@
                 </li>
 
                 <!-- Contact -->
-                <li class="nav-item has-treeview <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-users"></i>
                         <p>
                             Kontak
@@ -160,8 +166,10 @@
                 </li>
 
                 <!-- Payment -->
-                <li class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
-                    <a href="#" class="nav-link <?= isMenuActive(['master/platform', 'master/bank']) ? 'active' : '' ?>">
+                <li
+                    class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
+                    <a href="#"
+                        class="nav-link <?= isMenuActive(['master/platform', 'master/bank']) ? 'active' : '' ?>">
                         <i class="nav-icon fas fa-money-bill-wave"></i>
                         <p>
                             Pembayaran
@@ -187,41 +195,41 @@
                         </li> -->
                     </ul>
                 </li>
-                
+
                 <!-- Transaksi -->
                 <li class="nav-header">TRANSAKSI</li>
                 <?php
-                    // Integrate isMenuActive with all transaksi menu routes (Pembelian)
-                    $transaksiMenus = [
-                        'transaksi/po',
-                        'transaksi/po/create',
-                        'transaksi/beli',
-                        'transaksi/beli/create',
-                        'transaksi/retur/beli'
-                    ];
-                    $isTransaksiActive = isMenuActive($transaksiMenus);
+                // Integrate isMenuActive with all transaksi menu routes (Pembelian)
+                $transaksiMenus = [
+                    'transaksi/po',
+                    'transaksi/po/create',
+                    'transaksi/beli',
+                    'transaksi/beli/create',
+                    'transaksi/retur/beli'
+                ];
+                $isTransaksiActive = isMenuActive($transaksiMenus);
 
-                    // Integrate isMenuActive with all penjualan menu routes
-                    $penjualanMenus = [
-                        'transaksi/jual',
-                        'transaksi/jual/create',
-                        'transaksi/jual/cashier',
-                        'transaksi/jual/detail',
-                        'transaksi/jual/edit',
-                        // Add all retur jual routes for active state
-                        'transaksi/retur/jual',
-                        'transaksi/retur/jual/refund',
-                        'transaksi/retur/jual/exchange'
-                    ];
-                    $isPenjualanActive = isMenuActive($penjualanMenus);
+                // Integrate isMenuActive with all penjualan menu routes
+                $penjualanMenus = [
+                    'transaksi/jual',
+                    'transaksi/jual/create',
+                    'transaksi/jual/cashier',
+                    'transaksi/jual/detail',
+                    'transaksi/jual/edit',
+                    // Add all retur jual routes for active state
+                    'transaksi/retur/jual',
+                    'transaksi/retur/jual/refund',
+                    'transaksi/retur/jual/exchange'
+                ];
+                $isPenjualanActive = isMenuActive($penjualanMenus);
 
-                    // For Retur Penjualan submenu, check if any of the retur/jual routes are active
-                    $returJualMenus = [
-                        'transaksi/retur/jual',
-                        'transaksi/retur/jual/refund',
-                        'transaksi/retur/jual/exchange'
-                    ];
-                    $isReturJualActive = isMenuActive($returJualMenus);
+                // For Retur Penjualan submenu, check if any of the retur/jual routes are active
+                $returJualMenus = [
+                    'transaksi/retur/jual',
+                    'transaksi/retur/jual/refund',
+                    'transaksi/retur/jual/exchange'
+                ];
+                $isReturJualActive = isMenuActive($returJualMenus);
                 ?>
                 <li class="nav-item has-treeview <?= $isTransaksiActive ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= $isTransaksiActive ? 'active' : '' ?>">
@@ -233,35 +241,40 @@
                     </a>
                     <ul class="nav nav-treeview" <?= $isTransaksiActive ? 'style="display: block;"' : 'style="display: none;"' ?>>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/po/create') ?>" class="nav-link <?= isMenuActive('transaksi/po/create') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/po/create') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/po/create') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-shopping-cart nav-icon"></i>
                                 <p>Purchase Order</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/beli/create') ?>" class="nav-link <?= isMenuActive('transaksi/beli/create') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/beli/create') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/beli/create') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-cart-plus nav-icon"></i>
                                 <p>Faktur</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/po') ?>" class="nav-link <?= isMenuActive('transaksi/po') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/po') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/po') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Data Purchase Order</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/beli') ?>" class="nav-link <?= isMenuActive('transaksi/beli') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/beli') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/beli') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Data Pembelian</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/retur/beli') ?>" class="nav-link <?= isMenuActive('transaksi/retur/beli') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/retur/beli') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/retur/beli') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-undo nav-icon"></i>
                                 <p>Retur Pembelian</p>
@@ -279,21 +292,32 @@
                     </a>
                     <ul class="nav nav-treeview" <?= $isPenjualanActive ? 'style="display: block;"' : 'style="display: none;"' ?>>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/jual/cashier') ?>" class="nav-link <?= isMenuActive('transaksi/jual/cashier') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/jual/cashier') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/jual/cashier') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-cash-register nav-icon"></i>
                                 <p>Kasir</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/jual/create') ?>" class="nav-link <?= isMenuActive('transaksi/jual/create') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/jual/create') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/jual/create') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-plus nav-icon"></i>
                                 <p>Input Penjualan</p>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="<?= base_url('transaksi/jual') ?>" class="nav-link <?= isMenuActive('transaksi/jual') ? 'active' : '' ?>">
+                            <a href="<?= base_url('transaksi/jual') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/jual') ? 'active' : '' ?>">
+                                <?= nbs(3) ?>
+                                <i class="fas fa-list nav-icon"></i>
+                                <p>Data Penjualan Kasir</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= base_url('transaksi/jual') ?>"
+                                class="nav-link <?= isMenuActive('transaksi/jual') ? 'active' : '' ?>">
                                 <?= nbs(3) ?>
                                 <i class="fas fa-list nav-icon"></i>
                                 <p>Data Penjualan</p>
@@ -310,21 +334,24 @@
                             </a>
                             <ul class="nav nav-treeview" <?= $isReturJualActive ? 'style="display: block;"' : 'style="display: none;"' ?>>
                                 <li class="nav-item">
-                                    <a href="<?= base_url('transaksi/retur/jual') ?>" class="nav-link <?= isMenuActive('transaksi/retur/jual') && !isMenuActive('transaksi/retur/jual/refund') && !isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
+                                    <a href="<?= base_url('transaksi/retur/jual') ?>"
+                                        class="nav-link <?= isMenuActive('transaksi/retur/jual') && !isMenuActive('transaksi/retur/jual/refund') && !isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
                                         <?= nbs(4) ?>
                                         <i class="fas fa-list nav-icon"></i>
                                         <p>Data Retur</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="<?= base_url('transaksi/retur/jual/refund') ?>" class="nav-link <?= isMenuActive('transaksi/retur/jual/refund') ? 'active' : '' ?>">
+                                    <a href="<?= base_url('transaksi/retur/jual/refund') ?>"
+                                        class="nav-link <?= isMenuActive('transaksi/retur/jual/refund') ? 'active' : '' ?>">
                                         <?= nbs(4) ?>
                                         <i class="fas fa-money-bill-wave nav-icon"></i>
                                         <p>Retur Refund</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="<?= base_url('transaksi/retur/jual/exchange') ?>" class="nav-link <?= isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
+                                    <a href="<?= base_url('transaksi/retur/jual/exchange') ?>"
+                                        class="nav-link <?= isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
                                         <?= nbs(4) ?>
                                         <i class="fas fa-exchange-alt nav-icon"></i>
                                         <p>Retur Tukar Barang</p>
@@ -338,15 +365,15 @@
                 <!-- Warehouse -->
                 <li class="nav-header">GUDANG</li>
                 <?php
-                    // Integrate isMenuActive with all Gudang menu routes
-                    $gudangMenus = [
-                        'gudang/transfer',
-                        'gudang/penerimaan',
-                        'gudang/input_stok',
-                        'gudang/stok',
-                        'gudang/opname'
-                    ];
-                    $isGudangActive = isMenuActive($gudangMenus);
+                // Integrate isMenuActive with all Gudang menu routes
+                $gudangMenus = [
+                    'gudang/transfer',
+                    'gudang/penerimaan',
+                    'gudang/input_stok',
+                    'gudang/stok',
+                    'gudang/opname'
+                ];
+                $isGudangActive = isMenuActive($gudangMenus);
                 ?>
                 <li class="nav-item has-treeview <?= $isGudangActive ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= $isGudangActive ? 'active' : '' ?>">
@@ -403,14 +430,14 @@
                 <!-- Reports -->
                 <li class="nav-header">LAPORAN</li>
                 <?php
-                    // Integrate isMenuActive with all Laporan menu routes
-                    $laporanMenus = [
-                        'laporan/sale',
-                        'laporan/purchase',
-                        'laporan/stock',
-                        'laporan/outlet'
-                    ];
-                    $isLaporanActive = isMenuActive($laporanMenus);
+                // Integrate isMenuActive with all Laporan menu routes
+                $laporanMenus = [
+                    'laporan/sale',
+                    'laporan/purchase',
+                    'laporan/stock',
+                    'laporan/outlet'
+                ];
+                $isLaporanActive = isMenuActive($laporanMenus);
                 ?>
                 <li class="nav-item has-treeview <?= $isLaporanActive ? 'menu-open' : '' ?>">
                     <a href="#" class="nav-link <?= $isLaporanActive ? 'active' : '' ?>">

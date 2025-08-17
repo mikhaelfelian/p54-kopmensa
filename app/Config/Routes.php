@@ -313,6 +313,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
 
     // Sales Transaction Routes
     $routes->get('jual', 'TransJual::index');
+    $routes->get('jual/cashier-data', 'TransJual::data_penjualan_kasir');
     $routes->get('jual/cashier', 'TransJual::cashier');
     $routes->get('jual/create', 'TransJual::create');
     $routes->post('jual/store', 'TransJual::store');
