@@ -30,13 +30,13 @@ helper('form');
                         <div class="input-group-append">
                             <button type="button" class="btn btn-outline-secondary" id="clearSearch">
                                 <i class="fas fa-times"></i>
-                    </button>
+                            </button>
                             <button type="button" class="btn btn-outline-info" id="testSearch"
                                 title="Test basic search">
                                 <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
+                            </button>
+                        </div>
+                    </div>
                     <div class="d-flex align-items-center">
                     </div>
                 </div>
@@ -67,13 +67,13 @@ helper('form');
                                 </li>
                             <?php endif; ?>
                         </ul>
-        </div>
-    </div>
+                    </div>
+                </div>
 
                 <!-- Product Grid -->
                 <div class="row" id="productGrid">
                     <!-- Products will be loaded here -->
-            </div>
+                </div>
 
                 <!-- Loading Indicator -->
                 <div id="productLoading" class="text-center py-4" style="display: none;">
@@ -87,10 +87,10 @@ helper('form');
                 <div id="loadMoreContainer" class="text-center mt-3" style="display: none;">
                     <button type="button" class="btn btn-primary btn-lg" id="loadMoreProducts">
                         <i class="fas fa-arrow-down"></i> Lanjutkan
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Right Column - Order Management -->
@@ -105,13 +105,13 @@ helper('form');
                 <div class="mb-3">
                     <label for="warehouse_id" class="form-label">Pilih Outlet</label>
                     <select class="form-control form-control-sm" id="warehouse_id">
-                            <option value="">Pilih Outlet</option>
-                            <?php foreach ($outlets as $outlet): ?>
-                                <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <option value="">Pilih Outlet</option>
+                        <?php foreach ($outlets as $outlet): ?>
+                            <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
-                
+
                 <!-- Customer Selection -->
                 <div class="form-group customer-type-radio mb-3">
                     <h6 class="text-muted">#Pesanan Baru</h6>
@@ -124,68 +124,72 @@ helper('form');
                             <input type="radio" name="customerType" id="customerTypeAnggota" value="anggota"
                                 autocomplete="off"> Anggota
                         </label>
-                </div>
+                    </div>
 
-                <!-- Scan Anggota Field (hidden by default) -->
+                    <!-- Scan Anggota Field (hidden by default) -->
                     <div class="form-group scan-anggota-field mb-3" id="scanAnggotaGroup" style="display: none;">
-                    <label for="scanAnggota">Scan QR Code Anggota</label>
-                    <div class="input-group">
+                        <label for="scanAnggota">Scan QR Code Anggota</label>
+                        <div class="input-group">
                             <input type="text" class="form-control form-control-sm" id="scanAnggota"
                                 placeholder="Scan QR code atau ketik nomor kartu">
-                        <div class="input-group-append">
+                            <div class="input-group-append">
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="openQrScanner">
-                                <i class="fas fa-camera"></i>
-                            </button>
+                                    <i class="fas fa-camera"></i>
+                                </button>
                                 <button type="button" class="btn btn-outline-secondary btn-sm" id="searchAnggota">
-                                <i class="fas fa-qrcode"></i>
-                            </button>
+                                    <i class="fas fa-qrcode"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle"></i>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
                             Scan QR code atau ketik nomor kartu anggota
-                    </small>
+                        </small>
 
-                    <!-- QR Scanner Modal -->
+                        <!-- QR Scanner Modal -->
                         <div class="modal fade qr-scanner-modal rounded-0" id="qrScannerModal" tabindex="-1"
                             role="dialog">
-                        <div class="modal-dialog modal-lg" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Scan QR Code Anggota</h5>
-                                    <button type="button" class="close" data-dismiss="modal">
-                                        <span>&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body text-center">
-                                    <div id="qrScannerContainer" class="qr-scanner-container">
-                                        <video id="qrVideo" width="100%" height="400"
-                                            style="border: 1px solid #ddd;"></video>
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Scan QR Code Anggota</h5>
+                                        <button type="button" class="close" data-dismiss="modal">
+                                            <span>&times;</span>
+                                        </button>
                                     </div>
-                                    <div id="qrScannerStatus" class="qr-scanner-status mt-2">
-                                        <p class="text-muted">Mengaktifkan kamera...</p>
+                                    <div class="modal-body text-center">
+                                        <div id="qrScannerContainer" class="qr-scanner-container">
+                                            <video id="qrVideo" width="100%" height="400"
+                                                style="border: 1px solid #ddd;"></video>
+                                        </div>
+                                        <div id="qrScannerStatus" class="qr-scanner-status mt-2">
+                                            <p class="text-muted">Mengaktifkan kamera...</p>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="modal-footer">
+                                                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-info rounded-0 me-2" id="flipCamera">
+                                            <i class="fas fa-sync-alt"></i> Flip Camera
+                                        </button>
                                         <button type="button" class="btn btn-secondary rounded-0"
-                                            data-dismiss="modal">Tutup</button>
+                                            data-dismiss="modal">Tutup
+                                        </button>
                                 </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
+                            <div class="alert alert-info alert-sm">
+                                <strong>Anggota:</strong> <span id="anggotaNama"></span><br>
+                                <small>No. Kartu: <span id="anggotaNoKartu"></span></small>
                             </div>
                         </div>
                     </div>
 
-                    <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
-                            <div class="alert alert-info alert-sm">
-                            <strong>Anggota:</strong> <span id="anggotaNama"></span><br>
-                            <small>No. Kartu: <span id="anggotaNoKartu"></span></small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hidden fields for customer data -->
-                <input type="hidden" id="selectedCustomerId" name="selectedCustomerId" value="2">
-                <input type="hidden" id="selectedCustomerName" name="selectedCustomerName" value="">
-                <input type="hidden" id="selectedCustomerType" name="selectedCustomerType" value="umum">
+                    <!-- Hidden fields for customer data -->
+                    <input type="hidden" id="selectedCustomerId" name="selectedCustomerId" value="2">
+                    <input type="hidden" id="selectedCustomerName" name="selectedCustomerName" value="">
+                    <input type="hidden" id="selectedCustomerType" name="selectedCustomerType" value="umum">
 
                     <!-- Cart Area -->
                     <div class="cart-area mb-3">
@@ -241,54 +245,54 @@ helper('form');
                                     </tr>
                                 </tfoot>
                             </table>
-                    </div>
-                </div>
-
-
-                <!-- Payment Summary -->
-                <div class="border rounded p-3 mb-3">
-                    <div class="row mb-2">
-                        <div class="col-6">Subtotal:</div>
-                        <div class="col-6 text-right">
-                            <span id="subtotalDisplay">Rp 0</span>
                         </div>
                     </div>
 
-                    <div class="row mb-2">
-                        <div class="col-6">Diskon:</div>
-                        <div class="col-6">
-                            <?= form_input([
-                                'type' => 'number',
-                                'class' => 'form-control form-control-sm rounded-0',
-                                'id' => 'discountPercent',
-                                'placeholder' => '%',
-                                'step' => '0.01'
-                            ]); ?>
-                        </div>
-                    </div>
 
-                    <div class="row mb-2">
-                        <div class="col-6">Voucher:</div>
-                        <div class="col-6">
-                            <?= form_input([
-                                'type' => 'text',
-                                'class' => 'form-control form-control-sm rounded-0',
-                                'id' => 'voucherCode',
-                                'placeholder' => 'Kode voucher'
-                            ]); ?>
-                            <small class="text-muted" id="voucherInfo"></small>
-                            <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
-                            <input type="hidden" id="voucherId" name="voucherId" value="">
-                            <input type="hidden" id="voucherType" name="voucherType" value="">
-                            <input type="hidden" id="voucherDiscountAmount" name="voucherDiscountAmount" value="0">
+                    <!-- Payment Summary -->
+                    <div class="border rounded p-3 mb-3">
+                        <div class="row mb-2">
+                            <div class="col-6">Subtotal:</div>
+                            <div class="col-6 text-right">
+                                <span id="subtotalDisplay">Rp 0</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row mb-2" id="voucherDiscountRow" style="display: none;">
-                        <div class="col-6">Potongan Voucher:</div>
-                        <div class="col-6 text-right">
-                            <span id="voucherDiscountDisplay">Rp 0</span>
+                        <div class="row mb-2">
+                            <div class="col-6">Diskon:</div>
+                            <div class="col-6">
+                                <?= form_input([
+                                    'type' => 'number',
+                                    'class' => 'form-control form-control-sm rounded-0',
+                                    'id' => 'discountPercent',
+                                    'placeholder' => '%',
+                                    'step' => '0.01'
+                                ]); ?>
+                            </div>
                         </div>
+
+                        <div class="row mb-2">
+                            <div class="col-6">Voucher:</div>
+                            <div class="col-6">
+                                <?= form_input([
+                                    'type' => 'text',
+                                    'class' => 'form-control form-control-sm rounded-0',
+                                    'id' => 'voucherCode',
+                                    'placeholder' => 'Kode voucher'
+                                ]); ?>
+                                <small class="text-muted" id="voucherInfo"></small>
+                                <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
+                                <input type="hidden" id="voucherId" name="voucherId" value="">
+                                <input type="hidden" id="voucherType" name="voucherType" value="">
+                                <input type="hidden" id="voucherDiscountAmount" name="voucherDiscountAmount" value="0">
+                            </div>
+                        </div>
+
+                        <div class="row mb-2" id="voucherDiscountRow" style="display: none;">
+                            <div class="col-6">Potongan Voucher:</div>
+                            <div class="col-6 text-right">
+                                <span id="voucherDiscountDisplay">Rp 0</span>
+                            </div>
                         </div>
                     </div>
 
@@ -296,11 +300,12 @@ helper('form');
                     <div class="border rounded p-3 mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0">Metode Pembayaran</h6>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-0" id="addPaymentMethod">
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-0"
+                                id="addPaymentMethod">
                                 <i class="fas fa-plus"></i> Tambah
                             </button>
                         </div>
-                        
+
                         <div id="paymentMethods">
                             <!-- Payment methods will be added here -->
                         </div>
@@ -310,62 +315,62 @@ helper('form');
                             <div class="row mb-2">
                                 <div class="col-6">Total Bayar:</div>
                                 <div class="col-6 text-right">
-                                <span id="grandTotalPayment">Rp 0</span>
-                            </div>
+                                    <span id="grandTotalPayment">Rp 0</span>
+                                </div>
                             </div>
                             <div class="row mb-2" id="remainingPayment" style="display: none;">
                                 <div class="col-6">Kurang:</div>
                                 <div class="col-6 text-right text-danger">
                                     <span id="remainingAmount">Rp 0</span>
-                        </div>
+                                </div>
                             </div>
                             <div class="row mb-2" id="changePayment" style="display: none;">
                                 <div class="col-6">Kembalian:</div>
                                 <div class="col-6 text-right text-success">
                                     <span id="changeAmount">Rp 0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Action Buttons -->
-                <div class="row">
-                    <div class="col-12 mb-2">
-                        <button type="button" class="btn btn-info btn-block rounded-0" id="showDraftList">
-                            <i class="fas fa-list"></i> Daftar Draft
-                        </button>
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <button type="button" class="btn btn-info btn-block rounded-0" id="showDraftList">
+                                <i class="fas fa-list"></i> Daftar Draft
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button type="button" class="btn btn-success btn-block rounded-0" id="completeTransaction">
+                                <i class="fas fa-check"></i> Proses
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button type="button" class="btn btn-warning btn-block rounded-0" id="saveAsDraft">
+                                <i class="fas fa-save"></i> Draft
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button type="button" class="btn btn-info btn-block rounded-0" onclick="quickPrint()">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                        </div>
+                        <div class="col-3">
+                            <button type="button" class="btn btn-danger btn-block rounded-0" id="cancelTransaction">
+                                <i class="fas fa-times"></i> Batal
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-3">
-                        <button type="button" class="btn btn-success btn-block rounded-0" id="completeTransaction">
-                            <i class="fas fa-check"></i> Proses
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button type="button" class="btn btn-warning btn-block rounded-0" id="saveAsDraft">
-                            <i class="fas fa-save"></i> Draft
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button type="button" class="btn btn-info btn-block rounded-0" onclick="quickPrint()">
-                            <i class="fas fa-print"></i> Print
-                        </button>
-                    </div>
-                    <div class="col-3">
-                        <button type="button" class="btn btn-danger btn-block rounded-0" id="cancelTransaction">
-                            <i class="fas fa-times"></i> Batal
-                        </button>
-                    </div>
-                    </div>                    
                 </div>
             </div>
             <div class="card-footer">
                 <a href="<?= base_url('transaksi/jual') ?>" class="btn btn-primary rounded-0">
                     &laquo; Kembali
                 </a>
-                </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <!-- Transaction Complete Modal -->
@@ -781,6 +786,24 @@ helper('form');
         color: #6c757d !important;
     }
 
+    /* Flip Camera Button Styling */
+    #flipCamera {
+        transition: all 0.3s ease;
+    }
+
+    #flipCamera:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    }
+
+    #flipCamera:active {
+        transform: scale(0.95);
+    }
+
+    #flipCamera i {
+        margin-right: 5px;
+    }
+
     /* Cart table scrollable styles */
     .cart-table-container {
         max-height: 400px;
@@ -1022,10 +1045,10 @@ helper('form');
         if ($('#warehouse_id').val()) {
             loadProducts();
         }
-        
+
         // Initialize payment methods
         addPaymentMethod(); // Add first payment method by default
-        
+
         // Initialize payment calculation
         calculatePaymentTotals();
 
@@ -1341,6 +1364,11 @@ helper('form');
             openQrScanner();
         });
 
+        // Flip Camera button click
+        $('#flipCamera').on('click', function () {
+            flipCamera();
+        });
+
         // Manual input button in QR scanner modal
         $('#manualInputBtn').on('click', function () {
             $('#qrScannerModal').modal('hide');
@@ -1407,7 +1435,7 @@ helper('form');
 
         // Test search button
         $('#testSearch').on('click', function () {
-    
+
             const warehouseId = $('#warehouse_id').val();
             if (!warehouseId) {
                 toastr.warning('Silakan pilih outlet terlebih dahulu');
@@ -1452,9 +1480,9 @@ helper('form');
 
         let platformOptions = '<option value="">Pilih Platform</option>';
         if (platforms && platforms.length > 0) {
-        platforms.forEach(platform => {
-            platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
-        });
+            platforms.forEach(platform => {
+                platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
+            });
         }
 
         const paymentHtml = `
@@ -1547,13 +1575,13 @@ helper('form');
     `;
 
         $('#paymentMethods').append(paymentHtml);
-        
+
         // Initialize the first payment method as cash by default
         if (paymentCounter === 1) {
             const firstPaymentRow = $('.payment-method-row').first();
             firstPaymentRow.find('.payment-type').val('1').trigger('change');
         }
-        
+
         calculatePaymentTotals();
     }
 
@@ -1648,30 +1676,30 @@ helper('form');
 
         // Update displays with formatted currency (showing dots as thousand separator)
         if ($('#grandTotalPayment').length) {
-        $('#grandTotalPayment').text(formatCurrency(grandTotal));
+            $('#grandTotalPayment').text(formatCurrency(grandTotal));
         }
         if ($('#totalPaidAmount').length) {
-        $('#totalPaidAmount').text(formatCurrency(totalPaid));
+            $('#totalPaidAmount').text(formatCurrency(totalPaid));
         }
 
         const remaining = grandTotal - totalPaid;
 
         if (remaining > 0) {
             if ($('#remainingAmount').length) {
-            $('#remainingAmount').text(formatCurrency(remaining));
-            $('#remainingPayment').show();
-            $('#changePayment').hide();
+                $('#remainingAmount').text(formatCurrency(remaining));
+                $('#remainingPayment').show();
+                $('#changePayment').hide();
             }
         } else if (remaining < 0) {
             if ($('#changeAmount').length) {
-            $('#changeAmount').text(formatCurrency(Math.abs(remaining)));
-            $('#remainingPayment').hide();
-            $('#changePayment').show();
+                $('#changeAmount').text(formatCurrency(Math.abs(remaining)));
+                $('#remainingPayment').hide();
+                $('#changePayment').show();
             }
         } else {
             if ($('#remainingPayment').length && $('#changePayment').length) {
-            $('#remainingPayment').hide();
-            $('#changePayment').hide();
+                $('#remainingPayment').hide();
+                $('#changePayment').hide();
             }
         }
     }
@@ -1934,9 +1962,9 @@ helper('form');
                     // Update cart display and totals
                     updateCartDisplay();
                     calculateTotal();
-        
-        // Also update payment totals
-        calculatePaymentTotals();
+
+                    // Also update payment totals
+                    calculatePaymentTotals();
 
                     // Clear search field but don't focus to prevent mobile keyboard
                     $('#productSearch').val('');
@@ -2460,8 +2488,6 @@ helper('form');
             return;
         }
 
-
-
         // Calculate grand total (needed for both draft and completed transactions)
         const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
 
@@ -2612,7 +2638,7 @@ helper('form');
                 console.error('XHR Status:', xhr.status);
                 console.error('Response Text:', xhr.responseText);
                 console.error('Status:', status);
-                
+
                 // Try to parse response for more details
                 try {
                     const response = JSON.parse(xhr.responseText);
@@ -2620,7 +2646,7 @@ helper('form');
                     if (response.message) {
                         toastr.error('Error: ' + response.message);
                     } else {
-                toastr.error('Terjadi kesalahan saat memproses transaksi');
+                        toastr.error('Terjadi kesalahan saat memproses transaksi');
                     }
                 } catch (e) {
                     console.error('Could not parse response as JSON');
@@ -2818,128 +2844,106 @@ helper('form');
     }
 
     /**
-     * Generate receipt HTML content
+     * Generate receipt HTML content (dot matrix style, matches provided sample)
      */
     function generateReceiptHTML(transactionData) {
-        const { no_nota, customer_name, customer_type, items, subtotal, discount, voucher, ppn, total, payment_methods, date, outlet } = transactionData;
+        // Destructure transaction data
+        const {
+            no_nota,
+            customer_name,
+            customer_type,
+            items,
+            subtotal,
+            discount,
+            voucher,
+            ppn,
+            total,
+            payment_methods,
+            date,
+            outlet,
+            user,
+            cashier,
+            sales_type = 'Normal'
+        } = transactionData;
 
-        let itemsHTML = '';
-        items.forEach(item => {
-            itemsHTML += `
-            <div class="item">
-                <div>${item.name}</div>
-                <div>${item.quantity} x ${formatCurrency(item.price)} = ${formatCurrency(item.total)}</div>
-            </div>
-        `;
-        });
-
-        let paymentHTML = '';
-        if (payment_methods && payment_methods.length > 0) {
-            paymentHTML += '<div style="margin-bottom: 5px;"><strong>METODE PEMBAYARAN:</strong></div>';
-            payment_methods.forEach(pm => {
-                let methodName = 'Unknown';
-                let methodIcon = '💳';
-
-                if (pm.type === '1') {
-                    methodName = 'TUNAI';
-                    methodIcon = '💵';
-                } else if (pm.type === '2') {
-                    methodName = 'NON TUNAI';
-                    methodIcon = '💳';
-                } else if (pm.type === '3') {
-                    methodName = 'PIUTANG';
-                    methodIcon = '📝';
-                }
-
-                paymentHTML += `
-                <div class="payment-method-item">
-                    <span>${methodIcon} ${methodName}</span>
-                    <span style="font-weight: bold;">${formatCurrency(pm.amount)}</span>
-                </div>
-            `;
-            });
-
-            // Add total payment
-            const totalPayment = payment_methods.reduce((sum, pm) => sum + parseFloat(pm.amount), 0);
-            paymentHTML += `
-            <div class="payment-total">
-                TOTAL PEMBAYARAN: ${formatCurrency(totalPayment)}
-            </div>
-        `;
-
-            // Add change if applicable
-            if (totalPayment > total) {
-                const change = totalPayment - total;
-                paymentHTML += `
-                <div class="payment-change">
-                    KEMBALIAN: ${formatCurrency(change)}
-                </div>
-            `;
-            }
+        // Helper for right-align numbers
+        function padLeft(str, len) {
+            str = String(str);
+            return ' '.repeat(Math.max(0, len - str.length)) + str;
         }
 
-        return `
-        <div class="receipt">
-            <div class="header">
-                <h3>KOPMENSA</h3>
-                <div>${outlet}</div>
-                <div>${date}</div>
-                <div>No: ${no_nota}</div>
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="customer">
-                <div>Customer: ${customer_name}</div>
-                <div>Type: ${customer_type}</div>
-            </div>
-            
-            ${payment_methods && payment_methods.length > 0 ? `
-                <div class="divider"></div>
-                <div style="text-align: center; font-weight: bold; color: #007bff; margin: 5px 0;">
-                    💳 METODE PEMBAYARAN: ${payment_methods.map(pm => {
-            if (pm.type === '1') return 'TUNAI';
-            if (pm.type === '2') return 'NON TUNAI';
-            if (pm.type === '3') return 'PIUTANG';
-            return 'UNKNOWN';
-        }).join(' + ')}
-                </div>
-            ` : ''}
-            
-            <div class="divider"></div>
-            
-            <div class="items">
-                ${itemsHTML}
-            </div>
-            
-            <div class="divider"></div>
-            
-            <div class="summary">
-                <div>Subtotal: ${formatCurrency(subtotal)}</div>
-                ${discount > 0 ? `<div>Diskon: ${discount}%</div>` : ''}
-                ${voucher ? `<div>Voucher: ${voucher}</div>` : ''}
-                <div>PPN (${ppn}%): ${formatCurrency(subtotal * ppn / 100)}</div>
-                <div class="total">TOTAL: ${formatCurrency(total)}</div>
-            </div>
-            
-            ${paymentHTML ? `
-                <div class="divider"></div>
-                <div class="payment">
-                    ${paymentHTML}
-                </div>
-            ` : ''}
-            
+        // Helper for left-align
+        function padRight(str, len) {
+            str = String(str);
+            return str + ' '.repeat(Math.max(0, len - str.length));
+        }
 
-            
-            <div class="divider"></div>
-            
-            <div class="footer">
-                <div>Terima kasih atas kunjungan Anda</div>
-                <div>Barang yang sudah dibeli tidak dapat dikembalikan</div>
-                <div>Powered by Kopmensa System</div>
-            </div>
-        </div>
-    `;
+        // Format date (if not already formatted)
+        let dateStr = date;
+        if (date && date instanceof Date) {
+            dateStr = date.toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Items block
+        let itemsHTML = '';
+        items.forEach(item => {
+            // Item name (first line)
+            itemsHTML += `<div style="font-family:monospace;">${padRight(item.name, 32)}</div>`;
+            // Second line: variant/notes if any (not in sample, but can be added)
+            // Third line: qty x price
+            itemsHTML += `<div style="font-family:monospace;">
+                ${item.quantity}x ${padLeft(numberFormat(item.price), 8)}
+                ${padLeft(numberFormat(item.total), 16)}
+            </div>`;
+        });
+
+        // Payment block
+        let paymentHTML = '';
+        let totalPayment = 0;
+        let change = 0;
+        if (payment_methods && payment_methods.length > 0) {
+            paymentHTML += `<div style="font-family:monospace;">Tender</div>`;
+            payment_methods.forEach(pm => {
+                let methodName = '';
+                if (pm.type === '1') methodName = 'Cash';
+                else if (pm.type === '2') methodName = 'Non Tunai';
+                else if (pm.type === '3') methodName = 'Piutang';
+                else methodName = 'Other';
+                paymentHTML += `<div style="font-family:monospace;">
+                    ${padRight(methodName, 8)}${padLeft(numberFormat(pm.amount), 24)}
+                </div>`;
+                totalPayment += parseFloat(pm.amount);
+            });
+            change = totalPayment - total;
+        }
+
+        // Compose HTML
+        return `
+<div style="font-family:monospace; font-size:13px; max-width:300px; margin:auto;">
+${padRight('Date', 12)}: ${dateStr || '-'}<br>
+${padRight('Order Number', 12)}: ${no_nota || '-'}<br>
+${padRight('Sales Type', 12)}: ${sales_type}<br>
+${padRight('User', 12)}: ${user || cashier || '-'}<br>
+${padRight('Cashier', 12)}: ${cashier || user || '-'}<br>
+<hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
+<div style="text-align:center;font-weight:bold;">** REPRINT BILL **</div>
+<hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
+${itemsHTML}
+<hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
+<div style="font-family:monospace;">
+Total Item ${items.length}
+</div>
+<hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
+<div style="font-family:monospace;">
+${padRight('Total', 8)}${padLeft(numberFormat(total), 24)}
+</div>
+${paymentHTML}
+<div style="font-family:monospace;">
+${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
+</div>
+<hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
+</div>
+        `;
     }
 
     /**
@@ -3001,8 +3005,8 @@ helper('form');
         window.open('<?= base_url('transaksi/jual') ?>?search=' + transactionId, '_blank');
     }
 
-        // Load available printers
-        loadPrinters();
+    // Load available printers
+    loadPrinters();
 
     // Printer functionality
     function loadPrinters() {
@@ -3262,13 +3266,20 @@ helper('form');
     // QR Scanner Functions
     let qrScanner = null;
     let qrStream = null;
+    let currentCameraFacing = 'environment'; // 'environment' for back camera, 'user' for front camera
 
-    function openQrScanner() {
+        function openQrScanner() {
         // Reset scanner state first
         qrScanner = false;
         if (qrStream) {
             stopQrScanner();
         }
+
+        // Reset camera facing to back camera by default
+        currentCameraFacing = 'environment';
+        
+        // Update button text
+        $('#flipCamera').html('<i class="fas fa-sync-alt"></i> Front Camera');
 
         // Show modal first
         $('#qrScannerModal').modal('show');
@@ -3295,7 +3306,7 @@ helper('form');
 
         navigator.mediaDevices.getUserMedia({
             video: {
-                facingMode: 'environment',
+                facingMode: currentCameraFacing,
                 width: { ideal: 640 },
                 height: { ideal: 480 }
             }
@@ -3311,9 +3322,9 @@ helper('form');
                     if (playPromise !== undefined) {
                         playPromise
                             .then(function () {
-                status.innerHTML = '<p class="text-success"><i class="fas fa-camera"></i> Kamera aktif. Arahkan ke QR code</p>';
-                // Start QR code detection
-                startQrDetection(video);
+                                status.innerHTML = '<p class="text-success"><i class="fas fa-camera"></i> Kamera aktif. Arahkan ke QR code</p>';
+                                // Start QR code detection
+                                startQrDetection(video);
                             })
                             .catch(function (err) {
                                 console.error('Video play error:', err);
@@ -3393,7 +3404,7 @@ helper('form');
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (code) {
-                
+
 
                 // Stop scanning to prevent multiple detections
                 stopQrScanner();
@@ -3429,7 +3440,7 @@ helper('form');
                         track.stop();
                     }
                 });
-            qrStream = null;
+                qrStream = null;
             } catch (error) {
                 console.error('Error stopping camera tracks:', error);
             }
@@ -3445,9 +3456,9 @@ helper('form');
                 }
 
                 // Clear source
-        if (video.srcObject) {
-            video.srcObject = null;
-        }
+                if (video.srcObject) {
+                    video.srcObject = null;
+                }
 
                 // Reset video element
                 video.load();
@@ -3464,8 +3475,33 @@ helper('form');
         // Update status
         const status = document.getElementById('qrScannerStatus');
         if (status) {
-        status.innerHTML = '<p class="text-muted">Kamera dinonaktifkan</p>';
+            status.innerHTML = '<p class="text-muted">Kamera dinonaktifkan</p>';
         }
+    }
+
+    // Function to flip camera between front and back
+    function flipCamera() {
+        if (!qrStream) {
+            toastr.warning('Kamera belum aktif');
+            return;
+        }
+
+        // Toggle camera facing mode
+        currentCameraFacing = currentCameraFacing === 'environment' ? 'user' : 'environment';
+        
+        // Update button text
+        const buttonText = currentCameraFacing === 'environment' ? 'Front Camera' : 'Back Camera';
+        $('#flipCamera').html(`<i class="fas fa-sync-alt"></i> ${buttonText}`);
+        
+        // Stop current stream
+        stopQrScanner();
+        
+        // Restart scanner with new camera
+        setTimeout(() => {
+            startQrScanner();
+        }, 500);
+        
+        toastr.info(`Switched to ${currentCameraFacing === 'environment' ? 'back' : 'front'} camera`);
     }
 
     // Function to handle QR code scan result (called by QR library)
@@ -3503,7 +3539,7 @@ helper('form');
         }
 
         if (customerId && customerId.toString().trim() !== '') {
-        // Set the scanned data in the input field
+            // Set the scanned data in the input field
             $('#scanAnggota').val(customerId);
 
             // If we have customer name, set it directly
@@ -3514,8 +3550,8 @@ helper('form');
                 $('#customerInfoDisplay').show();
                 toastr.success('Anggota ditemukan: ' + customerName);
             } else {
-        // Automatically search for the customer
-        searchAnggota();
+                // Automatically search for the customer
+                searchAnggota();
             }
         } else {
             toastr.error('Data QR code tidak valid. Format tidak dikenali.');
@@ -3607,8 +3643,8 @@ helper('form');
 
                         // Load cart items
                         if (draft.items && draft.items.length > 0) {
-                            cart = draft.items;
-                            currentDraftId = draft.id; // Store draft ID for later processing
+                            cart            = draft.items;
+                            currentDraftId  = draft.id; // Store draft ID for later processing
                             updateCartDisplay();
                             calculateTotal();
                         }
