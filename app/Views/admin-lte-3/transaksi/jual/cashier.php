@@ -1986,7 +1986,7 @@ helper('form');
                     <div class="product-grid-item rounded-0" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
                         <div class="product-image" style="width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin:auto;">
                             <img src="${base_url}${imageSrc}" alt="${itemName}" class="product-thumbnail"
-                                 style="width:150px; height:150px; object-fit:cover;"
+                                 style="width:100%; max-width:150px; height:auto; aspect-ratio:1/1; object-fit:cover;"
                                  onerror="this.onerror=null;this.src='${defaultImage}'">
                                 </div>
                         <div class="product-info">
@@ -2153,7 +2153,7 @@ helper('form');
                             <div class="product-grid-item rounded-0" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
                                 <div class="product-image" style="width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin:auto;">
                                     <img src="${image}" alt="${itemName}" class="product-thumbnail" 
-                                         style="width:150px; height:150px; object-fit:cover;"
+                                         style="max-width:150px; max-height:150px; width:auto; height:auto; object-fit:cover;"
                                          onerror="this.src='<?= base_url('public/assets/theme/admin-lte-3/dist/img/default.png') ?>'">
                                 </div>
                                 <div class="product-info">
