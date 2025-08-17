@@ -8,25 +8,37 @@ use CodeIgniter\Config\BaseService;
  * Services Configuration file.
  *
  * Services are simply other classes/libraries that the system uses
- * to do its job. This is used by CodeIgniter to allow the core of the
- * framework to be swapped out easily without affecting the usage within
- * the rest of your application.
+ * to do its job. These are often used by the core classes to
+ * do the heavy lifting they need to do. The Services class provides
+ * a convenient way to get and set these classes.
  *
- * This file holds any application-specific services, or service overrides
- * that you might need. An example has been included with the general
- * method format you should use for your service methods. For more examples,
- * see the core Services file at system/Config/Services.php.
+ * @see http://codeigniter4.github.io/CodeIgniter4/concepts/services.html
  */
 class Services extends BaseService
 {
     /*
-     * public static function example($getShared = true)
-     * {
-     *     if ($getShared) {
-     *         return static::getSharedInstance('example');
-     *     }
-     *
-     *     return new \CodeIgniter\Example();
-     * }
+     | -------------------------------------------------------------------
+     | Factories
+     | -------------------------------------------------------------------
+     |
+     | You can change the namespace of the ORM factory by setting the
+     | $factoriesNamespace property. The factory method can then be
+     | called with the short class name, or the full class name.
+     |
+     | $factoriesNamespace = 'App\Factories';
+     | $db = Factories::database();
+     |
      */
+
+    /**
+     * The permission service for handling access control
+     */
+    public static function permission($getShared = true)
+    {
+        if ($getShared) {
+            return static::getSharedInstance('permission');
+        }
+
+        return new \App\Services\PermissionService();
+    }
 }

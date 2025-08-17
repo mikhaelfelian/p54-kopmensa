@@ -33,7 +33,19 @@ class Pengaturan extends BaseController
             'validation'    => $this->validation
         ];
 
-        return view($this->theme->getThemePath() . '/pengaturan/app/form_pengaturan', $data);
+        return view('admin-lte-3/pengaturan/app/form_pengaturan', $data);
+    }
+
+    public function apiTokens()
+    {
+        $data = [
+            'title'         => 'API Tokens',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'validation'    => $this->validation
+        ];
+
+        return view('admin-lte-3/pengaturan/api_tokens/index', $data);
     }
 
     public function update()

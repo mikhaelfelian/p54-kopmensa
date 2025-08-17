@@ -102,5 +102,6 @@ class Autoload extends AutoloadConfig
         'debug',
         'angka',
         'tanggalan',
+        'permission',
     ];
 }

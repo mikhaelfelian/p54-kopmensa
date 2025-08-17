@@ -347,10 +347,17 @@ public function getItemWithRelations($id)
      *
      * @param int $warehouseId
      * @param string|null $search
+     * @param int|null $categoryId
+     * @param int|null $limit
+     * @param int|null $offset
      * @return array
      */
-    public function getItemsByWarehouse($warehouseId, $search = null)
+    public function getItemsByWarehouse($warehouseId, $search = null, $categoryId = null, $limit = null, $offset = null)
     {
+        // Ensure parameters are properly typed
+        $warehouseId = (int)$warehouseId;
+        $categoryId = $categoryId !== null && $categoryId !== '' ? (int)$categoryId : null;
+        
         $builder = $this->select('
                     tbl_m_item.*,
                     COALESCE(tbl_m_item_stok.jml, 0) as stok,
@@ -361,9 +368,14 @@ public function getItemWithRelations($id)
                 ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
                 ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
                 ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-                ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id AND tbl_m_item_stok.id_gudang = ' . (int)$warehouseId, 'left')
+                ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id AND tbl_m_item_stok.id_gudang = ' . $warehouseId, 'left')
                 ->where('tbl_m_item.status_hps', '0')
                 ->where('tbl_m_item.status', '1');
+
+        // Add category filter if provided
+        if (!empty($categoryId)) {
+            $builder->where('tbl_m_item.id_kategori', $categoryId);
+        }
 
         // Add search conditions if search term is provided
         if (!empty($search)) {
@@ -376,6 +388,82 @@ public function getItemWithRelations($id)
                     ->groupEnd();
         }
 
-        return $builder->orderBy('tbl_m_item.item', 'DESC')->findAll();
+        // Apply limit and offset for pagination
+        if ($limit !== null) {
+            $builder->limit((int)$limit);
+            if ($offset !== null) {
+                $builder->offset((int)$offset);
+            }
+        }
+
+        // Debug: Log the SQL query
+        $sql = $builder->getCompiledSelect();
+        log_message('info', 'getItemsByWarehouse SQL: ' . $sql);
+        log_message('info', 'Parameters - warehouseId: ' . $warehouseId . ', search: ' . $search . ', categoryId: ' . $categoryId . ', limit: ' . $limit . ', offset: ' . $offset);
+
+        $result = $builder->orderBy('tbl_m_item.item', 'DESC')->findAll();
+        log_message('info', 'getItemsByWarehouse result count: ' . count($result));
+        
+        return $result;
     }
+
+    /**
+     * Get items with relations active using direct limit/offset for AJAX pagination
+     * This method is optimized for cashier interface performance
+     *
+     * @param int|null $limit
+     * @param string|null $keyword
+     * @param int|null $kategori
+     * @param int|null $offset
+     * @return array
+     */
+    public function getItemsWithRelationsActiveLimited($limit = null, $keyword = null, $kategori = null, $offset = null)
+    {
+        // Ensure parameters are properly typed
+        $kategori = $kategori !== null && $kategori !== '' ? (int)$kategori : null;
+        
+        $builder = $this->select('tbl_m_item.*, COALESCE(SUM(tbl_m_item_stok.jml), 0) as stok, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left')
+            ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id', 'left')
+            ->where('tbl_m_item.status_hps', '0')
+            ->where('tbl_m_item.status', '1')
+            ->groupBy('tbl_m_item.id')
+            ->orderBy('tbl_m_item.item', 'DESC');
+
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('tbl_m_item.item', $keyword)
+                ->orLike('tbl_m_item.kode', $keyword)
+                ->orLike('tbl_m_item.barcode', $keyword)
+                ->orLike('tbl_m_kategori.kategori', $keyword)
+                ->orLike('tbl_m_merk.merk', $keyword)
+                ->orLike('tbl_m_supplier.nama', $keyword)
+                ->groupEnd();
+        }
+
+        if ($kategori) {
+            $builder->where('tbl_m_item.id_kategori', $kategori);
+        }
+
+        // Apply limit and offset for pagination
+        if ($limit !== null) {
+            $builder->limit((int)$limit);
+            if ($offset !== null) {
+                $builder->offset((int)$offset);
+            }
+        }
+
+        // Debug: Log the SQL query
+        $sql = $builder->getCompiledSelect();
+        log_message('info', 'getItemsWithRelationsActiveLimited SQL: ' . $sql);
+        log_message('info', 'Parameters - limit: ' . $limit . ', keyword: ' . $keyword . ', kategori: ' . $kategori . ', offset: ' . $offset);
+
+        $result = $builder->findAll();
+        log_message('info', 'getItemsWithRelationsActiveLimited result count: ' . count($result));
+        
+        return $result;
+    }
+
 } 

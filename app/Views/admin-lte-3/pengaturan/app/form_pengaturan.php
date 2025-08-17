@@ -17,7 +17,7 @@
                         'class' => 'form-control rounded-0',
                         'id' => 'judul',
                         'name' => 'judul',
-                        'value' => old('judul', $Pengaturan->judul),
+                        'value' => old('judul', $Pengaturan->judul ?? ''),
                         'required' => true,
                         'placeholder' => 'Contoh: KLINIK UTAMA dan LABORATORIUM "ESENSIA"'
                     ]) ?>
@@ -31,7 +31,7 @@
                         'class' => 'form-control rounded-0',
                         'id' => 'judul_app',
                         'name' => 'judul_app',
-                        'value' => old('judul_app', $Pengaturan->judul_app),
+                        'value' => old('judul_app', $Pengaturan->judul_app ?? ''),
                         'required' => true,
                         'placeholder' => 'Contoh: PURCHASE ORDER'
                     ]) ?>
@@ -44,7 +44,7 @@
                         'class' => 'form-control rounded-0',
                         'id' => 'alamat',
                         'name' => 'alamat',
-                        'value' => old('alamat', $Pengaturan->alamat),
+                        'value' => old('alamat', $Pengaturan->alamat ?? ''),
                         'rows' => 2,
                         'required' => true,
                         'placeholder' => 'Contoh: Perum Mutiara Pandanaran Blok D11'
@@ -59,7 +59,7 @@
                         'class' => 'form-control rounded-0',
                         'id' => 'kota',
                         'name' => 'kota',
-                        'value' => old('kota', $Pengaturan->kota),
+                        'value' => old('kota', $Pengaturan->kota ?? ''),
                         'required' => true,
                         'placeholder' => 'Contoh: Semarang'
                     ]) ?>
@@ -73,7 +73,7 @@
                         'class' => 'form-control rounded-0',
                         'id' => 'apt_apa',
                         'name' => 'apt_apa',
-                        'value' => old('apt_apa', $Pengaturan->apt_apa),
+                        'value' => old('apt_apa', $Pengaturan->apt_apa ?? ''),
                         'placeholder' => 'Contoh: APT. UNGSARI RIZKI EKA PURWANTO, M.SC'
                     ]) ?>
                     <small class="text-muted">Nama apoteker penanggung jawab (opsional)</small>
@@ -86,7 +86,7 @@
                         'class' => 'form-control rounded-0',
                         'id' => 'apt_sipa',
                         'name' => 'apt_sipa',
-                        'value' => old('apt_sipa', $Pengaturan->apt_sipa),
+                        'value' => old('apt_sipa', $Pengaturan->apt_sipa ?? ''),
                         'placeholder' => 'Contoh: 449.1/61/DPM-PTSP/SIPA/II/2022'
                     ]) ?>
                     <small class="text-muted">Nomor SIPA (opsional)</small>
@@ -98,7 +98,7 @@
                         'class' => 'form-control rounded-0',
                         'id' => 'deskripsi',
                         'name' => 'deskripsi',
-                        'value' => old('deskripsi', $Pengaturan->deskripsi),
+                        'value' => old('deskripsi', $Pengaturan->deskripsi ?? ''),
                         'rows' => 3,
                         'required' => true
                     ]) ?>
@@ -116,7 +116,7 @@
                         <label class="custom-file-label" for="logo_header">Pilih file...</label>
                     </div>
                     <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 2MB</small>
-                    <?php if ($Pengaturan->logo_header): ?>
+                    <?php if (!empty($Pengaturan->logo_header)): ?>
                         <div class="mt-2">
                             <img src="<?= base_url($Pengaturan->logo_header) ?>" alt="Logo Header" class="img-fluid" style="max-height: 100px">
                         </div>
@@ -135,7 +135,7 @@
                         <label class="custom-file-label" for="favicon">Pilih file...</label>
                     </div>
                     <small class="text-muted">Format: ICO, PNG. Maksimal 1MB</small>
-                    <?php if ($Pengaturan->favicon): ?>
+                    <?php if (!empty($Pengaturan->favicon)): ?>
                         <div class="mt-2">
                             <img src="<?= base_url($Pengaturan->favicon) ?>" alt="Favicon" class="img-fluid" style="max-height: 32px">
                         </div>

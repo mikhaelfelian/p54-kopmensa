@@ -403,6 +403,9 @@ $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'aut
     $routes->get('app', 'Pengaturan::index');
     $routes->post('app/update', 'Pengaturan::update');
     
+    // API Tokens route
+    $routes->get('api-tokens', 'Pengaturan::apiTokens');
+    
     // Printer management routes
     $routes->group('printer', ['namespace' => 'App\Controllers\Pengaturan'], function ($routes) {
         $routes->get('/', 'Printer::index');
@@ -413,6 +416,16 @@ $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'aut
         $routes->get('delete/(:num)', 'Printer::delete/$1');
         $routes->get('set-default/(:num)', 'Printer::setDefault/$1');
         $routes->get('test/(:num)', 'Printer::testConnection/$1');
+    });
+    
+    // PU Menu management routes
+    $routes->group('pu-menu', ['namespace' => 'App\Controllers\Pengaturan'], function ($routes) {
+        $routes->get('/', 'PuMenu::index');
+        $routes->get('create', 'PuMenu::create');
+        $routes->post('store', 'PuMenu::store');
+        $routes->get('edit/(:num)', 'PuMenu::edit/$1');
+        $routes->post('update/(:num)', 'PuMenu::update/$1');
+        $routes->get('delete/(:num)', 'PuMenu::delete/$1');
     });
 });
 

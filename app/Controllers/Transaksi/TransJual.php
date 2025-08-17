@@ -23,6 +23,7 @@ use App\Models\OutletModel;
 use App\Models\ItemHistModel;
 use App\Models\VoucherModel;
 use App\Models\PengaturanModel;
+use App\Models\KategoriModel;
 use App\Services\PrinterService;
 
 
@@ -41,6 +42,7 @@ class TransJual extends BaseController
     protected $itemHistModel;
     protected $voucherModel;
     protected $pengaturanModel;
+    protected $kategoriModel;
     protected $printerService;
 
 
@@ -58,9 +60,20 @@ class TransJual extends BaseController
         $this->outletModel         = new OutletModel();
         $this->itemHistModel       = new ItemHistModel();
         $this->voucherModel        = new VoucherModel();
-        $this->Pengaturan     = new PengaturanModel();
+        $this->pengaturanModel     = new PengaturanModel();
+        $this->kategoriModel       = new KategoriModel();
         $this->printerService      = new PrinterService();
+    }
 
+    /**
+     * Initialize controller - this is called automatically by CodeIgniter
+     */
+    public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
+    {
+        // Call parent initController to set up basic functionality
+        parent::initController($request, $response, $logger);
+        
+        // Additional initialization specific to TransJual if needed
     }
 
     /**
@@ -199,33 +212,104 @@ class TransJual extends BaseController
             return $this->response->setJSON(['error' => 'Invalid request']);
         }
 
-        // Handle both GET and POST requests
-        $search = $this->request->getVar('search');
-        $warehouseId = $this->request->getVar('warehouse_id');
-        
-        // Log the search parameters
-        log_message('info', 'Search request - search: "' . $search . '", warehouse_id: ' . $warehouseId);
+        try {
+            // Handle both GET and POST requests
+            $search = $this->request->getVar('search');
+            $warehouseId = $this->request->getVar('warehouse_id');
+            $categoryId = $this->request->getVar('category_id');
+            
+            // Get pagination limit from database settings
+            $paginationLimit = $this->pengaturan->pagination_limit ?? 20;
 
-        // If warehouse filter is applied, use ItemModel to get items by warehouse
-        if ($warehouseId) {
-            try {
-                $items = $this->itemModel->getItemsByWarehouse($warehouseId, $search);
-            } catch (\Exception $e) {
-                return $this->response->setJSON([
-                    'error' => 'Failed to load warehouse items: ' . $e->getMessage()
-                ])->setStatusCode(500);
-            }
-        } else {
-            // No warehouse selected, use default method
-            if (empty($search)) {
-                // If no search term, return items with relations
-                $items = $this->itemModel->getItemsWithRelationsActive(10);
+            // Ensure limit and offset are integers (fixes CI4 limit() type error)
+            $limit = $this->request->getVar('limit');
+            $offset = $this->request->getVar('offset');
+
+            // Fallback to default if not set or not numeric
+            $limit = (is_numeric($limit) && $limit > 0) ? (int)$limit : (int)$paginationLimit;
+            $offset = (is_numeric($offset) && $offset >= 0) ? (int)$offset : 0;
+            
+            // Debug: Log the parameter types
+            log_message('info', 'Parameter types - limit: ' . gettype($limit) . ' (' . $limit . '), offset: ' . gettype($offset) . ' (' . $offset . ')');
+            log_message('info', 'Category ID type: ' . gettype($categoryId) . ' (' . $categoryId . ')');
+
+            // Defensive: fallback to array if error
+            $items = [];
+
+            // If warehouse filter is applied, use ItemModel to get items by warehouse
+            if ($warehouseId) {
+                // Use Query Builder directly to avoid getCompiledSelect() error
+                $builder = $this->db->table('tbl_m_item')
+                    ->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier_nama, IFNULL(SUM(tbl_m_item_stok.jml),0) as stok')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+                    ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+                    ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left')
+                    ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id AND tbl_m_item_stok.id_gudang = ' . (int)$warehouseId, 'left')
+                    ->where('tbl_m_item.status_hps', '0')
+                    ->where('tbl_m_item.status', '1')
+                    ->groupBy('tbl_m_item.id')
+                    ->orderBy('tbl_m_item.item', 'ASC');
+
+                if ($search) {
+                    $builder->groupStart()
+                        ->like('tbl_m_item.item', $search)
+                        ->orLike('tbl_m_item.kode', $search)
+                        ->orLike('tbl_m_item.barcode', $search)
+                        ->orLike('tbl_m_kategori.kategori', $search)
+                        ->orLike('tbl_m_merk.merk', $search)
+                        ->orLike('tbl_m_supplier.nama', $search)
+                        ->groupEnd();
+                }
+                if ($categoryId) {
+                    $builder->where('tbl_m_item.id_kategori', $categoryId);
+                }
+
+                $query = $builder->limit($limit, $offset)->get();
+                $items = $query->getResultArray();
             } else {
-                $items = $this->itemModel->getItemsWithRelationsActive(10, $search);
-            }
-        }
+                // Use Query Builder directly to avoid getCompiledSelect() error
+                $builder = $this->db->table('tbl_m_item')
+                    ->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier_nama, IFNULL(SUM(tbl_m_item_stok.jml),0) as stok')
+                    ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+                    ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+                    ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left')
+                    ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id', 'left')
+                    ->where('tbl_m_item.status_hps', '0')
+                    ->where('tbl_m_item.status', '1')
+                    ->groupBy('tbl_m_item.id')
+                    ->orderBy('tbl_m_item.item', 'ASC');
 
-        return $this->response->setJSON(['items' => $items]);
+                if ($search) {
+                    $builder->groupStart()
+                        ->like('tbl_m_item.item', $search)
+                        ->orLike('tbl_m_item.kode', $search)
+                        ->orLike('tbl_m_item.barcode', $search)
+                        ->orLike('tbl_m_kategori.kategori', $search)
+                        ->orLike('tbl_m_merk.merk', $search)
+                        ->orLike('tbl_m_supplier.nama', $search)
+                        ->groupEnd();
+                }
+                if ($categoryId) {
+                    $builder->where('tbl_m_item.id_kategori', $categoryId);
+                }
+
+                $query = $builder->limit($limit, $offset)->get();
+                $items = $query->getResultArray();
+            }
+
+            // Defensive: Ensure $items is array
+            if (!is_array($items)) {
+                $items = [];
+            }
+
+            return $this->response->setJSON(['success' => true, 'items' => $items]);
+        } catch (\Throwable $e) {
+            // Log the error for debugging
+            log_message('error', 'searchItems error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            return $this->response->setJSON([
+                'error' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Terjadi kesalahan pada server. Silakan coba lagi.'
+            ])->setStatusCode(500);
+        }
     }
 
     /**
@@ -342,6 +426,9 @@ class TransJual extends BaseController
         $platforms  = $this->platformModel->where('status', '1')->findAll();
         $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
         
+        // Get active categories
+        $categories = $this->kategoriModel->getActiveCategories();
+        
         // Get last 5 transactions
         $lastTransactions = $this->transJualModel->getLastTransactions(5);
 
@@ -355,6 +442,7 @@ class TransJual extends BaseController
             'outlets'       => $outlets,
             'platforms'     => $platforms,
             'items'         => $items,
+            'categories'    => $categories,
             'lastTransactions' => $lastTransactions
         ];
 
@@ -604,6 +692,10 @@ class TransJual extends BaseController
         // Debug: Log all POST data
         log_message('debug', 'POST data - is_draft: ' . ($isDraft ? 'true' : 'false') . ', draft_id: ' . ($draftId ?: 'null'));
         log_message('debug', 'POST data type - is_draft: ' . gettype($isDraft) . ', draft_id: ' . gettype($draftId));
+        log_message('debug', 'Cart data: ' . json_encode($cart));
+        log_message('debug', 'Payment methods: ' . json_encode($paymentMethods));
+        log_message('debug', 'Warehouse ID: ' . $warehouseId);
+        log_message('debug', 'Grand total: ' . $grandTotal);
 
         // Validate required data
         if (empty($cart) || !is_array($cart) || count($cart) === 0) {
@@ -633,7 +725,15 @@ class TransJual extends BaseController
             log_message('debug', 'processTransaction - draftId: ' . ($draftId ?: 'null') . ', isDraft: ' . ($isDraft ? 'true' : 'false'));
 
             $noNota = $this->transJualModel->generateKode();
-            $Pengaturan = $this->Pengaturan->first();
+            $Pengaturan = $this->pengaturan;
+            
+            // Check if pengaturan is loaded
+            if (!$Pengaturan) {
+                log_message('error', 'Pengaturan not loaded - pengaturan property is null');
+                throw new \Exception('Pengaturan tidak dapat dimuat. Silakan refresh halaman.');
+            }
+            
+            log_message('debug', 'Pengaturan loaded successfully - PPN: ' . ($Pengaturan->ppn ?? 'null'));
 
             // If converting from draft, use existing draft data
             if ($draftId && !$isDraft) {
@@ -679,8 +779,11 @@ class TransJual extends BaseController
             // jml_subtotal = jml_total - jml_diskon
             $jml_subtotal = $jml_total - $jml_diskon;
 
-            // PPN 11%
-            $taxAmount = $jml_subtotal * ($Pengaturan['ppn'] / 100); // 11% PPN
+            // PPN calculation
+            $ppnRate = $Pengaturan->ppn ?? 11; // Default to 11% if not set
+            $taxAmount = $jml_subtotal * ($ppnRate / 100);
+            
+            log_message('debug', 'PPN calculation - jml_subtotal: ' . $jml_subtotal . ', ppn_rate: ' . $ppnRate . ', taxAmount: ' . $taxAmount);
 
             // Grand total
             $finalTotal = $jml_subtotal + $taxAmount;
@@ -713,7 +816,7 @@ class TransJual extends BaseController
                 'jml_subtotal'      => $jml_subtotal,      // jml_total - jml_diskon
                 'diskon'            => $discountPercent,
                 'jml_diskon'        => $jml_diskon,        // voucher + diskon % or nominal
-                'ppn'               => $Pengaturan['ppn'], // dinamis dari db
+                'ppn'               => $ppnRate, // dinamis dari db
                 'jml_ppn'           => $taxAmount,
                 'jml_gtotal'        => $finalTotal,
                 'jml_bayar'         => $isDraft ? 0 : $totalAmountReceived,

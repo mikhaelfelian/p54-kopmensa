@@ -61,14 +61,28 @@ if (!isset($Pengaturan)) {
     <link href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>" rel="stylesheet">
 </head>
 
-<body class="hold-transition">
+<body class="layout-top-nav hold-transition">
     <div class="wrapper">
         <!-- Navbar -->
-        <?= $this->include('admin-lte-3/layout/navbar') ?>
+        <?= $this->include('admin-lte-3/layout/navbar_no_sidebar') ?>
         <!-- /.navbar -->
 
         <!-- Content Wrapper. Contains page content -->
-        <div class="content-wrapper" style="margin-left: 0;">
+        <div class="content-wrapper">
+            <!-- Content Header (Page header) -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0"><?= $this->renderSection('page_title') ?></h1>
+                        </div><!-- /.col -->
+                        <div class="col-sm-6">
+                            <?= $this->renderSection('breadcrumb') ?>
+                        </div><!-- /.col -->
+                    </div><!-- /.row -->
+                </div><!-- /.container-fluid -->
+            </div>
+            <!-- /.content-header -->
             <!-- Main content -->
             <div class="content">
                 <div class="container-fluid">

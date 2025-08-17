@@ -20,6 +20,8 @@ class PengaturanSeeder extends Seeder
             'favicon'          => 'favicon.ico',
             'logo'            => 'logo.png',
             'logo_header'     => 'logo_header.png',
+            'apt_apa'         => 'APT. UNGSARI RIZKI EKA PURWANTO, M.SC',
+            'apt_sipa'        => '449.1/61/DPM-PTSP/SIPA/II/2022',
             'ppn'             => 11,
         ];
 

@@ -10,214 +10,145 @@
 helper('form');
 ?>
 <?= $this->extend('admin-lte-3/layout/main_no_sidebar') ?>
-
 <?= $this->section('content') ?>
-
 <!-- Hidden CSRF token for AJAX requests -->
 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
 
 <div class="row">
-    <!-- Left Column - Product Selection and Cart -->
-    <div class="col-md-7">
+    <!-- Left Column - Product Selection and Grid -->
+    <div class="col-lg-7">
         <div class="card rounded-0">
             <div class="card-header">
-                <h3 class="card-title">
-                    <i class="fas fa-shopping-cart"></i> Kasir - Transaksi Penjualan
-                </h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-info btn-sm me-2" id="refreshSession" title="Refresh Session">
-                        <i class="fas fa-sync-alt"></i>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="input-group" style="max-width: 400px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                        </div>
+                        <input type="text" class="form-control" id="productSearch" placeholder="Search products...">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" id="clearSearch">
+                                <i class="fas fa-times"></i>
                     </button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="newTransaction">
-                        <i class="fas fa-plus"></i> Transaksi Baru
+                            <button type="button" class="btn btn-outline-info" id="testSearch"
+                                title="Test basic search">
+                                <i class="fas fa-search"></i>
                     </button>
+                </div>
+            </div>
+                    <div class="d-flex align-items-center">
+                    </div>
                 </div>
             </div>
             <div class="card-body">
-                <!-- Cart -->
-                <div class="mt-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Keranjang Belanja</h5>
-                        <span class="badge badge-info badge-lg">
-                            <i class="fas fa-shopping-cart"></i> 
-                            Total Items: <span id="totalItemsCount">0</span>
-                        </span>
-                    </div>
-                    <div class="table-responsive cart-table-container">
-                        <table class="table table-bordered" id="cartTable">
-                            <thead class="thead-dark">
-                                <tr>
-                                    <th>Produk</th>
-                                    <th width="80">Qty</th>
-                                    <th width="120">Harga</th>
-                                    <th width="120">Total</th>
-                                    <th width="80">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="cartTableBody">
-                                <!-- Cart items will be added here -->
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="3" class="text-right">DPP:</td>
-                                    <td colspan="1" class="text-right">
-                                        <span id="dppDisplay">Rp 0</span>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="text-right">
-                                        PPN (<span id="cartPpnPercent"><?= $Pengaturan->ppn ?></span>%):
-                                    </td>
-                                    <td colspan="1" class="text-right">
-                                        <span id="taxDisplay">Rp 0</span>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td colspan="3" class="text-right"><strong>Total:</strong></td>
-                                    <td colspan="1" class="text-right">
-                                        <strong><span id="grandTotalDisplay">Rp 0</span></strong>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <th colspan="3" class="text-right">Total Bayar:</th>
-                                    <th colspan="1" class="text-right"><span id="totalPaidAmount">Rp 0</span></th>
-                                    <th></th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <!-- Multiple Payment Methods -->
-        <div class="card card-primary">
-            <div class="card-header">
-                <h3 class="card-title">Pembayaran</h3>
-                <div class="card-tools">
-                    <button type="button" class="btn btn-success btn-sm rounded-0" id="addPaymentMethod">
-                        <i class="fas fa-plus"></i> Tambah Metode
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-2">
-                <div id="paymentMethods">
-                    <!-- Payment methods will be added here -->
-                </div>
-
-                <div class="row mt-2 p-2" id="remainingPayment" style="background-color: #ffe6e6;">
-                    <div class="col-12">
-                        <strong>Sisa Bayar:</strong>
-                        <span id="remainingAmount" class="text-danger">Rp 0</span>
-                    </div>
-                </div>
-
-                <div class="row mt-2 p-2" id="changePayment" style="background-color: #e6ffe6; display: none;">
-                    <div class="col-12">
-                        <strong>Kembalian:</strong>
-                        <span id="changeAmount" class="text-success">Rp 0</span>
-                    </div>
-                </div>
-            </div>
+                <!-- Category Tabs -->
+                <div class="mb-3">
+                    <div class="category-tabs-container">
+                        <ul class="nav nav-tabs" id="categoryTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="all-tab" data-toggle="tab" href="#all" role="tab">
+                                    All (<?= count($items) ?>)
+                                </a>
+                            </li>
+                            <?php if (!empty($categories)): ?>
+                                <?php foreach ($categories as $category): ?>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="category-<?= $category->id ?>-tab" data-toggle="tab"
+                                            href="#category-<?= $category->id ?>" role="tab"
+                                            data-category-id="<?= $category->id ?>">
+                                            <?= $category->kategori ?>
+                                        </a>
+                                    </li>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <li class="nav-item">
+                                    <span class="text-muted">No categories found</span>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
         </div>
     </div>
 
-    <!-- Right Column - Payment -->
-    <div class="col-md-5">
-        <div class="card rounded-0 mb-3">
-            <div class="card-header">
-                <h4 class="card-title mb-0">Info Transaksi</h4>
+                <!-- Product Grid -->
+                <div class="row" id="productGrid">
+                    <!-- Products will be loaded here -->
             </div>
-            <div class="card-body">
-                <!-- Product Search -->
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="productSearch"
-                                placeholder="Scan barcode atau ketik nama produk...">
-                            <div class="input-group-append">
-                                <button type="button" class="btn btn-primary" id="searchBtn">
-                                    <i class="fas fa-search"></i>
+
+                <!-- Loading Indicator -->
+                <div id="productLoading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Memuat produk...</p>
+                </div>
+
+                <!-- Lanjutkan Button (Load More) -->
+                <div id="loadMoreContainer" class="text-center mt-3" style="display: none;">
+                    <button type="button" class="btn btn-primary btn-lg" id="loadMoreProducts">
+                        <i class="fas fa-arrow-down"></i> Lanjutkan
                                 </button>
                             </div>
                         </div>
-                        <small class="text-muted">
-                            <i class="fas fa-barcode"></i> Barcode scanner aktif - scan langsung ke field ini
-                        </small>
                     </div>
-                    <div class="col-md-4">
-                        <select class="form-control rounded-0" id="warehouse_id">
+    </div>
+
+    <!-- Right Column - Order Management -->
+    <div class="col-lg-5">
+        <div class="card rounded-0">
+            <div class="card-header bg-light">
+                <h4 class="mb-0 font-weight-normal text-secondary"><i class="fas fa-cash-register"></i> Kasir Penjualan
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Warehouse Selection -->
+                <div class="mb-3">
+                    <label for="warehouse_id" class="form-label">Pilih Outlet</label>
+                    <select class="form-control form-control-sm" id="warehouse_id">
                             <option value="">Pilih Outlet</option>
                             <?php foreach ($outlets as $outlet): ?>
                                 <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
                             <?php endforeach; ?>
                         </select>
-                    </div>
                 </div>
-
-                <!-- Product List -->
-                <div class="table-responsive" style="max-height: 300px;">
-                    <table class="table table-hover" id="productListTable">
-                        <tbody>
-                            <tr id="noWarehouseMessage">
-                                <td colspan="5" class="text-center text-muted">
-                                    <i class="fas fa-info-circle"></i> Silakan pilih outlet terlebih dahulu untuk
-                                    melihat produk
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="card rounded-0">
-            <div class="card-header">
-                <h4 class="card-title">Pembayaran</h4>
-            </div>
-            <div class="card-body">
+                
                 <!-- Customer Selection -->
-                <div class="form-group customer-type-radio">
-                    <label>Jenis Pelanggan</label>
-                    <div class="d-flex align-items-center">
-                        <div class="form-check mr-3 mb-0">
-                            <input class="form-check-input" type="radio" name="customerType" id="customerTypeUmum"
-                                value="umum" checked>
-                            <label class="form-check-label" for="customerTypeUmum">Umum</label>
-                        </div>
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="radio" name="customerType" id="customerTypeAnggota"
-                                value="anggota">
-                            <label class="form-check-label" for="customerTypeAnggota">Anggota</label>
-                        </div>
-                    </div>
+                <div class="form-group customer-type-radio mb-3">
+                    <h6 class="text-muted">#Pesanan Baru</h6>
+                    <div class="btn-group btn-group-toggle d-flex mb-2" data-toggle="buttons">
+                        <label class="btn btn-outline-primary flex-fill active" id="btnCustomerUmum">
+                            <input type="radio" name="customerType" id="customerTypeUmum" value="umum"
+                                autocomplete="off" checked> Umum
+                        </label>
+                        <label class="btn btn-outline-success flex-fill" id="btnCustomerAnggota">
+                            <input type="radio" name="customerType" id="customerTypeAnggota" value="anggota"
+                                autocomplete="off"> Anggota
+                        </label>
                 </div>
 
                 <!-- Scan Anggota Field (hidden by default) -->
-                <div class="form-group scan-anggota-field" id="scanAnggotaGroup" style="display: none;">
+                    <div class="form-group scan-anggota-field mb-3" id="scanAnggotaGroup" style="display: none;">
                     <label for="scanAnggota">Scan QR Code Anggota</label>
                     <div class="input-group">
-                        <input type="text" class="form-control rounded-0" id="scanAnggota"
-                            placeholder="Scan QR code dari mobile atau ketik nomor kartu anggota">
+                            <input type="text" class="form-control form-control-sm" id="scanAnggota"
+                                placeholder="Scan QR code atau ketik nomor kartu">
                         <div class="input-group-append">
-                            <button type="button" class="btn btn-outline-secondary" id="openQrScanner">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="openQrScanner">
                                 <i class="fas fa-camera"></i>
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" id="searchAnggota">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="searchAnggota">
                                 <i class="fas fa-qrcode"></i>
                             </button>
                         </div>
                     </div>
                     <small class="text-muted">
                         <i class="fas fa-info-circle"></i>
-                        Scan QR code dari aplikasi mobile, atau ketik nomor kartu anggota secara manual
+                            Scan QR code atau ketik nomor kartu anggota
                     </small>
 
                     <!-- QR Scanner Modal -->
-                    <div class="modal fade qr-scanner-modal" id="qrScannerModal" tabindex="-1" role="dialog">
+                        <div class="modal fade qr-scanner-modal rounded-0" id="qrScannerModal" tabindex="-1"
+                            role="dialog">
                         <div class="modal-dialog modal-lg" role="document">
                             <div class="modal-content">
                                 <div class="modal-header">
@@ -236,18 +167,15 @@ helper('form');
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                                    <button type="button" class="btn btn-warning" id="testQrScanBtn">Test QR
-                                        Scan</button>
-                                    <button type="button" class="btn btn-primary" id="manualInputBtn">Input
-                                        Manual</button>
+                                        <button type="button" class="btn btn-secondary rounded-0"
+                                            data-dismiss="modal">Tutup</button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
-                        <div class="alert alert-info">
+                            <div class="alert alert-info alert-sm">
                             <strong>Anggota:</strong> <span id="anggotaNama"></span><br>
                             <small>No. Kartu: <span id="anggotaNoKartu"></span></small>
                         </div>
@@ -259,53 +187,64 @@ helper('form');
                 <input type="hidden" id="selectedCustomerName" name="selectedCustomerName" value="">
                 <input type="hidden" id="selectedCustomerType" name="selectedCustomerType" value="umum">
 
-                <script>
-                    // Set selectedCustomerId to '2' if Umum, else set to id_user anggota
-                    function setCustomerFields(type, anggotaData = null) {
-                        if (type === 'umum') {
-                            document.getElementById('selectedCustomerId').value = '2';
-                            document.getElementById('selectedCustomerType').value = 'umum';
-                            document.getElementById('selectedCustomerName').value = '';
-                        } else if (type === 'anggota' && anggotaData) {
-                            // anggotaData should contain at least id_user and nama
-                            document.getElementById('selectedCustomerId').value = anggotaData.id_user;
-                            document.getElementById('selectedCustomerType').value = 'anggota';
-                            document.getElementById('selectedCustomerName').value = anggotaData.nama || '';
-                        }
-                    }
-
-                    // On page load, set default to Umum
-                    document.addEventListener('DOMContentLoaded', function () {
-                        setCustomerFields('umum');
-                    });
-
-                    // Listen for radio change
-                    document.querySelectorAll('input[name="customerType"]').forEach(function (radio) {
-                        radio.addEventListener('change', function () {
-                            if (this.value === 'umum') {
-                                document.getElementById('scanAnggotaGroup').style.display = 'none';
-                                setCustomerFields('umum');
-                            } else {
-                                document.getElementById('scanAnggotaGroup').style.display = '';
-                                // Wait for anggota scan/input to set fields
-                            }
-                        });
-                    });
-                </script>
-
-                <!-- Customer Status Display -->
-                <div class="form-group customer-status-display" id="customerStatusDisplay" style="display: none;">
-                    <div class="alert alert-info">
-                        <strong>Status Pelanggan:</strong>
-                        <span id="customerTypeDisplay">Umum</span>
-                        <div id="customerInfoDisplay" class="mt-1" style="display: none;">
-                            <small>
-                                <strong>Nama:</strong> <span id="displayCustomerName"></span><br>
-                                <strong>No. Kartu:</strong> <span id="displayCustomerCard"></span>
-                            </small>
+                    <!-- Cart Area -->
+                    <div class="cart-area mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Keranjang Belanja</h6>
+                            <span class="badge badge-info">
+                                <i class="fas fa-shopping-cart"></i>
+                                <span id="totalItemsCount">0</span>
+                            </span>
                         </div>
+                        <div class="table-responsive cart-table-container">
+                            <table class="table table-bordered" id="cartTable">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Produk</th>
+                                        <th width="80">Qty</th>
+                                        <th width="120">Harga</th>
+                                        <th width="120">Total</th>
+                                        <th width="80">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cartTableBody">
+                                    <!-- Cart items will be added here -->
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-right">DPP:</td>
+                                        <td colspan="1" class="text-right">
+                                            <span id="dppDisplay">Rp 0</span>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-right">
+                                            PPN (<span id="cartPpnPercent"><?= $Pengaturan->ppn ?></span>%):
+                                        </td>
+                                        <td colspan="1" class="text-right">
+                                            <strong><span id="taxDisplay">Rp 0</span></strong>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                                        <td colspan="1" class="text-right">
+                                            <strong><span id="grandTotalDisplay">Rp 0</span></strong>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <th colspan="3" class="text-right">Total Bayar:</th>
+                                        <th colspan="1" class="text-right"><span id="totalPaidAmount">Rp 0</span></th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
                     </div>
                 </div>
+
+
                 <!-- Payment Summary -->
                 <div class="border rounded p-3 mb-3">
                     <div class="row mb-2">
@@ -350,6 +289,42 @@ helper('form');
                         <div class="col-6 text-right">
                             <span id="voucherDiscountDisplay">Rp 0</span>
                         </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Methods -->
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Metode Pembayaran</h6>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-0" id="addPaymentMethod">
+                                <i class="fas fa-plus"></i> Tambah
+                            </button>
+                        </div>
+                        
+                        <div id="paymentMethods">
+                            <!-- Payment methods will be added here -->
+                        </div>
+
+                        <!-- Payment Summary -->
+                        <div class="mt-3 pt-3 border-top">
+                            <div class="row mb-2">
+                                <div class="col-6">Total Bayar:</div>
+                                <div class="col-6 text-right">
+                                <span id="grandTotalPayment">Rp 0</span>
+                            </div>
+                            </div>
+                            <div class="row mb-2" id="remainingPayment" style="display: none;">
+                                <div class="col-6">Kurang:</div>
+                                <div class="col-6 text-right text-danger">
+                                    <span id="remainingAmount">Rp 0</span>
+                        </div>
+                            </div>
+                            <div class="row mb-2" id="changePayment" style="display: none;">
+                                <div class="col-6">Kembalian:</div>
+                                <div class="col-6 text-right text-success">
+                                    <span id="changeAmount">Rp 0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -380,6 +355,13 @@ helper('form');
                             <i class="fas fa-times"></i> Batal
                         </button>
                     </div>
+                    </div>                    
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="<?= base_url('transaksi/jual') ?>" class="btn btn-primary rounded-0">
+                    &laquo; Kembali
+                </a>
                 </div>
             </div>
         </div>
@@ -538,7 +520,6 @@ helper('form');
         </div>
     </div>
 </div>
-
 <?= $this->endSection() ?>
 
 <?= $this->section('css') ?>
@@ -585,6 +566,98 @@ helper('form');
         align-items: center;
         font-weight: bold;
         font-size: 16px;
+    }
+
+    .denomination-tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        background: #f8fff9;
+    }
+
+    .denomination-tag:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .denomination-label {
+        font-size: 16px;
+        font-weight: bold;
+        color: #28a745;
+    }
+
+    .denomination-tag.clicked {
+        transform: scale(1.05);
+        background: #28a745;
+        color: white;
+    }
+
+    .denomination-tag.clicked .denomination-label {
+        color: white;
+    }
+
+    .denomination-tag.reset {
+        transform: scale(0.95);
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+
+    .denomination-tag.reset .denomination-label {
+        color: white;
+    }
+
+    .denomination-tag.active {
+        transform: scale(1.05);
+        background: #007bff;
+        border-color: #007bff;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+
+    .denomination-tag.active .denomination-label {
+        color: white;
+    }
+
+    /* Uang Pas button styling */
+    #uangPas {
+        transition: all 0.3s ease;
+    }
+
+    #uangPas:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    #uangPas:active {
+        transform: translateY(0);
+    }
+
+    /* Payment method styling */
+    .payment-method-row {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .payment-method-row label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+        font-size: 12px;
+    }
+
+    .denomination-inputs {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 15px;
+    }
+
+    .reference-input {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        padding: 15px;
     }
 
     .denomination-tag:hover {
@@ -710,7 +783,8 @@ helper('form');
 
     /* Cart table scrollable styles */
     .cart-table-container {
-        max-height: 400px; /* Height for approximately 5 items + header + footer */
+        max-height: 400px;
+        /* Height for approximately 5 items + header + footer */
         overflow-y: auto;
         border: 1px solid #dee2e6;
         border-radius: 4px;
@@ -756,6 +830,137 @@ helper('form');
     /* Add some spacing for better readability */
     .cart-table-container tbody tr:last-child {
         border-bottom: none;
+    }
+
+    /* Product Grid Styles */
+    .product-grid-item {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .product-image {
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .product-thumbnail {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+    }
+
+    .product-info {
+        text-align: center;
+    }
+
+    .product-grid-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-color: #007bff;
+    }
+
+    .product-grid-item .product-name {
+        font-weight: bold;
+        font-size: 14px;
+        margin-bottom: 8px;
+        color: #333;
+    }
+
+    .product-grid-item .product-price {
+        font-size: 16px;
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .product-grid-item .product-category {
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 5px;
+    }
+
+    /* Category Tabs */
+    .category-tabs-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: #888 #f1f1f1;
+    }
+
+    .category-tabs-container::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    .category-tabs-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    .category-tabs-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .category-tabs-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    .nav-tabs {
+        flex-wrap: nowrap;
+        min-width: max-content;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .nav-tabs .nav-item {
+        flex-shrink: 0;
+    }
+
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-size: 14px;
+        padding: 8px 16px;
+        white-space: nowrap;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #007bff;
+        background: none;
+        border-bottom: 2px solid #007bff;
+    }
+
+    /* Right Panel Styling */
+    .cart-area {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+
+    /* Essential Performance */
+    .product-grid-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-color: #007bff;
+    }
+
+    /* Smooth scrolling for categories */
+    .category-tabs-container {
+        -webkit-overflow-scrolling: touch;
     }
 </style>
 <?= $this->endSection() ?>
@@ -818,7 +1023,12 @@ helper('form');
         if ($('#warehouse_id').val()) {
             loadProducts();
         }
+        
+        // Initialize payment methods
         addPaymentMethod(); // Add first payment method by default
+        
+        // Initialize payment calculation
+        calculatePaymentTotals();
 
         // Event listeners
         $('#productSearch').on('input', function () {
@@ -841,6 +1051,7 @@ helper('form');
         let inputCount = 0;
         let lastScannedBarcode = '';
         let lastScanTime = 0;
+        let isBarcodeScan = false;
 
         $('#productSearch').on('input', function () {
             const currentTime = Date.now();
@@ -849,6 +1060,7 @@ helper('form');
 
             // If input is very fast (typical of barcode scanner), treat it as a scan
             if (currentTime - lastInputTime < 100 && inputValue.length > 5) {
+                isBarcodeScan = true;
                 // This is likely a barcode scan - clear the timeout and set a new one
                 clearTimeout(barcodeTimeout);
                 barcodeTimeout = setTimeout(function () {
@@ -868,8 +1080,8 @@ helper('form');
 
             lastInputTime = currentTime;
 
-            // Also handle normal search input (but only if not a barcode scan)
-            if (inputCount === 1 || currentTime - lastInputTime > 500) {
+            // Only handle manual search if it's NOT a barcode scan
+            if (!isBarcodeScan && (inputCount === 1 || currentTime - lastInputTime > 500)) {
                 searchProducts(inputValue);
             }
         });
@@ -897,10 +1109,12 @@ helper('form');
         $('#productSearch').on('focus', function () {
             inputCount = 0;
             lastScannedBarcode = '';
+            isBarcodeScan = false;
         });
 
         $('#productSearch').on('blur', function () {
             inputCount = 0;
+            isBarcodeScan = false;
         });
 
         // Reset duplicate prevention when field is cleared
@@ -908,6 +1122,19 @@ helper('form');
             if ($(this).val() === '') {
                 lastScannedBarcode = '';
                 lastScanTime = 0;
+                isBarcodeScan = false;
+            }
+        });
+
+        // Manual search trigger (for Enter key and search button)
+        $('#productSearch').on('keypress', function (e) {
+            if (e.which === 13) { // Enter key
+                e.preventDefault();
+                const searchValue = $(this).val().trim();
+                if (searchValue.length > 0) {
+                    isBarcodeScan = false; // Force manual search mode
+                    searchProducts(searchValue);
+                }
             }
         });
 
@@ -957,14 +1184,91 @@ helper('form');
             validateVoucher($(this).val());
         });
 
-        // Payment method event listeners
-        $('#addPaymentMethod').on('click', addPaymentMethod);
-        $(document).on('click', '.remove-payment', removePaymentMethod);
-        $(document).on('input', '.payment-amount', calculatePaymentTotals);
-        $(document).on('change', '.payment-platform', calculatePaymentTotals);
-        $(document).on('change', '.payment-type', autoFillPaymentAmount);
-        $(document).on('click', '.denomination-tag', incrementDenomination);
-        $(document).on('contextmenu', '.denomination-tag', resetDenomination);
+        // Payment method event listeners - use namespaced events to prevent duplicates
+        $('#addPaymentMethod').off('click.payment').on('click.payment', addPaymentMethod);
+        $(document).off('click.payment').on('click.payment', '.remove-payment', removePaymentMethod);
+        $(document).off('input.payment').on('input.payment', '.payment-amount', calculatePaymentTotals);
+        $(document).off('change.payment').on('change.payment', '.payment-platform', calculatePaymentTotals);
+        $(document).off('change.payment').on('change.payment', '.payment-type', autoFillPaymentAmount);
+        $(document).off('click.payment').on('click.payment', '.denomination-tag', incrementDenomination);
+        $(document).off('contextmenu.payment').on('contextmenu.payment', '.denomination-tag', resetDenomination);
+
+        // Clear any existing event handlers to prevent duplicates
+        $(document).off('click.denomination');
+        $(document).off('click.uangPas');
+        $(document).off('click.clearAmount');
+
+        // Denomination click functionality for uang pas - use event delegation to prevent duplicates
+        $(document).off('click.denomination').on('click.denomination', '.denomination-tag', function () {
+            const denomination = parseInt($(this).data('denomination'));
+            // Find the payment amount field in the same row
+            const paymentRow = $(this).closest('.payment-method-row');
+            const amountField = paymentRow.find('.payment-amount');
+            const currentAmount = parseFloat(amountField.val()) || 0;
+            const newAmount = currentAmount + denomination;
+
+            amountField.val(newAmount);
+
+            // Trigger change event to recalculate totals
+            amountField.trigger('change');
+
+            // Add visual feedback
+            $(this).addClass('active');
+            setTimeout(() => {
+                $(this).removeClass('active');
+            }, 200);
+
+            // Show success message - only show once
+            if (!$(this).hasClass('message-shown')) {
+                toastr.success(`Ditambahkan: Rp ${numberFormat(denomination)}`);
+                $(this).addClass('message-shown');
+                setTimeout(() => {
+                    $(this).removeClass('message-shown');
+                }, 1000);
+            }
+        });
+
+        // Clear amount button functionality
+        $('#clearAmount').on('click', function () {
+            // Find the payment amount field in the same row
+            const paymentRow = $(this).closest('.payment-method-row');
+            const amountField = paymentRow.find('.payment-amount');
+
+            amountField.val('');
+            amountField.trigger('change');
+            toastr.info('Jumlah uang diterima berhasil dihapus');
+        });
+
+        // Uang Pas button functionality - sets amount received equal to grand total
+        $('#uangPas').on('click', function () {
+            const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
+
+            console.log('Uang Pas clicked. Grand total:', grandTotal);
+
+            if (grandTotal > 0) {
+                // Find the current payment method row (first one or active one)
+                const currentPaymentRow = $('.payment-method-row').first();
+                const amountField = currentPaymentRow.find('.payment-amount');
+
+                console.log('Payment row found:', currentPaymentRow.length > 0);
+                console.log('Amount field found:', amountField.length > 0);
+
+                if (amountField.length > 0) {
+                    // Set the amount to grand total
+                    amountField.val(grandTotal);
+                    // Trigger change to recalculate totals
+                    amountField.trigger('change');
+                    toastr.success(`Uang pas: Rp ${numberFormat(grandTotal)}`);
+                    console.log('Amount set successfully to:', grandTotal);
+                } else {
+                    toastr.error('Field jumlah pembayaran tidak ditemukan');
+                    console.error('Amount field not found');
+                }
+            } else {
+                toastr.warning('Grand total belum dihitung. Silakan tambahkan produk terlebih dahulu.');
+                console.warn('Grand total is 0 or not calculated');
+            }
+        });
 
         $('#completeTransaction').on('click', function (e) {
             const customerType = $('#selectedCustomerType').val();
@@ -1038,6 +1342,11 @@ helper('form');
             searchAnggota();
         });
 
+        // Manual input button for anggota search
+        $('#searchAnggota').on('click', function () {
+            searchAnggota();
+        });
+
         // Open QR Scanner button click
         $('#openQrScanner').on('click', function () {
             openQrScanner();
@@ -1049,27 +1358,118 @@ helper('form');
             $('#scanAnggota').focus();
         });
 
-        // QR Scanner modal events
-        $('#qrScannerModal').on('shown.bs.modal', function () {
-            startQrScanner();
+        // Test QR scan button
+        $('#testQrScanBtn').on('click', function () {
+            // Simulate a QR scan for testing
+            const testData = {
+                id_pelanggan: 'TEST001',
+                nama: 'Test Anggota',
+                nomor_kartu: 'TEST001'
+            };
+            console.log('Test QR scan triggered with data:', testData);
+            handleQrScanResult(testData);
+        });
+
+        // Test manual QR button
+        $('#testManualQrBtn').on('click', function () {
+            // Test different QR code formats
+            const testFormats = [
+                { type: 'Plain text', data: 'MEMBER123' },
+                { type: 'JSON with id_pelanggan', data: { id_pelanggan: 'MEMBER123', nama: 'John Doe' } },
+                { type: 'JSON with id', data: { id: 'MEMBER456', nama: 'Jane Smith' } },
+                { type: 'JSON with kartu', data: { kartu: 'CARD789', nama: 'Bob Wilson' } }
+            ];
+
+            const randomFormat = testFormats[Math.floor(Math.random() * testFormats.length)];
+            console.log('Testing QR format:', randomFormat.type, 'with data:', randomFormat.data);
+            handleQrScanResult(randomFormat.data);
+        });
+
+        // QR Scanner modal events - use off() to prevent multiple bindings
+        $('#qrScannerModal').off('shown.bs.modal hidden.bs.modal').on('shown.bs.modal', function () {
+            // Modal is fully shown, scanner will be started by openQrScanner
         });
 
         $('#qrScannerModal').on('hidden.bs.modal', function () {
             stopQrScanner();
         });
 
+        // Category tabs event listeners
+        $('#categoryTabs .nav-link').on('click', function (e) {
+            e.preventDefault();
+            // Remove active class from all tabs
+            $('#categoryTabs .nav-link').removeClass('active');
+            // Add active class to clicked tab
+            $(this).addClass('active');
+            // Load products for selected category
+            loadProductsByCategory(this.id);
+        });
+
+        // Load more products button
+        $('#loadMoreProducts').on('click', function () {
+            loadMoreProducts();
+        });
+
+        // Clear search button
+        $('#clearSearch').on('click', function () {
+            $('#productSearch').val('');
+            isBarcodeScan = false; // Reset barcode scan flag
+            loadProducts();
+            toastr.info('Pencarian dibersihkan');
+        });
+
+        // Test search button
+        $('#testSearch').on('click', function () {
+            console.log('Test search clicked');
+            const warehouseId = $('#warehouse_id').val();
+            if (!warehouseId) {
+                toastr.warning('Silakan pilih outlet terlebih dahulu');
+                return;
+            }
+
+            // Test basic search without category
+            $.ajax({
+                url: '<?= base_url('transaksi/jual/search-items') ?>',
+                type: 'POST',
+                data: {
+                    search: '',
+                    warehouse_id: warehouseId,
+                    category_id: '',
+                    limit: 5
+                },
+                dataType: 'json',
+                success: function (response) {
+                    console.log('Test search success:', response);
+                    if (response.items && response.items.length > 0) {
+                        toastr.success('Test search successful! Found ' + response.items.length + ' products');
+                        displayProducts(response.items);
+                    } else {
+                        toastr.info('Test search successful but no products found');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Test search error:', error);
+                    console.error('Response:', xhr.responseText);
+                    toastr.error('Test search failed: ' + error);
+                }
+            });
+        });
 
     });
 
     // Payment Methods Functions
     function addPaymentMethod() {
         paymentCounter++;
-        const platforms = <?= json_encode($platforms) ?>;
+        const platforms = <?= json_encode($platforms ?? []) ?>;
+
+
 
         let platformOptions = '<option value="">Pilih Platform</option>';
+        if (platforms && platforms.length > 0) {
         platforms.forEach(platform => {
             platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
         });
+        }
 
         const paymentHtml = `
         <div class="payment-method-row border rounded p-2 mb-2" data-payment-id="${paymentCounter}">
@@ -1161,6 +1561,13 @@ helper('form');
     `;
 
         $('#paymentMethods').append(paymentHtml);
+        
+        // Initialize the first payment method as cash by default
+        if (paymentCounter === 1) {
+            const firstPaymentRow = $('.payment-method-row').first();
+            firstPaymentRow.find('.payment-type').val('1').trigger('change');
+        }
+        
         calculatePaymentTotals();
     }
 
@@ -1243,83 +1650,178 @@ helper('form');
         // Remove dots (thousand separators) before parsing grand total
         const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
 
+
+
         $('.payment-amount').each(function () {
             const paymentRow = $(this).closest('.payment-method-row');
             const paymentType = paymentRow.find('.payment-type').val();
+            const amount = parseFloat($(this).val()) || 0;
 
-            // If it's cash payment (type 1), use the amount field directly
-            if (paymentType === '1') {
-                let val = $(this).val();
-                if (typeof val === 'string') {
-                    val = val.replace(/\./g, '').replace(',', '.');
-                }
-                const amount = parseFloat(val) || 0;
-                totalPaid += amount;
-            } else {
-                // For non-cash payments, use the amount field directly
-                let val = $(this).val();
-                if (typeof val === 'string') {
-                    val = val.replace(/\./g, '').replace(',', '.');
-                }
-                const amount = parseFloat(val) || 0;
-                totalPaid += amount;
-            }
+            totalPaid += amount;
         });
 
         // Update displays with formatted currency (showing dots as thousand separator)
+        if ($('#grandTotalPayment').length) {
         $('#grandTotalPayment').text(formatCurrency(grandTotal));
+        }
+        if ($('#totalPaidAmount').length) {
         $('#totalPaidAmount').text(formatCurrency(totalPaid));
+        }
 
         const remaining = grandTotal - totalPaid;
 
         if (remaining > 0) {
+            if ($('#remainingAmount').length) {
             $('#remainingAmount').text(formatCurrency(remaining));
             $('#remainingPayment').show();
             $('#changePayment').hide();
+                console.log('Showing remaining payment:', formatCurrency(remaining));
+            }
         } else if (remaining < 0) {
+            if ($('#changeAmount').length) {
             $('#changeAmount').text(formatCurrency(Math.abs(remaining)));
             $('#remainingPayment').hide();
             $('#changePayment').show();
+                console.log('Showing change:', formatCurrency(Math.abs(remaining)));
+            }
         } else {
+            if ($('#remainingPayment').length && $('#changePayment').length) {
             $('#remainingPayment').hide();
             $('#changePayment').hide();
+                console.log('Payment is exact - no remaining or change');
+            }
         }
+    }
+
+    function removePaymentMethod() {
+        const paymentId = $(this).data('payment-id');
+        $(`.payment-method-row[data-payment-id="${paymentId}"]`).remove();
+        calculatePaymentTotals();
+    }
+
+    function autoFillPaymentAmount() {
+        const selectedValue = $(this).val();
+        const paymentRow = $(this).closest('.payment-method-row');
+        const amountField = paymentRow.find('.payment-amount');
+        const denominationInputs = paymentRow.find('.denomination-inputs');
+        const referenceInput = paymentRow.find('.reference-input');
+
+        // Hide all input sections first
+        denominationInputs.hide();
+        referenceInput.hide();
+
+        // Clear denomination selections when switching methods
+        paymentRow.find('.denomination-tag').removeClass('clicked');
+
+        // If option 1 (Tunai) is selected, show denomination inputs
+        if (selectedValue === '1') {
+            denominationInputs.show();
+            amountField.val(''); // Clear amount field for manual input
+        }
+        // If option 2, 3, or 4 is selected, auto-fill with total bill amount and show reference input
+        else if (selectedValue === '2' || selectedValue === '3' || selectedValue === '4') {
+            // Get the grand total and remove formatting
+            const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+            amountField.val(grandTotal);
+            referenceInput.show();
+
+            // Trigger calculation update
+            calculatePaymentTotals();
+        }
+    }
+
+    function incrementDenomination() {
+        const denomination = parseInt($(this).data('denomination')) || 0;
+        const paymentRow = $(this).closest('.payment-method-row');
+        const amountField = paymentRow.find('.payment-amount');
+
+        // Set the amount to the clicked denomination value
+        amountField.val(denomination);
+
+        // Remove clicked class from all denomination tags
+        paymentRow.find('.denomination-tag').removeClass('clicked');
+
+        // Add clicked class to the selected denomination
+        $(this).addClass('clicked');
+
+        // Trigger payment calculation
+        calculatePaymentTotals();
+    }
+
+    function resetDenomination(e) {
+        e.preventDefault(); // Prevent context menu
+        const paymentRow = $(this).closest('.payment-method-row');
+        const amountField = paymentRow.find('.payment-amount');
+
+        // Reset amount field to 0
+        amountField.val('');
+
+        // Remove clicked class from all denomination tags
+        paymentRow.find('.denomination-tag').removeClass('clicked');
+
+        // Add visual feedback
+        $(this).addClass('reset');
+        setTimeout(() => $(this).removeClass('reset'), 200);
+
+        // Trigger payment calculation
+        calculatePaymentTotals();
     }
 
     function loadProducts() {
         const warehouseId = $('#warehouse_id').val();
 
         if (!warehouseId) {
-            $('#productListTable tbody').html(`
-            <tr id="noWarehouseMessage">
-                <td colspan="5" class="text-center text-muted">
+            $('#productGrid').html(`
+                <div class="col-12 text-center text-muted">
                     <i class="fas fa-info-circle"></i> Silakan pilih outlet terlebih dahulu untuk melihat produk
-                </td>
-            </tr>
+                </div>
         `);
             return;
         }
+
+        // Show loading indicator
+        $('#productLoading').show();
+        $('#productGrid').hide();
+        $('#loadMoreContainer').hide();
+
+        // Clear existing products
+        $('#productGrid').empty();
 
         $.ajax({
             url: '<?= base_url('transaksi/jual/search-items') ?>',
             type: 'POST',
             data: {
-                warehouse_id: warehouseId
+                search: '',
+                warehouse_id: warehouseId,
+                category_id: '',
+                limit: <?= $Pengaturan->pagination_limit ?? 20 ?>
             },
+            dataType: 'json',
             success: function (response) {
-                if (response.items) {
+                if (response.items && response.items.length > 0) {
                     displayProducts(response.items);
+
+                    // Show load more button if there are more items
+                    const paginationLimit = <?= $Pengaturan->pagination_limit ?? 20 ?>;
+                    if (response.items.length >= paginationLimit) {
+                        $('#loadMoreContainer').show();
+                    }
+                } else {
+                    $('#productGrid').html('<div class="col-12 text-center text-muted"><i class="fas fa-info-circle"></i> Tidak ada produk tersedia</div>');
                 }
             },
             error: function (xhr, status, error) {
                 console.error('Error loading products:', error);
-                $('#productListTable tbody').html(`
-                <tr>
-                    <td colspan="5" class="text-center text-danger">
+                console.error('Response:', xhr.responseText);
+                $('#productGrid').html(`
+                    <div class="col-12 text-center text-danger">
                         <i class="fas fa-exclamation-triangle"></i> Error memuat produk: ${error}
-                    </td>
-                </tr>
+                    </div>
             `);
+            },
+            complete: function () {
+                $('#productLoading').hide();
+                $('#productGrid').show();
             }
         });
     }
@@ -1337,27 +1839,57 @@ helper('form');
             return;
         }
 
+        // Show loading indicator
+        $('#productLoading').show();
+        $('#productGrid').hide();
+        $('#loadMoreContainer').hide();
+
+        // Clear existing products
+        $('#productGrid').empty();
+
+        // Force manual search mode
+        isBarcodeScan = false;
+
         $.ajax({
             url: '<?= base_url('transaksi/jual/search-items') ?>',
             type: 'POST',
             data: {
                 search: query,
-                warehouse_id: warehouseId
+                warehouse_id: warehouseId,
+                category_id: '',
+                limit: <?= $Pengaturan->pagination_limit ?? 20 ?>
             },
+            dataType: 'json',
             success: function (response) {
-                if (response.items) {
+                if (response.items && response.items.length > 0) {
                     displayProducts(response.items);
+
+                    // Show load more button if there are more items
+                    const paginationLimit = <?= $Pengaturan->pagination_limit ?? 20 ?>;
+                    if (response.items.length >= paginationLimit) {
+                        $('#loadMoreContainer').show();
+                    }
+
+                    // Show search results count
+                    toastr.info(`Ditemukan ${response.items.length} produk untuk: "${query}"`);
+                } else {
+                    $('#productGrid').html('<div class="col-12 text-center text-muted"><i class="fas fa-search"></i> Tidak ada produk ditemukan untuk: "' + query + '"</div>');
+                    toastr.warning(`Tidak ada produk ditemukan untuk: "${query}"`);
                 }
             },
             error: function (xhr, status, error) {
                 console.error('Error searching products:', error);
-                $('#productListTable tbody').html(`
-                <tr>
-                    <td colspan="5" class="text-center text-danger">
+                console.error('Response:', xhr.responseText);
+                $('#productGrid').html(`
+                    <div class="col-12 text-center text-danger">
                         <i class="fas fa-exclamation-triangle"></i> Error mencari produk: ${error}
-                    </td>
-                </tr>
+                    </div>
             `);
+                toastr.error('Error mencari produk: ' + error);
+            },
+            complete: function () {
+                $('#productLoading').hide();
+                $('#productGrid').show();
             }
         });
     }
@@ -1400,7 +1932,7 @@ helper('form');
                         // Product already exists - increment quantity
                         cart[existingItemIndex].quantity += 1;
                         cart[existingItemIndex].total = cart[existingItemIndex].quantity * cart[existingItemIndex].price;
-
+                        toastr.success(`Quantity ${product.item} ditambah: ${cart[existingItemIndex].quantity}`);
                     } else {
                         // Add new product to cart
                         const cartItem = {
@@ -1413,26 +1945,34 @@ helper('form');
                         };
 
                         cart.push(cartItem);
-
+                        toastr.success(`Produk ditambahkan: ${product.item}`);
                     }
 
                     // Update cart display and totals
                     updateCartDisplay();
                     calculateTotal();
+        
+        // Also update payment totals
+        calculatePaymentTotals();
 
                     // Clear search field and focus for next scan
                     $('#productSearch').val('').focus();
+
+                    // Reset barcode scan flag
+                    isBarcodeScan = false;
 
                 } else {
                     // Product not found
                     toastr.error(`Produk dengan barcode/kode ${barcode} tidak ditemukan`);
                     $('#productSearch').focus();
+                    isBarcodeScan = false;
                 }
             },
             error: function (xhr, status, error) {
                 console.error('Error finding product by barcode:', error);
                 toastr.error('Gagal mencari produk: ' + error);
                 $('#productSearch').focus();
+                isBarcodeScan = false;
             },
             complete: function () {
                 // Re-enable search field
@@ -1443,6 +1983,8 @@ helper('form');
 
     function displayProducts(products) {
         let html = '';
+        const defaultImage = '<?= base_url('public/assets/theme/admin-lte-3/dist/img/default.png') ?>';
+        const base_url = '<?= base_url() ?>';
 
         if (products && products.length > 0) {
             products.forEach(function (product) {
@@ -1451,54 +1993,228 @@ helper('form');
                 const brand = product.merk || '-';
                 const price = product.harga_jual || product.harga || 0;
                 const stock = product.stok || 0;
+                // Use foto if exists, otherwise use default
+                let foto = product.foto || product.gambar || product.image || '';
+                // If foto is empty, use default
+                let imageSrc = foto && foto.trim() !== '' ? foto : defaultImage;
 
                 html += `
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center justify-content-between">
-                            <button 
-                                type="button" 
-                                class="btn btn-block btn-outline-primary product-list-btn mb-2 text-left d-flex align-items-center justify-content-between shadow-sm"
-                                style="border-radius: 8px; min-height: 70px; transition: box-shadow 0.2s;"
-                                onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})"
-                                title="Pilih produk ${itemName}"
-                            >
-                                <div class="d-flex flex-column flex-grow-1" style="min-width:0;">
-                                    <span class="badge badge-primary mb-1 px-2 py-1" style="font-size:0.75rem; border-radius: 5px; width: fit-content;">
-                                        <i class="fas fa-barcode" style="font-size:0.85em;"></i> ${product.kode || '-'}
-                                    </span>
-                                    <span class="font-weight-bold text-dark text-truncate" style="font-size:0.95rem; max-width: 260px;">
-                                        ${itemName}
-                                    </span>
-                                    <span class="text-muted" style="font-size:0.92rem;">
-                                        ${category} - ${brand}
-                                    </span>
+                <div class="col-md-3 col-sm-4 col-6">
+                    <div class="product-grid-item rounded-0" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
+                        <div class="product-image" style="width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin:auto;">
+                            <img src="${base_url}${imageSrc}" alt="${itemName}" class="product-thumbnail"
+                                 style="width:150px; height:150px; object-fit:cover;"
+                                 onerror="this.onerror=null;this.src='${defaultImage}'">
                                 </div>
-                                <div class="text-right ml-3 d-flex flex-column align-items-end" style="min-width:90px;">
-                                    <span class="text-success font-weight-bold" style="font-size:1.1rem;">
-                                        Rp ${numberFormat(price)}
-                                    </span>
-                                    <span class="text-muted" style="font-size:0.92rem;">
-                                        Stok: <span class="font-weight-bold">${stock}</span> ${product.satuan || 'PCS'}
-                                    </span>
+                        <div class="product-info">
+                            <div class="product-category">${category} - ${brand}</div>
+                            <div class="product-name">${itemName}</div>
+                            <div class="product-price">Rp ${numberFormat(price)}</div>
+                            <small class="text-muted">Stok: ${stock} ${product.satuan || 'PCS'}</small>
                                 </div>
-                            </button>
                         </div>
-                    </td>
-                </tr>
+                </div>
             `;
             });
         } else {
             html = `
-            <tr>
-                <td colspan="5" class="text-center text-muted">
-                    <i class="fas fa-search"></i> Tidak ada produk ditemukan
-                </td>
-            </tr>
-        `;
+            <div class="col-12 text-center text-muted py-4">
+                <i class="fas fa-search fa-2x mb-2"></i>
+                <p>Tidak ada produk ditemukan</p>
+            </div>
+            `;
         }
 
-        $('#productListTable tbody').html(html);
+        $('#productGrid').html(html);
+    }
+
+    // Function to load products by category
+    function loadProductsByCategory(categoryId) {
+        const warehouseId = $('#warehouse_id').val();
+        if (!warehouseId) {
+            toastr.warning('Silakan pilih outlet terlebih dahulu');
+            return;
+        }
+
+        // Extract category ID from the tab ID
+        const categoryIdMatch = categoryId.match(/category-(\d+)-tab/);
+
+        if (categoryIdMatch) {
+            const actualCategoryId = categoryIdMatch[1];
+            loadProductsByCategoryId(actualCategoryId);
+        } else if (categoryId === 'all-tab') {
+            loadProducts(); // Load all products
+        } else {
+            console.log('Unknown category ID format:', categoryId);
+        }
+    }
+
+    // Function to load products by specific category ID with performance optimization
+    function loadProductsByCategoryId(categoryId) {
+        const warehouseId = $('#warehouse_id').val();
+        if (!warehouseId) {
+            toastr.warning('Silakan pilih outlet terlebih dahulu');
+            return;
+        }
+
+        // Show loading indicator
+        $('#productLoading').show();
+        $('#productGrid').hide();
+        $('#loadMoreContainer').hide();
+
+        // Clear existing products
+        $('#productGrid').empty();
+
+        console.log('Loading products for category:', categoryId);
+        console.log('Warehouse ID:', warehouseId);
+        console.log('Request data:', {
+            search: '',
+            warehouse_id: warehouseId,
+            category_id: categoryId,
+            limit: <?= $Pengaturan->pagination_limit ?? 20 ?>
+        });
+
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/search-items') ?>',
+            type: 'POST',
+            data: {
+                search: '',
+                warehouse_id: warehouseId,
+                category_id: categoryId,
+                limit: <?= $Pengaturan->pagination_limit ?? 20 ?> // Use pagination limit from database settings
+            },
+            dataType: 'json',
+            success: function (response) {
+                console.log('Success response:', response);
+                if (response.items && response.items.length > 0) {
+                    displayProducts(response.items);
+
+                    // Show load more button if there are more items
+                    const paginationLimit = <?= $Pengaturan->pagination_limit ?? 20 ?>;
+                    if (response.items.length >= paginationLimit) {
+                        $('#loadMoreContainer').show();
+                    }
+                } else {
+                    $('#productGrid').html('<div class="col-12 text-center text-muted"><i class="fas fa-info-circle"></i> Tidak ada produk dalam kategori ini</div>');
+                }
+            },
+            error: function (xhr, status, error) {
+                if (status !== 'abort') {
+                    console.error('Error loading products by category:', error);
+                    console.error('Response:', xhr.responseText);
+                    console.error('Status:', status);
+                    console.error('XHR:', xhr);
+                    console.error('HTTP Status:', xhr.status);
+                    console.error('Response Headers:', xhr.getAllResponseHeaders());
+
+                    // Try to parse response as JSON for more details
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        console.error('Parsed error response:', response);
+                    } catch (e) {
+                        console.error('Could not parse response as JSON');
+                    }
+
+                    toastr.error('Gagal memuat produk berdasarkan kategori');
+                }
+            },
+            complete: function () {
+                $('#productLoading').hide();
+                $('#productGrid').show();
+            }
+        });
+    }
+
+    // Function to load more products (pagination)
+    function loadMoreProducts() {
+        const warehouseId = $('#warehouse_id').val();
+        const activeTab = $('#categoryTabs .nav-link.active');
+        const categoryId = activeTab.attr('id');
+
+        if (!warehouseId) {
+            toastr.warning('Silakan pilih outlet terlebih dahulu');
+            return;
+        }
+
+        // Get current product count
+        const currentCount = $('#productGrid .product-grid-item').length;
+
+        // Show loading state
+        $('#loadMoreProducts').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Memuat...');
+
+        // Get pagination limit from database settings
+        const paginationLimit = <?= $Pengaturan->pagination_limit ?? 20 ?>;
+
+        // Extract category ID properly
+        let extractedCategoryId = '';
+        if (categoryId === 'all-tab') {
+            extractedCategoryId = '';
+        } else if (categoryId && categoryId.startsWith('category-') && categoryId.endsWith('-tab')) {
+            extractedCategoryId = categoryId.replace('category-', '').replace('-tab', '');
+        }
+
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/search-items') ?>',
+            type: 'POST',
+            data: {
+                search: '',
+                warehouse_id: warehouseId,
+                category_id: extractedCategoryId,
+                limit: paginationLimit,
+                offset: currentCount
+            },
+            dataType: 'json',
+            success: function (response) {
+                if (response.items && response.items.length > 0) {
+                    // Append new products to existing grid
+                    const newProducts = response.items.map(product => {
+                        const itemName = product.item || product.nama || product.produk || '-';
+                        const category = product.kategori || '-';
+                        const brand = product.merk || '-';
+                        const price = product.harga_jual || product.harga || 0;
+                        const stock = product.stok || 0;
+                        const image = product.gambar || product.image || '<?= base_url('public/assets/theme/admin-lte-3/dist/img/default.png') ?>';
+
+                        return `
+                        <div class="col-md-3 col-sm-4 col-6">
+                            <div class="product-grid-item rounded-0" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
+                                <div class="product-image" style="width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin:auto;">
+                                    <img src="${image}" alt="${itemName}" class="product-thumbnail" 
+                                         style="width:150px; height:150px; object-fit:cover;"
+                                         onerror="this.src='<?= base_url('public/assets/theme/admin-lte-3/dist/img/default.png') ?>'">
+                                </div>
+                                <div class="product-info">
+                                    <div class="product-category">${category} - ${brand}</div>
+                                    <div class="product-name">${itemName}</div>
+                                    <div class="product-price">Rp ${numberFormat(price)}</div>
+                                    <small class="text-muted">Stok: ${stock} ${product.satuan || 'PCS'}</small>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    }).join('');
+
+                    $('#productGrid').append(newProducts);
+
+                    // Hide load more button if we got fewer items than requested
+                    if (response.items.length < paginationLimit) {
+                        $('#loadMoreContainer').hide();
+                    }
+                } else {
+                    // No more products
+                    $('#loadMoreContainer').hide();
+                    toastr.info('Tidak ada produk lagi untuk dimuat');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error loading more products:', error);
+                toastr.error('Gagal memuat produk tambahan');
+            },
+            complete: function () {
+                // Reset button state
+                $('#loadMoreProducts').prop('disabled', false).html('<i class="fas fa-arrow-down"></i> Lanjutkan');
+            }
+        });
     }
 
     // Function to check for variants and handle add to cart
@@ -1580,7 +2296,7 @@ helper('form');
     function updateCartDisplay() {
         let html = '';
         let totalItems = 0;
-        
+
         cart.forEach(function (item, index) {
             totalItems += item.quantity;
             html += `
@@ -1860,6 +2576,9 @@ helper('form');
         console.log('Sending transaction data:', transactionData);
         console.log('Current draft ID:', currentDraftId);
         console.log('Is draft:', isDraft);
+        console.log('Cart length:', cart.length);
+        console.log('Payment methods:', paymentMethods);
+        console.log('Grand total:', grandTotal);
 
         $.ajax({
             url: '<?= base_url('transaksi/jual/process-transaction') ?>',
@@ -1923,7 +2642,23 @@ helper('form');
             },
             error: function (xhr, status, error) {
                 console.error('Transaction error:', error);
+                console.error('XHR Status:', xhr.status);
+                console.error('Response Text:', xhr.responseText);
+                console.error('Status:', status);
+                
+                // Try to parse response for more details
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    console.error('Parsed error response:', response);
+                    if (response.message) {
+                        toastr.error('Error: ' + response.message);
+                    } else {
                 toastr.error('Terjadi kesalahan saat memproses transaksi');
+                    }
+                } catch (e) {
+                    console.error('Could not parse response as JSON');
+                    toastr.error('Terjadi kesalahan saat memproses transaksi');
+                }
             },
             complete: function () {
                 // Reset button state
@@ -2302,76 +3037,8 @@ helper('form');
         window.open('<?= base_url('transaksi/jual') ?>?search=' + transactionId, '_blank');
     }
 
-    // Denomination click functionality for uang pas
-    $(document).ready(function () {
-        $('.denomination-tag').on('click', function () {
-            const denomination = parseInt($(this).data('denomination'));
-            // Find the payment amount field in the same row
-            const paymentRow = $(this).closest('.payment-method-row');
-            const amountField = paymentRow.find('.payment-amount');
-            const currentAmount = parseFloat(amountField.val()) || 0;
-            const newAmount = currentAmount + denomination;
-
-            amountField.val(newAmount);
-
-            // Trigger change event to recalculate totals
-            amountField.trigger('change');
-
-            // Add visual feedback
-            $(this).addClass('active');
-            setTimeout(() => {
-                $(this).removeClass('active');
-            }, 200);
-
-            // Show success message
-            toastr.success(`Ditambahkan: Rp ${numberFormat(denomination)}`);
-        });
-
-        // Clear amount button functionality
-        $('#clearAmount').on('click', function () {
-            // Find the payment amount field in the same row
-            const paymentRow = $(this).closest('.payment-method-row');
-            const amountField = paymentRow.find('.payment-amount');
-
-            amountField.val('');
-            amountField.trigger('change');
-            toastr.info('Jumlah uang diterima berhasil dihapus');
-        });
-
-        // Uang Pas button functionality - sets amount received equal to grand total
-        $('#uangPas').on('click', function () {
-            const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
-
-            console.log('Uang Pas clicked. Grand total:', grandTotal);
-
-            if (grandTotal > 0) {
-                // Find the current payment method row (first one or active one)
-                const currentPaymentRow = $('.payment-method-row').first();
-                const amountField = currentPaymentRow.find('.payment-amount');
-
-                console.log('Payment row found:', currentPaymentRow.length > 0);
-                console.log('Amount field found:', amountField.length > 0);
-
-                if (amountField.length > 0) {
-                    // Set the amount to grand total
-                    amountField.val(grandTotal);
-                    // Trigger change to recalculate totals
-                    amountField.trigger('change');
-                    toastr.success(`Uang pas: Rp ${numberFormat(grandTotal)}`);
-                    console.log('Amount set successfully to:', grandTotal);
-                } else {
-                    toastr.error('Field jumlah pembayaran tidak ditemukan');
-                    console.error('Amount field not found');
-                }
-            } else {
-                toastr.warning('Grand total belum dihitung. Silakan tambahkan produk terlebih dahulu.');
-                console.warn('Grand total is 0 or not calculated');
-            }
-        });
-
         // Load available printers
         loadPrinters();
-    });
 
     // Printer functionality
     function loadPrinters() {
@@ -2575,27 +3242,84 @@ helper('form');
     // Load available printers
     loadPrinters();
 
+    // Manual anggota search function
+    function searchAnggota() {
+        let kartuNumber = $('#scanAnggota').val().trim();
+
+        if (!kartuNumber) {
+            toastr.warning('Masukkan nomor kartu anggota');
+            return;
+        }
+
+        // Show loading state
+        $('#searchAnggota').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        $.ajax({
+            url: '<?= base_url('api/anggota/search') ?>',
+            type: 'GET',
+            data: { kartu: kartuNumber },
+            success: function (response) {
+                if (response.success && response.data) {
+                    const anggota = response.data;
+
+                    // Store customer data
+                    $('#selectedCustomerId').val(anggota.id);
+                    $('#selectedCustomerName').val(anggota.nama);
+
+                    // Show anggota info
+                    $('#displayCustomerName').text(anggota.nama);
+                    $('#displayCustomerCard').text(anggota.nomor_kartu || kartuNumber);
+                    $('#customerInfoDisplay').show();
+
+                    // Clear scan input
+                    $('#scanAnggota').val('');
+
+                    toastr.success('Anggota ditemukan: ' + anggota.nama);
+                } else {
+                    toastr.error('Anggota tidak ditemukan');
+                    $('#customerInfoDisplay').hide();
+                    $('#selectedCustomerId').val('');
+                    $('#selectedCustomerName').val('');
+                }
+            },
+            error: function (xhr, status, error) {
+                if (xhr.status === 401) {
+                    toastr.error('Session telah berakhir. Silakan login ulang.');
+                    setTimeout(function () {
+                        window.location.href = '<?= base_url('auth/login') ?>';
+                    }, 2000);
+                } else {
+                    toastr.error('Gagal mencari anggota: ' + error);
+                }
+            },
+            complete: function () {
+                // Reset button state
+                $('#searchAnggota').prop('disabled', false).html('<i class="fas fa-qrcode"></i>');
+            }
+        });
+    }
+
     // QR Scanner Functions
     let qrScanner = null;
     let qrStream = null;
 
-    // NOTE: This is a basic QR scanner implementation
-    // To make it fully functional, you need to integrate with a QR code library
-    // Recommended libraries:
-    // 1. jsQR: https://github.com/cozmo/jsQR (Pure JavaScript)
-    // 2. ZXing: https://github.com/zxing-js/library (More comprehensive)
-    // 3. QuaggaJS: https://github.com/serratus/quaggajs (Barcode/QR scanner)
-
     function openQrScanner() {
+        // Reset scanner state first
+        qrScanner = false;
+        if (qrStream) {
+            stopQrScanner();
+        }
+
+        // Show modal first
         $('#qrScannerModal').modal('show');
 
-        // Show helpful message
+        // Wait for modal to be fully visible before starting scanner
+        $('#qrScannerModal').on('shown.bs.modal', function () {
+            // Small delay to ensure modal is fully rendered
         setTimeout(() => {
-            const status = document.getElementById('qrScannerStatus');
-            if (status) {
-                status.innerHTML = '<p class="text-info"><i class="fas fa-info-circle"></i> Klik tombol kamera untuk memulai scanning</p>';
-            }
-        }, 500);
+                startQrScanner();
+            }, 300);
+        });
     }
 
     function startQrScanner() {
@@ -2612,19 +3336,49 @@ helper('form');
         navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: 'environment',
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
+                width: { ideal: 640 },
+                height: { ideal: 480 }
             }
         })
             .then(function (stream) {
                 qrStream = stream;
                 video.srcObject = stream;
-                video.play();
 
+                // Wait for video to be ready before playing
+                video.onloadedmetadata = function () {
+                    // Handle video play with proper error handling
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(function () {
                 status.innerHTML = '<p class="text-success"><i class="fas fa-camera"></i> Kamera aktif. Arahkan ke QR code</p>';
-
                 // Start QR code detection
                 startQrDetection(video);
+                            })
+                            .catch(function (err) {
+                                console.error('Video play error:', err);
+                                if (err.name === 'AbortError') {
+                                    status.innerHTML = '<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Video diinterupsi, mencoba lagi...</p>';
+                                    // Retry after a short delay
+                                    setTimeout(() => {
+                                        if (qrScanner && video.srcObject) {
+                                            video.play().then(() => {
+                                                status.innerHTML = '<p class="text-success"><i class="fas fa-camera"></i> Kamera aktif. Arahkan ke QR code</p>';
+                                                startQrDetection(video);
+                                            }).catch(retryErr => {
+                                                console.error('Retry failed:', retryErr);
+                                                status.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Gagal memulai video</p>';
+                                            });
+                                        }
+                                    }, 500);
+                                } else {
+                                    status.innerHTML = '<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Kamera aktif tapi ada masalah dengan video</p>';
+                                    // Still try to start detection
+                                    startQrDetection(video);
+                                }
+                            });
+                    }
+                };
             })
             .catch(function (err) {
                 console.error('Camera error:', err);
@@ -2639,12 +3393,19 @@ helper('form');
                 }
 
                 status.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> ' + errorMessage + '</p>';
+
+                // Add debug info
+                console.log('Camera error details:', {
+                    name: err.name,
+                    message: err.message,
+                    constraint: err.constraint
+                });
             });
     }
 
     function startQrDetection(video) {
         const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { willReadFrequently: true });
 
         function scanFrame() {
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -2667,9 +3428,6 @@ helper('form');
 
     function detectQrCode(canvas, context) {
         // QR code detection using jsQR library
-        // This function processes video frames to detect QR codes
-
-        // Check if jsQR library is loaded
         if (typeof jsQR === 'undefined') {
             console.error('jsQR library not loaded. Please include the jsQR script.');
             return;
@@ -2681,14 +3439,20 @@ helper('form');
 
             if (code) {
                 console.log('QR Code detected:', code.data);
+                console.log('QR Code format check...');
+
+                // Stop scanning to prevent multiple detections
+                stopQrScanner();
 
                 // Try to parse the QR data
                 let qrData;
                 try {
                     qrData = JSON.parse(code.data);
+                    console.log('QR data parsed as JSON:', qrData);
                 } catch (e) {
                     // If not JSON, treat as plain text
-                    qrData = { id_pelanggan: code.data };
+                    console.log('QR data is plain text:', code.data);
+                    qrData = code.data;
                 }
 
                 // Handle the QR scan result
@@ -2700,36 +3464,115 @@ helper('form');
     }
 
     function stopQrScanner() {
+        // Stop the scanning loop
         if (qrScanner) {
             qrScanner = false;
         }
 
+        // Stop all camera tracks
         if (qrStream) {
-            qrStream.getTracks().forEach(track => track.stop());
+            try {
+                qrStream.getTracks().forEach(track => {
+                    if (track.readyState === 'live') {
+                        track.stop();
+                    }
+                });
             qrStream = null;
+            } catch (error) {
+                console.error('Error stopping camera tracks:', error);
+            }
         }
 
+        // Clear video source safely
         const video = document.getElementById('qrVideo');
+        if (video) {
+            try {
+                // Pause video first
+                if (!video.paused) {
+                    video.pause();
+                }
+
+                // Clear source
         if (video.srcObject) {
             video.srcObject = null;
         }
 
+                // Reset video element
+                video.load();
+
+                // Remove event listeners
+                video.onloadedmetadata = null;
+                video.oncanplay = null;
+
+            } catch (error) {
+                console.error('Error clearing video source:', error);
+            }
+        }
+
+        // Update status
         const status = document.getElementById('qrScannerStatus');
+        if (status) {
         status.innerHTML = '<p class="text-muted">Kamera dinonaktifkan</p>';
+        }
     }
 
     // Function to handle QR code scan result (called by QR library)
     function handleQrScanResult(qrData) {
         console.log('QR Code detected:', qrData);
+        console.log('QR Data type:', typeof qrData);
+        console.log('QR Data keys:', Object.keys(qrData || {}));
 
         // Close the scanner modal
         $('#qrScannerModal').modal('hide');
 
-        // Set the scanned data in the input field
-        $('#scanAnggota').val(JSON.stringify(qrData));
+        // Extract customer ID from QR data
+        let customerId = null;
+        let customerName = null;
 
+        // Handle different QR data formats
+        if (typeof qrData === 'string') {
+            // Plain text QR code
+            customerId = qrData.trim();
+            console.log('Plain text QR code detected:', customerId);
+        } else if (qrData && typeof qrData === 'object') {
+            // JSON/object QR code
+            if (qrData.id_pelanggan) {
+                customerId = qrData.id_pelanggan;
+                customerName = qrData.nama;
+            } else if (qrData.id) {
+                customerId = qrData.id;
+                customerName = qrData.nama;
+            } else if (qrData.kartu) {
+                customerId = qrData.kartu;
+                customerName = qrData.nama;
+            } else if (qrData.nomor_kartu) {
+                customerId = qrData.nomor_kartu;
+                customerName = qrData.nama;
+            } else if (qrData.code) {
+                customerId = qrData.code;
+                customerName = qrData.name;
+            }
+        }
+
+        if (customerId && customerId.toString().trim() !== '') {
+        // Set the scanned data in the input field
+            $('#scanAnggota').val(customerId);
+
+            // If we have customer name, set it directly
+            if (customerName) {
+                $('#selectedCustomerName').val(customerName);
+                $('#displayCustomerName').text(customerName);
+                $('#displayCustomerCard').text(customerId);
+                $('#customerInfoDisplay').show();
+                toastr.success('Anggota ditemukan: ' + customerName);
+            } else {
         // Automatically search for the customer
         searchAnggota();
+            }
+        } else {
+            toastr.error('Data QR code tidak valid. Format tidak dikenali.');
+            $('#scanAnggota').focus();
+        }
     }
 
     // Draft List Functions
@@ -2746,8 +3589,6 @@ helper('form');
         $loading.show();
         $empty.hide();
         $tableBody.empty();
-
-        console.log('Loading drafts...');
 
         $.ajax({
             url: '<?= base_url('transaksi/jual/get-drafts') ?>',

@@ -67,4 +67,34 @@ class KategoriModel extends Model
         $kode = $prefix . $suffix;
         return substr($kode, 0, 6);
     }
+
+    /**
+     * Get all active categories (status = 1)
+     * @return array
+     */
+    public function getActiveCategories()
+    {
+        return $this->where('status', '1')
+                   ->orderBy('kategori', 'ASC')
+                   ->findAll();
+    }
+
+    /**
+     * Get active categories with product count
+     * @return array
+     */
+    public function getActiveCategoriesWithCount()
+    {
+        $db = \Config\Database::connect();
+        
+        $sql = "SELECT k.id, k.kategori, k.kode, COUNT(p.id) as product_count 
+                FROM tbl_m_kategori k 
+                LEFT JOIN tbl_m_item p ON k.id = p.kategori_id 
+                WHERE k.status = 1 
+                GROUP BY k.id, k.kategori, k.kode 
+                ORDER BY k.kategori ASC";
+        
+        $query = $db->query($sql);
+        return $query->getResult();
+    }
 } 

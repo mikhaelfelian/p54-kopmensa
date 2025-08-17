@@ -1,80 +1,92 @@
-<?= $this->extend(theme_path('main')) ?>
+<?= $this->extend('admin-lte-3/layout/main') ?>
+
 <?= $this->section('content') ?>
-<div class="content">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">          
-                <div class="card rounded-0">
-                    <div class="card-header">
-                        <h3 class="card-title">Daftar API Tokens</h3>
-                        <div class="card-tools">
-                            <a href="<?= base_url('pengaturan/api-tokens/add') ?>" class="btn btn-primary btn-sm rounded-0">
-                                <i class="fas fa-plus"></i> Tambah Token
-                            </a>
+<div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">API Tokens</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="<?= base_url('dashboard') ?>">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="#">Pengaturan</a></li>
+                        <li class="breadcrumb-item active">API Tokens</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">API Token Management</h3>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#generateTokenModal">
+                                    <i class="fas fa-plus"></i> Generate New Token
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped datatable rounded-0">
-                                <thead>
-                                    <tr>
-                                        <th width="5%">No</th>
-                                        <th width="15%">Provider</th>
-                                        <th width="40%">Token</th>
-                                        <th width="20%">Description</th>
-                                        <th width="10%">Status</th>
-                                        <th width="10%">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (empty($tokens)) : ?>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped">
+                                    <thead>
                                         <tr>
-                                            <td colspan="6" class="text-center">Tidak ada data</td>
+                                            <th width="5%">No</th>
+                                            <th width="20%">Token Name</th>
+                                            <th width="35%">Token</th>
+                                            <th width="15%">Created</th>
+                                            <th width="15%">Last Used</th>
+                                            <th width="10%">Actions</th>
                                         </tr>
-                                    <?php else : ?>
-                                        <?php $no = 1; ?>
-                                        <?php foreach ($tokens as $token) : ?>
-                                            <tr>
-                                                <td><?= $no++ ?></td>
-                                                <td><?= esc($token->name) ?></td>
-                                                <td>
-                                                    <div class="input-group">
-                                                        <input type="text" class="form-control token-input rounded-0" value="<?= esc($token->tokens) ?>" readonly>
-                                                        <div class="input-group-append">
-                                                            <button class="btn btn-outline-secondary copy-btn rounded-0" type="button" data-toggle="tooltip" title="Copy to clipboard">
-                                                                <i class="fas fa-copy"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td><?= esc($token->description ?? '-') ?></td>
-                                                <td class="text-center">
-                                                    <span class="badge badge-<?= !$token->deleted_at ? 'success' : 'danger' ?> rounded-0">
-                                                        <?= !$token->deleted_at ? 'Active' : 'Inactive' ?>
-                                                    </span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <div class="btn-group">
-                                                        <a href="<?= base_url('pengaturan/api-tokens/edit/' . $token->id) ?>" class="btn btn-warning btn-sm rounded-0" data-toggle="tooltip" title="Edit">
-                                                            <i class="fas fa-edit"></i>
-                                                        </a>
-                                                        <a href="<?= base_url('pengaturan/api-tokens/toggle/' . $token->id) ?>" class="btn btn-<?= !$token->deleted_at ? 'secondary' : 'success' ?> btn-sm rounded-0" data-toggle="tooltip" title="<?= !$token->deleted_at ? 'Deactivate' : 'Activate' ?>">
-                                                            <i class="fas fa-<?= !$token->deleted_at ? 'times' : 'check' ?>"></i>
-                                                        </a>
-                                                        <a href="<?= base_url('pengaturan/api-tokens/delete/' . $token->id) ?>" class="btn btn-danger btn-sm rounded-0 delete-confirm" data-toggle="tooltip" title="Delete">
-                                                            <i class="fas fa-trash"></i>
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">
+                                                <i class="fas fa-info-circle"></i> No API tokens generated yet
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
+</div>
+
+<!-- Generate Token Modal -->
+<div class="modal fade" id="generateTokenModal" tabindex="-1" role="dialog" aria-labelledby="generateTokenModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="generateTokenModalLabel">Generate New API Token</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="tokenName">Token Name</label>
+                        <input type="text" class="form-control" id="tokenName" placeholder="Enter token name" required>
+                        <small class="form-text text-muted">Give your token a descriptive name for easy identification.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Generate Token</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
