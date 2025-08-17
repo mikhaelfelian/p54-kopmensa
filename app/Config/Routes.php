@@ -393,6 +393,7 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
     $routes->get('stock', 'StockReport::index');
     $routes->get('stock/detail/(:num)', 'StockReport::detail/$1');
     $routes->get('stock/export_excel', 'StockReport::export_excel');
+    $routes->get('stock/test_data', 'StockReport::test_data');
 
     // Outlet Report Routes
     $routes->get('outlet', 'OutletReport::index');

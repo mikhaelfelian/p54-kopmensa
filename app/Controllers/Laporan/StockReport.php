@@ -47,7 +47,14 @@ class StockReport extends BaseController
         ];
 
         // Get stock data
-        $stock = $this->vItemStokModel->searchItems($criteria, 20);
+        $stockResult = $this->vItemStokModel->searchItems($criteria, 20);
+        $stock = $stockResult['data'] ?? [];
+        
+        // Debug: Log the stock data
+        log_message('debug', 'Stock data count: ' . count($stock));
+        if (!empty($stock)) {
+            log_message('debug', 'First stock item: ' . json_encode($stock[0]));
+        }
         
         // Get summary data
         $summary = $this->vItemStokModel->getStockMovementSummary($gudangId);
@@ -92,6 +99,40 @@ class StockReport extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/laporan/stock/index', $data);
+    }
+    
+    /**
+     * Temporary test method to check data
+     */
+    public function test_data()
+    {
+        // Check what items exist
+        $items = $this->db->table('tbl_m_item')
+            ->select('id, kode, item')
+            ->where('status', '1')
+            ->limit(5)
+            ->get()
+            ->getResult();
+            
+        // Check what stock exists
+        $stock = $this->db->table('tbl_m_item_stok')
+            ->select('id_item, id_gudang, jml')
+            ->where('status', '1')
+            ->limit(5)
+            ->get()
+            ->getResult();
+            
+        // Check what gudang exists
+        $gudang = $this->db->table('tbl_m_gudang')
+            ->select('id, nama')
+            ->where('status_hps', '0')
+            ->limit(5)
+            ->get()
+            ->getResult();
+            
+        echo "Items: " . json_encode($items) . "\n";
+        echo "Stock: " . json_encode($stock) . "\n";
+        echo "Gudang: " . json_encode($gudang) . "\n";
     }
 
     /**

@@ -16,7 +16,7 @@
         <div class="card card-default">
             <div class="card-header">
                 <h3 class="card-title">
-                    <i class="fas fa-eye mr-1"></i> Detail Outlet - <?= $outlet->gudang ?>
+                    <i class="fas fa-eye mr-1"></i> Detail Outlet - <?= $outlet->nama ?? 'Unknown' ?>
                 </h3>
                 <div class="card-tools">
                     <a href="<?= base_url('laporan/outlet') ?>" class="btn btn-default btn-sm rounded-0">
@@ -31,19 +31,15 @@
                         <table class="table table-borderless">
                             <tr>
                                 <td width="30%"><strong>Nama Outlet</strong></td>
-                                <td>: <?= $outlet->gudang ?></td>
+                                <td>: <?= $outlet->nama ?? 'Unknown' ?></td>
                             </tr>
                             <tr>
-                                <td><strong>Alamat</strong></td>
-                                <td>: <?= $outlet->alamat ?? '-' ?></td>
+                                <td><strong>Kode</strong></td>
+                                <td>: <?= $outlet->kode ?? '-' ?></td>
                             </tr>
                             <tr>
-                                <td><strong>Telepon</strong></td>
-                                <td>: <?= $outlet->telepon ?? '-' ?></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Email</strong></td>
-                                <td>: <?= $outlet->email ?? '-' ?></td>
+                                <td><strong>Deskripsi</strong></td>
+                                <td>: <?= $outlet->deskripsi ?? '-' ?></td>
                             </tr>
                         </table>
                     </div>
@@ -52,7 +48,7 @@
                             <tr>
                                 <td width="30%"><strong>Status</strong></td>
                                 <td>: 
-                                    <?php if ($outlet->status == '1'): ?>
+                                    <?php if (($outlet->status ?? '0') == '1'): ?>
                                         <span class="badge badge-success">Aktif</span>
                                     <?php else: ?>
                                         <span class="badge badge-danger">Nonaktif</span>

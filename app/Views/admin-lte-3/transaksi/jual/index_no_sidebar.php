@@ -13,54 +13,6 @@
 <!-- CSRF Token -->
 <?= csrf_field() ?>
 
-<!-- Summary Cards -->
-<div class="row">
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-info">
-            <div class="inner">
-                <h3><?= number_format($totalSales, 0, ',', '.') ?></h3>
-                <p>Total Penjualan Hari Ini</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-shopping-cart"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-success">
-            <div class="inner">
-                <h3><?= $totalTransactions ?></h3>
-                <p>Transaksi Hari Ini</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-chart-line"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-warning">
-            <div class="inner">
-                <h3><?= count($customers) ?></h3>
-                <p>Total Pelanggan</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-users"></i>
-            </div>
-        </div>
-    </div>
-    <div class="col-lg-3 col-6">
-        <div class="small-box bg-danger">
-            <div class="inner">
-                <h3><?= count($platforms) ?></h3>
-                <p>Platform Pembayaran</p>
-            </div>
-            <div class="icon">
-                <i class="fas fa-credit-card"></i>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Cashier Interface -->
 <div class="row">
     <div class="col-md-8">
@@ -70,10 +22,7 @@
                     <i class="fas fa-cash-register"></i> Kasir - Transaksi Penjualan
                 </h3>
                 <div class="card-tools">
-                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal"
-                        data-target="#newTransactionModal">
-                        <i class="fas fa-plus"></i> Transaksi Baru
-                    </button>
+
                 </div>
             </div>
             <div class="card-body">

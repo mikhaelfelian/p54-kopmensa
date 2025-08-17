@@ -172,13 +172,25 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach (array_slice($lowStock, 0, 5) as $item): ?>
+                                    <?php 
+                                    if (is_array($lowStock) && !empty($lowStock)) {
+                                        foreach (array_slice($lowStock, 0, 5) as $item): 
+                                            // Handle both object and array access
+                                            $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
+                                            $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
+                                            $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
+                                    ?>
                                     <tr>
-                                        <td><?= esc($item->item) ?></td>
-                                        <td><?= esc($item->gudang) ?></td>
-                                        <td><span class="badge badge-warning"><?= number_format($item->sisa, 2) ?></span></td>
+                                        <td><?= esc($itemName) ?></td>
+                                        <td><?= esc($gudangName) ?></td>
+                                        <td><span class="badge badge-warning"><?= number_format($sisa, 2) ?></span></td>
                                     </tr>
-                                    <?php endforeach; ?>
+                                    <?php 
+                                        endforeach;
+                                    } else {
+                                        echo '<tr><td colspan="3" class="text-center">Tidak ada data</td></tr>';
+                                    }
+                                    ?>
                                 </tbody>
                             </table>
                         </div>
@@ -208,13 +220,25 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach (array_slice($outOfStock, 0, 5) as $item): ?>
+                                    <?php 
+                                    if (is_array($outOfStock) && !empty($outOfStock)) {
+                                        foreach (array_slice($outOfStock, 0, 5) as $item): 
+                                            // Handle both object and array access
+                                            $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
+                                            $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
+                                            $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
+                                    ?>
                                     <tr>
-                                        <td><?= esc($item->item) ?></td>
-                                        <td><?= esc($item->gudang) ?></td>
-                                        <td><span class="badge badge-danger"><?= number_format($item->sisa, 2) ?></span></td>
+                                        <td><?= esc($itemName) ?></td>
+                                        <td><?= esc($gudangName) ?></td>
+                                        <td><span class="badge badge-danger"><?= number_format($sisa, 2) ?></span></td>
                                     </tr>
-                                    <?php endforeach; ?>
+                                    <?php 
+                                        endforeach;
+                                    } else {
+                                        echo '<tr><td colspan="3" class="text-center">Tidak ada data</td></tr>';
+                                    }
+                                    ?>
                                 </tbody>
                             </table>
                         </div>
@@ -245,15 +269,25 @@
                                 </thead>
                                 <tbody>
                                     <?php 
-                                    $topItems = array_slice($stock, 0, 5);
-                                    foreach ($topItems as $item): 
+                                    if (is_array($stock) && !empty($stock)) {
+                                        $topItems = array_slice($stock, 0, 5);
+                                        foreach ($topItems as $item): 
+                                            // Handle both object and array access
+                                            $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
+                                            $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
+                                            $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
                                     ?>
                                     <tr>
-                                        <td><?= esc($item->item) ?></td>
-                                        <td><?= esc($item->gudang) ?></td>
-                                        <td><span class="badge badge-success"><?= number_format($item->sisa, 2) ?></span></td>
+                                        <td><?= esc($itemName) ?></td>
+                                        <td><?= esc($gudangName) ?></td>
+                                        <td><span class="badge badge-success"><?= number_format($sisa, 2) ?></span></td>
                                     </tr>
-                                    <?php endforeach; ?>
+                                    <?php 
+                                        endforeach;
+                                    } else {
+                                        echo '<tr><td colspan="3" class="text-center">Tidak ada data</td></tr>';
+                                    }
+                                    ?>
                                 </tbody>
                             </table>
                         </div>
@@ -376,24 +410,37 @@
                                 <td colspan="10" class="text-center">Tidak ada data stok</td>
                                 </tr>
                             <?php else: ?>
-                            <?php foreach ($stock as $index => $item): ?>
+                            <?php 
+                            if (is_array($stock) || is_object($stock)) {
+                                $rowNumber = 1; // Initialize row counter
+                                foreach ($stock as $index => $item): 
+                                    // Handle both object and array access
+                                    $kode = is_object($item) ? ($item->kode ?? 'Unknown') : ($item['kode'] ?? 'Unknown');
+                                    $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
+                                    $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
+                                    $so = is_object($item) ? ($item->so ?? null) : ($item['so'] ?? null);
+                                    $stokMasuk = is_object($item) ? (float)($item->stok_masuk ?? 0) : (float)($item['stok_masuk'] ?? 0);
+                                    $stokKeluar = is_object($item) ? (float)($item->stok_keluar ?? 0) : (float)($item['stok_keluar'] ?? 0);
+                                    $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
+                                    $idItem = is_object($item) ? (int)($item->id_item ?? 0) : (int)($item['id_item'] ?? 0);
+                                    $idGudang = is_object($item) ? (int)($item->id_gudang ?? 0) : (int)($item['id_gudang'] ?? 0);
+                            ?>
                                     <tr>
-                                        <td><?= $index + 1 ?></td>
-                                <td><strong><?= esc($item->kode) ?></strong></td>
-                                <td><?= esc($item->item) ?></td>
-                                <td><?= esc($item->gudang) ?></td>
+                                        <td><?= $rowNumber ?></td>
+                                <td><strong><?= esc($kode) ?></strong></td>
+                                <td><?= esc($itemName) ?></td>
+                                <td><?= esc($gudangName) ?></td>
                                 <td>
-                                    <?php if ($item->so !== null): ?>
-                                        <span class="badge badge-info"><?= number_format($item->so, 2) ?></span>
+                                    <?php if ($so !== null): ?>
+                                        <span class="badge badge-info"><?= number_format($so, 2) ?></span>
                                              <?php else: ?>
                                         <span class="badge badge-secondary">-</span>
                                              <?php endif; ?>
                                          </td>
-                                <td><?= number_format($item->stok_masuk ?? 0, 2) ?></td>
-                                <td><?= number_format($item->stok_keluar ?? 0, 2) ?></td>
+                                <td><?= number_format($stokMasuk, 2) ?></td>
+                                <td><?= number_format($stokKeluar, 2) ?></td>
                                 <td>
                                     <?php 
-                                    $sisa = $item->sisa ?? 0;
                                     if ($sisa > 0) {
                                         echo '<span class="badge badge-success">' . number_format($sisa, 2) . '</span>';
                                     } elseif ($sisa == 0) {
@@ -415,13 +462,17 @@
                                     ?>
                                 </td>
                                 <td>
-                                    <a href="<?= base_url('laporan/stock/detail/' . $item->id_item) ?>?gudang_id=<?= $item->id_gudang ?>" 
+                                    <a href="<?= base_url('laporan/stock/detail/' . $idItem) ?>?gudang_id=<?= $idGudang ?>" 
                                        class="btn btn-sm btn-info" title="Detail">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
+                                <?php 
+                                    $rowNumber++; // Increment row counter
+                                endforeach;
+                            }
+                            ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
