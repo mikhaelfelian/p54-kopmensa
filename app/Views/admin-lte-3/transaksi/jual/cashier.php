@@ -38,7 +38,8 @@ helper('form');
                         </div>
                     </div>
                     <div class="d-flex align-items-center">
-                        <a href="<?= base_url('transaksi/jual/cashier-data') ?>" class="btn btn-outline-primary ml-2" title="Lihat Data Penjualan">
+                        <a href="<?= base_url('transaksi/jual/cashier-data') ?>" class="btn btn-outline-primary ml-2"
+                            title="Lihat Data Penjualan">
                             <i class="fas fa-list"></i> Data Penjualan
                         </a>
                     </div>
@@ -195,65 +196,43 @@ helper('form');
                     <input type="hidden" id="selectedCustomerType" name="selectedCustomerType" value="umum">
 
                     <!-- Cart Area -->
-                    <div class="cart-area mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0">Keranjang Belanja</h6>
-                            <span class="badge badge-info">
+                    <div class="cart-container rounded-0">
+                        <div class="cart-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Keranjang Belanja</h5>
+                            <span class="badge badge-info d-flex align-items-center" style="font-size: 1rem;">
+                                <span id="totalItemsCount" class="mr-1">0</span>
                                 <i class="fas fa-shopping-cart"></i>
-                                <span id="totalItemsCount">0</span>
                             </span>
                         </div>
-                        <div class="table-responsive cart-table-container">
-                            <table class="table table-bordered" id="cartTable">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>Produk</th>
-                                        <th width="80">Qty</th>
-                                        <th width="120">Harga</th>
-                                        <th width="120">Total</th>
-                                        <th width="80">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="cartTableBody">
-                                    <!-- Cart items will be added here -->
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="3" class="text-right">DPP:</td>
-                                        <td colspan="1" class="text-right">
-                                            <span id="dppDisplay">Rp 0</span>
-                                        </td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="3" class="text-right">
-                                            PPN (<span id="cartPpnPercent"><?= $Pengaturan->ppn ?></span>%):
-                                        </td>
-                                        <td colspan="1" class="text-right">
-                                            <strong><span id="taxDisplay">Rp 0</span></strong>
-                                        </td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td colspan="3" class="text-right"><strong>Total:</strong></td>
-                                        <td colspan="1" class="text-right">
-                                            <strong><span id="grandTotalDisplay">Rp 0</span></strong>
-                                        </td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <th colspan="3" class="text-right">Total Bayar:</th>
-                                        <th colspan="1" class="text-right"><span id="totalPaidAmount">Rp 0</span></th>
-                                        <th></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
+                        <div class="cart-items" id="cartTableBody">
+                            <!-- Cart items will be added here -->
+                            <div class="empty-cart-message" id="emptyCartMessage">
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                                    <p class="mb-0">Keranjang belanja kosong</p>
+                                    <small class="text-muted">small text here</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cart-summary">
+                            <div class="summary-row">
+                                <span class="summary-label">DPP:</span>
+                                <span class="summary-value" id="dppDisplay">Rp 0</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label">PPN (<span
+                                        id="cartPpnPercent"><?= $Pengaturan->ppn ?></span>%):</span>
+                                <span class="summary-value" id="taxDisplay">Rp 0</span>
+                            </div>
+                            <div class="summary-row">
+                                <span class="summary-label"><strong>Total:</strong></span>
+                                <span class="summary-value" id="grandTotalDisplay"><strong>Rp 0</strong></span>
+                            </div>
                         </div>
                     </div>
-
-
+                    <hr/>
                     <!-- Payment Summary -->
-                    <div class="border rounded p-3 mb-3">
+                    <div class="border rounded-0 p-3 mb-3">
                         <div class="row mb-2">
                             <div class="col-6">Subtotal:</div>
                             <div class="col-6 text-right">
@@ -300,7 +279,7 @@ helper('form');
                     </div>
 
                     <!-- Payment Methods -->
-                    <div class="border rounded p-3 mb-3">
+                    <div class="border rounded-0 p-3 mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="mb-0">Metode Pembayaran</h6>
                             <button type="button" class="btn btn-sm btn-outline-primary rounded-0"
@@ -373,7 +352,6 @@ helper('form');
             </div>
         </div>
     </div>
-</div>
 </div>
 
 <!-- Transaction Complete Modal -->
@@ -629,6 +607,132 @@ helper('form');
     /* Uang Pas button styling */
     #uangPas {
         transition: all 0.3s ease;
+    }
+
+    /* Cart styling */
+    .cart-container {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .cart-header {
+        background: #343a40;
+        color: white;
+        padding: 15px 20px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .cart-items {
+        padding: 20px;
+        min-height: 100px;
+    }
+
+    .cart-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        font-size: 16px;
+    }
+
+    .cart-item:last-child {
+        border-bottom: none;
+    }
+
+    .cart-item-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex: 1;
+    }
+
+    .cart-item-qty {
+        font-weight: bold;
+        color: #007bff;
+        min-width: 30px;
+        text-align: center;
+    }
+
+    .cart-item-name {
+        flex: 1;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .cart-item-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .cart-item-subtotal {
+        font-weight: bold;
+        color: #28a745;
+        min-width: 100px;
+        text-align: right;
+        font-size: 18px;
+    }
+
+    .cart-item-actions {
+        display: flex;
+        gap: 5px;
+    }
+
+    .cart-item-actions .btn {
+        padding: 4px 8px;
+        font-size: 12px;
+        border-radius: 4px;
+    }
+
+    .empty-cart-message {
+        color: #6c757d;
+    }
+
+    .empty-cart-message i {
+        opacity: 0.5;
+    }
+
+    .cart-summary {
+        background: #f8f9fa;
+        padding: 20px;
+        border-top: 1px solid #ddd;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-label {
+        color: #666;
+    }
+
+    .summary-value {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .total-bayar {
+        background: #e9ecef;
+        padding: 12px 15px;
+        margin: 0 -20px -20px -20px;
+        border-top: 2px solid #007bff;
+    }
+
+    .total-bayar .summary-label,
+    .total-bayar .summary-value {
+        font-size: 18px;
+        color: #007bff;
     }
 
     #uangPas:hover {
@@ -1489,7 +1593,7 @@ helper('form');
         }
 
         const paymentHtml = `
-        <div class="payment-method-row border rounded p-2 mb-2" data-payment-id="${paymentCounter}">
+        <div class="payment-method-row border rounded p-2 mb-2 rounded-0" data-payment-id="${paymentCounter}">
             <div class="row">
                 <div class="col-md-4">
                     <label>Metode Bayar</label>
@@ -2304,38 +2408,42 @@ helper('form');
         cart.forEach(function (item, index) {
             totalItems += item.quantity;
             html += `
-            <tr>
-                <td>${item.name}</td>
-                <td>
-                    <div class="d-flex align-items-center justify-content-center">
-                        <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 me-1" style="min-width:32px;" onclick="updateQuantity(${index}, -1)">
+            <div class="cart-item">
+                <div class="cart-item-left">
+                    <span class="cart-item-qty">${item.quantity}</span>
+                    <span class="cart-item-name">${item.name}</span>
+                </div>
+                <div class="cart-item-right">
+                    <span class="cart-item-subtotal">Rp ${numberFormat(item.total)}</span>
+                    <div class="cart-item-actions">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="updateQuantity(${index}, -1)" title="Kurang">
                             <i class="fas fa-minus"></i>
                         </button>
-                        <input 
-                            type="number" 
-                            class="form-control form-control-sm text-center mx-1" 
-                            value="${item.quantity}" 
-                            min="1" 
-                            style="width: 50px; height: 32px; padding: 0 4px; box-shadow: none;"
-                            onchange="updateQuantityInput(${index}, this.value)"
-                        >
-                        <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1 ms-1" style="min-width:32px;" onclick="updateQuantity(${index}, 1)">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="updateQuantity(${index}, 1)" title="Tambah">
                             <i class="fas fa-plus"></i>
                         </button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeFromCart(${index})" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
-                </td>
-                <td class="text-right">Rp ${numberFormat(item.price)}</td>
-                <td class="text-right">Rp ${numberFormat(item.total)}</td>
-                <td>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="removeFromCart(${index})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
+                </div>
+            </div>
         `;
         });
 
-        $('#cartTableBody').html(html);
+        if (cart.length === 0) {
+            $('#cartTableBody').html(`
+                <div class="empty-cart-message" id="emptyCartMessage">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                        <p class="mb-0">Keranjang belanja kosong</p>
+                        <small>Tambahkan produk untuk memulai transaksi</small>
+                    </div>
+                </div>
+            `);
+        } else {
+            $('#cartTableBody').html(html);
+        }
         $('#totalItemsCount').text(totalItems);
     }
 
