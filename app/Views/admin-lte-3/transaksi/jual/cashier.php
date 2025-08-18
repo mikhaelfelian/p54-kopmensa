@@ -222,12 +222,28 @@ helper('form');
                                 </div>
                             </div>
 
-                            <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
-                                <div class="alert alert-info alert-sm">
-                                    <strong>Anggota:</strong> <span id="anggotaNama"></span><br>
-                                    <small>No. Kartu: <span id="anggotaNoKartu"></span></small>
+                                                <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
+                        <div class="alert alert-info alert-sm">
+                            <div class="row">
+                                <div class="col-12">
+                                    <strong>Informasi Anggota:</strong>
                                 </div>
                             </div>
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <strong>Nama:</strong> <span id="anggotaNama"></span>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Kode:</strong> <span id="anggotaKode"></span>
+                                </div>
+                            </div>
+                            <div class="row mt-1">
+                                <div class="col-12">
+                                    <strong>Alamat:</strong> <span id="anggotaAlamat"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                         </div>
                     </div>
                 </div>
@@ -1657,6 +1673,11 @@ helper('form');
             handleQrScanResult(randomFormat.data);
         });
 
+        // Test QR handling button
+        $('#testQrBtn').on('click', function () {
+            testQrHandling();
+        });
+
         // QR Scanner modal events - use off() to prevent multiple bindings
         $('#qrScannerModal').off('shown.bs.modal hidden.bs.modal').on('shown.bs.modal', function () {
             // Modal is fully shown, scanner will be started by openQrScanner
@@ -2944,6 +2965,7 @@ helper('form');
         $('#selectedCustomerType').val('umum');
         $('#customerStatusDisplay').hide();
         $('#customerInfoDisplay').hide();
+        $('#anggotaInfo').hide();
 
         $('#discountPercent').val('');
         $('#voucherCode').val('');
@@ -2980,6 +3002,7 @@ helper('form');
         $('#selectedCustomerType').val('umum');
         $('#customerStatusDisplay').hide();
         $('#customerInfoDisplay').hide();
+        $('#anggotaInfo').hide();
 
         // Clear discount and voucher fields
         $('#discountPercent').val('');
@@ -3425,27 +3448,36 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         $.ajax({
             url: '<?= base_url('api/anggota/search') ?>',
             type: 'GET',
+            dataType: 'json',
             data: { kartu: customerId },
             success: function (response) {
-                if (response.success && response.data) {
+                if (response && response.success && response.data) {
                     const anggota = response.data;
 
                     // Store customer data
                     $('#selectedCustomerId').val(anggota.id);
                     $('#selectedCustomerName').val(anggota.nama);
 
-                    // Show anggota info
+                    // Show anggota info in the display section
                     $('#displayCustomerName').text(anggota.nama);
                     $('#displayCustomerCard').text(anggota.nomor_kartu || customerId);
                     $('#customerInfoDisplay').show();
 
+                    // Show detailed anggota info below
+                    $('#anggotaNama').text(anggota.nama || '-');
+                    $('#anggotaKode').text(anggota.nomor_kartu || customerId || '-');
+                    $('#anggotaAlamat').text(anggota.alamat || '-');
+                    $('#anggotaInfo').show();
+
                     // Clear scan input
                     $('#scanAnggota').val('');
 
-                    /* toastr.success('Anggota ditemukan: ' + anggota.nama); */
+                    // Show success message only once
+                    toastr.success('Anggota ditemukan: ' + anggota.nama);
                 } else {
                     toastr.error('Anggota tidak ditemukan');
                     $('#customerInfoDisplay').hide();
+                    $('#anggotaInfo').hide();
                     $('#selectedCustomerId').val('');
                     $('#selectedCustomerName').val('');
                 }
@@ -3456,8 +3488,14 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     setTimeout(function () {
                         window.location.href = '<?= base_url('auth/login') ?>';
                     }, 2000);
+                } else if (xhr.status === 404) {
+                    toastr.error('Anggota tidak ditemukan');
+                    $('#customerInfoDisplay').hide();
+                    $('#selectedCustomerId').val('');
+                    $('#selectedCustomerName').val('');
                 } else {
-                    toastr.error('Gagal mencari anggota: ' + error);
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : (xhr.statusText || error || 'Error');
+                    toastr.error('Gagal mencari anggota: ' + msg);
                 }
             },
             complete: function () {
@@ -3491,27 +3529,36 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         $.ajax({
             url: '<?= base_url('api/anggota/search') ?>',
             type: 'GET',
+            dataType: 'json',
             data: { kartu: kartuNumber },
             success: function (response) {
-                if (response.success && response.data) {
+                if (response && response.success && response.data) {
                     const anggota = response.data;
 
                     // Store customer data
                     $('#selectedCustomerId').val(anggota.id);
                     $('#selectedCustomerName').val(anggota.nama);
 
-                    // Show anggota info
+                    // Show anggota info in the display section
                     $('#displayCustomerName').text(anggota.nama);
                     $('#displayCustomerCard').text(anggota.nomor_kartu || kartuNumber);
                     $('#customerInfoDisplay').show();
 
+                    // Show detailed anggota info below
+                    $('#anggotaNama').text(anggota.nama || '-');
+                    $('#anggotaKode').text(anggota.nomor_kartu || kartuNumber || '-');
+                    $('#anggotaAlamat').text(anggota.alamat || '-');
+                    $('#anggotaInfo').show();
+
                     // Clear scan input
                     $('#scanAnggota').val('');
 
+                    // Show success message only once
                     toastr.success('Anggota ditemukan: ' + anggota.nama);
                 } else {
                     toastr.error('Anggota tidak ditemukan');
                     $('#customerInfoDisplay').hide();
+                    $('#anggotaInfo').hide();
                     $('#selectedCustomerId').val('');
                     $('#selectedCustomerName').val('');
                 }
@@ -3522,8 +3569,14 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     setTimeout(function () {
                         window.location.href = '<?= base_url('auth/login') ?>';
                     }, 2000);
+                } else if (xhr.status === 404) {
+                    toastr.error('Anggota tidak ditemukan');
+                    $('#customerInfoDisplay').hide();
+                    $('#selectedCustomerId').val('');
+                    $('#selectedCustomerName').val('');
                 } else {
-                    toastr.error('Gagal mencari anggota: ' + error);
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : (xhr.statusText || error || 'Error');
+                    toastr.error('Gagal mencari anggota: ' + msg);
                 }
             },
             complete: function () {
@@ -3559,7 +3612,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             // Small delay to ensure modal is fully rendered
             setTimeout(() => {
                 startQrScanner();
-            }, 300);
+            }, 600);
         });
     }
 
@@ -3677,28 +3730,19 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 console.log('QR Code detected!');
                 console.log('Code object:', code);
                 console.log('Code data:', code.data);
+                console.log('Code data length:', code.data.length);
 
                 // Stop scanning to prevent multiple detections
                 stopQrScanner();
 
-                // Try to parse the QR data
-                let qrData;
-                console.log('Raw QR code data:', code.data);
-                console.log('QR code data type:', typeof code.data);
-                
-                try {
-                    qrData = JSON.parse(code.data);
-                    console.log('Parsed as JSON:', qrData);
-                } catch (e) {
-                    // If not JSON, treat as plain text
-                    qrData = code.data;
-                    console.log('Treated as plain text:', qrData);
-                }
-
-                // Handle the QR scan result
-                handleQrScanResult(qrData);
+                // Handle the QR scan result directly with the raw data
+                // Let handleQrScanResult handle all the parsing logic
+                handleQrScanResult(code.data);
             } else if (code) {
                 console.log('Code object found but no data:', code);
+                console.log('Code object keys:', Object.keys(code));
+            } else {
+                console.log('No QR code detected in this frame');
             }
         } catch (error) {
             console.error('QR detection error:', error);
@@ -3783,6 +3827,30 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         toastr.info(`Switched to ${currentCameraFacing === 'environment' ? 'back' : 'front'} camera`);
     }
 
+
+    // Test function to debug QR handling
+    function testQrHandling() {
+        console.log('=== Testing QR Handling ===');
+        
+        // Test 1: Empty data
+        console.log('Test 1: Empty data');
+        handleQrScanResult('');
+        
+        // Test 2: Null data
+        console.log('Test 2: Null data');
+        handleQrScanResult(null);
+        
+        // Test 3: Plain text
+        console.log('Test 3: Plain text');
+        handleQrScanResult('12345');
+        
+        // Test 4: JSON object
+        console.log('Test 4: JSON object');
+        handleQrScanResult({id_pelanggan: '67890', nama: 'Test Customer'});
+        
+        console.log('=== End Testing ===');
+    }
+
     // Function to handle QR code scan result (called by QR library)
     function handleQrScanResult(qrData) {
         
@@ -3798,14 +3866,57 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         let customerId = null;
         let customerName = null;
 
-        // Handle different QR data formats
+        // Handle different QR data formats - be more flexible
         if (typeof qrData === 'string') {
-            // Plain text QR code
-            customerId = qrData.trim();
-            console.log('String QR detected, customerId:', customerId);
+            // Plain text QR code - try to extract any meaningful data
+            const trimmedData = qrData.trim();
+            
+            // Check if it's a JSON string that wasn't parsed
+            if (trimmedData.startsWith('{') || trimmedData.startsWith('[')) {
+                try {
+                    const parsedData = JSON.parse(trimmedData);
+                    console.log('Parsed JSON string:', parsedData);
+                    
+                    // Extract customer ID from parsed JSON
+                    if (parsedData.id_pelanggan) {
+                        customerId = parsedData.id_pelanggan;
+                        customerName = parsedData.nama;
+                    } else if (parsedData.id) {
+                        customerId = parsedData.id;
+                        customerName = parsedData.nama;
+                    } else if (parsedData.kartu) {
+                        customerId = parsedData.kartu;
+                        customerName = parsedData.nama;
+                    } else if (parsedData.nomor_kartu) {
+                        customerId = parsedData.nomor_kartu;
+                        customerName = parsedData.nama;
+                    } else if (parsedData.code) {
+                        customerId = parsedData.code;
+                        customerName = parsedData.name;
+                    } else {
+                        // If no specific field found, use the first non-empty string value
+                        for (let key in parsedData) {
+                            if (typeof parsedData[key] === 'string' && parsedData[key].trim() !== '') {
+                                customerId = parsedData[key].trim();
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Failed to parse as JSON, treating as plain text');
+                    customerId = trimmedData;
+                }
+            } else {
+                // Regular plain text
+                customerId = trimmedData;
+            }
+            
+            console.log('String QR processed, customerId:', customerId);
         } else if (qrData && typeof qrData === 'object') {
             // JSON/object QR code
             console.log('Object QR detected, keys:', Object.keys(qrData));
+            
+            // Try multiple possible field names
             if (qrData.id_pelanggan) {
                 customerId = qrData.id_pelanggan;
                 customerName = qrData.nama;
@@ -3821,6 +3932,20 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             } else if (qrData.code) {
                 customerId = qrData.code;
                 customerName = qrData.name;
+            } else if (qrData.customer_id) {
+                customerId = qrData.customer_id;
+                customerName = qrData.customer_name || qrData.name;
+            } else if (qrData.member_id) {
+                customerId = qrData.member_id;
+                customerName = qrData.member_name || qrData.name;
+            } else {
+                // If no specific field found, use the first non-empty string value
+                for (let key in qrData) {
+                    if (typeof qrData[key] === 'string' && qrData[key].trim() !== '') {
+                        customerId = qrData[key].trim();
+                        break;
+                    }
+                }
             }
         }
 
@@ -3828,6 +3953,8 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         console.log('Extracted customerName:', customerName);
 
         if (customerId && customerId.toString().trim() !== '') {
+            console.log('Valid customerId found:', customerId);
+            
             // Set the scanned data in the input field
             $('#scanAnggota').val(customerId);
 
@@ -3837,13 +3964,36 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 $('#displayCustomerName').text(customerName);
                 $('#displayCustomerCard').text(customerId);
                 $('#customerInfoDisplay').show();
+                
+                // Show detailed anggota info below (with placeholder data)
+                $('#anggotaNama').text(customerName);
+                $('#anggotaKode').text(customerId);
+                $('#anggotaAlamat').text('-');
+                $('#anggotaInfo').show();
+                
                 toastr.success('Anggota ditemukan: ' + customerName);
             } else {
                 // Automatically search for the customer
                 searchAnggota();
             }
         } else {
-            toastr.error('Data QR code tidak valid. Format tidak dikenali. Data: ' + JSON.stringify(qrData));
+            console.error('Invalid QR data - customerId is empty or null');
+            console.error('customerId value:', customerId);
+            console.error('customerId type:', typeof customerId);
+            console.error('customerId length:', customerId ? customerId.length : 'N/A');
+            
+            let errorMessage = 'Data QR code tidak valid. ';
+            if (!qrData) {
+                errorMessage += 'QR data kosong/null.';
+            } else if (typeof qrData === 'string' && qrData.trim() === '') {
+                errorMessage += 'QR data string kosong.';
+            } else if (typeof qrData === 'object' && Object.keys(qrData).length === 0) {
+                errorMessage += 'QR data object kosong.';
+            } else {
+                errorMessage += 'Format tidak dikenali. Data: ' + JSON.stringify(qrData);
+            }
+            
+            toastr.error(errorMessage);
             $('#scanAnggota').focus();
         }
     }
