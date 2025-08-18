@@ -558,6 +558,201 @@
                     "body": "{\n  \"success\": true,\n  \"message\": \"Transactions retrieved successfully\",\n  \"total\": 2,\n  \"id_pelanggan\": 123,\n  \"transactions\": [\n    {\"id\": 1, \"id_user\": 5, \"id_sales\": 2, \"id_pelanggan\": 123, \"id_gudang\": 1, \"no_nota\": \"TRX-20250801-0001\", \"created_at\": \"2025-08-01 10:00:00\", \"updated_at\": \"2025-08-01 10:05:00\", \"deleted_at\": null, \"tgl_bayar\": \"2025-08-01\", \"tgl_masuk\": \"2025-08-01\", \"tgl_keluar\": null, \"jml_total\": 100000, \"jml_biaya\": 0, \"jml_ongkir\": 0, \"jml_retur\": 0, \"diskon\": 0, \"jml_diskon\": 0, \"jml_subtotal\": 100000, \"ppn\": 0, \"jml_ppn\": 0, \"jml_gtotal\": 100000, \"jml_bayar\": 100000, \"jml_kembali\": 0, \"jml_kurang\": 0, \"disk1\": 0, \"jml_disk1\": 0, \"disk2\": 0, \"jml_disk2\": 0, \"disk3\": 0, \"jml_disk3\": 0, \"metode_bayar\": \"cash\", \"status\": \"selesai\", \"status_nota\": \"lunas\", \"status_ppn\": \"tidak\", \"status_bayar\": \"lunas\", \"status_retur\": \"tidak\"},\n    {\"id\": 2, \"id_user\": 5, \"id_sales\": 2, \"id_pelanggan\": 123, \"id_gudang\": 1, \"no_nota\": \"TRX-20250802-0002\", \"created_at\": \"2025-08-02 11:00:00\", \"updated_at\": \"2025-08-02 11:05:00\", \"deleted_at\": null, \"tgl_bayar\": \"2025-08-02\", \"tgl_masuk\": \"2025-08-02\", \"tgl_keluar\": null, \"jml_total\": 200000, \"jml_biaya\": 0, \"jml_ongkir\": 0, \"jml_retur\": 0, \"diskon\": 0, \"jml_diskon\": 0, \"jml_subtotal\": 200000, \"ppn\": 0, \"jml_ppn\": 0, \"jml_gtotal\": 200000, \"jml_bayar\": 200000, \"jml_kembali\": 0, \"jml_kurang\": 0, \"disk1\": 0, \"jml_disk1\": 0, \"disk2\": 0, \"jml_disk2\": 0, \"disk3\": 0, \"jml_disk3\": 0, \"metode_bayar\": \"transfer\", \"status\": \"selesai\", \"status_nota\": \"lunas\", \"status_ppn\": \"tidak\", \"status_bayar\": \"lunas\", \"status_retur\": \"tidak\"}\n  ]\n}"
                   }
                 ]
+              },
+              {
+                "name": "Buat Transaksi",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/json" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/store",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "store"]
+                  },
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"id_user\": 1,\n  \"id_sales\": 2,\n  \"id_pelanggan\": 123,\n  \"id_gudang\": 1,\n  \"no_nota\": \"TRX-20250801-0001\",\n  \"tgl_masuk\": \"2025-08-01 10:00:00\",\n  \"tgl_bayar\": \"2025-08-01 10:00:00\",\n  \"jml_total\": 100000,\n  \"jml_subtotal\": 90090,\n  \"diskon\": 10,\n  \"jml_diskon\": 10000,\n  \"ppn\": 11,\n  \"jml_ppn\": 9910,\n  \"jml_gtotal\": 100000,\n  \"jml_bayar\": 100000,\n  \"jml_kembali\": 0,\n  \"metode_bayar\": \"cash\",\n  \"status\": \"1\",\n  \"status_nota\": \"1\",\n  \"status_bayar\": \"1\",\n  \"status_ppn\": \"1\",\n  \"cart\": [\n    {\n      \"id_item\": 1,\n      \"id_satuan\": 1,\n      \"id_kategori\": 14,\n      \"id_merk\": 1,\n      \"no_nota\": \"TRX-20250801-0001\",\n      \"kode\": \"ITEM-001\",\n      \"produk\": \"Kopi Hitam\",\n      \"satuan\": \"PCS\",\n      \"harga\": 50000,\n      \"harga_beli\": 40000,\n      \"jml\": 2,\n      \"jml_satuan\": 2,\n      \"subtotal\": 100000\n    }\n  ],\n  \"platform\": [\n    {\n      \"id_platform\": 1,\n      \"no_nota\": \"TRX-20250801-0001\",\n      \"platform\": \"cash\",\n      \"keterangan\": \"Pembayaran tunai\",\n      \"nominal\": 100000\n    }\n  ],\n  \"hist\": [\n    {\n      \"id_item\": 1,\n      \"id_satuan\": 1,\n      \"id_gudang\": 1,\n      \"id_user\": 1,\n      \"id_pelanggan\": 123,\n      \"tgl_masuk\": \"2025-08-01 10:00:00\",\n      \"no_nota\": \"TRX-20250801-0001\",\n      \"kode\": \"ITEM-001\",\n      \"item\": \"Kopi Hitam\",\n      \"nominal\": 50000,\n      \"jml\": 2,\n      \"jml_satuan\": 2,\n      \"satuan\": \"PCS\",\n      \"status\": \"4\"\n    }\n  ]\n}",
+                    "description": "JSON payload for creating a new transaction"
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/json" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/store", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "store"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "[\n  {\n    \"success\": true,\n    \"message\": \"Transaksi berhasil diproses\",\n    \"transaction_id\": 123,\n    \"no_nota\": \"TRX-20250801-0001\",\n    \"total\": 100000,\n    \"change\": 0\n  }\n]"
+                  },
+                  {
+                    "name": "Error - Missing Data",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/json" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/store", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "store"] }
+                    },
+                    "status": "Bad Request",
+                    "code": 400,
+                    "body": "{\n  \"success\": false,\n  \"message\": \"Data transaksi utama atau cart tidak lengkap\"\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Get Payment Methods",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/payments",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "payments"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/payments", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "payments"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"payment_methods\": [\n    {\"id\": \"1\", \"name\": \"Tunai\", \"type\": \"cash\"},\n    {\"id\": \"2\", \"name\": \"Transfer\", \"type\": \"transfer\"},\n    {\"id\": \"3\", \"name\": \"Piutang\", \"type\": \"credit\"},\n    {\"id\": \"4\", \"name\": \"GoPay\", \"type\": \"platform\"},\n    {\"id\": \"5\", \"name\": \"OVO\", \"type\": \"platform\"}\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Validate Voucher",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/validate-voucher",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "validate-voucher"]
+                  },
+                  "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                      { "key": "voucher_code", "value": "DISKON50", "description": "Voucher code to validate" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Valid Voucher",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/validate-voucher", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "validate-voucher"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"valid\": true,\n  \"discount\": 50,\n  \"discount_amount\": 0,\n  \"jenis_voucher\": \"persen\",\n  \"voucher_id\": 1,\n  \"message\": \"Voucher valid\"\n}"
+                  },
+                  {
+                    "name": "Error - Invalid Voucher",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/validate-voucher", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "validate-voucher"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"valid\": false,\n  \"message\": \"Kode voucher tidak ditemukan\"\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Validate Customer",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/validate-customer",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "validate-customer"]
+                  },
+                  "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                      { "key": "customer_id", "value": "123", "description": "Customer ID to validate" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Valid Customer",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/validate-customer", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "validate-customer"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"valid\": true,\n  \"customer\": {\n    \"id\": 123,\n    \"nama\": \"John Doe\",\n    \"tipe\": \"umum\",\n    \"status_blokir\": \"0\"\n  },\n  \"message\": \"Customer valid\"\n}"
+                  },
+                  {
+                    "name": "Error - Customer Not Found",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/validate-customer", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "validate-customer"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"valid\": false,\n  \"message\": \"Customer tidak ditemukan\"\n}"
+                  },
+                  {
+                    "name": "Error - Customer Blocked",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/validate-customer", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "validate-customer"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"valid\": false,\n  \"message\": \"Customer diblokir\"\n}"
+                  }
+                ]
               }
             ]
           }
