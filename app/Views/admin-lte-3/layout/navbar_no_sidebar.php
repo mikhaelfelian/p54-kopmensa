@@ -33,8 +33,12 @@
                 
                 <!-- Menu Footer-->
                 <li class="user-footer">
-                    <a href="<?= base_url('auth/profile') ?>" class="btn btn-default btn-flat">Profile</a>
-                    <a href="<?= base_url('auth/logout') ?>" class="btn btn-default btn-flat float-right">Sign out</a>
+                    <?php if (akses_kasir()): ?>
+                        <a href="<?= base_url('auth/logout-kasir') ?>" class="btn btn-default btn-flat float-right">Sign out</a>
+                    <?php else: ?>
+                        <a href="<?= base_url('auth/profile') ?>" class="btn btn-default btn-flat">Profile</a>
+                        <a href="<?= base_url('auth/logout') ?>" class="btn btn-default btn-flat float-right">Sign out</a>
+                    <?php endif; ?> 
                 </li>
             </ul>
         </li>

@@ -526,7 +526,7 @@ class TransJual extends BaseController
         $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
         $sales      = $this->karyawanModel->where('status', '1')->findAll();
         $warehouses = $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll();
-        $outlets    = $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll();
+        $outlets    = $this->gudangModel->getOutlets(); // Uses: status=1, status_otl=1, status_hps=0
         
         $platforms  = $this->platformModel->where('status', '1')->findAll();
         $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
@@ -563,7 +563,7 @@ class TransJual extends BaseController
         $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
         $sales      = $this->karyawanModel->where('status', '1')->findAll();
         $warehouses = $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll();
-        $outlets    = $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll();
+        $outlets    = $this->gudangModel->getOutlets(); // Uses: status=1, status_otl=1, status_hps=0
         $platforms  = $this->platformModel->where('status', '1')->findAll();
         $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
 

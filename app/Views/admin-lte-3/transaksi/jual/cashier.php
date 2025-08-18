@@ -101,20 +101,59 @@ helper('form');
     <div class="col-lg-5">
         <div class="card rounded-0">
             <div class="card-header bg-light">
-                <h4 class="mb-0 font-weight-normal text-secondary"><i class="fas fa-cash-register"></i> Kasir Penjualan</h4>
+                <?php if (session('kasir_outlet_name')): ?>
+                    <h4 class="mb-0 font-weight-normal text-secondary">
+                        <i class="fas fa-cash-register"></i> Kasir Penjualan, <b><?= session('kasir_outlet_name') ?></b>
+                    </h4>
+                <?php else: ?>
+                    <h4 class="mb-0 font-weight-normal text-secondary">
+                        <i class="fas fa-cash-register"></i> Kasir Penjualan
+                    </h4>
+                <?php endif; ?>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-6">
                         <!-- Warehouse Selection -->
                         <div class="mb-3">
-                            <label for="warehouse_id" class="form-label">Pilih Outlet</label>
-                            <select class="form-control form-control-sm" id="warehouse_id">
-                                <option value="">Pilih Outlet</option>
-                                <?php foreach ($outlets as $outlet): ?>
-                                    <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <label for="warehouse_id" class="form-label">Outlet</label>
+                            <?php if (akses_kasir()): ?>
+                                <select class="form-control form-control-sm" id="warehouse_id" disabled>
+                                    <?php
+                                    $selectedOutlet = session('kasir_outlet');
+                                    if (!empty($outlets)):
+                                        foreach ($outlets as $outlet):
+                                            ?>
+                                            <option value="<?= $outlet->id ?>" <?= ($outlet->id == $selectedOutlet) ? 'selected' : '' ?>>
+                                                <?= esc($outlet->nama) ?>
+                                            </option>
+                                            <?php
+                                        endforeach;
+                                    else:
+                                        ?>
+                                        <option value="" disabled>- Tidak ada outlet aktif --</option>
+                                    <?php endif; ?>
+                                </select>
+                                <input type="hidden" name="warehouse_id" id="warehouse_id_hidden"
+                                    value="<?= esc($selectedOutlet) ?>">
+                            <?php else: ?>
+                                <select class="form-control form-control-sm" id="warehouse_id">
+                                    <option value="">Pilih Outlet</option>
+                                    <?php if (!empty($outlets)): ?>
+                                        <?php foreach ($outlets as $outlet): ?>
+                                            <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="" disabled>- Tidak ada outlet aktif --</option>
+                                    <?php endif; ?>
+                                </select>
+                            <?php endif; ?>
+                            <?php if (empty($outlets)): ?>
+                                <small class="text-danger">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    Tidak ada outlet dengan status aktif (status=1, status_otl=1)
+                                </small>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="col-6">
@@ -2805,6 +2844,9 @@ helper('form');
                         // Draft transaction saved successfully
                         toastr.success('Draft transaksi berhasil disimpan!');
 
+                        // Close payment methods modal
+                        $('#paymentMethodsModal').modal('hide');
+
                         // Clear form for next transaction
                         clearTransactionForm();
                     } else {
@@ -2821,6 +2863,9 @@ helper('form');
                                 payment_type: 'piutang'
                             };
 
+                            // Close payment methods modal
+                            $('#paymentMethodsModal').modal('hide');
+
                             // Redirect to mobile QR scanner page
                             window.open('<?= base_url('transaksi/jual/qr-scanner') ?>/' + response.transaction_id, '_blank');
                             toastr.success('Transaksi Piutang berhasil! Arahkan ke halaman scan QR.');
@@ -2828,6 +2873,9 @@ helper('form');
                             // Clear form for next transaction
                             clearTransactionForm();
                         } else {
+                            // Close payment methods modal
+                            $('#paymentMethodsModal').modal('hide');
+
                             // Normal transaction completion
                             $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
 
@@ -3625,23 +3673,32 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
-            if (code) {
-
+            if (code && code.data) {
+                console.log('QR Code detected!');
+                console.log('Code object:', code);
+                console.log('Code data:', code.data);
 
                 // Stop scanning to prevent multiple detections
                 stopQrScanner();
 
                 // Try to parse the QR data
                 let qrData;
+                console.log('Raw QR code data:', code.data);
+                console.log('QR code data type:', typeof code.data);
+                
                 try {
                     qrData = JSON.parse(code.data);
+                    console.log('Parsed as JSON:', qrData);
                 } catch (e) {
                     // If not JSON, treat as plain text
                     qrData = code.data;
+                    console.log('Treated as plain text:', qrData);
                 }
 
                 // Handle the QR scan result
                 handleQrScanResult(qrData);
+            } else if (code) {
+                console.log('Code object found but no data:', code);
             }
         } catch (error) {
             console.error('QR detection error:', error);
@@ -3728,6 +3785,11 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 
     // Function to handle QR code scan result (called by QR library)
     function handleQrScanResult(qrData) {
+        
+        // Debug: Log what we received
+        console.log('QR Data received:', qrData);
+        console.log('QR Data type:', typeof qrData);
+        console.log('QR Data length:', qrData ? qrData.length : 'N/A');
 
         // Close the scanner modal
         $('#qrScannerModal').modal('hide');
@@ -3740,8 +3802,10 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         if (typeof qrData === 'string') {
             // Plain text QR code
             customerId = qrData.trim();
+            console.log('String QR detected, customerId:', customerId);
         } else if (qrData && typeof qrData === 'object') {
             // JSON/object QR code
+            console.log('Object QR detected, keys:', Object.keys(qrData));
             if (qrData.id_pelanggan) {
                 customerId = qrData.id_pelanggan;
                 customerName = qrData.nama;
@@ -3760,6 +3824,9 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             }
         }
 
+        console.log('Extracted customerId:', customerId);
+        console.log('Extracted customerName:', customerName);
+
         if (customerId && customerId.toString().trim() !== '') {
             // Set the scanned data in the input field
             $('#scanAnggota').val(customerId);
@@ -3776,7 +3843,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 searchAnggota();
             }
         } else {
-            toastr.error('Data QR code tidak valid. Format tidak dikenali.');
+            toastr.error('Data QR code tidak valid. Format tidak dikenali. Data: ' + JSON.stringify(qrData));
             $('#scanAnggota').focus();
         }
     }

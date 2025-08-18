@@ -10,7 +10,7 @@
 if (!function_exists('akses_root')) {
     function akses_root()
     {
-        $ionAuth = \IonAuth\Libraries\IonAuth::getInstance();
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
         
         if (!$ionAuth->loggedIn()) {
             return false;
@@ -28,7 +28,7 @@ if (!function_exists('akses_root')) {
 if (!function_exists('akses_superadmin')) {
     function akses_superadmin()
     {
-        $ionAuth = \IonAuth\Libraries\IonAuth::getInstance();
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
         
         if (!$ionAuth->loggedIn()) {
             return false;
@@ -39,14 +39,14 @@ if (!function_exists('akses_superadmin')) {
             return false;
         }
         
-        return $ionAuth->inGroup(2, $user->id) || akses_root();
+        return $ionAuth->inGroup(2, $user->id);
     }
 }
 
 if (!function_exists('akses_manager')) {
     function akses_manager()
     {
-        $ionAuth = \IonAuth\Libraries\IonAuth::getInstance();
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
         
         if (!$ionAuth->loggedIn()) {
             return false;
@@ -57,14 +57,14 @@ if (!function_exists('akses_manager')) {
             return false;
         }
         
-        return $ionAuth->inGroup(3, $user->id) || akses_superadmin();
+        return $ionAuth->inGroup(3, $user->id);
     }
 }
 
 if (!function_exists('akses_admin')) {
     function akses_admin()
     {
-        $ionAuth = \IonAuth\Libraries\IonAuth::getInstance();
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
         
         if (!$ionAuth->loggedIn()) {
             return false;
@@ -75,14 +75,14 @@ if (!function_exists('akses_admin')) {
             return false;
         }
         
-        return $ionAuth->inGroup(4, $user->id) || akses_manager();
+        return $ionAuth->inGroup(4, $user->id);
     }
 }
 
 if (!function_exists('akses_kasir')) {
     function akses_kasir()
     {
-        $ionAuth = \IonAuth\Libraries\IonAuth::getInstance();
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
         
         if (!$ionAuth->loggedIn()) {
             return false;
@@ -93,14 +93,42 @@ if (!function_exists('akses_kasir')) {
             return false;
         }
         
-        return $ionAuth->inGroup(5, $user->id) || akses_admin();
+        // Debug: Check what groups the user is in
+        $groups = $ionAuth->getUsersGroups($user->id);
+        $groupIds = [];
+        $groupNames = [];
+        
+        if ($groups && method_exists($groups, 'result')) {
+            $groupResults = $groups->result();
+            foreach ($groupResults as $group) {
+                $groupIds[] = $group->id;
+                $groupNames[] = $group->name;
+            }
+        } elseif ($groups && method_exists($groups, 'getResult')) {
+            $groupResults = $groups->getResult();
+            foreach ($groupResults as $group) {
+                $groupIds[] = $group->id;
+                $groupNames[] = $group->name;
+            }
+        } elseif (is_array($groups)) {
+            foreach ($groups as $group) {
+                $groupIds[] = $group->id;
+                $groupNames[] = $group->name;
+            }
+        }
+        
+        // Check if user is in kasir group (try different possible IDs)
+        return $ionAuth->inGroup(5, $user->id) || 
+               $ionAuth->inGroup('5', $user->id) || 
+               $ionAuth->inGroup('kasir', $user->id) ||
+               in_array('kasir', array_map('strtolower', $groupNames));
     }
 }
 
 if (!function_exists('get_user_role')) {
     function get_user_role()
     {
-        $ionAuth = \IonAuth\Libraries\IonAuth::getInstance();
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
         
         if (!$ionAuth->loggedIn()) {
             return 'guest';
@@ -111,16 +139,25 @@ if (!function_exists('get_user_role')) {
             return 'guest';
         }
         
-        $groups = $ionAuth->getUsersGroups($user->id)->result();
+        $groups = $ionAuth->getUsersGroups($user->id);
+        $groupResults = [];
         
-        if (empty($groups)) {
+        if ($groups && method_exists($groups, 'result')) {
+            $groupResults = $groups->result();
+        } elseif ($groups && method_exists($groups, 'getResult')) {
+            $groupResults = $groups->getResult();
+        } elseif (is_array($groups)) {
+            $groupResults = $groups;
+        }
+        
+        if (empty($groupResults)) {
             return 'user';
         }
         
         $highestRole = 'user';
         $lowestGroupId = 999;
         
-        foreach ($groups as $group) {
+        foreach ($groupResults as $group) {
             if ($group->id < $lowestGroupId) {
                 $lowestGroupId = $group->id;
                 $highestRole = $group->name;
@@ -164,5 +201,75 @@ if (!function_exists('require_akses')) {
             header('Location: ' . $redirect_url);
             exit;
         }
+    }
+}
+
+// Debug function to see user groups
+if (!function_exists('debug_user_groups')) {
+    function debug_user_groups()
+    {
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
+        
+        if (!$ionAuth->loggedIn()) {
+            return 'Not logged in';
+        }
+        
+        $user = $ionAuth->user()->row();
+        if (!$user) {
+            return 'User not found';
+        }
+        
+        $groups = $ionAuth->getUsersGroups($user->id);
+        $groupInfo = [];
+        
+        if ($groups && method_exists($groups, 'result')) {
+            $groupResults = $groups->result();
+        } elseif ($groups && method_exists($groups, 'getResult')) {
+            $groupResults = $groups->getResult();
+        } elseif (is_array($groups)) {
+            $groupResults = $groups;
+        } else {
+            $groupResults = [];
+        }
+        
+        foreach ($groupResults as $group) {
+            $groupInfo[] = "ID: {$group->id}, Name: {$group->name}";
+        }
+        
+        return [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'groups' => $groupInfo
+        ];
+    }
+}
+
+// Hierarchical access functions (if you need them)
+if (!function_exists('akses_superadmin_or_higher')) {
+    function akses_superadmin_or_higher()
+    {
+        return akses_root() || akses_superadmin();
+    }
+}
+
+if (!function_exists('akses_manager_or_higher')) {
+    function akses_manager_or_higher()
+    {
+        return akses_root() || akses_superadmin() || akses_manager();
+    }
+}
+
+if (!function_exists('akses_admin_or_higher')) {
+    function akses_admin_or_higher()
+    {
+        return akses_root() || akses_superadmin() || akses_manager() || akses_admin();
+    }
+}
+
+if (!function_exists('akses_kasir_or_higher')) {
+    function akses_kasir_or_higher()
+    {
+        return akses_root() || akses_superadmin() || akses_manager() || akses_admin() || akses_kasir();
     }
 }

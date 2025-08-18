@@ -8,14 +8,18 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', to: 'Auth::login');
 
 // Debug route (remove in production)
-$routes->get('debug/jwt', 'Debug::jwt');
+$routes->get('debug', 'Debug::index');
+$routes->get('debug/user-groups', 'Debug::userGroups');
 
 // Auth routes
 $routes->group('auth', ['namespace' => 'App\Controllers'], function ($routes) {
     $routes->get('/', 'Auth::index');
-    $routes->get('login', 'Auth::login');
+    $routes->get('login', 'Auth::login');    
+    $routes->get('login-kasir', 'Auth::login_kasir');
     $routes->post('cek_login', 'Auth::cek_login');
+    $routes->post('cek_login_kasir', 'Auth::cek_login_kasir');
     $routes->get('logout', 'Auth::logout');
+    $routes->get('logout-kasir', 'Auth::logout_kasir');
     $routes->get('forgot-password', 'Auth::forgot_password');
     $routes->post('forgot-password', 'Auth::forgot_password');
 });
