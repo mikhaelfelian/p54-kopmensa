@@ -822,13 +822,15 @@ class TransJual extends BaseController
             $Pengaturan = $this->pengaturan;
 
             $pelanggan = $this->pelangganModel->find($customerId);
-            
+
+            $status_ppn = 1; // included
+
             // Check if pengaturan is loaded
             if (!$Pengaturan) {
                 log_message('error', 'Pengaturan not loaded - pengaturan property is null');
                 throw new \Exception('Pengaturan tidak dapat dimuat. Silakan refresh halaman.');
             }
-            
+
             // If converting from draft, use existing draft data
             if ($draftId && !$isDraft) {
                 // Get existing draft
@@ -836,12 +838,12 @@ class TransJual extends BaseController
                 if (!$existingDraft || $existingDraft->status != '0') {
                     throw new \Exception('Draft tidak ditemukan atau sudah diproses');
                 }
-                
+
                 // Check if user owns this draft
                 if ($existingDraft->id_user != $this->ionAuth->user()->row()->id) {
                     throw new \Exception('Anda tidak memiliki akses ke draft ini');
                 }
-                
+
                 $noNota = $existingDraft->no_nota; // Use existing nota number
             }
 
@@ -870,17 +872,26 @@ class TransJual extends BaseController
             // jml_diskon = total diskon (voucher + diskon % or nominal)
             $jml_diskon = $discountAmount + $voucherAmount;
 
-            // jml_subtotal = jml_total - jml_diskon
-            $jml_subtotal = $jml_total - $jml_diskon;
+            // Grand total (jml_gtotal) before PPN breakdown
+            $jml_gtotal = $jml_total - $jml_diskon;
 
-            // PPN calculation
+            // PPN calculation for status_ppn = 1 (included)
             $ppnRate = $Pengaturan->ppn ?? 11; // Default to 11% if not set
-            $taxAmount = $jml_subtotal * ($ppnRate / 100);
-            
-            log_message('debug', 'PPN calculation - jml_subtotal: ' . $jml_subtotal . ', ppn_rate: ' . $ppnRate . ', taxAmount: ' . $taxAmount);
 
-            // Grand total
-            $finalTotal = $jml_subtotal + $taxAmount;
+            if ($status_ppn == 1) {
+                // PPN included: jml_subtotal = jml_gtotal / 1.11, jml_ppn = jml_gtotal - jml_subtotal
+                $jml_subtotal = $jml_gtotal / (1 + ($ppnRate / 100));
+                $taxAmount = $jml_gtotal - $jml_subtotal;
+            } else {
+                // Fallback (should not happen in this context)
+                $jml_subtotal = $jml_gtotal;
+                $taxAmount = 0;
+            }
+
+            log_message('debug', 'PPN calculation (INCLUDED) - jml_gtotal: ' . $jml_gtotal . ', jml_subtotal: ' . $jml_subtotal . ', ppn_rate: ' . $ppnRate . ', taxAmount: ' . $taxAmount);
+
+            // Grand total (already calculated as jml_gtotal)
+            $finalTotal = $jml_gtotal;
 
             // Change
             $change = $totalAmountReceived - $finalTotal;
@@ -907,12 +918,12 @@ class TransJual extends BaseController
                 'tgl_masuk'         => date('Y-m-d H:i:s'),
                 'tgl_bayar'         => $isDraft ? null : date('Y-m-d H:i:s'),
                 'jml_total'         => $jml_total,         // total cart before voucher input
-                'jml_subtotal'      => $jml_subtotal,      // jml_total - jml_diskon
+                'jml_subtotal'      => $jml_subtotal,      // jml_gtotal / 1.11
                 'diskon'            => $discountPercent,
                 'jml_diskon'        => $jml_diskon,        // voucher + diskon % or nominal
-                'ppn'               => $ppnRate, // dinamis dari db
-                'jml_ppn'           => $taxAmount,
-                'jml_gtotal'        => $finalTotal,
+                'ppn'               => $ppnRate,           // dari pengaturan
+                'jml_ppn'           => $taxAmount,         // jml_gtotal - jml_subtotal
+                'jml_gtotal'        => $jml_gtotal,        // total setelah diskon dan voucher, sudah termasuk PPN
                 'jml_bayar'         => $isDraft ? 0 : $totalAmountReceived,
                 'jml_kembali'       => $isDraft ? 0 : $change,
                 'metode_bayar'      => $isDraft ? 'draft' : 'multiple', // Draft or Multiple payment methods
