@@ -794,14 +794,6 @@ class TransJual extends BaseController
             $isDraft = ($isDraft === 'true' || $isDraft === '1');
         }
 
-        // Debug: Log all POST data
-        log_message('debug', 'POST data - is_draft: ' . ($isDraft ? 'true' : 'false') . ', draft_id: ' . ($draftId ?: 'null'));
-        log_message('debug', 'POST data type - is_draft: ' . gettype($isDraft) . ', draft_id: ' . gettype($draftId));
-        log_message('debug', 'Cart data: ' . json_encode($cart));
-        log_message('debug', 'Payment methods: ' . json_encode($paymentMethods));
-        log_message('debug', 'Warehouse ID: ' . $warehouseId);
-        log_message('debug', 'Grand total: ' . $grandTotal);
-
         // Validate required data
         if (empty($cart) || !is_array($cart) || count($cart) === 0) {
             return $this->response->setJSON(['error' => 'Keranjang belanja kosong']);
@@ -826,11 +818,10 @@ class TransJual extends BaseController
             $this->db = \Config\Database::connect();
             $this->db->transStart();
 
-            // Debug: Log the values
-            log_message('debug', 'processTransaction - draftId: ' . ($draftId ?: 'null') . ', isDraft: ' . ($isDraft ? 'true' : 'false'));
-
             $noNota = $this->transJualModel->generateKode();
             $Pengaturan = $this->pengaturan;
+
+            $pelanggan = $this->pelangganModel->find($customerId);
             
             // Check if pengaturan is loaded
             if (!$Pengaturan) {
@@ -838,8 +829,6 @@ class TransJual extends BaseController
                 throw new \Exception('Pengaturan tidak dapat dimuat. Silakan refresh halaman.');
             }
             
-            log_message('debug', 'Pengaturan loaded successfully - PPN: ' . ($Pengaturan->ppn ?? 'null'));
-
             // If converting from draft, use existing draft data
             if ($draftId && !$isDraft) {
                 // Get existing draft
@@ -912,7 +901,7 @@ class TransJual extends BaseController
             $transactionData = [
                 'id_user'           => $this->ionAuth->user()->row()->id,
                 'id_sales'          => $warehouseId ?? 0, // Can be added later if needed
-                'id_pelanggan'      => $customerId ?? 2,
+                'id_pelanggan'      => $pelanggan->id_user ?? 2,
                 'id_gudang'         => $warehouseId,
                 'no_nota'           => $noNota,
                 'tgl_masuk'         => date('Y-m-d H:i:s'),

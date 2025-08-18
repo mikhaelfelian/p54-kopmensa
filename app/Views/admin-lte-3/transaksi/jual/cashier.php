@@ -3455,7 +3455,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     const anggota = response.data;
 
                     // Store customer data
-                    $('#selectedCustomerId').val(anggota.id);
+                    $('#selectedCustomerId').val(anggota.id_user);
                     $('#selectedCustomerName').val(anggota.nama);
 
                     // Show anggota info in the display section
