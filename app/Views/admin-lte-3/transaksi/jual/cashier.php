@@ -101,95 +101,100 @@ helper('form');
     <div class="col-lg-5">
         <div class="card rounded-0">
             <div class="card-header bg-light">
-                <h4 class="mb-0 font-weight-normal text-secondary"><i class="fas fa-cash-register"></i> Kasir Penjualan
-                </h4>
+                <h4 class="mb-0 font-weight-normal text-secondary"><i class="fas fa-cash-register"></i> Kasir Penjualan</h4>
             </div>
             <div class="card-body">
-                <!-- Warehouse Selection -->
-                <div class="mb-3">
-                    <label for="warehouse_id" class="form-label">Pilih Outlet</label>
-                    <select class="form-control form-control-sm" id="warehouse_id">
-                        <option value="">Pilih Outlet</option>
-                        <?php foreach ($outlets as $outlet): ?>
-                            <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                <div class="row">
+                    <div class="col-6">
+                        <!-- Warehouse Selection -->
+                        <div class="mb-3">
+                            <label for="warehouse_id" class="form-label">Pilih Outlet</label>
+                            <select class="form-control form-control-sm" id="warehouse_id">
+                                <option value="">Pilih Outlet</option>
+                                <?php foreach ($outlets as $outlet): ?>
+                                    <option value="<?= $outlet->id ?>"><?= esc($outlet->nama) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-muted">#Pesanan Baru</h6>
+                        <div class="btn-group btn-group-toggle d-flex mb-2" data-toggle="buttons">
+                            <label class="btn btn-outline-primary flex-fill active" id="btnCustomerUmum">
+                                <input type="radio" name="customerType" id="customerTypeUmum" value="umum"
+                                    autocomplete="off" checked> Umum
+                            </label>
+                            <label class="btn btn-outline-success flex-fill" id="btnCustomerAnggota">
+                                <input type="radio" name="customerType" id="customerTypeAnggota" value="anggota"
+                                    autocomplete="off"> Anggota
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <!-- Scan Anggota Field (hidden by default) -->
+                        <div class="form-group scan-anggota-field mb-3" id="scanAnggotaGroup" style="display: none;">
+                            <label for="scanAnggota">Scan QR Code Anggota</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-sm" id="scanAnggota"
+                                    placeholder="Scan QR code atau ketik nomor kartu">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="openQrScanner">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="searchAnggota">
+                                        <i class="fas fa-qrcode"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Scan QR code atau ketik nomor kartu anggota
+                            </small>
+
+                            <!-- QR Scanner Modal -->
+                            <div class="modal fade qr-scanner-modal rounded-0" id="qrScannerModal" tabindex="-1"
+                                role="dialog">
+                                <div class="modal-dialog modal-lg" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Scan QR Code Anggota</h5>
+                                            <button type="button" class="close" data-dismiss="modal">
+                                                <span>&times;</span>
+                                            </button>
+                                        </div>
+                                        <div class="modal-body text-center">
+                                            <div id="qrScannerContainer" class="qr-scanner-container">
+                                                <video id="qrVideo" width="100%" height="400"
+                                                    style="border: 1px solid #ddd;"></video>
+                                            </div>
+                                            <div id="qrScannerStatus" class="qr-scanner-status mt-2">
+                                                <p class="text-muted">Mengaktifkan kamera...</p>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-info rounded-0 me-2" id="flipCamera">
+                                                <i class="fas fa-sync-alt"></i> Flip Camera
+                                            </button>
+                                            <button type="button" class="btn btn-secondary rounded-0"
+                                                data-dismiss="modal">Tutup
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
+                                <div class="alert alert-info alert-sm">
+                                    <strong>Anggota:</strong> <span id="anggotaNama"></span><br>
+                                    <small>No. Kartu: <span id="anggotaNoKartu"></span></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Customer Selection -->
                 <div class="form-group customer-type-radio mb-3">
-                    <h6 class="text-muted">#Pesanan Baru</h6>
-                    <div class="btn-group btn-group-toggle d-flex mb-2" data-toggle="buttons">
-                        <label class="btn btn-outline-primary flex-fill active" id="btnCustomerUmum">
-                            <input type="radio" name="customerType" id="customerTypeUmum" value="umum"
-                                autocomplete="off" checked> Umum
-                        </label>
-                        <label class="btn btn-outline-success flex-fill" id="btnCustomerAnggota">
-                            <input type="radio" name="customerType" id="customerTypeAnggota" value="anggota"
-                                autocomplete="off"> Anggota
-                        </label>
-                    </div>
-
-                    <!-- Scan Anggota Field (hidden by default) -->
-                    <div class="form-group scan-anggota-field mb-3" id="scanAnggotaGroup" style="display: none;">
-                        <label for="scanAnggota">Scan QR Code Anggota</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control form-control-sm" id="scanAnggota"
-                                placeholder="Scan QR code atau ketik nomor kartu">
-                            <div class="input-group-append">
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="openQrScanner">
-                                    <i class="fas fa-camera"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="searchAnggota">
-                                    <i class="fas fa-qrcode"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i>
-                            Scan QR code atau ketik nomor kartu anggota
-                        </small>
-
-                        <!-- QR Scanner Modal -->
-                        <div class="modal fade qr-scanner-modal rounded-0" id="qrScannerModal" tabindex="-1"
-                            role="dialog">
-                            <div class="modal-dialog modal-lg" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Scan QR Code Anggota</h5>
-                                        <button type="button" class="close" data-dismiss="modal">
-                                            <span>&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body text-center">
-                                        <div id="qrScannerContainer" class="qr-scanner-container">
-                                            <video id="qrVideo" width="100%" height="400"
-                                                style="border: 1px solid #ddd;"></video>
-                                        </div>
-                                        <div id="qrScannerStatus" class="qr-scanner-status mt-2">
-                                            <p class="text-muted">Mengaktifkan kamera...</p>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-info rounded-0 me-2" id="flipCamera">
-                                            <i class="fas fa-sync-alt"></i> Flip Camera
-                                        </button>
-                                        <button type="button" class="btn btn-secondary rounded-0"
-                                            data-dismiss="modal">Tutup
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
-                            <div class="alert alert-info alert-sm">
-                                <strong>Anggota:</strong> <span id="anggotaNama"></span><br>
-                                <small>No. Kartu: <span id="anggotaNoKartu"></span></small>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Hidden fields for customer data -->
                     <input type="hidden" id="selectedCustomerId" name="selectedCustomerId" value="2">
                     <input type="hidden" id="selectedCustomerName" name="selectedCustomerName" value="">
@@ -198,7 +203,7 @@ helper('form');
                     <!-- Cart Area -->
                     <div class="cart-container rounded-0">
                         <div class="cart-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Keranjang Belanja</h5>
+                            <h6 class="mb-0">Keranjang Belanja</h6>
                             <span class="badge badge-info d-flex align-items-center" style="font-size: 1rem;">
                                 <span id="totalItemsCount" class="mr-1">0</span>
                                 <i class="fas fa-shopping-cart"></i>
@@ -230,119 +235,17 @@ helper('form');
                             </div>
                         </div>
                     </div>
-                    <hr/>
-                    <!-- Payment Summary -->
-                    <div class="border rounded-0 p-3 mb-3">
-                        <div class="row mb-2">
-                            <div class="col-6">Subtotal:</div>
-                            <div class="col-6 text-right">
-                                <span id="subtotalDisplay">Rp 0</span>
-                            </div>
-                        </div>
+                    <hr />
 
-                        <div class="row mb-2">
-                            <div class="col-6">Diskon:</div>
-                            <div class="col-6">
-                                <?= form_input([
-                                    'type' => 'number',
-                                    'class' => 'form-control form-control-sm rounded-0',
-                                    'id' => 'discountPercent',
-                                    'placeholder' => '%',
-                                    'step' => '0.01'
-                                ]); ?>
-                            </div>
-                        </div>
 
-                        <div class="row mb-2">
-                            <div class="col-6">Voucher:</div>
-                            <div class="col-6">
-                                <?= form_input([
-                                    'type' => 'text',
-                                    'class' => 'form-control form-control-sm rounded-0',
-                                    'id' => 'voucherCode',
-                                    'placeholder' => 'Kode voucher'
-                                ]); ?>
-                                <small class="text-muted" id="voucherInfo"></small>
-                                <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
-                                <input type="hidden" id="voucherId" name="voucherId" value="">
-                                <input type="hidden" id="voucherType" name="voucherType" value="">
-                                <input type="hidden" id="voucherDiscountAmount" name="voucherDiscountAmount" value="0">
-                            </div>
-                        </div>
-
-                        <div class="row mb-2" id="voucherDiscountRow" style="display: none;">
-                            <div class="col-6">Potongan Voucher:</div>
-                            <div class="col-6 text-right">
-                                <span id="voucherDiscountDisplay">Rp 0</span>
-                            </div>
-                        </div>
+                    <!-- Payment Methods Button -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary btn-block rounded-0" id="openPaymentModal">
+                            <i class="fas fa-credit-card"></i> Bayar
+                        </button>
                     </div>
 
-                    <!-- Payment Methods -->
-                    <div class="border rounded-0 p-3 mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Metode Pembayaran</h6>
-                            <button type="button" class="btn btn-sm btn-outline-primary rounded-0"
-                                id="addPaymentMethod">
-                                <i class="fas fa-plus"></i> Tambah
-                            </button>
-                        </div>
 
-                        <div id="paymentMethods">
-                            <!-- Payment methods will be added here -->
-                        </div>
-
-                        <!-- Payment Summary -->
-                        <div class="mt-3 pt-3 border-top">
-                            <div class="row mb-2">
-                                <div class="col-6">Total Bayar:</div>
-                                <div class="col-6 text-right">
-                                    <span id="grandTotalPayment">Rp 0</span>
-                                </div>
-                            </div>
-                            <div class="row mb-2" id="remainingPayment" style="display: none;">
-                                <div class="col-6">Kurang:</div>
-                                <div class="col-6 text-right text-danger">
-                                    <span id="remainingAmount">Rp 0</span>
-                                </div>
-                            </div>
-                            <div class="row mb-2" id="changePayment" style="display: none;">
-                                <div class="col-6">Kembalian:</div>
-                                <div class="col-6 text-right text-success">
-                                    <span id="changeAmount">Rp 0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="row">
-                        <div class="col-12 mb-2">
-                            <button type="button" class="btn btn-info btn-block rounded-0" id="showDraftList">
-                                <i class="fas fa-list"></i> Daftar Draft
-                            </button>
-                        </div>
-                        <div class="col-3">
-                            <button type="button" class="btn btn-success btn-block rounded-0" id="completeTransaction">
-                                <i class="fas fa-check"></i> Proses
-                            </button>
-                        </div>
-                        <div class="col-3">
-                            <button type="button" class="btn btn-warning btn-block rounded-0" id="saveAsDraft">
-                                <i class="fas fa-save"></i> Draft
-                            </button>
-                        </div>
-                        <div class="col-3">
-                            <button type="button" class="btn btn-info btn-block rounded-0" onclick="quickPrint()">
-                                <i class="fas fa-print"></i> Print
-                            </button>
-                        </div>
-                        <div class="col-3">
-                            <button type="button" class="btn btn-danger btn-block rounded-0" id="cancelTransaction">
-                                <i class="fas fa-times"></i> Batal
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="card-footer">
@@ -506,6 +409,145 @@ helper('form');
         </div>
     </div>
 </div>
+
+<!-- Payment Methods Modal -->
+<div class="modal fade" id="paymentMethodsModal" tabindex="-1" role="dialog" aria-labelledby="paymentMethodsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentMethodsModalLabel">
+                    <i class="fas fa-credit-card"></i> Transaksi & Pembayaran
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Transaction Summary Section -->
+                <div class="border rounded-0 p-3 mb-4">
+                    <h6 class="mb-3">Ringkasan Transaksi</h6>
+                    <div class="row mb-2">
+                        <div class="col-6">Subtotal:</div>
+                        <div class="col-6 text-right">
+                            <span id="subtotalDisplay">Rp 0</span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-6">Diskon:</div>
+                        <div class="col-6">
+                            <?= form_input([
+                                'type' => 'number',
+                                'class' => 'form-control form-control-sm rounded-0',
+                                'id' => 'discountPercent',
+                                'placeholder' => '%',
+                                'step' => '0.01'
+                            ]); ?>
+                        </div>
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-6">Voucher:</div>
+                        <div class="col-6">
+                            <?= form_input([
+                                'type' => 'text',
+                                'class' => 'form-control form-control-sm rounded-0',
+                                'id' => 'voucherCode',
+                                'placeholder' => 'Kode voucher'
+                            ]); ?>
+                            <small class="text-muted" id="voucherInfo"></small>
+                            <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
+                            <input type="hidden" id="voucherId" name="voucherId" value="">
+                            <input type="hidden" id="voucherType" name="voucherType" value="">
+                            <input type="hidden" id="voucherDiscountAmount" name="voucherDiscountAmount" value="0">
+                        </div>
+                    </div>
+
+                    <div class="row mb-2" id="voucherDiscountRow" style="display: none;">
+                        <div class="col-6">Potongan Voucher:</div>
+                        <div class="col-6 text-right">
+                            <span id="voucherDiscountDisplay">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Section -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Daftar Metode Pembayaran</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-0" id="addPaymentMethod">
+                        <i class="fas fa-plus"></i> Tambah
+                    </button>
+                </div>
+
+                <div id="paymentMethods">
+                    <!-- Payment methods will be added here -->
+                </div>
+
+                <!-- Payment Summary -->
+                <div class="mt-4 pt-3 border-top">
+                    <h6 class="mb-3">Ringkasan Pembayaran</h6>
+                    <div class="row mb-2">
+                        <div class="col-6">Total Bayar:</div>
+                        <div class="col-6 text-right">
+                            <span id="grandTotalPayment">Rp 0</span>
+                        </div>
+                    </div>
+                    <div class="row mb-2" id="remainingPayment" style="display: none;">
+                        <div class="col-6">Kurang:</div>
+                        <div class="col-6 text-right text-danger">
+                            <span id="remainingAmount">Rp 0</span>
+                        </div>
+                    </div>
+                    <div class="row mb-2" id="changePayment" style="display: none;">
+                        <div class="col-6">Kembalian:</div>
+                        <div class="col-6 text-right text-success">
+                            <span id="changeAmount">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <!-- Action Buttons Row -->
+                <div class="row w-100 mb-3">
+                    <div class="col-12 mb-2">
+                        <button type="button" class="btn btn-info btn-block rounded-0" id="showDraftList">
+                            <i class="fas fa-list"></i> Daftar Draft
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" class="btn btn-success btn-block rounded-0" id="completeTransaction">
+                            <i class="fas fa-check"></i> Proses
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" class="btn btn-warning btn-block rounded-0" id="saveAsDraft">
+                            <i class="fas fa-save"></i> Draft
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" class="btn btn-info btn-block rounded-0" onclick="quickPrint()">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                    </div>
+                    <div class="col-3">
+                        <button type="button" class="btn btn-danger btn-block rounded-0" id="cancelTransaction">
+                            <i class="fas fa-times"></i> Batal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Close Button -->
+                <div class="w-100 text-center">
+                    <button type="button" class="btn btn-secondary rounded-0" data-dismiss="modal">
+                        <i class="fas fa-times"></i> Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?= $this->endSection() ?>
 
 <?= $this->section('css') ?>
@@ -1092,6 +1134,62 @@ helper('form');
     .category-tabs-container {
         -webkit-overflow-scrolling: touch;
     }
+
+    /* Payment Methods Modal Styling */
+    #paymentMethodsModal .modal-lg {
+        max-width: 900px;
+    }
+
+    #paymentMethodsModal .modal-body {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    #paymentMethodsModal .payment-method-row {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    #paymentMethodsModal .denomination-tag {
+        background: white;
+        color: #28a745;
+        padding: 15px 10px;
+        border: 2px solid #28a745;
+        border-radius: 6px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        position: relative;
+        min-height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    #paymentMethodsModal .denomination-tag:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        background: #f8fff9;
+    }
+
+    #paymentMethodsModal .denomination-tag.clicked {
+        transform: scale(1.05);
+        background: #28a745;
+        color: white;
+    }
+
+    #paymentMethodsModal .denomination-tag.reset {
+        transform: scale(0.95);
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
 </style>
 <?= $this->endSection() ?>
 
@@ -1408,6 +1506,19 @@ helper('form');
         $('#cancelTransaction').on('click', cancelTransaction);
         $('#printReceipt').on('click', showPrinterModal);
         $('#showDraftList').on('click', showDraftList);
+
+        // Payment Methods Modal
+        $('#openPaymentModal').on('click', function () {
+            $('#paymentMethodsModal').modal('show');
+        });
+
+        // Confirm Payment Button
+        $('#confirmPayment').on('click', function () {
+            // Close modal and proceed with transaction
+            $('#paymentMethodsModal').modal('hide');
+            // You can add additional validation here if needed
+            toastr.success('Pembayaran dikonfirmasi');
+        });
 
         // Auto clear form when modal is closed
         $('#completeModal').on('hidden.bs.modal', function () {
