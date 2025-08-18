@@ -11,103 +11,90 @@ namespace App\Controllers\Api\Pos;
 
 use App\Controllers\BaseController;
 use CodeIgniter\API\ResponseTrait;
-use App\Models\OutletModel;
+use App\Models\GudangModel;
 
 class Store extends BaseController
 {
     use ResponseTrait;
-
-    /**
-     * Get all active outlets (status = 1) with formatted output and pagination
-     */
-    public function index()
+    protected $gudangModel;
+    public function __construct()
     {
-        $model = new OutletModel();
+        $this->gudangModel = new GudangModel();
+    }
+    
+    /**
+     * Get all active outlets (status=1, status_otl=1)
+     * GET /api/pos/outlets
+     */
+    public function getOutlets($id = null)
+    {
+        // Only select the columns: id, created_at, kode, nama, deskripsi
+        $builder = $this->gudangModel
+            ->select('id, created_at, kode, nama, deskripsi')
+            ->where('status', '1')
+            ->where('status_otl', '1');
+
+        // Support both "page" and "current_page" as query params, default to 1
+        $page = (int) ($this->request->getGet('current_page') ?? $this->request->getGet('page') ?? 1);
         $perPage = (int) ($this->request->getGet('per_page') ?? 10);
-        $page = (int) ($this->request->getGet('page') ?? 1);
-        $keyword = $this->request->getGet('keyword') ?? null;
 
-        $builder = $model->where('status', '1');
-        if ($keyword) {
-            $builder->like('nama', $keyword);
-        }
+        if ($id !== null) {
+            $outlet = $builder->where('id', $id)->first();
+            if ($outlet) {
+                $data = [
+                    'total'        => 1,
+                    'current_page' => 1,
+                    'per_page'     => 1,
+                    'total_page'   => 1,
+                    'outlets'      => [[
+                        'id'         => (int) $outlet->id,
+                        'created_at' => $outlet->created_at,
+                        'kode'       => $outlet->kode,
+                        'nama'       => $outlet->nama,
+                        'deskripsi'  => $outlet->deskripsi,
+                    ]]
+                ];
+                return $this->respond($data);
+            } else {
+                return $this->respond([
+                    'total'        => 0,
+                    'current_page' => 1,
+                    'per_page'     => 1,
+                    'total_page'   => 0,
+                    'outlets'      => [],
+                    'message'      => 'Outlet tidak ditemukan'
+                ], 404);
+            }
+        } else {
+            // Get total count for pagination
+            $total = $builder->countAllResults(false);
 
-        // Get paginated results
-        $outlets = $builder->orderBy('id', 'DESC')->paginate($perPage, 'outlets', $page);
-        $pager = $model->pager->getDetails('outlets');
+            // Apply pagination
+            $offset = ($page - 1) * $perPage;
+            $outlets = $builder->orderBy('id', 'ASC')->findAll($perPage, $offset);
 
-        // If there are no results, ensure the response is consistent
-        $formattedItems = [];
-        if (!empty($outlets)) {
+            // Format as array of items
+            $items = [];
             foreach ($outlets as $outlet) {
-                $formattedItems[] = [
+                $items[] = [
                     'id'         => (int) $outlet->id,
-                    'id_user'    => (int) $outlet->id_user,
+                    'created_at' => $outlet->created_at,
                     'kode'       => $outlet->kode,
                     'nama'       => $outlet->nama,
                     'deskripsi'  => $outlet->deskripsi,
-                    'status'     => (int) $outlet->status,
-                    'status_hps' => (int) $outlet->status_hps,
-                    'created_at' => $outlet->created_at,
-                    'updated_at' => $outlet->updated_at,
                 ];
             }
+
+            $totalPage = $perPage > 0 ? (int) ceil($total / $perPage) : 1;
+
+            $data = [
+                'total'        => $total,
+                'current_page' => (int) $page,
+                'per_page'     => $perPage,
+                'total_page'   => $totalPage,
+                'outlets'      => $items,
+            ];
+            return $this->respond($data);
         }
-
-        // If there are no outlets, set total_page to 0 and total to 0
-        $total = $pager['total'] ?? 0;
-        $totalPage = $pager['pageCount'] ?? 0;
-
-        $data = [
-            'total'        => $total,
-            'current_page' => (int) $page,
-            'per_page'     => $pager['perPage'] ?? $perPage,
-            'total_page'   => $totalPage,
-            'outlets'      => $formattedItems,
-        ];
-
-        return $this->respond($data);
-    }
-
-    /**
-     * Get detail of an active outlet by ID, formatted as items array
-     * @param int $id
-     */
-    /**
-     * Get detail of an active outlet by ID, formatted as items array
-     * Route: GET api/pos/outlet/detail/(:num)
-     * @param int|null $id
-     */
-    public function detail($id = null)
-    {
-        // Only allow access via the correct route group (api/pos/outlet/detail/(:num))
-        // This method is intended to be accessed via: GET api/pos/outlet/detail/{id}
-        // If accessed via a wrong route, CodeIgniter will throw a PageNotFoundException
-
-        $model = new OutletModel();
-
-        // Only fetch active outlets (status = 1)
-        $outlet = $model->where('id', $id)
-                        ->first();
-
-        if (!$outlet) {
-            // Return a 404 if not found or not active
-            return $this->failNotFound('Outlet dengan ID ' . $id . ' tidak ditemukan.');
-        }
-
-        // Format the response to match the documentation
-        $data = [
-            'id'         => (int) $outlet->id,
-            'id_user'    => (int) $outlet->id_user,
-            'kode'       => $outlet->kode,
-            'nama'       => $outlet->nama,
-            'deskripsi'  => $outlet->deskripsi,
-            'status'     => (int) $outlet->status,
-            'status_hps' => (int) $outlet->status_hps,
-            'created_at' => $outlet->created_at,
-            'updated_at' => $outlet->updated_at,
-        ];
-
-        return $this->respond($data);
     }
 } 

@@ -3,28 +3,128 @@
 use CodeIgniter\Router\RouteCollection;
 
 /**
+ * Application Routes
+ *
+ * Defines all application routes, including:
+ * - Root (login redirect)
+ * - Authentication (login, logout, forgot password)
+ * - Dashboard
+ *
+ * All routes are grouped and use namespaces for clarity.
+ *
  * @var RouteCollection $routes
  */
-$routes->get('/', to: 'Auth::login');
 
-// Debug route (remove in production)
-$routes->get('debug', 'Debug::index');
-$routes->get('debug/user-groups', 'Debug::userGroups');
+ 
+ /* API POS */
 
-// Auth routes
-$routes->group('auth', ['namespace' => 'App\Controllers'], function ($routes) {
-    $routes->get('/', 'Auth::index');
-    $routes->get('login', 'Auth::login');    
-    $routes->get('login-kasir', 'Auth::login_kasir');
-    $routes->post('cek_login', 'Auth::cek_login');
-    $routes->post('cek_login_kasir', 'Auth::cek_login_kasir');
-    $routes->get('logout', 'Auth::logout');
-    $routes->get('logout-kasir', 'Auth::logout_kasir');
-    $routes->get('forgot-password', 'Auth::forgot_password');
-    $routes->post('forgot-password', 'Auth::forgot_password');
+$routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
+    // API Authentication routes
+    $routes->group('anggota', function ($routes) {
+        $routes->post('login', 'Anggota\Auth::login');
+        $routes->get('search', 'Anggota\Auth::search');
+    });
+
+    // API Authentication routes for cashier
+    $routes->group('pos', function ($routes) {
+        $routes->post('login', 'Pos\Auth::login');
+
+        // Outlet endpoints
+        $routes->get('outlet', 'Pos\Store::getOutlets');
+        $routes->get('outlet/detail/(:num)', 'Pos\Store::getOutlets/$1');
+    });
+
+    // Protected API routes (require JWT authentication)
+    $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
+        $routes->get('profile', 'Anggota\\Auth::profile');
+        $routes->get('logout', 'Anggota\\Auth::logout');
+        
+        // PIN Management routes
+        $routes->post('set-pin', 'Anggota\\Auth::setPin');
+        $routes->post('validate-pin', 'Anggota\\Auth::validatePin');
+        $routes->post('change-pin', 'Anggota\\Auth::changePin');
+        $routes->get('pin-status', 'Anggota\\Auth::pinStatus');
+        $routes->post('reset-pin', 'Anggota\\Auth::resetPin');
+    });
+
+    // POS API routes (protected by JWT except for /outlets)
+    $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {
+
+        /* Produk */
+        $routes->get('produk', 'Produk::getAll');
+        $routes->get('produk/detail/(:num)', 'Produk::getById/$1');
+        $routes->get('produk/variant/(:num)', 'Produk::getVariant/$1');
+        $routes->get('produk/category/(:num)', 'Produk::getByCategory/$1');
+
+        // Merge: Kategori endpoints under api/pos
+        $routes->get('category', 'Kategori::index');
+        $routes->get('category/(:num)', 'Kategori::detail/$1');
+
+        // Transaction endpoints
+        $routes->get('transaksi', 'Transaksi::getTransaction');
+        $routes->get('transaksi/(:num)', 'Transaksi::getTransaction/$1');
+        $routes->post('transaksi/store', 'Transaksi::store');
+        $routes->get('transaksi/payments', 'Transaksi::getPaymentMethods');
+        $routes->post('transaksi/validate/voucher', 'Transaksi::validateVoucher');
+        $routes->post('transaksi/validate/customer', 'Transaksi::validateCustomer');
+    });
 });
 
-$routes->get('/dashboard', 'Dashboard::index', ['namespace' => 'App\Controllers', 'filter' => 'auth']);
+// ── Root: direct to login page
+$routes->get('/', 'Auth::login', [
+    'namespace' => 'App\Controllers',
+    'as'        => 'root',
+]);
+
+/**
+ * Authentication Routes
+ *
+ * Handles all authentication processes:
+ * - Login (regular and cashier)
+ * - Logout
+ * - Forgot Password
+ */
+$routes->group('auth', ['namespace' => 'App\Controllers'], static function ($routes) {
+    // Index / auth landing page
+    $routes->get('/', 'Auth::index', ['as' => 'auth.index']);
+
+    // Login form
+    $routes->get('login', 'Auth::login', ['as' => 'auth.login']);
+
+    // Login cashier (new URL structure)
+    $routes->get('login/cashier', 'Auth::login_kasir', ['as' => 'auth.login.cashier']);
+
+    // Legacy alias (temporary support)
+    $routes->get('login-kasir', 'Auth::login_kasir', ['as' => 'auth.login.cashier.legacy']);
+
+    // Login processing
+    $routes->post('cek_login', 'Auth::cek_login', ['as' => 'auth.login.attempt']);
+    $routes->post('login/cashier', 'Auth::cek_login_kasir', ['as' => 'auth.login.cashier.attempt']);
+
+    // Logout (POST preferred for security)
+    $routes->post('logout', 'Auth::logout', ['as' => 'auth.logout']);
+    $routes->post('logout/cashier', 'Auth::logout_kasir', ['as' => 'auth.logout.cashier']);
+
+    // Legacy GET logout (temporary; can be removed later)
+    $routes->get('logout', 'Auth::logout');
+    $routes->get('logout-kasir', 'Auth::logout_kasir');
+
+    // Forgot password (form and submit)
+    $routes->get('forgot-password', 'Auth::forgot_password', ['as' => 'auth.forgot']);
+    $routes->post('forgot-password', 'Auth::forgot_password', ['as' => 'auth.forgot.submit']);
+});
+
+/**
+ * Dashboard Routes
+ *
+ * Accessible only for authenticated users.
+ */
+$routes->get('dashboard', 'Dashboard::index', [
+    'namespace' => 'App\Controllers',
+    'filter'    => 'auth',
+    'as'        => 'dashboard.index',
+]);
+
 
 
 /*****
@@ -240,45 +340,6 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('penerimaan', 'TransBeli::index');
     $routes->get('terima/(:num)', 'TransBeli::terima/$1');
     $routes->post('terima/save/(:num)', 'TransBeli::save/$1');
-});
-
-$routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
-    // API Authentication routes
-    $routes->group('anggota', function ($routes) {
-        $routes->post('login', 'Anggota\Auth::login');
-        $routes->get('search', 'Anggota\Auth::search');
-    });
-
-    // Protected API routes (require JWT authentication)
-    $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
-        $routes->get('profile', 'Anggota\\Auth::profile');
-        $routes->get('logout', 'Anggota\\Auth::logout');
-        
-        // PIN Management routes
-        $routes->post('set-pin', 'Anggota\\Auth::setPin');
-        $routes->post('validate-pin', 'Anggota\\Auth::validatePin');
-        $routes->post('change-pin', 'Anggota\\Auth::changePin');
-        $routes->get('pin-status', 'Anggota\\Auth::pinStatus');
-        $routes->post('reset-pin', 'Anggota\\Auth::resetPin');
-    });
-
-    $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {
-        $routes->get('produk', 'Produk::index');
-        $routes->get('produk/detail/(:num)', 'Produk::detail/$1');
-        $routes->get('produk/category', 'Produk::getCategory');
-
-        // Merge: Kategori endpoints under api/pos
-        $routes->get('category', 'Kategori::index');
-        $routes->get('category/(:num)', 'Kategori::detail/$1');
-
-        // Outlet endpoints
-        $routes->get('outlet', 'Store::index');
-        $routes->get('outlet/detail/(:num)', 'Store::detail/$1');
-
-        // Transaction endpoints
-        $routes->get('transaksi', 'Transaksi::getTransaction');
-        $routes->get('transaksi/(:num)', 'Transaksi::getTransaction/$1');
-    });
 });
 
 /*

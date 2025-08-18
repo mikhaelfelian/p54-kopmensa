@@ -396,13 +396,74 @@ public function getItemWithRelations($id)
             }
         }
 
-        // Debug: Log the SQL query
-        $sql = $builder->getCompiledSelect();
-        log_message('info', 'getItemsByWarehouse SQL: ' . $sql);
-        log_message('info', 'Parameters - warehouseId: ' . $warehouseId . ', search: ' . $search . ', categoryId: ' . $categoryId . ', limit: ' . $limit . ', offset: ' . $offset);
+        // Debug: Log the parameters
+        log_message('info', 'getItemsByWarehouse Parameters - warehouseId: ' . $warehouseId . ', search: ' . $search . ', categoryId: ' . $categoryId . ', limit: ' . $limit . ', offset: ' . $offset);
 
         $result = $builder->orderBy('tbl_m_item.item', 'DESC')->findAll();
         log_message('info', 'getItemsByWarehouse result count: ' . count($result));
+        
+        return $result;
+    }
+
+    /**
+     * Get items by category with optional search, limit, and offset
+     *
+     * @param int $categoryId
+     * @param string|null $search
+     * @param int|null $limit
+     * @param int|null $offset
+     * @return array
+     */
+    public function getItemsByCategory($categoryId, $search = null, $limit = null, $offset = null)
+    {
+        // Ensure parameters are properly typed
+        $categoryId = $categoryId !== null && $categoryId !== '' ? (int)$categoryId : null;
+
+        $builder = $this->select('
+                    tbl_m_item.*,
+                    COALESCE(SUM(tbl_m_item_stok.jml), 0) as stok,
+                    tbl_m_kategori.kategori,
+                    tbl_m_merk.merk,
+                    tbl_m_satuan.satuanBesar as satuan
+                ')
+                ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+                ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id', 'left')
+                ->where('tbl_m_item.status_hps', '0');
+
+        // Add category filter if provided
+        if (!empty($categoryId)) {
+            $builder->where('tbl_m_item.id_kategori', $categoryId);
+        }
+
+        // Add search conditions if search term is provided
+        if (!empty($search)) {
+            $builder->groupStart()
+                    ->like('tbl_m_item.item', $search)
+                    ->orLike('tbl_m_item.kode', $search)
+                    ->orLike('tbl_m_item.barcode', $search)
+                    ->orLike('tbl_m_kategori.kategori', $search)
+                    ->orLike('tbl_m_merk.merk', $search)
+                    ->groupEnd();
+        }
+
+        // Apply limit and offset for pagination
+        if ($limit !== null) {
+            $builder->limit((int)$limit);
+            if ($offset !== null) {
+                $builder->offset((int)$offset);
+            }
+        }
+
+        $builder->groupBy('tbl_m_item.id');
+        
+        // Debug: Log the query and parameters
+        log_message('info', 'getItemsByCategory - categoryId: ' . $categoryId . ', search: ' . $search . ', limit: ' . $limit . ', offset: ' . $offset);
+        
+        $result = $builder->orderBy('tbl_m_item.item', 'DESC')->findAll();
+        
+        log_message('info', 'getItemsByCategory - result count: ' . count($result));
         
         return $result;
     }
@@ -455,10 +516,8 @@ public function getItemWithRelations($id)
             }
         }
 
-        // Debug: Log the SQL query
-        $sql = $builder->getCompiledSelect();
-        log_message('info', 'getItemsWithRelationsActiveLimited SQL: ' . $sql);
-        log_message('info', 'Parameters - limit: ' . $limit . ', keyword: ' . $keyword . ', kategori: ' . $kategori . ', offset: ' . $offset);
+        // Debug: Log the parameters
+        log_message('info', 'getItemsWithRelationsActiveLimited Parameters - limit: ' . $limit . ', keyword: ' . $keyword . ', kategori: ' . $kategori . ', offset: ' . $offset);
 
         $result = $builder->findAll();
         log_message('info', 'getItemsWithRelationsActiveLimited result count: ' . count($result));
