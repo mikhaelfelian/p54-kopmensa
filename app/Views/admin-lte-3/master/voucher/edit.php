@@ -11,7 +11,8 @@
                     </a>
                 </div>
             </div>
-            <?= form_open('master/voucher/update/' . $voucher->id) ?>
+            <?= form_open('master/voucher/store', ['id' => 'editVoucherForm', 'csrf' => false]) ?>
+            <?= form_hidden('id', $voucher->id) ?>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">
@@ -36,7 +37,7 @@
                                 'min' => '1',
                                 'value' => old('jml', $voucher->jml)
                             ]) ?>
-                            <small class="text-muted">Berapa banyak voucher yang akan dibuat</small>
+                            <small class="text-muted">Berapa banyak voucher yang akan dibuat (Min: 1)</small>
                         </div>
                         
                         <div class="form-group">
@@ -64,7 +65,7 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Nominal Voucher <span class="text-danger">*</span></label>
+                            <label id="nominalLabel">Nominal Voucher <span class="text-danger">*</span></label>
                             <?= form_input([
                                 'type' => 'number',
                                 'name' => 'nominal',
@@ -190,8 +191,11 @@
             <div class="card-footer">
                 <div class="row">
                     <div class="col-12">
-                        <button type="submit" class="btn btn-primary rounded-0">
+                        <button type="submit" class="btn btn-primary rounded-0" id="submitBtn">
                             <i class="fas fa-save"></i> Update
+                        </button>
+                        <button type="button" class="btn btn-info rounded-0" onclick="testForm()">
+                            <i class="fas fa-bug"></i> Test Form
                         </button>
                         <a href="<?= base_url('master/voucher') ?>" class="btn btn-secondary rounded-0">
                             <i class="fas fa-times"></i> Batal
@@ -210,20 +214,105 @@
 
 <?= $this->section('js') ?>
 <script>
+// Global validation function (fallback)
+function validateForm() {
+    const kode = document.querySelector('input[name="kode"]').value.trim();
+    const jml = parseInt(document.querySelector('input[name="jml"]').value);
+    const jmlMax = parseInt(document.querySelector('input[name="jml_max"]').value);
+    const nominal = parseFloat(document.querySelector('input[name="nominal"]').value);
+    const jenisVoucher = document.querySelector('input[name="jenis_voucher"]:checked')?.value;
+    const tglMasuk = document.querySelector('input[name="tgl_masuk"]').value;
+    const tglKeluar = document.querySelector('input[name="tgl_keluar"]').value;
+    
+    if (!kode) {
+        alert('Kode voucher harus diisi');
+        document.querySelector('input[name="kode"]').focus();
+        return false;
+    }
+    
+    if (!jml || jml < 1) {
+        alert('Jumlah voucher harus lebih dari 0');
+        document.querySelector('input[name="jml"]').focus();
+        return false;
+    }
+    
+    if (!jmlMax || jmlMax < <?= $voucher->jml_keluar ?>) {
+        alert('Batas maksimal tidak boleh kurang dari jumlah yang sudah digunakan (<?= $voucher->jml_keluar ?>)');
+        document.querySelector('input[name="jml_max"]').focus();
+        return false;
+    }
+    
+    if (!nominal || nominal <= 0) {
+        alert('Nominal voucher harus lebih dari 0');
+        document.querySelector('input[name="nominal"]').focus();
+        return false;
+    }
+    
+    if (jenisVoucher === 'persen' && nominal > 100) {
+        alert('Persentase voucher tidak boleh lebih dari 100%');
+        document.querySelector('input[name="nominal"]').focus();
+        return false;
+    }
+    
+    if (!tglMasuk) {
+        alert('Tanggal mulai harus diisi');
+        document.querySelector('input[name="tgl_masuk"]').focus();
+        return false;
+    }
+    
+    if (!tglKeluar) {
+        alert('Tanggal berakhir harus diisi');
+        document.querySelector('input[name="tgl_keluar"]').focus();
+        return false;
+    }
+    
+    if (tglKeluar <= tglMasuk) {
+        alert('Tanggal berakhir harus setelah tanggal mulai');
+        document.querySelector('input[name="tgl_keluar"]').focus();
+        return false;
+    }
+    
+    return true;
+}
+
+// Test function to debug form
+function testForm() {
+    console.log('Testing form...');
+    
+    const form = document.getElementById('editVoucherForm');
+    const formData = new FormData(form);
+    
+    console.log('Form action:', form.action);
+    console.log('Form method:', form.method);
+    
+    // Log all form data
+    for (let [key, value] of formData.entries()) {
+        console.log(key + ':', value);
+    }
+    
+    // Test validation
+    if (validateForm()) {
+        console.log('Form validation passed');
+        alert('Form validation passed! You can now submit the form.');
+    } else {
+        console.log('Form validation failed');
+    }
+}
+
 $(document).ready(function() {
     // Function to update nominal field based on voucher type
     function updateNominalField() {
         const jenisVoucher = $('input[name="jenis_voucher"]:checked').val();
         const nominalField = $('input[name="nominal"]');
-        const nominalLabel = $('label[for="nominal"]');
+        const nominalLabel = $('#nominalLabel');
         
         if (jenisVoucher === 'nominal') {
-            nominalLabel.text('Nominal Voucher (Rp)');
+            nominalLabel.html('Nominal Voucher (Rp) <span class="text-danger">*</span>');
             nominalField.attr('placeholder', 'Masukkan nominal voucher dalam Rupiah');
             nominalField.attr('min', '1000');
             nominalField.attr('step', '1000');
         } else if (jenisVoucher === 'persen') {
-            nominalLabel.text('Persentase Voucher (%)');
+            nominalLabel.html('Persentase Voucher (%) <span class="text-danger">*</span>');
             nominalField.attr('placeholder', 'Masukkan persentase diskon (1-100)');
             nominalField.attr('min', '1');
             nominalField.attr('max', '100');
@@ -237,6 +326,126 @@ $(document).ready(function() {
     // Update when radio button changes
     $('input[name="jenis_voucher"]').on('change', function() {
         updateNominalField();
+    });
+    
+    // Form validation
+    $('#editVoucherForm').on('submit', function(e) {
+        // Remove preventDefault to allow normal form submission
+        // e.preventDefault();
+        
+        console.log('Form submission started...');
+        
+        // Basic validation
+        const kode = $('input[name="kode"]').val().trim();
+        const jml = parseInt($('input[name="jml"]').val());
+        const jmlMax = parseInt($('input[name="jml_max"]').val());
+        const nominal = parseFloat($('input[name="nominal"]').val());
+        const jenisVoucher = $('input[name="jenis_voucher"]:checked').val();
+        const tglMasuk = $('input[name="tgl_masuk"]').val();
+        const tglKeluar = $('input[name="tgl_keluar"]').val();
+        
+        console.log('Form values:', { kode, jml, jmlMax, nominal, jenisVoucher, tglMasuk, tglKeluar });
+        
+        // Validation checks
+        if (!kode) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Kode voucher harus diisi');
+            } else {
+                alert('Kode voucher harus diisi');
+            }
+            $('input[name="kode"]').focus();
+            return false;
+        }
+        
+        if (!jml || jml < 1) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Jumlah voucher harus lebih dari 0');
+            } else {
+                alert('Jumlah voucher harus lebih dari 0');
+            }
+            $('input[name="jml"]').focus();
+            return false;
+        }
+        
+        if (!jmlMax || jmlMax < <?= $voucher->jml_keluar ?>) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Batas maksimal tidak boleh kurang dari jumlah yang sudah digunakan (<?= $voucher->jml_keluar ?>)');
+            } else {
+                alert('Batas maksimal tidak boleh kurang dari jumlah yang sudah digunakan (<?= $voucher->jml_keluar ?>)');
+            }
+            $('input[name="jml_max"]').focus();
+            return false;
+        }
+        
+        if (!nominal || nominal <= 0) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Nominal voucher harus lebih dari 0');
+            } else {
+                alert('Nominal voucher harus lebih dari 0');
+            }
+            $('input[name="nominal"]').focus();
+            return false;
+        }
+        
+        if (jenisVoucher === 'persen' && nominal > 100) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Persentase voucher tidak boleh lebih dari 100%');
+            } else {
+                alert('Persentase voucher tidak boleh lebih dari 100%');
+            }
+            $('input[name="nominal"]').focus();
+            return false;
+        }
+        
+        if (!tglMasuk) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Tanggal mulai harus diisi');
+            } else {
+                alert('Tanggal mulai harus diisi');
+            }
+            $('input[name="tgl_masuk"]').focus();
+            return false;
+        }
+        
+        if (!tglKeluar) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Tanggal berakhir harus diisi');
+            } else {
+                alert('Tanggal berakhir harus diisi');
+            }
+            $('input[name="tgl_keluar"]').focus();
+            return false;
+        }
+        
+        if (tglKeluar <= tglMasuk) {
+            if (typeof toastr !== 'undefined') {
+                toastr.error('Tanggal berakhir harus setelah tanggal mulai');
+            } else {
+                alert('Tanggal berakhir harus setelah tanggal mulai');
+            }
+            $('input[name="tgl_keluar"]').focus();
+            return false;
+        }
+        
+        console.log('Validation passed, submitting form...');
+        
+        // If validation passes, show loading state and submit the form
+        const submitBtn = $('#submitBtn');
+        const originalText = submitBtn.html();
+        
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Updating...');
+        
+        // Test form submission
+        console.log('About to submit form to:', this.action);
+        
+        // Submit the form
+        // this.submit();
+    });
+    
+    // Reset button state if form validation fails
+    $(document).on('invalid', function(e) {
+        const submitBtn = $('#submitBtn');
+        submitBtn.prop('disabled', false).html('<i class="fas fa-save"></i> Update');
     });
 });
 </script>

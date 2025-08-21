@@ -334,10 +334,6 @@ class TransJual extends BaseController
             $limit = (is_numeric($limit) && $limit > 0) ? (int)$limit : (int)$paginationLimit;
             $offset = (is_numeric($offset) && $offset >= 0) ? (int)$offset : 0;
             
-            // Debug: Log the parameter types
-            log_message('info', 'Parameter types - limit: ' . gettype($limit) . ' (' . $limit . '), offset: ' . gettype($offset) . ' (' . $offset . ')');
-            log_message('info', 'Category ID type: ' . gettype($categoryId) . ' (' . $categoryId . ')');
-
             // Defensive: fallback to array if error
             $items = [];
 

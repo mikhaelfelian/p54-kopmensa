@@ -74,24 +74,36 @@ class Voucher extends BaseController
 
     public function store()
     {
-        $kode = $this->request->getPost('kode');
-        $jml = $this->request->getPost('jml');
-        $jenis_voucher = $this->request->getPost('jenis_voucher');
-        $nominal = $this->request->getPost('nominal');
-        $jml_max = $this->request->getPost('jml_max');
-        $tgl_masuk = $this->request->getPost('tgl_masuk');
-        $tgl_keluar = $this->request->getPost('tgl_keluar');
-        $status = $this->request->getPost('status');
-        $keterangan = $this->request->getPost('keterangan');
+        // Debug logging
+        log_message('debug', 'Store method called');
+        log_message('debug', 'POST data: ' . json_encode($this->request->getPost()));
+        
+        // Get all voucher form input values from POST request
+        $id             = $this->request->getPost('id');
+        $kode           = $this->request->getPost('kode');
+        $jml            = $this->request->getPost('jml');
+        $jenis_voucher  = $this->request->getPost('jenis_voucher');
+        $nominal        = $this->request->getPost('nominal');
+        $jml_max        = $this->request->getPost('jml_max');
+        $tgl_masuk      = $this->request->getPost('tgl_masuk');
+        $tgl_keluar     = $this->request->getPost('tgl_keluar');
+        $status         = $this->request->getPost('status');
+        $keterangan     = $this->request->getPost('keterangan');
 
         // Validation rules
         $rules = [
+            'id' => [
+                'rules' => 'permit_empty|integer|greater_than[0]',
+                'errors' => [
+                    'integer' => 'ID voucher harus berupa angka',
+                    'greater_than' => 'ID voucher tidak valid'
+                ]
+            ],
             'kode' => [
-                'rules' => 'required|max_length[50]|is_unique[tbl_m_voucher.kode]',
+                'rules' => 'required|max_length[50]',
                 'errors' => [
                     'required' => 'Kode voucher harus diisi',
-                    'max_length' => 'Kode voucher maksimal 50 karakter',
-                    'is_unique' => 'Kode voucher sudah digunakan'
+                    'max_length' => 'Kode voucher maksimal 50 karakter'
                 ]
             ],
             'jml' => [
@@ -138,17 +150,11 @@ class Voucher extends BaseController
                     'required' => 'Tanggal berakhir harus diisi',
                     'valid_date' => 'Format tanggal berakhir tidak valid'
                 ]
-            ],
-            env('security.tokenName', 'csrf_test_name') => [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'CSRF token tidak valid'
-                ]
             ]
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to(base_url('master/voucher/create'))
                 ->withInput()
                 ->with('error', 'Validasi gagal');
         }
@@ -190,26 +196,33 @@ class Voucher extends BaseController
 
         // Generate data
         $data = [
+            'id'            => $id,
             'id_user'       => $this->ionAuth->user()->row()->id,
-            'kode'          => $kode,
-            'jml'           => $jml,
             'jenis_voucher' => $jenis_voucher,
             'nominal'       => $nominal,
-            'jml_keluar'    => 0,
-            'jml_max'       => $jml_max,
             'tgl_masuk'     => $tgl_masuk,
             'tgl_keluar'    => $tgl_keluar,
             'status'        => $status,
             'keterangan'    => $keterangan
         ];
 
-        if ($this->voucherModel->insert($data)) {
-            return redirect()->to(base_url('master/voucher'))
-                ->with('success', 'Data voucher berhasil ditambahkan');
-        } else {
-            return redirect()->back()
+        if ($id) {
+            $data['id'] = $id;
+        }else{
+            $data['kode']       = $kode;
+            $data['jml_keluar'] = 0;
+            $data['jml_max']    = $jml_max;
+            $data['jml']        = $jml;
+        }
+
+        try {
+            $this->voucherModel->save($data);
+            return redirect()->to(base_url('master/voucher/'.($id ? 'edit/'.$id : 'create')))
+                ->with('success', 'Data voucher berhasil disimpan');
+        } catch (\Throwable $e) {
+            return redirect()->to(base_url('master/voucher/create'))
                 ->withInput()
-                ->with('error', 'Gagal menyimpan data voucher');
+                ->with('error', 'Terjadi kesalahan saat menyimpan data voucher: ' . $e->getMessage());
         }
     }
 
@@ -241,6 +254,10 @@ class Voucher extends BaseController
 
     public function update($id)
     {
+        // Debug logging
+        log_message('debug', 'Update method called with ID: ' . $id);
+        log_message('debug', 'POST data: ' . json_encode($this->request->getPost()));
+        
         $voucher = $this->voucherModel->find($id);
         
         if (!$voucher) {
@@ -260,12 +277,19 @@ class Voucher extends BaseController
 
         // Validation rules
         $rules = [
+            'id' => [
+                'rules' => 'required|integer|greater_than[0]',
+                'errors' => [
+                    'required' => 'ID voucher harus ada',
+                    'integer' => 'ID voucher harus berupa angka',
+                    'greater_than' => 'ID voucher tidak valid'
+                ]
+            ],
             'kode' => [
-                'rules' => 'required|max_length[50]|is_unique[tbl_m_voucher.kode,id,' . $id . ']',
+                'rules' => 'required|max_length[50]',
                 'errors' => [
                     'required' => 'Kode voucher harus diisi',
-                    'max_length' => 'Kode voucher maksimal 50 karakter',
-                    'is_unique' => 'Kode voucher sudah digunakan'
+                    'max_length' => 'Kode voucher maksimal 50 karakter'
                 ]
             ],
             'jml' => [
@@ -312,12 +336,6 @@ class Voucher extends BaseController
                     'required' => 'Tanggal berakhir harus diisi',
                     'valid_date' => 'Format tanggal berakhir tidak valid'
                 ]
-            ],
-            env('security.tokenName', 'csrf_test_name') => [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'CSRF token tidak valid'
-                ]
             ]
         ];
 
@@ -325,6 +343,14 @@ class Voucher extends BaseController
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Validasi gagal');
+        }
+
+        // Check if kode is unique (excluding current voucher)
+        $existingVoucher = $this->voucherModel->where('kode', $kode)->where('id !=', $id)->first();
+        if ($existingVoucher) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Kode voucher sudah digunakan');
         }
 
         // Check if end date is after start date
@@ -364,6 +390,7 @@ class Voucher extends BaseController
 
         // Generate data
         $data = [
+            'id'            => $id, // Include ID for update operation
             'kode'          => $kode,
             'jml'           => $jml,
             'jenis_voucher' => $jenis_voucher,
@@ -375,7 +402,7 @@ class Voucher extends BaseController
             'keterangan'    => $keterangan
         ];
 
-        if ($this->voucherModel->update($id, $data)) {
+        if ($this->voucherModel->save($data)) {
             return redirect()->to(base_url('master/voucher'))
                 ->with('success', 'Data voucher berhasil diperbarui');
         } else {

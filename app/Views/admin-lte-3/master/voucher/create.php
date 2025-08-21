@@ -11,7 +11,7 @@
                     </a>
                 </div>
             </div>
-            <?= form_open('master/voucher/store') ?>
+            <?= form_open(base_url('master/voucher/store'), ['csrf' => false]) ?>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6">

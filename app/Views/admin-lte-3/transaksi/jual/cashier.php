@@ -88,10 +88,10 @@ helper('form');
                 </div>
 
                 <!-- Lanjutkan Button (Load More) -->
-                <div id="loadMoreContainer" class="text-center mt-3" style="display: none;">
-                    <button type="button" class="btn btn-primary btn-lg" id="loadMoreProducts">
+                <div id="loadMoreContainer" class="text-center mt-2" style="display: none;">
+                    <button type="button" class="btn btn-primary btn-sm rounded-0" id="loadMoreProducts">
                         <i class="fas fa-arrow-down"></i> Lanjutkan
-                    </button>
+                    </button> 
                 </div>
             </div>
         </div>
@@ -100,17 +100,6 @@ helper('form');
     <!-- Right Column - Order Management -->
     <div class="col-lg-5">
         <div class="card rounded-0">
-            <div class="card-header bg-light">
-                <?php if (session('kasir_outlet_name')): ?>
-                    <h4 class="mb-0 font-weight-normal text-secondary">
-                        <i class="fas fa-cash-register"></i> Kasir Penjualan, <b><?= session('kasir_outlet_name') ?></b>
-                    </h4>
-                <?php else: ?>
-                    <h4 class="mb-0 font-weight-normal text-secondary">
-                        <i class="fas fa-cash-register"></i> Kasir Penjualan
-                    </h4>
-                <?php endif; ?>
-            </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-6">
@@ -222,28 +211,28 @@ helper('form');
                                 </div>
                             </div>
 
-                                                <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
-                        <div class="alert alert-info alert-sm">
-                            <div class="row">
-                                <div class="col-12">
-                                    <strong>Informasi Anggota:</strong>
+                            <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
+                                <div class="alert alert-info alert-sm">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <strong>Informasi Anggota:</strong>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <strong>Nama:</strong> <span id="anggotaNama"></span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Kode:</strong> <span id="anggotaKode"></span>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-1">
+                                        <div class="col-12">
+                                            <strong>Alamat:</strong> <span id="anggotaAlamat"></span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="row mt-2">
-                                <div class="col-6">
-                                    <strong>Nama:</strong> <span id="anggotaNama"></span>
-                                </div>
-                                <div class="col-6">
-                                    <strong>Kode:</strong> <span id="anggotaKode"></span>
-                                </div>
-                            </div>
-                            <div class="row mt-1">
-                                <div class="col-12">
-                                    <strong>Alamat:</strong> <span id="anggotaAlamat"></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                         </div>
                     </div>
                 </div>
@@ -505,12 +494,20 @@ helper('form');
                     <div class="row mb-2">
                         <div class="col-6">Voucher:</div>
                         <div class="col-6">
-                            <?= form_input([
-                                'type' => 'text',
-                                'class' => 'form-control form-control-sm rounded-0',
-                                'id' => 'voucherCode',
-                                'placeholder' => 'Kode voucher'
-                            ]); ?>
+                            <div class="input-group input-group-sm">
+                                <?= form_input([
+                                    'type' => 'text',
+                                    'class' => 'form-control form-control-sm rounded-0',
+                                    'id' => 'voucherCode',
+                                    'placeholder' => 'Kode voucher'
+                                ]); ?>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-0"
+                                        id="clearVoucher" title="Clear Voucher">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <small class="text-muted" id="voucherInfo"></small>
                             <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
                             <input type="hidden" id="voucherId" name="voucherId" value="">
@@ -1460,8 +1457,30 @@ helper('form');
         });
 
         $('#discountPercent').on('input', calculateTotal);
+
+        // Voucher input handling
         $('#voucherCode').on('blur', function () {
             validateVoucher($(this).val());
+        });
+
+        // Clear voucher button
+        $('#clearVoucher').on('click', function () {
+            clearVoucher();
+        });
+
+        // Clear voucher when input is cleared manually
+        $('#voucherCode').on('input', function () {
+            if (!$(this).val()) {
+                clearVoucher();
+            }
+        });
+
+        // Allow Enter key to validate voucher
+        $('#voucherCode').on('keypress', function (e) {
+            if (e.which === 13) { // Enter key
+                e.preventDefault();
+                validateVoucher($(this).val());
+            }
         });
 
         // Payment method event listeners - use namespaced events to prevent duplicates
@@ -2272,36 +2291,62 @@ helper('form');
 
     function displayProducts(products) {
         let html = '';
-        const defaultImage = '<?= base_url('public/assets/theme/admin-lte-3/dist/img/default.png') ?>';
         const base_url = '<?= base_url() ?>';
 
         if (products && products.length > 0) {
             products.forEach(function (product) {
                 const itemName = product.item || product.nama || product.produk || '-';
-                const category = product.kategori || '-';
-                const brand = product.merk || '-';
+                const productCode = product.kode || product.barcode || '';
                 const price = product.harga_jual || product.harga || 0;
                 const stock = product.stok || 0;
-                // Use foto if exists, otherwise use default
-                let foto = product.foto || product.gambar || product.image || '';
-                // If foto is empty, use default
-                let imageSrc = foto && foto.trim() !== '' ? foto : defaultImage;
+                const description = product.deskripsi || '';
+
+                // Stock status logic
+                let stockStatus = '';
+                let stockClass = '';
+                if (stock <= 0) {
+                    stockStatus = 'Stok Habis';
+                    stockClass = 'btn-danger';
+                } else if (stock <= 5) {
+                    stockStatus = 'Stok Rendah';
+                    stockClass = 'btn-warning';
+                }
+
+                // Product name with code (like in your image)
+                const displayName = productCode ? `${itemName}-${productCode}` : itemName;
 
                 html += `
-                <div class="col-md-3 col-sm-4 col-6">
-                    <div class="product-grid-item rounded-0" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
-                        <div class="product-image" style="width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin:auto;">
-                            <img src="${base_url}${imageSrc}" alt="${itemName}" class="product-thumbnail"
-                                 style="width:100%; max-width:150px; height:auto; aspect-ratio:1/1; object-fit:cover;"
-                                 onerror="this.onerror=null;this.src='${defaultImage}'">
-                                </div>
-                        <div class="product-info">
-                            <div class="product-category">${category} - ${brand}</div>
-                            <div class="product-name">${itemName}</div>
-                            <div class="product-price">Rp ${numberFormat(price)}</div>
-                            <small class="text-muted">Stok: ${stock} ${product.satuan || 'PCS'}</small>
-                                </div>
+                <div class="col-12 mb-2">
+                    <div class="product-grid-item border-bottom py-3 px-2" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})" style="cursor: pointer; background: #f8f9fa;">
+                        <div class="d-flex align-items-start">
+                            <!-- Product Icon -->
+                            <div class="product-icon me-3" style="flex-shrink: 0;">
+                            ${product.foto
+                        ? `<img src="${base_url}/${product.foto}" alt="${itemName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="rounded-0">`
+                        : `<div class="product-image-placeholder" style="width: 40px; height: 40px; background: #e9ecef; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-cube text-muted" style="font-size: 18px;"></i>
+                                    </div>`
+                    }
+                            </div>
+                            
+                            <!-- Product Info -->
+                            <div class="product-info flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-1" style="padding-left: 8px;">
+                                        <div class="product-info-left" style="flex-grow: 1; text-align: left;">
+                                            <div class="product-name" style="font-size: 14px; line-height: 1.3; color: #000; font-weight: 500; text-align: left;">
+                                                ${displayName}
+                                            </div>
+                                            <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
+                                                ${description ? description : ''}
+                                            </div>
+                                        </div>
+                                        <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
+                                            Rp ${numberFormat(price)}
+                                        </div>
+                                    </div>
+                            </div>
                         </div>
+                    </div>
                 </div>
             `;
             });
@@ -2452,21 +2497,40 @@ helper('form');
                         const brand = product.merk || '-';
                         const price = product.harga_jual || product.harga || 0;
                         const stock = product.stok || 0;
-                        const image = product.gambar || product.image || '<?= base_url('public/assets/theme/admin-lte-3/dist/img/default.png') ?>';
+                        const description = product.deskripsi || '';
+                        const base_url = '<?= base_url() ?>';
 
+                        // Same design as the main product grid (displayProducts)
                         return `
-                        <div class="col-md-3 col-sm-4 col-6">
-                            <div class="product-grid-item rounded-0" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})">
-                                <div class="product-image" style="width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin:auto;">
-                                    <img src="${image}" alt="${itemName}" class="product-thumbnail" 
-                                         style="max-width:150px; max-height:150px; width:auto; height:auto; object-fit:cover;"
-                                         onerror="this.src='<?= base_url('public/assets/theme/admin-lte-3/dist/img/default.png') ?>'">
-                                </div>
-                                <div class="product-info">
-                                    <div class="product-category">${category} - ${brand}</div>
-                                    <div class="product-name">${itemName}</div>
-                                    <div class="product-price">Rp ${numberFormat(price)}</div>
-                                    <small class="text-muted">Stok: ${stock} ${product.satuan || 'PCS'}</small>
+                        <div class="col-12 mb-2">
+                            <div class="product-grid-item border-bottom py-3 px-2" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})" style="cursor: pointer; background: #f8f9fa;">
+                                <div class="d-flex align-items-start">
+                                    <!-- Product Icon -->
+                                    <div class="product-icon me-3" style="flex-shrink: 0;">
+                                        ${product.foto
+                                            ? `<img src="${base_url}/${product.foto}" alt="${itemName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="rounded-0">`
+                                            : `<div class="product-image-placeholder" style="width: 40px; height: 40px; background: #e9ecef; display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-cube text-muted" style="font-size: 18px;"></i>
+                                            </div>`
+                                        }
+                                    </div>
+                                    
+                                    <!-- Product Info -->
+                                    <div class="product-info flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1" style="padding-left: 8px;">
+                                            <div class="product-info-left" style="flex-grow: 1; text-align: left;">
+                                                <div class="product-name" style="font-size: 14px; line-height: 1.3; color: #000; font-weight: 500; text-align: left;">
+                                                    ${product.kode ? `${itemName}-${product.kode}` : itemName}
+                                                </div>
+                                                <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
+                                                    ${description ? description : ''}
+                                                </div>
+                                            </div>
+                                            <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
+                                                Rp ${numberFormat(price)}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2695,15 +2759,32 @@ helper('form');
         calculatePaymentTotals();
     }
 
+    function clearVoucher() {
+        $('#voucherCode').val('');
+        $('#voucherInfo').text('').removeClass('text-success text-danger');
+        $('#voucherDiscount').val(0);
+        $('#voucherId').val('');
+        $('#voucherType').val('');
+        $('#voucherDiscountAmount').val(0);
+        $('#voucherDiscountRow').hide();
+        calculateTotal();
+    }
+
     function validateVoucher(voucherCode) {
-        if (!voucherCode) {
-            $('#voucherInfo').text('').removeClass('text-success text-danger');
-            $('#voucherDiscount').val(0);
-            $('#voucherId').val('');
-            $('#voucherType').val('');
-            $('#voucherDiscountAmount').val(0);
+        if (!voucherCode || voucherCode.trim() === '') {
+            clearVoucher();
             return;
         }
+
+        // Check if voucher is already applied
+        const currentVoucherId = $('#voucherId').val();
+        if (currentVoucherId && currentVoucherId !== '') {
+            toastr.warning('Voucher sudah diterapkan. Silakan clear voucher terlebih dahulu.');
+            return;
+        }
+
+        // Show loading state
+        $('#voucherInfo').text('Validating voucher...').removeClass('text-success text-danger').addClass('text-info');
 
         $.ajax({
             url: '<?= base_url('transaksi/jual/validate-voucher') ?>',
@@ -2715,33 +2796,51 @@ helper('form');
                 if (response.valid) {
                     let displayText = '';
                     if (response.jenis_voucher === 'persen') {
-                        displayText = `Voucher valid: ${response.discount}%`;
+                        displayText = `Voucher valid: ${response.discount}% diskon`;
                     } else if (response.jenis_voucher === 'nominal') {
-                        displayText = `Voucher valid: Rp ${numberFormat(response.discount_amount)}`;
+                        displayText = `Voucher valid: Rp ${numberFormat(response.discount_amount)} diskon`;
                     }
 
-                    $('#voucherInfo').text(displayText).removeClass('text-danger').addClass('text-success');
+                    // Add additional info if available
+                    if (response.remaining_usage !== undefined) {
+                        displayText += ` (Tersisa: ${response.remaining_usage} penggunaan)`;
+                    }
+
+                    $('#voucherInfo').text(displayText).removeClass('text-danger text-info').addClass('text-success');
                     $('#voucherDiscount').val(response.discount);
                     $('#voucherId').val(response.voucher_id);
                     $('#voucherType').val(response.jenis_voucher);
                     $('#voucherDiscountAmount').val(response.discount_amount);
                     calculateTotal();
+
+                    // Show success message with voucher details
+                    let successMsg = 'Voucher berhasil diterapkan';
+                    if (response.jenis_voucher === 'persen') {
+                        successMsg += ` - Diskon ${response.discount}%`;
+                    } else if (response.jenis_voucher === 'nominal') {
+                        successMsg += ` - Diskon Rp ${numberFormat(response.discount_amount)}`;
+                    }
+                    toastr.success(successMsg);
                 } else {
-                    $('#voucherInfo').text(response.message || 'Voucher tidak valid').removeClass('text-success').addClass('text-danger');
-                    $('#voucherDiscount').val(0);
-                    $('#voucherId').val('');
-                    $('#voucherType').val('');
-                    $('#voucherDiscountAmount').val(0);
-                    calculateTotal();
+                    $('#voucherInfo').text(response.message || 'Voucher tidak valid').removeClass('text-success text-info').addClass('text-danger');
+                    clearVoucher();
+
+                    // Show error message
+                    toastr.error(response.message || 'Voucher tidak valid');
                 }
             },
-            error: function () {
-                $('#voucherInfo').text('Error validasi voucher').removeClass('text-success').addClass('text-danger');
-                $('#voucherDiscount').val(0);
-                $('#voucherId').val('');
-                $('#voucherType').val('');
-                $('#voucherDiscountAmount').val(0);
-                calculateTotal();
+            error: function (xhr, status, error) {
+                $('#voucherInfo').text('Error validasi voucher').removeClass('text-success text-info').addClass('text-danger');
+                clearVoucher();
+
+                // Show error message
+                if (xhr.status === 0) {
+                    toastr.error('Tidak dapat terhubung ke server');
+                } else if (xhr.status === 500) {
+                    toastr.error('Error server: ' + error);
+                } else {
+                    toastr.error('Error validasi voucher: ' + error);
+                }
             }
         });
     }
@@ -2779,6 +2878,12 @@ helper('form');
 
         // If it's a draft, skip payment validation
         if (!isDraft) {
+            // Check if voucher is applied and mark it as used
+            const voucherId = $('#voucherId').val();
+            if (voucherId && voucherId !== '') {
+                // Voucher will be marked as used in the backend when transaction is completed
+                console.log('Voucher applied:', voucherId);
+            }
 
             // Validate payment methods
             let hasValidPayment = false;
@@ -3831,29 +3936,29 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
     // Test function to debug QR handling
     function testQrHandling() {
         console.log('=== Testing QR Handling ===');
-        
+
         // Test 1: Empty data
         console.log('Test 1: Empty data');
         handleQrScanResult('');
-        
+
         // Test 2: Null data
         console.log('Test 2: Null data');
         handleQrScanResult(null);
-        
+
         // Test 3: Plain text
         console.log('Test 3: Plain text');
         handleQrScanResult('12345');
-        
+
         // Test 4: JSON object
         console.log('Test 4: JSON object');
-        handleQrScanResult({id_pelanggan: '67890', nama: 'Test Customer'});
-        
+        handleQrScanResult({ id_pelanggan: '67890', nama: 'Test Customer' });
+
         console.log('=== End Testing ===');
     }
 
     // Function to handle QR code scan result (called by QR library)
     function handleQrScanResult(qrData) {
-        
+
         // Debug: Log what we received
         console.log('QR Data received:', qrData);
         console.log('QR Data type:', typeof qrData);
@@ -3870,13 +3975,13 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         if (typeof qrData === 'string') {
             // Plain text QR code - try to extract any meaningful data
             const trimmedData = qrData.trim();
-            
+
             // Check if it's a JSON string that wasn't parsed
             if (trimmedData.startsWith('{') || trimmedData.startsWith('[')) {
                 try {
                     const parsedData = JSON.parse(trimmedData);
                     console.log('Parsed JSON string:', parsedData);
-                    
+
                     // Extract customer ID from parsed JSON
                     if (parsedData.id_pelanggan) {
                         customerId = parsedData.id_pelanggan;
@@ -3910,12 +4015,12 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 // Regular plain text
                 customerId = trimmedData;
             }
-            
+
             console.log('String QR processed, customerId:', customerId);
         } else if (qrData && typeof qrData === 'object') {
             // JSON/object QR code
             console.log('Object QR detected, keys:', Object.keys(qrData));
-            
+
             // Try multiple possible field names
             if (qrData.id_pelanggan) {
                 customerId = qrData.id_pelanggan;
@@ -3954,7 +4059,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 
         if (customerId && customerId.toString().trim() !== '') {
             console.log('Valid customerId found:', customerId);
-            
+
             // Set the scanned data in the input field
             $('#scanAnggota').val(customerId);
 
@@ -3964,13 +4069,13 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 $('#displayCustomerName').text(customerName);
                 $('#displayCustomerCard').text(customerId);
                 $('#customerInfoDisplay').show();
-                
+
                 // Show detailed anggota info below (with placeholder data)
                 $('#anggotaNama').text(customerName);
                 $('#anggotaKode').text(customerId);
                 $('#anggotaAlamat').text('-');
                 $('#anggotaInfo').show();
-                
+
                 toastr.success('Anggota ditemukan: ' + customerName);
             } else {
                 // Automatically search for the customer
@@ -3981,7 +4086,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             console.error('customerId value:', customerId);
             console.error('customerId type:', typeof customerId);
             console.error('customerId length:', customerId ? customerId.length : 'N/A');
-            
+
             let errorMessage = 'Data QR code tidak valid. ';
             if (!qrData) {
                 errorMessage += 'QR data kosong/null.';
@@ -3992,7 +4097,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             } else {
                 errorMessage += 'Format tidak dikenali. Data: ' + JSON.stringify(qrData);
             }
-            
+
             toastr.error(errorMessage);
             $('#scanAnggota').focus();
         }
