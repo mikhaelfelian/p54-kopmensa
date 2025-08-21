@@ -481,13 +481,31 @@ helper('form');
                     <div class="row mb-2">
                         <div class="col-6">Diskon:</div>
                         <div class="col-6">
-                            <?= form_input([
-                                'type' => 'number',
-                                'class' => 'form-control form-control-sm rounded-0',
-                                'id' => 'discountPercent',
-                                'placeholder' => '%',
-                                'step' => '0.01'
-                            ]); ?>
+                            <div class="input-group input-group-sm">
+                                <?= form_input([
+                                    'type' => 'number',
+                                    'class' => 'form-control form-control-sm rounded-0',
+                                    'id' => 'discountAmount',
+                                    'placeholder' => '0',
+                                    'step' => '0.01'
+                                ]); ?>
+                                <div class="input-group-append">
+                                    <select class="form-control form-control-sm rounded-0" id="discountType" style="border-left: 0;">
+                                        <option value="nominal">Rp</option>
+                                        <option value="percent">%</option>
+                                    </select>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-0" id="clearDiscount" title="Clear Discount">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-2" id="discountRow" style="display: none;">
+                        <div class="col-6">Potongan Diskon:</div>
+                        <div class="col-6 text-right">
+                            <span id="discountDisplay">Rp 0</span>
                         </div>
                     </div>
 
@@ -1456,7 +1474,13 @@ helper('form');
             });
         });
 
-        $('#discountPercent').on('input', calculateTotal);
+        $('#discountAmount').on('input', calculateTotal);
+        $('#discountType').on('change', calculateTotal);
+        
+        // Clear discount button
+        $('#clearDiscount').on('click', function() {
+            clearDiscount();
+        });
 
         // Voucher input handling
         $('#voucherCode').on('blur', function () {
@@ -2711,9 +2735,31 @@ helper('form');
         $('#subtotalDisplay').text(`Rp ${numberFormat(subtotal)}`);
 
         // Calculate discount
-        const discountPercent = parseFloat($('#discountPercent').val()) || 0;
-        const discountAmount = subtotal * (discountPercent / 100);
+        const discountType = $('#discountType').val();
+        const discountValue = parseFloat($('#discountAmount').val()) || 0;
+        let discountAmount = 0;
+        
+        if (discountType === 'percent') {
+            // Percentage discount
+            discountAmount = subtotal * (discountValue / 100);
+        } else {
+            // Nominal discount (fixed amount)
+            discountAmount = discountValue;
+            // Ensure discount doesn't exceed subtotal
+            if (discountAmount > subtotal) {
+                discountAmount = subtotal;
+            }
+        }
+        
         const afterDiscount = subtotal - discountAmount;
+        
+        // Show/hide discount row and update display
+        if (discountAmount > 0) {
+            $('#discountRow').show();
+            $('#discountDisplay').text(`Rp ${numberFormat(discountAmount)}`);
+        } else {
+            $('#discountRow').hide();
+        }
 
         // Calculate voucher discount
         const voucherType = $('#voucherType').val();
@@ -2767,6 +2813,13 @@ helper('form');
         $('#voucherType').val('');
         $('#voucherDiscountAmount').val(0);
         $('#voucherDiscountRow').hide();
+        calculateTotal();
+    }
+    
+    function clearDiscount() {
+        $('#discountAmount').val('');
+        $('#discountType').val('nominal');
+        $('#discountRow').hide();
         calculateTotal();
     }
 
@@ -2938,7 +2991,8 @@ helper('form');
             customer_type: $('#selectedCustomerType').val(),
             customer_name: $('#selectedCustomerName').val() || null,
             warehouse_id: $('#warehouse_id').val() || null,
-            discount_percent: parseFloat($('#discountPercent').val()) || 0,
+            discount_amount: parseFloat($('#discountAmount').val()) || 0,
+            discount_type: $('#discountType').val() || 'nominal',
             voucher_code: $('#voucherCode').val() || null,
             voucher_discount: parseFloat($('#voucherDiscount').val()) || 0,
             voucher_id: $('#voucherId').val() || null,
