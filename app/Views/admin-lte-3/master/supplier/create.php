@@ -73,60 +73,8 @@
                                 <?= $validation->getError('alamat') ?>
                             </div>
                         </div>
-
-                        <!-- RT/RW -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>RT</label>
-                                    <?= form_input([
-                                        'name' => 'rt',
-                                        'type' => 'text',
-                                        'class' => 'form-control rounded-0',
-                                        'placeholder' => 'RT',
-                                        'value' => old('rt')
-                                    ]) ?>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>RW</label>
-                                    <?= form_input([
-                                        'name' => 'rw',
-                                        'type' => 'text',
-                                        'class' => 'form-control rounded-0',
-                                        'placeholder' => 'RW',
-                                        'value' => old('rw')
-                                    ]) ?>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <div class="col-md-6">
-                        <!-- Kelurahan -->
-                        <div class="form-group">
-                            <label>Kelurahan</label>
-                            <?= form_input([
-                                'name' => 'kelurahan',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Kelurahan...',
-                                'value' => old('kelurahan')
-                            ]) ?>
-                        </div>
-
-                        <!-- Kecamatan -->
-                        <div class="form-group">
-                            <label>Kecamatan</label>
-                            <?= form_input([
-                                'name' => 'kecamatan',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Kecamatan...',
-                                'value' => old('kecamatan')
-                            ]) ?>
-                        </div>
-
                         <!-- Kota -->
                         <div class="form-group">
                             <label>Kota</label>
@@ -136,18 +84,6 @@
                                 'class' => 'form-control rounded-0',
                                 'placeholder' => 'Kota...',
                                 'value' => old('kota')
-                            ]) ?>
-                        </div>
-
-                        <!-- No Telepon -->
-                        <div class="form-group">
-                            <label>No. Telepon</label>
-                            <?= form_input([
-                                'name' => 'no_tlp',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Nomor telepon...',
-                                'value' => old('no_tlp')
                             ]) ?>
                         </div>
 

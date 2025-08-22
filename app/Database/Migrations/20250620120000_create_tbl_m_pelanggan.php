@@ -96,6 +96,13 @@ class CreateTblMPelanggan extends Migration
                 'default'    => '0',
                 'comment'    => '0=none; 1=terhapus;',
             ],
+            'status_limit' => [
+                'type'       => 'ENUM',
+                'constraint' => ['0', '1'],
+                'null'       => true,
+                'default'    => '0',
+                'comment'    => '',
+            ],
         ]);
 
         $this->forge->addKey('id', true);

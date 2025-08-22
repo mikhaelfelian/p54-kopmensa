@@ -339,7 +339,7 @@
                                             <th>Nama Varian</th>
                                             <th>Barcode</th>
                                             <th>Harga Beli</th>
-                                            <th>Harga Dasar</th>
+                                            <th>Harga Jual</th>
                                             <th>Foto Varian</th>
                                             <th>Status</th>
                                             <th style="width:120px;">AKSI</th>
