@@ -31,20 +31,133 @@ helper('form');
                 </div>
             </div>
             <div class="card-body">
-                <!-- Search Form -->
+                <!-- Filter Section -->
                 <div class="row mb-3">
-                    <div class="col-md-6">
-                        <?= form_open(base_url('transaksi/retur/jual'), ['method' => 'GET']) ?>
-                        <div class="input-group">
-                            <input type="text" class="form-control rounded-0" name="search" 
-                                   value="<?= esc($search ?? '') ?>" placeholder="Cari berdasarkan nomor retur, nama pelanggan...">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary rounded-0" type="submit">
-                                    <i class="fas fa-search"></i> Cari
-                                </button>
+                    <div class="col-md-12">
+                        <div class="card border-secondary">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-filter"></i> Filter Data
+                                    <button type="button" class="btn btn-sm btn-outline-secondary float-right" onclick="toggleFilter()">
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                </h6>
+                            </div>
+                            <div class="card-body" id="filterSection">
+                                <form method="GET" action="<?= current_url() ?>">
+                                    <div class="row">
+                                        <!-- Date Range Filter -->
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Tanggal Mulai</label>
+                                                <input type="date" name="start_date" class="form-control form-control-sm rounded-0" 
+                                                       value="<?= $_GET['start_date'] ?? '' ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Tanggal Akhir</label>
+                                                <input type="date" name="end_date" class="form-control form-control-sm rounded-0" 
+                                                       value="<?= $_GET['end_date'] ?? '' ?>">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Search Filter -->
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Pencarian</label>
+                                                <input type="text" name="search" class="form-control form-control-sm rounded-0" 
+                                                       placeholder="No. Retur, Pelanggan, No. Penjualan..." 
+                                                       value="<?= $_GET['search'] ?? esc($search ?? '') ?>">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Return Type Filter -->
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Tipe Retur</label>
+                                                <select name="retur_type" class="form-control form-control-sm rounded-0">
+                                                    <option value="">Semua Tipe</option>
+                                                    <option value="refund" <?= ($_GET['retur_type'] ?? '') === 'refund' ? 'selected' : '' ?>>Refund</option>
+                                                    <option value="exchange" <?= ($_GET['retur_type'] ?? '') === 'exchange' ? 'selected' : '' ?>>Tukar Barang</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <!-- Status Filter -->
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Status Retur</label>
+                                                <select name="status_retur" class="form-control form-control-sm rounded-0">
+                                                    <option value="">Semua Status</option>
+                                                    <option value="0" <?= ($_GET['status_retur'] ?? '') === '0' ? 'selected' : '' ?>>Draft</option>
+                                                    <option value="1" <?= ($_GET['status_retur'] ?? '') === '1' ? 'selected' : '' ?>>Selesai</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Amount Range Filter -->
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Total Minimal</label>
+                                                <input type="number" name="min_total" class="form-control form-control-sm rounded-0" 
+                                                       placeholder="0" step="1000" 
+                                                       value="<?= $_GET['min_total'] ?? '' ?>">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Total Maksimal</label>
+                                                <input type="number" name="max_total" class="form-control form-control-sm rounded-0" 
+                                                       placeholder="999999999" step="1000" 
+                                                       value="<?= $_GET['max_total'] ?? '' ?>">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Filter Actions -->
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>&nbsp;</label>
+                                                <div class="btn-group btn-block">
+                                                    <button type="submit" class="btn btn-primary btn-sm rounded-0">
+                                                        <i class="fas fa-search"></i> Filter
+                                                    </button>
+                                                    <a href="<?= current_url() ?>" class="btn btn-secondary btn-sm rounded-0">
+                                                        <i class="fas fa-times"></i> Reset
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-                        <?= form_close() ?>
+                    </div>
+                </div>
+                
+                <!-- Results Summary -->
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <?php if (!empty($_GET)) : ?>
+                                <i class="fas fa-info-circle"></i> 
+                                Filter aktif: 
+                                <?php
+                                $activeFilters = [];
+                                if (!empty($_GET['start_date'])) $activeFilters[] = 'Tanggal dari ' . $_GET['start_date'];
+                                if (!empty($_GET['end_date'])) $activeFilters[] = 'Tanggal sampai ' . $_GET['end_date'];
+                                if (!empty($_GET['search'])) $activeFilters[] = 'Pencarian: "' . $_GET['search'] . '"';
+                                if (isset($_GET['retur_type']) && $_GET['retur_type'] !== '') $activeFilters[] = 'Tipe: ' . ($_GET['retur_type'] === 'refund' ? 'Refund' : 'Tukar Barang');
+                                if (isset($_GET['status_retur']) && $_GET['status_retur'] !== '') $activeFilters[] = 'Status: ' . ($_GET['status_retur'] === '0' ? 'Draft' : 'Selesai');
+                                if (!empty($_GET['min_total'])) $activeFilters[] = 'Total Min: ' . number_format($_GET['min_total'], 0, ',', '.');
+                                if (!empty($_GET['max_total'])) $activeFilters[] = 'Total Max: ' . number_format($_GET['max_total'], 0, ',', '.');
+                                echo implode(', ', $activeFilters);
+                                ?>
+                            <?php endif; ?>
+                        </small>
                     </div>
                     <div class="col-md-6 text-right">
                         <small class="text-muted">
