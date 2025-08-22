@@ -44,43 +44,61 @@ helper('form');
                                 </h6>
                             </div>
                             <div class="card-body" id="filterSection">
-                                <form method="GET" action="<?= current_url() ?>">
+                                <?= form_open(current_url(), ['method' => 'get']) ?>
                                     <div class="row">
                                         <!-- Date Range Filter -->
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label>Tanggal Mulai</label>
-                                                <input type="date" name="start_date" class="form-control form-control-sm rounded-0" 
-                                                       value="<?= $_GET['start_date'] ?? '' ?>">
+                                                <label for="start_date">Tanggal Mulai</label>
+                                                <?= form_input([
+                                                    'type' => 'date',
+                                                    'name' => 'start_date',
+                                                    'id' => 'start_date',
+                                                    'class' => 'form-control form-control-sm rounded-0',
+                                                    'value' => $_GET['start_date'] ?? ''
+                                                ]) ?>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label>Tanggal Akhir</label>
-                                                <input type="date" name="end_date" class="form-control form-control-sm rounded-0" 
-                                                       value="<?= $_GET['end_date'] ?? '' ?>">
+                                                <label for="end_date">Tanggal Akhir</label>
+                                                <?= form_input([
+                                                    'type' => 'date',
+                                                    'name' => 'end_date',
+                                                    'id' => 'end_date',
+                                                    'class' => 'form-control form-control-sm rounded-0',
+                                                    'value' => $_GET['end_date'] ?? ''
+                                                ]) ?>
                                             </div>
                                         </div>
                                         
                                         <!-- Search Filter -->
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label>Pencarian</label>
-                                                <input type="text" name="search" class="form-control form-control-sm rounded-0" 
-                                                       placeholder="No. Retur, Pelanggan, No. Penjualan..." 
-                                                       value="<?= $_GET['search'] ?? esc($search ?? '') ?>">
+                                                <label for="search">Pencarian</label>
+                                                <?= form_input([
+                                                    'type' => 'text',
+                                                    'name' => 'search',
+                                                    'id' => 'search',
+                                                    'class' => 'form-control form-control-sm rounded-0',
+                                                    'placeholder' => 'No. Retur, Pelanggan, No. Penjualan...',
+                                                    'value' => $_GET['search'] ?? esc($search ?? '')
+                                                ]) ?>
                                             </div>
                                         </div>
                                         
                                         <!-- Return Type Filter -->
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label>Tipe Retur</label>
-                                                <select name="retur_type" class="form-control form-control-sm rounded-0">
-                                                    <option value="">Semua Tipe</option>
-                                                    <option value="refund" <?= ($_GET['retur_type'] ?? '') === 'refund' ? 'selected' : '' ?>>Refund</option>
-                                                    <option value="exchange" <?= ($_GET['retur_type'] ?? '') === 'exchange' ? 'selected' : '' ?>>Tukar Barang</option>
-                                                </select>
+                                                <label for="retur_type">Tipe Retur</label>
+                                                <?= form_dropdown('retur_type', [
+                                                    '' => 'Semua Tipe',
+                                                    'refund' => 'Refund',
+                                                    'exchange' => 'Tukar Barang'
+                                                ], $_GET['retur_type'] ?? '', [
+                                                    'class' => 'form-control form-control-sm rounded-0',
+                                                    'id' => 'retur_type'
+                                                ]) ?>
                                             </div>
                                         </div>
                                     </div>
@@ -89,31 +107,46 @@ helper('form');
                                         <!-- Status Filter -->
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label>Status Retur</label>
-                                                <select name="status_retur" class="form-control form-control-sm rounded-0">
-                                                    <option value="">Semua Status</option>
-                                                    <option value="0" <?= ($_GET['status_retur'] ?? '') === '0' ? 'selected' : '' ?>>Draft</option>
-                                                    <option value="1" <?= ($_GET['status_retur'] ?? '') === '1' ? 'selected' : '' ?>>Selesai</option>
-                                                </select>
+                                                <label for="status_retur">Status Retur</label>
+                                                <?= form_dropdown('status_retur', [
+                                                    '' => 'Semua Status',
+                                                    '0' => 'Draft',
+                                                    '1' => 'Selesai'
+                                                ], $_GET['status_retur'] ?? '', [
+                                                    'class' => 'form-control form-control-sm rounded-0',
+                                                    'id' => 'status_retur'
+                                                ]) ?>
                                             </div>
                                         </div>
                                         
                                         <!-- Amount Range Filter -->
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label>Total Minimal</label>
-                                                <input type="number" name="min_total" class="form-control form-control-sm rounded-0" 
-                                                       placeholder="0" step="1000" 
-                                                       value="<?= $_GET['min_total'] ?? '' ?>">
+                                                <label for="min_total">Total Minimal</label>
+                                                <?= form_input([
+                                                    'type' => 'number',
+                                                    'name' => 'min_total',
+                                                    'id' => 'min_total',
+                                                    'class' => 'form-control form-control-sm rounded-0',
+                                                    'placeholder' => '0',
+                                                    'step' => '1000',
+                                                    'value' => $_GET['min_total'] ?? ''
+                                                ]) ?>
                                             </div>
                                         </div>
                                         
                                         <div class="col-md-3">
                                             <div class="form-group">
-                                                <label>Total Maksimal</label>
-                                                <input type="number" name="max_total" class="form-control form-control-sm rounded-0" 
-                                                       placeholder="999999999" step="1000" 
-                                                       value="<?= $_GET['max_total'] ?? '' ?>">
+                                                <label for="max_total">Total Maksimal</label>
+                                                <?= form_input([
+                                                    'type' => 'number',
+                                                    'name' => 'max_total',
+                                                    'id' => 'max_total',
+                                                    'class' => 'form-control form-control-sm rounded-0',
+                                                    'placeholder' => '999999999',
+                                                    'step' => '1000',
+                                                    'value' => $_GET['max_total'] ?? ''
+                                                ]) ?>
                                             </div>
                                         </div>
                                         
@@ -132,7 +165,7 @@ helper('form');
                                             </div>
                                         </div>
                                     </div>
-                                </form>
+                                <?= form_close() ?>
                             </div>
                         </div>
                     </div>
@@ -275,6 +308,83 @@ helper('form');
         </div>
     </div>
 </div>
+
+<!-- Filter Toggle JavaScript -->
+<script>
+function toggleFilter() {
+    const filterSection = document.getElementById('filterSection');
+    const toggleBtn = document.querySelector('[onclick="toggleFilter()"]');
+    const icon = toggleBtn.querySelector('i');
+    
+    if (filterSection.style.display === 'none') {
+        filterSection.style.display = 'block';
+        icon.className = 'fas fa-chevron-up';
+        toggleBtn.title = 'Sembunyikan Filter';
+    } else {
+        filterSection.style.display = 'none';
+        icon.className = 'fas fa-chevron-down';
+        toggleBtn.title = 'Tampilkan Filter';
+    }
+}
+
+// Auto-hide filter on mobile devices
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.innerWidth < 768) {
+        document.getElementById('filterSection').style.display = 'none';
+        document.querySelector('[onclick="toggleFilter()"] i').className = 'fas fa-chevron-down';
+    }
+});
+</script>
+
+<!-- Filter Styles -->
+<style>
+.card.border-secondary {
+    border-color: #6c757d !important;
+}
+
+.card-header.bg-light {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.form-control-sm {
+    height: calc(1.5em + 0.5rem + 2px);
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.2rem;
+    border-bottom-left-radius: 0.2rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.2rem;
+    border-bottom-right-radius: 0.2rem;
+}
+
+@media (max-width: 768px) {
+    .col-md-3 {
+        margin-bottom: 10px;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0.2rem !important;
+        margin-bottom: 5px;
+    }
+}
+</style>
 
 <!-- Delete Confirmation Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
