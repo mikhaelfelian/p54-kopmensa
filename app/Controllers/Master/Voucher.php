@@ -92,13 +92,6 @@ class Voucher extends BaseController
 
         // Validation rules
         $rules = [
-            'id' => [
-                'rules' => 'permit_empty|integer|greater_than[0]',
-                'errors' => [
-                    'integer' => 'ID voucher harus berupa angka',
-                    'greater_than' => 'ID voucher tidak valid'
-                ]
-            ],
             'kode' => [
                 'rules' => 'required|max_length[50]',
                 'errors' => [
@@ -196,7 +189,6 @@ class Voucher extends BaseController
 
         // Generate data
         $data = [
-            'id'            => $id,
             'id_user'       => $this->ionAuth->user()->row()->id,
             'jenis_voucher' => $jenis_voucher,
             'nominal'       => $nominal,

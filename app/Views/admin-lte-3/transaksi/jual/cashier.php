@@ -3126,7 +3126,9 @@ helper('form');
         $('#customerInfoDisplay').hide();
         $('#anggotaInfo').hide();
 
-        $('#discountPercent').val('');
+        $('#discountAmount').val('');
+        $('#discountType').val('nominal');
+        $('#discountRow').hide();
         $('#voucherCode').val('');
         $('#voucherInfo').text('');
         $('#voucherDiscountRow').hide();
@@ -3164,7 +3166,9 @@ helper('form');
         $('#anggotaInfo').hide();
 
         // Clear discount and voucher fields
-        $('#discountPercent').val('');
+        $('#discountAmount').val('');
+        $('#discountType').val('nominal');
+        $('#discountRow').hide();
         $('#voucherCode').val('');
         $('#voucherInfo').text('').removeClass('text-success text-danger');
         $('#voucherDiscount').val('0');
@@ -3205,7 +3209,8 @@ helper('form');
             customer_id: $('#selectedCustomerId').val(),
             customer_type: $('#selectedCustomerType').val(),
             customer_name: $('#selectedCustomerName').val(),
-            discount: $('#discountPercent').val(),
+            discount_amount: $('#discountAmount').val(),
+            discount_type: $('#discountType').val(),
             voucher: $('#voucherCode').val(),
             paymentMethod: $('#paymentMethod').val()
         };
@@ -3236,7 +3241,8 @@ helper('form');
                 customer_type: $('#selectedCustomerType').val() || 'umum',
                 items: cart,
                 subtotal: parseFloat($('#subtotalDisplay').text().replace(/[^\d]/g, '')) || 0,
-                discount: parseFloat($('#discountPercent').val()) || 0,
+                discount_amount: parseFloat($('#discountAmount').val()) || 0,
+            discount_type: $('#discountType').val(),
                 voucher: $('#voucherCode').val() || '',
                 ppn: PPN_PERCENTAGE,
                 total: parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0,
@@ -3429,7 +3435,8 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                         customer_type: draft.customer_type || 'umum',
                         items: draft.items,
                         subtotal: draft.total * (100 / (100 + PPN_PERCENTAGE)), // Calculate subtotal from total
-                        discount: draft.discount_percent || 0,
+                        discount_amount: draft.discount_amount || 0,
+                        discount_type: draft.discount_type || 'nominal',
                         voucher: draft.voucher_code || '',
                         ppn: PPN_PERCENTAGE,
                         total: draft.total,
@@ -4248,8 +4255,12 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                         }
 
                         // Load discount and voucher
-                        if (draft.discount_percent) {
-                            $('#discountPercent').val(draft.discount_percent);
+                        if (draft.discount_amount) {
+                            $('#discountAmount').val(draft.discount_amount);
+                            $('#discountType').val(draft.discount_type || 'nominal');
+                            if (draft.discount_amount > 0) {
+                                $('#discountRow').show();
+                            }
                         }
                         if (draft.voucher_code) {
                             $('#voucherCode').val(draft.voucher_code);
