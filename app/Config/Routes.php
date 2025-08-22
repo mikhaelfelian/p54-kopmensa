@@ -19,36 +19,36 @@ use CodeIgniter\Router\RouteCollection;
  /* API POS */
 
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
-    // API Authentication routes
-    $routes->group('anggota', function ($routes) {
-        $routes->post('login', 'Anggota\Auth::login');
-        $routes->get('search', 'Anggota\Auth::search');
-    });
+        // API Authentication routes
+        $routes->group('anggota', function ($routes) {
+            $routes->post('login', 'Anggota\Auth::login');
+            $routes->get('search', 'Anggota\Auth::search');
+        });
 
-    // API Authentication routes for cashier
-    $routes->group('pos', function ($routes) {
-        $routes->post('login', 'Pos\Auth::login');
+        // API Authentication routes for cashier
+        $routes->group('pos', function ($routes) {
+            $routes->post('login', 'Pos\Auth::login');
 
-        // Outlet endpoints
-        $routes->get('outlet', 'Pos\Store::getOutlets');
-        $routes->get('outlet/detail/(:num)', 'Pos\Store::getOutlets/$1');
-    });
+            // Outlet endpoints
+            $routes->get('outlet', 'Pos\Store::getOutlets');
+            $routes->get('outlet/detail/(:num)', 'Pos\Store::getOutlets/$1');
+        });
 
-    // Protected API routes (require JWT authentication)
-    $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
-        $routes->get('profile', 'Anggota\\Auth::profile');
-        $routes->get('logout', 'Anggota\\Auth::logout');
-        
-        // PIN Management routes
-        $routes->post('set-pin', 'Anggota\\Auth::setPin');
-        $routes->post('validate-pin', 'Anggota\\Auth::validatePin');
-        $routes->post('change-pin', 'Anggota\\Auth::changePin');
-        $routes->get('pin-status', 'Anggota\\Auth::pinStatus');
-        $routes->post('reset-pin', 'Anggota\\Auth::resetPin');
-    });
+        // Protected API routes (require JWT authentication)
+        $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
+            $routes->get('profile', 'Anggota\\Auth::profile');
+            $routes->get('logout', 'Anggota\\Auth::logout');
+            
+            // PIN Management routes
+            $routes->post('set-pin', 'Anggota\\Auth::setPin');
+            $routes->post('validate-pin', 'Anggota\\Auth::validatePin');
+            $routes->post('change-pin', 'Anggota\\Auth::changePin');
+            $routes->get('pin-status', 'Anggota\\Auth::pinStatus');
+            $routes->post('reset-pin', 'Anggota\\Auth::resetPin');
+        });
 
-    // POS API routes (protected by JWT except for /outlets)
-    $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {
+        // POS API routes (protected by JWT except for /outlets)
+        $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {
 
         /* Produk */
         $routes->get('produk', 'Produk::getAll');
@@ -116,7 +116,6 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], static function ($rou
 
 /**
  * Dashboard Routes
- *
  * Accessible only for authenticated users.
  */
 $routes->get('dashboard', 'Dashboard::index', [
@@ -496,16 +495,12 @@ $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'aut
     });
 });
 
-
 // QR Scanner Processing Route (no filters to bypass CSRF and auth)
 $routes->post('api/qr-scan', 'Transaksi\\TransJual::processQrScan');
-
 
 // untuk test
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
-
-
 
 
 

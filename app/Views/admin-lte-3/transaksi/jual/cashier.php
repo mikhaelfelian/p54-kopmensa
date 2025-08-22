@@ -2363,6 +2363,9 @@ helper('form');
                                             <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
                                                 ${description ? description : ''}
                                             </div>
+                                            <div class="product-stock" style="font-size: 11px; color: #007bff; text-align: left; margin-top: 2px;">
+                                                <i class="fas fa-boxes"></i> Stok: ${stock} PCS
+                                            </div>
                                         </div>
                                         <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
                                             Rp ${numberFormat(price)}
@@ -2546,13 +2549,16 @@ helper('form');
                                                 <div class="product-name" style="font-size: 14px; line-height: 1.3; color: #000; font-weight: 500; text-align: left;">
                                                     ${product.kode ? `${itemName}-${product.kode}` : itemName}
                                                 </div>
-                                                <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
-                                                    ${description ? description : ''}
-                                                </div>
+                                                                                            <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
+                                                ${description ? description : ''}
                                             </div>
-                                            <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
-                                                Rp ${numberFormat(price)}
+                                            <div class="product-stock" style="font-size: 11px; color: #007bff; text-align: left; margin-top: 2px;">
+                                                <i class="fas fa-boxes"></i> Stok: ${stock} PCS
                                             </div>
+                                        </div>
+                                        <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
+                                            Rp ${numberFormat(price)}
+                                        </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2968,7 +2974,8 @@ helper('form');
                 toastr.error(`Jumlah bayar (${formatCurrency(totalPaymentAmount)}) kurang dari total (${formatCurrency(grandTotal)})`);
                 return;
             }
-        } // End of draft check
+        } 
+        // End of draft check
 
         // Prepare transaction data
         // Clean cart data to ensure it can be serialized
@@ -3010,10 +3017,7 @@ helper('form');
         const buttonText = isDraft ? 'Menyimpan Draft...' : 'Memproses...';
         $(buttonId).prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${buttonText}`);
 
-
-
         // Send transaction to server
-
         $.ajax({
             url: '<?= base_url('transaksi/jual/process-transaction') ?>',
             type: 'POST',
@@ -3084,11 +3088,6 @@ helper('form');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('Transaction error:', error);
-                console.error('XHR Status:', xhr.status);
-                console.error('Response Text:', xhr.responseText);
-                console.error('Status:', status);
-
                 // Try to parse response for more details
                 try {
                     const response = JSON.parse(xhr.responseText);
@@ -3816,7 +3815,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                                 startQrDetection(video);
                             })
                             .catch(function (err) {
-                                console.error('Video play error:', err);
                                 if (err.name === 'AbortError') {
                                     status.innerHTML = '<p class="text-warning"><i class="fas fa-exclamation-triangle"></i> Video diinterupsi, mencoba lagi...</p>';
                                     // Retry after a short delay
@@ -3841,7 +3839,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 };
             })
             .catch(function (err) {
-                console.error('Camera error:', err);
                 let errorMessage = 'Gagal mengaktifkan kamera';
 
                 if (err.name === 'NotAllowedError') {
@@ -3884,7 +3881,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
     function detectQrCode(canvas, context) {
         // QR code detection using jsQR library
         if (typeof jsQR === 'undefined') {
-            console.error('jsQR library not loaded. Please include the jsQR script.');
             return;
         }
 
@@ -3893,11 +3889,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (code && code.data) {
-                console.log('QR Code detected!');
-                console.log('Code object:', code);
-                console.log('Code data:', code.data);
-                console.log('Code data length:', code.data.length);
-
                 // Stop scanning to prevent multiple detections
                 stopQrScanner();
 
@@ -3993,38 +3984,8 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         toastr.info(`Switched to ${currentCameraFacing === 'environment' ? 'back' : 'front'} camera`);
     }
 
-
-    // Test function to debug QR handling
-    function testQrHandling() {
-        console.log('=== Testing QR Handling ===');
-
-        // Test 1: Empty data
-        console.log('Test 1: Empty data');
-        handleQrScanResult('');
-
-        // Test 2: Null data
-        console.log('Test 2: Null data');
-        handleQrScanResult(null);
-
-        // Test 3: Plain text
-        console.log('Test 3: Plain text');
-        handleQrScanResult('12345');
-
-        // Test 4: JSON object
-        console.log('Test 4: JSON object');
-        handleQrScanResult({ id_pelanggan: '67890', nama: 'Test Customer' });
-
-        console.log('=== End Testing ===');
-    }
-
     // Function to handle QR code scan result (called by QR library)
     function handleQrScanResult(qrData) {
-
-        // Debug: Log what we received
-        console.log('QR Data received:', qrData);
-        console.log('QR Data type:', typeof qrData);
-        console.log('QR Data length:', qrData ? qrData.length : 'N/A');
-
         // Close the scanner modal
         $('#qrScannerModal').modal('hide');
 
@@ -4069,19 +4030,13 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                         }
                     }
                 } catch (e) {
-                    console.log('Failed to parse as JSON, treating as plain text');
                     customerId = trimmedData;
                 }
             } else {
                 // Regular plain text
                 customerId = trimmedData;
             }
-
-            console.log('String QR processed, customerId:', customerId);
         } else if (qrData && typeof qrData === 'object') {
-            // JSON/object QR code
-            console.log('Object QR detected, keys:', Object.keys(qrData));
-
             // Try multiple possible field names
             if (qrData.id_pelanggan) {
                 customerId = qrData.id_pelanggan;
@@ -4115,12 +4070,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             }
         }
 
-        console.log('Extracted customerId:', customerId);
-        console.log('Extracted customerName:', customerName);
-
         if (customerId && customerId.toString().trim() !== '') {
-            console.log('Valid customerId found:', customerId);
-
             // Set the scanned data in the input field
             $('#scanAnggota').val(customerId);
 
@@ -4143,11 +4093,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 searchAnggota();
             }
         } else {
-            console.error('Invalid QR data - customerId is empty or null');
-            console.error('customerId value:', customerId);
-            console.error('customerId type:', typeof customerId);
-            console.error('customerId length:', customerId ? customerId.length : 'N/A');
-
             let errorMessage = 'Data QR code tidak valid. ';
             if (!qrData) {
                 errorMessage += 'QR data kosong/null.';

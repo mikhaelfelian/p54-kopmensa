@@ -312,14 +312,6 @@
                                     <p>Satuan</p>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('master/voucher') ?>"
-                                    class="nav-link <?= isMenuActive('master/voucher') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-ticket-alt nav-icon"></i>
-                                    <p>Voucher</p>
-                                </a>
-                            </li>
                         </ul>
                     </li>
 
@@ -406,11 +398,19 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
+                                <a href="<?= base_url('master/voucher') ?>"
+                                    class="nav-link <?= isMenuActive('master/voucher') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-ticket-alt nav-icon"></i>
+                                    <p>Voucher</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="<?= base_url('master/platform') ?>"
                                     class="nav-link <?= isMenuActive('master/platform') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-credit-card nav-icon"></i>
-                                    <p>Platform</p>
+                                    <p>Metode Pembayaran</p>
                                 </a>
                             </li>
                             <!-- <li class="nav-item">
