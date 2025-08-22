@@ -118,6 +118,16 @@
                                 <?= $validation->getError('tipe') ?>
                             </div>
                         </div>
+
+                        <!-- Status Limit -->
+                        <div class="form-group">
+                            <label>Status Limit</label>
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="status_limit" name="status_limit" value="1" <?= old('status_limit') == '1' ? 'checked' : '' ?>>
+                                <label class="custom-control-label" for="status_limit">Aktifkan Limit Kredit</label>
+                            </div>
+                            <small class="form-text text-muted">Centang untuk mengaktifkan limit kredit pelanggan</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -133,4 +143,51 @@
         <?= form_close() ?>
     </div>
 </div>
+
+<!-- Bootstrap Switch CSS -->
+<style>
+.custom-switch .custom-control-label::before {
+    width: 2rem;
+    height: 1.25rem;
+    border-radius: 0.625rem;
+}
+
+.custom-switch .custom-control-label::after {
+    width: calc(1.25rem - 4px);
+    height: calc(1.25rem - 4px);
+    border-radius: calc(0.625rem - 2px);
+}
+
+.custom-switch .custom-control-input:checked ~ .custom-control-label::after {
+    transform: translateX(0.75rem);
+}
+
+.custom-switch .custom-control-input:checked ~ .custom-control-label::before {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+</style>
+
+<!-- Bootstrap Switch JavaScript -->
+<script>
+$(document).ready(function() {
+    // Handle status limit switch change
+    $('#status_limit').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        console.log('Status Limit:', isChecked ? '1' : '0');
+        
+        // You can add additional logic here if needed
+        // For example, show/hide related fields based on the switch state
+    });
+    
+    // Initialize switch state on page load
+    const initialValue = '<?= old('status_limit', '0') ?>';
+    if (initialValue === '1') {
+        $('#status_limit').prop('checked', true);
+    } else {
+        $('#status_limit').prop('checked', false);
+    }
+});
+</script>
+
 <?= $this->endSection() ?> 
