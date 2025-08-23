@@ -375,6 +375,14 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a href="<?= base_url('master/customer-group') ?>"
+                                    class="nav-link <?= isMenuActive('master/customer-group') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-layer-group nav-icon"></i>
+                                    <p>Grup Pelanggan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="<?= base_url('master/karyawan') ?>"
                                     class="nav-link <?= isMenuActive('master/karyawan') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
@@ -386,8 +394,7 @@
                     </li>
 
                     <!-- Payment -->
-                    <li
-                        class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
+                    <li class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
                         <a href="#"
                             class="nav-link <?= isMenuActive(['master/platform', 'master/bank']) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-money-bill-wave"></i>

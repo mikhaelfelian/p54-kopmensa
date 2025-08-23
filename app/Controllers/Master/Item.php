@@ -13,6 +13,7 @@ use App\Models\MerkModel;
 use App\Models\SatuanModel;
 use App\Models\SupplierModel;
 use App\Models\VarianModel;
+use App\Models\PelangganGrupModel;
 
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
@@ -33,6 +34,7 @@ class Item extends BaseController
     protected $ionAuth;
     protected $validation;
     protected $varianModel;
+    protected $pelangganGrupModel;
     protected $db;
 
     public function __construct()
@@ -48,6 +50,7 @@ class Item extends BaseController
         $this->satuanModel      = new SatuanModel();
         $this->itemHargaModel   = new \App\Models\ItemHargaModel();
         $this->varianModel      = new VarianModel();
+        $this->pelangganGrupModel = new PelangganGrupModel();
         $this->validation       = \Config\Services::validation();
         $this->db               = \Config\Database::connect();
     }
@@ -301,23 +304,56 @@ class Item extends BaseController
             ]);
         }
 
-        return $this->response->setJSON(['success' => true, 'message' => 'Harga berhasil disimpan!', 'csrfHash' => csrf_hash()]);
+        return $this->response->setJSON(['success' => true, 'message' => 'Pricing rules berhasil disimpan!', 'csrfHash' => csrf_hash()]);
     }
     public function edit($id)
     {
         try {
+            // Check if user is logged in
+            if (!$this->ionAuth->loggedIn()) {
+                return redirect()->to('/auth/login');
+            }
+
+            // Get user data safely
+            $user = $this->ionAuth->user()->row();
+            if (!$user) {
+                return redirect()->to('/auth/login')->with('error', 'User session invalid');
+            }
+
+            // Get item data safely
+            $item = $this->itemModel->getItemWithRelations($id);
+            if (!$item) {
+                return redirect()->to(base_url('master/item'))
+                    ->with('error', 'Data item tidak ditemukan');
+            }
+
+            // Get other data safely
+            $kategori = $this->kategoriModel->findAll();
+            $merk = $this->merkModel->findAll();
+            $supplier = $this->supplierModel->findAll();
+            $satuan = $this->satuanModel->findAll();
+            $item_harga_list = $this->itemHargaModel->getPricesByItemId($id);
+
+            // Get active variants
+            $active_variants = $this->varianModel->getActiveVariants();
+
+            // Get customer groups for pricing rules
+            $customer_groups = $this->pelangganGrupModel->getUniqueGroupNames();
+
             $data = [
                 'title'         => 'Form Item',
                 'Pengaturan'    => $this->pengaturan,
-                'user'          => $this->ionAuth->user()->row(),
+                'user'          => $user,
                 'validation'    => $this->validation,
-                'item'          => $this->itemModel->getItemWithRelations($id),
-                'kategori'      => $this->kategoriModel->findAll(),
-                'merk'          => $this->merkModel->findAll(),
-                'supplier'      => $this->supplierModel->findAll(),
-                'satuan'        => $this->satuanModel->findAll(),
-                'item_harga_list' => $this->itemHargaModel->getPricesByItemId($id),
-                'active_variants' => [], // Temporarily commented out for debugging
+                'item'          => $item,
+                'kategori'      => $kategori,
+                'merk'          => $merk,
+                'supplier'      => $supplier,
+                'satuan'        => $satuan,
+                'item_harga_list' => $item_harga_list,
+                'sql_varian' => $active_variants,
+                'customer_groups' => $customer_groups,
+                'kode_varian'     => $this->itemVarianModel->generateKode(),
                 'breadcrumbs'   => '
                     <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                     <li class="breadcrumb-item">Master</li>
@@ -326,14 +362,10 @@ class Item extends BaseController
                 '
             ];
 
-            if (empty($data['item'])) {
-                return redirect()->to(base_url('master/item'))
-                    ->with('error', 'Data item tidak ditemukan');
-            }
-
             return view($this->theme->getThemePath() . '/master/item/edit', $data);
         } catch (\Exception $e) {
             log_message('error', 'Error in Item::edit: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
             return redirect()->to(base_url('master/item'))
                 ->with('error', 'Terjadi kesalahan server: ' . $e->getMessage());
         }
@@ -806,7 +838,7 @@ class Item extends BaseController
                 $data = [
                     'id_item'        => $item_id,
                     'id_item_harga'  => isset($variant['id_item_harga']) ? $variant['id_item_harga'] : 0,
-                    'kode'           => !empty($variant['kode']) ? $variant['kode'] : $itemVarian->generateKode(),
+                    'kode'           => $itemVarian->generateKode(),
                     'varian'         => $variant['nama'] ?? '',
                     'harga_beli'     => isset($variant['harga_beli']) ? format_angka_db($variant['harga_beli']) : 0,
                     'harga_dasar'    => $harga_dsr,
@@ -833,7 +865,7 @@ class Item extends BaseController
 
             return $this->response->setJSON([
                 'success' => true, 
-                'message' => 'Varian berhasil disimpan. ' . $itemRow->harga_jual,
+                'message' => 'Varian berhasil disimpan. [' .$variant['nama'].' - '. format_angka($itemRow->harga_jual).']',
                 'csrfHash' => csrf_hash()
             ]);
 
@@ -847,9 +879,9 @@ class Item extends BaseController
 
     public function get_variants($item_id)
     {
-        // if (!$this->request->isAJAX()) {
-        //     return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
-        // }
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
 
         try {
             $itemVarianModel = new \App\Models\ItemVarianModel();
@@ -898,4 +930,36 @@ class Item extends BaseController
             ]);
         }
     }
-} 
+
+    /**
+     * Get pricing rules for checkout
+     */
+    public function get_pricing_rules($item_id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+        }
+
+        try {
+            $customerGroup = $this->request->getVar('customer_group');
+            $quantity = $this->request->getVar('quantity') ?? 1;
+
+            $pricingRules = $this->itemHargaModel->getPricingRulesForCheckout($item_id, $customerGroup, $quantity);
+            $bestPrice = $this->itemHargaModel->getBestPrice($item_id, $customerGroup, $quantity);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'pricing_rules' => $pricingRules,
+                'best_price' => $bestPrice,
+                'customer_group' => $customerGroup,
+                'quantity' => $quantity
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengambil aturan harga'
+            ]);
+        }
+    }
+}

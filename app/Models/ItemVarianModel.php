@@ -120,7 +120,18 @@ class ItemVarianModel extends Model
     public function getVariantsWithPrice($itemId)
     {
         $builder = $this->builder();
-        $builder->select('tbl_m_item_varian.id, tbl_m_item_varian.id_item, tbl_m_item_varian.kode, tbl_m_item_varian.barcode, tbl_m_item_varian.varian as nama, tbl_m_item_varian.harga_jual as harga, tbl_m_item_varian.foto, tbl_m_item_varian.status');
+        $builder->select('
+            tbl_m_item_varian.id, 
+            tbl_m_item_varian.id_item, 
+            tbl_m_item_varian.kode, 
+            tbl_m_item_varian.barcode, 
+            tbl_m_item_varian.varian as nama, 
+            tbl_m_item_varian.harga_beli, 
+            tbl_m_item_varian.harga_dasar, 
+            tbl_m_item_varian.harga_jual,  
+            tbl_m_item_varian.foto, 
+            tbl_m_item_varian.status
+        ');
         $builder->join('tbl_m_item_harga', 'tbl_m_item_harga.id = tbl_m_item_varian.id_item_harga', 'left');
         $builder->where('tbl_m_item_varian.id_item', $itemId);
         $builder->where('tbl_m_item_varian.status', '1');

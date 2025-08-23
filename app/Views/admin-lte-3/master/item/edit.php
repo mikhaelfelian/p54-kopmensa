@@ -223,10 +223,10 @@
                                 <table class="table table-striped" id="price-table">
                                     <thead>
                                         <tr>
-                                            <th>Nama</th>
-                                            <th>Jml Min</th>
-                                            <th>Harga</th>
-                                            <th>Ket</th>
+                                            <th>Customer Group</th>
+                                            <th>Min Qty</th>
+                                            <th>Price</th>
+                                            <th>Notes</th>
                                             <th style="width:120px;">ACTIONS</th>
                                         </tr>
                                     </thead>
@@ -240,10 +240,15 @@
                                             <?php foreach ($existingPrices as $price): ?>
                                                 <tr class="price-row" data-index="<?= $priceIndex ?>">
                                                     <td class="align-middle">
-                                                        <input type="text" name="prices[<?= $priceIndex ?>][nama]"
-                                                            value="<?= $price->nama ?>" class="form-control rounded-0"
-                                                            placeholder="Contoh: Ecer, Grosir, Distributor" required>
-                                                        <div class="invalid-feedback">Nama level harga wajib diisi.</div>
+                                                        <select name="prices[<?= $priceIndex ?>][nama]" class="form-control rounded-0" required>
+                                                            <option value="">Select Customer Group</option>
+                                                            <?php foreach ($customer_groups as $group): ?>
+                                                                <option value="<?= $group->grup ?>" <?= ($price->nama == $group->grup) ? 'selected' : '' ?>>
+                                                                    <?= $group->grup ?> <?= $group->deskripsi ? '(' . $group->deskripsi . ')' : '' ?>
+                                                                </option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                        <div class="invalid-feedback">Customer group wajib dipilih.</div>
                                                     </td>
                                                     <td class="align-middle">
                                                         <input type="number" name="prices[<?= $priceIndex ?>][jml_min]"
@@ -277,9 +282,15 @@
                                         <?php else: ?>
                                             <tr class="price-row" data-index="0">
                                                 <td class="align-middle">
-                                                    <input type="text" name="prices[0][nama]" class="form-control rounded-0"
-                                                        placeholder="Harga Anggota ..." required>
-                                                    <div class="invalid-feedback">Nama level harga wajib diisi.</div>
+                                                    <select name="prices[0][nama]" class="form-control rounded-0" required>
+                                                        <option value="">Select Customer Group</option>
+                                                        <?php foreach ($customer_groups as $group): ?>
+                                                            <option value="<?= $group->grup ?>">
+                                                                <?= $group->grup ?> <?= $group->deskripsi ? '(' . $group->deskripsi . ')' : '' ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                    <div class="invalid-feedback">Customer group wajib dipilih.</div>
                                                 </td>
                                                 <td class="align-middle">
                                                     <input type="number" name="prices[0][jml_min]"
@@ -323,20 +334,20 @@
                         </form>
                     </div>
 
-                    <!-- Tab Varian -->
-                    <div class="tab-pane fade" id="tabVarian" role="tabpanel" aria-labelledby="tab-varian">
+                                        <!-- Tab Varian -->
+                    <div class="tab-pane fade" id="tabVarian" role="tabpanel" aria-labelledby="tab-varian">                        
                         <form id="varian-form">
                             <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
                             <div class="mb-3">
-                                                            <button type="button" class="btn btn-success btn-sm rounded-0" id="add-varian-btn">
-                                <i class="fa fa-plus"></i> Tambah Varian
-                            </button>
+                                <button type="button" class="btn btn-success btn-sm rounded-0" id="add-varian-btn">
+                                    <i class="fa fa-plus"></i> Tambah Varian
+                                </button>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-striped varian-table" id="varian-table">
                                     <thead>
                                         <tr>
-                                            <th>Nama Varian</th>
+                                            <th>Varian</th>
                                             <th>Barcode</th>
                                             <th>Harga Beli</th>
                                             <th>Harga Jual</th>
@@ -449,12 +460,15 @@
         const newRowHtml = `
             <tr class="price-row" data-index="${currentIndex}" style="display: none;">
             <td class="align-middle">
-                    <input type="text" 
-                           name="prices[${currentIndex}][nama]" 
-                           class="form-control rounded-0" 
-                           placeholder="Contoh: Ecer, Grosir, Distributor" 
-                           required>
-                <div class="invalid-feedback">Nama level harga wajib diisi.</div>
+                    <select name="prices[${currentIndex}][nama]" class="form-control rounded-0" required>
+                        <option value="">Select Customer Group</option>
+                        <?php foreach ($customer_groups as $group): ?>
+                            <option value="<?= $group->grup ?>">
+                                <?= $group->grup ?> <?= $group->deskripsi ? '(' . $group->deskripsi . ')' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                <div class="invalid-feedback">Customer group wajib dipilih.</div>
             </td>
             <td class="align-middle">
                     <input type="number" 
@@ -508,9 +522,9 @@
         // Initialize tooltip
         $newRow.find('[data-toggle="tooltip"]').tooltip();
 
-        // Focus on first input
+        // Focus on first select
         setTimeout(() => {
-            $newRow.find('input[name*="[nama]"]').focus();
+            $newRow.find('select[name*="[nama]"]').focus();
         }, 300);
 
         window.priceIndex++;
@@ -724,10 +738,14 @@
                 <input type="hidden" name="variants[${varianIndex}][id]" value="">
                 <input type="hidden" name="variants[${varianIndex}][kode]" value="">
                 <select name="variants[${varianIndex}][nama]" class="form-control rounded-0" required>
-                    <option value="">Select Variant</option>
-                    <?php foreach ($active_variants as $variant): ?>
-                        <option value="<?= $variant->nama ?>"><?= $variant->nama ?> (<?= $variant->kode ?>)</option>
-                    <?php endforeach; ?>
+                    <option value="">- Pilih -</option>
+                    <?php if (!empty($sql_varian)): ?>
+                        <?php foreach ($sql_varian as $variant): ?>
+                            <option value="<?= $variant->nama ?>"><?= $variant->nama ?></option>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <option value="">No variants available</option>
+                    <?php endif; ?>
                 </select>
                 <div class="invalid-feedback">Variant selection is required.</div>
             </td>
@@ -742,7 +760,6 @@
             </td>
             <td class="align-middle">
                 <input type="file" name="variants[${varianIndex}][foto]" class="form-control rounded-0" accept="image/*">
-                <small class="text-muted">Optional: Different appearance</small>
             </td>
             <td class="align-middle">
                 <select name="variants[${varianIndex}][status]" class="form-control rounded-0">
@@ -835,10 +852,11 @@
                     newRow.innerHTML = `
                         <td class="align-middle">
                             <input type="hidden" name="variants[${index}][id]" value="${variant.id}">
+                            <input type="hidden" name="variants[${index}][kode]" value="${variant.kode}">
                             <select name="variants[${index}][nama]" class="form-control rounded-0" required>
                                 <option value="">Select Variant</option>
-                                <?php foreach ($active_variants as $var): ?>
-                                    <option value="<?= $var->nama ?>"><?= $var->nama ?> (<?= $var->kode ?>)</option>
+                                <?php foreach ($sql_varian as $var): ?>
+                                    <option value="<?= $var->nama ?>"><?= $var->nama ?></option>
                                 <?php endforeach; ?>
                             </select>
                             <div class="invalid-feedback">Variant selection is required.</div>
@@ -854,7 +872,6 @@
                         </td>
                         <td class="align-middle">
                             <input type="file" name="variants[${index}][foto]" class="form-control rounded-0" accept="image/*">
-                            ${variant.foto ? `<small class="text-muted">Current: ${variant.foto}</small>` : '<small class="text-muted">Optional: Different appearance</small>'}
                         </td>
                         <td class="align-middle">
                             <select name="variants[${index}][status]" class="form-control rounded-0">
