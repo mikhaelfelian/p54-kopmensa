@@ -259,13 +259,12 @@ helper('form');
                                 <div class="text-center text-muted py-4">
                                     <i class="fas fa-shopping-cart fa-3x mb-3"></i>
                                     <p class="mb-0">Keranjang belanja kosong</p>
-                                    <small class="text-muted">small text here</small>
                                 </div>
                             </div>
                         </div>
                         <div class="cart-summary">
                             <div class="summary-row">
-                                <span class="summary-label">DPP:</span>
+                                <span class="summary-label">DPP (Dasar Pengenaan Pajak):</span>
                                 <span class="summary-value" id="dppDisplay">Rp 0</span>
                             </div>
                             <div class="summary-row">
@@ -280,8 +279,6 @@ helper('form');
                         </div>
                     </div>
                     <hr />
-
-
                     <!-- Payment Methods Button -->
                     <div class="mb-3">
                         <button type="button" class="btn btn-primary btn-block rounded-0" id="openPaymentModal">
@@ -289,7 +286,12 @@ helper('form');
                         </button>
                     </div>
 
-
+                    <!-- Draft List Button -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-info btn-block rounded-0" id="showDraftList">
+                            <i class="fas fa-list"></i> Daftar Draft
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="card-footer">
@@ -556,35 +558,33 @@ helper('form');
 
                 <!-- Payment Summary -->
                 <div class="mt-4 pt-3 border-top">
-                    <h6 class="mb-3">Ringkasan Pembayaran</h6>
-                    <div class="row mb-2">
-                        <div class="col-6">Total Bayar:</div>
-                        <div class="col-6 text-right">
-                            <span id="grandTotalPayment">Rp 0</span>
-                        </div>
-                    </div>
-                    <div class="row mb-2" id="remainingPayment" style="display: none;">
-                        <div class="col-6">Kurang:</div>
-                        <div class="col-6 text-right text-danger">
-                            <span id="remainingAmount">Rp 0</span>
-                        </div>
-                    </div>
-                    <div class="row mb-2" id="changePayment" style="display: none;">
-                        <div class="col-6">Kembalian:</div>
-                        <div class="col-6 text-right text-success">
-                            <span id="changeAmount">Rp 0</span>
-                        </div>
-                    </div>
+                    <table class="table table-borderless mb-0" style="font-size: 1.2rem;" border="1">
+                        <tbody>
+                            <tr style="height: 32px;">
+                                <td class="font-weight-bold py-1 align-middle" style="vertical-align: middle;">Total Bayar</td>
+                                <td class="text-right font-weight-bold py-1 align-middle" style="vertical-align: middle;">
+                                    <span id="grandTotalPayment" style="font-size: 1.2rem; font-weight: bold;">Rp 0</span>
+                                </td>
+                            </tr>
+                            <tr id="remainingPayment" style="display: none; font-size: 1.2rem; height: 32px;">
+                                <td class="font-weight-bold py-1 align-middle" style="vertical-align: middle;">Kurang</td>
+                                <td class="text-right text-danger font-weight-bold py-1 align-middle" style="vertical-align: middle;">
+                                    <span id="remainingAmount" style="font-size: 1.2rem; font-weight: bold;">Rp 0</span>
+                                </td>
+                            </tr>
+                            <tr id="changePayment" style="display: none; font-size: 1.2rem; height: 32px;">
+                                <td class="font-weight-bold py-1 align-middle" style="vertical-align: middle;">Kembalian</td>
+                                <td class="text-right text-success font-weight-bold py-1 align-middle" style="vertical-align: middle;">
+                                    <span id="changeAmount" style="font-size: 1.2rem; font-weight: bold;">Rp 0</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="modal-footer">
                 <!-- Action Buttons Row -->
                 <div class="row w-100 mb-3">
-                    <div class="col-12 mb-2">
-                        <button type="button" class="btn btn-info btn-block rounded-0" id="showDraftList">
-                            <i class="fas fa-list"></i> Daftar Draft
-                        </button>
-                    </div>
                     <div class="col-3">
                         <button type="button" class="btn btn-success btn-block rounded-0" id="completeTransaction">
                             <i class="fas fa-check"></i> Proses
@@ -641,85 +641,7 @@ helper('form');
         padding-right: 0px !important;
     }
 
-    .denomination-inputs {
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        padding: 15px;
-    }
 
-    .denomination-tag {
-        background: white;
-        color: #28a745;
-        padding: 20px 15px;
-        border: 2px solid #28a745;
-        border-radius: 8px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        position: relative;
-        min-height: 80px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: bold;
-        font-size: 16px;
-    }
-
-    .denomination-tag:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        background: #f8fff9;
-    }
-
-    .denomination-tag:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .denomination-label {
-        font-size: 16px;
-        font-weight: bold;
-        color: #28a745;
-    }
-
-    .denomination-tag.clicked {
-        transform: scale(1.05);
-        background: #28a745;
-        color: white;
-    }
-
-    .denomination-tag.clicked .denomination-label {
-        color: white;
-    }
-
-    .denomination-tag.reset {
-        transform: scale(0.95);
-        background: #dc3545;
-        border-color: #dc3545;
-        color: white;
-    }
-
-    .denomination-tag.reset .denomination-label {
-        color: white;
-    }
-
-    .denomination-tag.active {
-        transform: scale(1.05);
-        background: #007bff;
-        border-color: #007bff;
-        color: white;
-        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-    }
-
-    .denomination-tag.active .denomination-label {
-        color: white;
-    }
-
-    /* Uang Pas button styling */
-    #uangPas {
-        transition: all 0.3s ease;
-    }
 
     /* Cart styling */
     .cart-container {
@@ -872,81 +794,7 @@ helper('form');
         font-size: 12px;
     }
 
-    .denomination-inputs {
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        padding: 15px;
-    }
 
-    .reference-input {
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        padding: 15px;
-    }
-
-    .denomination-tag:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        background: #f8fff9;
-    }
-
-    .denomination-tag:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .denomination-label {
-        font-size: 16px;
-        font-weight: bold;
-        color: #28a745;
-    }
-
-    .denomination-tag.clicked {
-        transform: scale(1.05);
-        background: #28a745;
-        color: white;
-    }
-
-    .denomination-tag.clicked .denomination-label {
-        color: white;
-    }
-
-    .denomination-tag.reset {
-        transform: scale(0.95);
-        background: #dc3545;
-        border-color: #dc3545;
-        color: white;
-    }
-
-    .denomination-tag.reset .denomination-label {
-        color: white;
-    }
-
-    .denomination-tag.active {
-        transform: scale(1.05);
-        background: #007bff;
-        border-color: #007bff;
-        color: white;
-        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-    }
-
-    .denomination-tag.active .denomination-label {
-        color: white;
-    }
-
-    /* Uang Pas button styling */
-    #uangPas {
-        transition: all 0.3s ease;
-    }
-
-    #uangPas:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-    }
-
-    #uangPas:active {
-        transform: translateY(0);
-    }
 
     .customer-type-radio {
         margin-bottom: 10px;
@@ -1223,43 +1071,7 @@ helper('form');
         margin-bottom: 15px;
     }
 
-    #paymentMethodsModal .denomination-tag {
-        background: white;
-        color: #28a745;
-        padding: 15px 10px;
-        border: 2px solid #28a745;
-        border-radius: 6px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        position: relative;
-        min-height: 60px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: bold;
-        font-size: 14px;
-    }
 
-    #paymentMethodsModal .denomination-tag:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        background: #f8fff9;
-    }
-
-    #paymentMethodsModal .denomination-tag.clicked {
-        transform: scale(1.05);
-        background: #28a745;
-        color: white;
-    }
-
-    #paymentMethodsModal .denomination-tag.reset {
-        transform: scale(0.95);
-        background: #dc3545;
-        border-color: #dc3545;
-        color: white;
-    }
 </style>
 <?= $this->endSection() ?>
 
@@ -1512,78 +1324,17 @@ helper('form');
         $(document).off('click.payment').on('click.payment', '.remove-payment', removePaymentMethod);
         $(document).off('input.payment').on('input.payment', '.payment-amount', calculatePaymentTotals);
         $(document).off('change.payment').on('change.payment', '.payment-platform', calculatePaymentTotals);
-        $(document).off('change.payment').on('change.payment', '.payment-type', autoFillPaymentAmount);
-        $(document).off('click.payment').on('click.payment', '.denomination-tag', incrementDenomination);
-        $(document).off('contextmenu.payment').on('contextmenu.payment', '.denomination-tag', resetDenomination);
+
+
 
         // Clear any existing event handlers to prevent duplicates
-        $(document).off('click.denomination');
-        $(document).off('click.uangPas');
-        $(document).off('click.clearAmount');
 
-        // Denomination click functionality for uang pas - use event delegation to prevent duplicates
-        $(document).off('click.denomination').on('click.denomination', '.denomination-tag', function () {
-            const denomination = parseInt($(this).data('denomination'));
-            // Find the payment amount field in the same row
-            const paymentRow = $(this).closest('.payment-method-row');
-            const amountField = paymentRow.find('.payment-amount');
-            const currentAmount = parseFloat(amountField.val()) || 0;
-            const newAmount = currentAmount + denomination;
 
-            amountField.val(newAmount);
 
-            // Trigger change event to recalculate totals
-            amountField.trigger('change');
 
-            // Add visual feedback
-            $(this).addClass('active');
-            setTimeout(() => {
-                $(this).removeClass('active');
-            }, 200);
 
-            // Show success message - only show once
-            if (!$(this).hasClass('message-shown')) {
-                toastr.success(`Ditambahkan: Rp ${numberFormat(denomination)}`);
-                $(this).addClass('message-shown');
-                setTimeout(() => {
-                    $(this).removeClass('message-shown');
-                }, 1000);
-            }
-        });
 
-        // Clear amount button functionality
-        $('#clearAmount').on('click', function () {
-            // Find the payment amount field in the same row
-            const paymentRow = $(this).closest('.payment-method-row');
-            const amountField = paymentRow.find('.payment-amount');
 
-            amountField.val('');
-            amountField.trigger('change');
-            toastr.info('Jumlah uang diterima berhasil dihapus');
-        });
-
-        // Uang Pas button functionality - sets amount received equal to grand total
-        $('#uangPas').on('click', function () {
-            const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
-
-            if (grandTotal > 0) {
-                // Find the current payment method row (first one or active one)
-                const currentPaymentRow = $('.payment-method-row').first();
-                const amountField = currentPaymentRow.find('.payment-amount');
-
-                if (amountField.length > 0) {
-                    // Set the amount to grand total
-                    amountField.val(grandTotal);
-                    // Trigger change to recalculate totals
-                    amountField.trigger('change');
-                    toastr.success(`Uang pas: Rp ${numberFormat(grandTotal)}`);
-                } else {
-                    toastr.error('Field jumlah pembayaran tidak ditemukan');
-                }
-            } else {
-                toastr.warning('Grand total belum dihitung. Silakan tambahkan produk terlebih dahulu.');
-            }
-        });
 
         $('#completeTransaction').on('click', function (e) {
             const customerType = $('#selectedCustomerType').val();
@@ -1809,23 +1560,13 @@ helper('form');
         const paymentHtml = `
         <div class="payment-method-row border rounded p-2 mb-2 rounded-0" data-payment-id="${paymentCounter}">
             <div class="row">
-                <div class="col-md-4">
-                    <label>Metode Bayar</label>
-                    <select class="form-control form-control-sm rounded-0 payment-type" name="payments[${paymentCounter}][type]">
-                        <option value="">Pilih metode</option>
-                        <option value="1">Tunai</option>
-                        <option value="2">Non Tunai</option>
-                        <option value="3">Piutang QR</option>
-                        <option value="4">Piutang TTD</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label>Platform</label>
                     <select class="form-control form-control-sm rounded-0 payment-platform" name="payments[${paymentCounter}][platform_id]">
                         ${platformOptions}
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-5">
                     <label>Jumlah</label>
                     <input type="number" class="form-control form-control-sm rounded-0 payment-amount" 
                            name="payments[${paymentCounter}][amount]" placeholder="0" step="100" min="0">
@@ -1838,69 +1579,16 @@ helper('form');
                     </button>
                 </div>
             </div>
-            <div class="row mt-2 denomination-inputs" style="display: none;">
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <label class="mb-0">Pecahan Uang:</label>
-                        <div>
-                            <button type="button" class="btn btn-sm btn-success me-2" id="uangPas">
-                                <i class="fas fa-money-bill-wave"></i> Uang Pas
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" id="clearAmount">
-                                <i class="fas fa-eraser"></i> Hapus
-                            </button>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-2">
-                            <div class="denomination-tag" data-denomination="15000">
-                                <span class="denomination-label">15.000</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <div class="denomination-tag" data-denomination="20000">
-                                <span class="denomination-label">20.000</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <div class="denomination-tag" data-denomination="30000">
-                                <span class="denomination-label">30.000</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <div class="denomination-tag" data-denomination="50000">
-                                <span class="denomination-label">50.000</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <div class="denomination-tag" data-denomination="75000">
-                                <span class="denomination-label">75.000</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <div class="denomination-tag" data-denomination="100000">
-                                <span class="denomination-label">100.000</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="row mt-2 reference-input" style="display: none;">
-                <div class="col-12">
-                    <input type="text" class="form-control form-control-sm rounded-0" 
-                           name="payments[${paymentCounter}][reference]" placeholder="No. Referensi (opsional)">
-                </div>
-            </div>
+
+
         </div>
     `;
 
         $('#paymentMethods').append(paymentHtml);
 
-        // Initialize the first payment method as cash by default
+        // Initialize the first payment method
         if (paymentCounter === 1) {
-            const firstPaymentRow = $('.payment-method-row').first();
-            firstPaymentRow.find('.payment-type').val('1').trigger('change');
+            // No need to set payment type since it's removed
         }
 
         calculatePaymentTotals();
@@ -1912,73 +1600,7 @@ helper('form');
         calculatePaymentTotals();
     }
 
-    function autoFillPaymentAmount() {
-        const selectedValue = $(this).val();
-        const paymentRow = $(this).closest('.payment-method-row');
-        const amountField = paymentRow.find('.payment-amount');
-        const denominationInputs = paymentRow.find('.denomination-inputs');
-        const referenceInput = paymentRow.find('.reference-input');
 
-        // Hide all input sections first
-        denominationInputs.hide();
-        referenceInput.hide();
-
-        // Clear denomination selections when switching methods
-        paymentRow.find('.denomination-tag').removeClass('clicked');
-
-        // If option 1 (Tunai) is selected, show denomination inputs
-        if (selectedValue === '1') {
-            denominationInputs.show();
-            amountField.val(''); // Clear amount field for manual input
-        }
-        // If option 2, 3, or 4 is selected, auto-fill with total bill amount and show reference input
-        else if (selectedValue === '2' || selectedValue === '3' || selectedValue === '4') {
-            // Get the grand total and remove formatting
-            const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
-            amountField.val(grandTotal);
-            referenceInput.show();
-
-            // Trigger calculation update
-            calculatePaymentTotals();
-        }
-    }
-
-    function incrementDenomination() {
-        const denomination = parseInt($(this).data('denomination')) || 0;
-        const paymentRow = $(this).closest('.payment-method-row');
-        const amountField = paymentRow.find('.payment-amount');
-
-        // Set the amount to the clicked denomination value
-        amountField.val(denomination);
-
-        // Remove clicked class from all denomination tags
-        paymentRow.find('.denomination-tag').removeClass('clicked');
-
-        // Add clicked class to the selected denomination
-        $(this).addClass('clicked');
-
-        // Trigger payment calculation
-        calculatePaymentTotals();
-    }
-
-    function resetDenomination(e) {
-        e.preventDefault(); // Prevent context menu
-        const paymentRow = $(this).closest('.payment-method-row');
-        const amountField = paymentRow.find('.payment-amount');
-
-        // Reset amount field to 0
-        amountField.val('');
-
-        // Remove clicked class from all denomination tags
-        paymentRow.find('.denomination-tag').removeClass('clicked');
-
-        // Add visual feedback
-        $(this).addClass('reset');
-        setTimeout(() => $(this).removeClass('reset'), 200);
-
-        // Trigger payment calculation
-        calculatePaymentTotals();
-    }
 
     function calculatePaymentTotals() {
         let totalPaid = 0;
@@ -1988,10 +1610,7 @@ helper('form');
 
 
         $('.payment-amount').each(function () {
-            const paymentRow = $(this).closest('.payment-method-row');
-            const paymentType = paymentRow.find('.payment-type').val();
             const amount = parseFloat($(this).val()) || 0;
-
             totalPaid += amount;
         });
 
@@ -2031,73 +1650,14 @@ helper('form');
         calculatePaymentTotals();
     }
 
-    function autoFillPaymentAmount() {
-        const selectedValue = $(this).val();
-        const paymentRow = $(this).closest('.payment-method-row');
-        const amountField = paymentRow.find('.payment-amount');
-        const denominationInputs = paymentRow.find('.denomination-inputs');
-        const referenceInput = paymentRow.find('.reference-input');
 
-        // Hide all input sections first
-        denominationInputs.hide();
-        referenceInput.hide();
 
-        // Clear denomination selections when switching methods
-        paymentRow.find('.denomination-tag').removeClass('clicked');
 
-        // If option 1 (Tunai) is selected, show denomination inputs
-        if (selectedValue === '1') {
-            denominationInputs.show();
-            amountField.val(''); // Clear amount field for manual input
-        }
-        // If option 2, 3, or 4 is selected, auto-fill with total bill amount and show reference input
-        else if (selectedValue === '2' || selectedValue === '3' || selectedValue === '4') {
-            // Get the grand total and remove formatting
-            const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
-            amountField.val(grandTotal);
-            referenceInput.show();
 
-            // Trigger calculation update
-            calculatePaymentTotals();
-        }
-    }
 
-    function incrementDenomination() {
-        const denomination = parseInt($(this).data('denomination')) || 0;
-        const paymentRow = $(this).closest('.payment-method-row');
-        const amountField = paymentRow.find('.payment-amount');
 
-        // Set the amount to the clicked denomination value
-        amountField.val(denomination);
 
-        // Remove clicked class from all denomination tags
-        paymentRow.find('.denomination-tag').removeClass('clicked');
 
-        // Add clicked class to the selected denomination
-        $(this).addClass('clicked');
-
-        // Trigger payment calculation
-        calculatePaymentTotals();
-    }
-
-    function resetDenomination(e) {
-        e.preventDefault(); // Prevent context menu
-        const paymentRow = $(this).closest('.payment-method-row');
-        const amountField = paymentRow.find('.payment-amount');
-
-        // Reset amount field to 0
-        amountField.val('');
-
-        // Remove clicked class from all denomination tags
-        paymentRow.find('.denomination-tag').removeClass('clicked');
-
-        // Add visual feedback
-        $(this).addClass('reset');
-        setTimeout(() => $(this).removeClass('reset'), 200);
-
-        // Trigger payment calculation
-        calculatePaymentTotals();
-    }
 
     function loadProducts() {
         const warehouseId = $('#warehouse_id').val();
@@ -2948,25 +2508,21 @@ helper('form');
             let hasValidPayment = false;
 
             $('.payment-method-row').each(function () {
-                const type = $(this).find('.payment-type').val();
                 const platformId = $(this).find('.payment-platform').val();
                 const amount = parseFloat($(this).find('.payment-amount').val()) || 0;
-                const reference = $(this).find('input[name*="[reference]"]').val();
 
-                if (type && amount > 0) {
+                if (platformId && amount > 0) {
                     hasValidPayment = true;
                     paymentMethods.push({
-                        type: type,
                         platform_id: platformId,
-                        amount: amount,
-                        reference: reference || ''
+                        amount: amount
                     });
                     totalPaymentAmount += amount;
                 }
             });
 
             if (!hasValidPayment) {
-                toastr.error('Minimal harus ada satu metode pembayaran dengan jumlah > 0');
+                toastr.error('Minimal harus ada satu platform pembayaran dengan jumlah > 0');
                 return;
             }
 
@@ -3034,54 +2590,29 @@ helper('form');
                         // Clear form for next transaction
                         clearTransactionForm();
                     } else {
-                        // Check if payment method includes Piutang (value='3')
-                        const hasPiutang = paymentMethods.some(pm => pm.type === '3');
+                        // Close payment methods modal
+                        $('#paymentMethodsModal').modal('hide');
 
-                        if (hasPiutang) {
-                            // Store transaction info for QR scanner
-                            window.lastTransaction = {
-                                id: response.transaction_id,
-                                no_nota: response.no_nota,
-                                total: response.total,
-                                change: response.change,
-                                payment_type: 'piutang'
-                            };
+                        // Normal transaction completion
+                        $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
 
-                            // Close payment methods modal
-                            $('#paymentMethodsModal').modal('hide');
+                        // Build payment methods summary
+                        let paymentSummary = '';
+                        paymentMethods.forEach(pm => {
+                            paymentSummary += `Platform ${pm.platform_id}: ${formatCurrency(pm.amount)}<br>`;
+                        });
+                        $('#finalPaymentMethod').html(paymentSummary);
+                        $('#completeModal').modal('show');
 
-                            // Redirect to mobile QR scanner page
-                            window.open('<?= base_url('transaksi/jual/qr-scanner') ?>/' + response.transaction_id, '_blank');
-                            toastr.success('Transaksi Piutang berhasil! Arahkan ke halaman scan QR.');
+                        // Store transaction info for receipt printing
+                        window.lastTransaction = {
+                            id: response.transaction_id,
+                            no_nota: response.no_nota,
+                            total: response.total,
+                            change: response.change
+                        };
 
-                            // Clear form for next transaction
-                            clearTransactionForm();
-                        } else {
-                            // Close payment methods modal
-                            $('#paymentMethodsModal').modal('hide');
-
-                            // Normal transaction completion
-                            $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
-
-                            // Build payment methods summary
-                            let paymentSummary = '';
-                            paymentMethods.forEach(pm => {
-                                const methodName = pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang';
-                                paymentSummary += `${methodName}: ${formatCurrency(pm.amount)}<br>`;
-                            });
-                            $('#finalPaymentMethod').html(paymentSummary);
-                            $('#completeModal').modal('show');
-
-                            // Store transaction info for receipt printing
-                            window.lastTransaction = {
-                                id: response.transaction_id,
-                                no_nota: response.no_nota,
-                                total: response.total,
-                                change: response.change
-                            };
-
-                            toastr.success(response.message);
-                        }
+                        toastr.success(response.message);
                     }
                 } else {
                     toastr.error(response.message || 'Gagal memproses transaksi');

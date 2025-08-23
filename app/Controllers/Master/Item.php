@@ -5,12 +5,14 @@ namespace App\Controllers\Master;
 use App\Controllers\BaseController;
 use App\Models\ItemModel;
 use App\Models\ItemStokModel;
+use App\Models\ItemVarianModel;
 use App\Models\GudangModel;
 use App\Models\OutletModel;
 use App\Models\KategoriModel;
 use App\Models\MerkModel;
 use App\Models\SatuanModel;
 use App\Models\SupplierModel;
+use App\Models\VarianModel;
 
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
@@ -22,6 +24,7 @@ use App\Models\SupplierModel;
 class Item extends BaseController
 {
     protected $itemModel;
+    protected $itemVarianModel;
     protected $kategoriModel;
     protected $merkModel;
     protected $supplierModel;
@@ -29,21 +32,24 @@ class Item extends BaseController
     protected $pengaturan;
     protected $ionAuth;
     protected $validation;
+    protected $varianModel;
     protected $db;
 
     public function __construct()
     {
-        $this->itemModel     = new ItemModel();
-        $this->itemStokModel = new ItemStokModel();
-        $this->gudangModel   = new GudangModel();
-        $this->outletModel   = new OutletModel();
-        $this->kategoriModel = new KategoriModel();
-        $this->merkModel     = new MerkModel();
-        $this->supplierModel = new SupplierModel();
-        $this->satuanModel   = new SatuanModel();
-        $this->itemHargaModel = new \App\Models\ItemHargaModel();
-        $this->validation    = \Config\Services::validation();
-        $this->db            = \Config\Database::connect();
+        $this->itemModel        = new ItemModel();
+        $this->itemStokModel    = new ItemStokModel();
+        $this->itemVarianModel  = new ItemVarianModel();
+        $this->gudangModel      = new GudangModel();
+        $this->outletModel      = new OutletModel();
+        $this->kategoriModel    = new KategoriModel();
+        $this->merkModel        = new MerkModel();
+        $this->supplierModel    = new SupplierModel();
+        $this->satuanModel      = new SatuanModel();
+        $this->itemHargaModel   = new \App\Models\ItemHargaModel();
+        $this->varianModel      = new VarianModel();
+        $this->validation       = \Config\Services::validation();
+        $this->db               = \Config\Database::connect();
     }
 
     public function index()
@@ -299,31 +305,38 @@ class Item extends BaseController
     }
     public function edit($id)
     {
-        $data = [
-            'title'         => 'Form Item',
-            'Pengaturan'    => $this->pengaturan,
-            'user'          => $this->ionAuth->user()->row(),
-            'validation'    => $this->validation,
-            'item'          => $this->itemModel->getItemWithRelations($id),
-            'kategori'      => $this->kategoriModel->findAll(),
-            'merk'          => $this->merkModel->findAll(),
-            'supplier'      => $this->supplierModel->findAll(),
-            'satuan'        => $this->satuanModel->findAll(),
-            'item_harga_list' => $this->itemHargaModel->getPricesByItemId($id),
-            'breadcrumbs'   => '
-                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
-                <li class="breadcrumb-item">Master</li>
-                <li class="breadcrumb-item"><a href="' . base_url('master/item') . '">Item</a></li>
-                <li class="breadcrumb-item active">Edit</li>
-            '
-        ];
+        try {
+            $data = [
+                'title'         => 'Form Item',
+                'Pengaturan'    => $this->pengaturan,
+                'user'          => $this->ionAuth->user()->row(),
+                'validation'    => $this->validation,
+                'item'          => $this->itemModel->getItemWithRelations($id),
+                'kategori'      => $this->kategoriModel->findAll(),
+                'merk'          => $this->merkModel->findAll(),
+                'supplier'      => $this->supplierModel->findAll(),
+                'satuan'        => $this->satuanModel->findAll(),
+                'item_harga_list' => $this->itemHargaModel->getPricesByItemId($id),
+                'active_variants' => [], // Temporarily commented out for debugging
+                'breadcrumbs'   => '
+                    <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                    <li class="breadcrumb-item">Master</li>
+                    <li class="breadcrumb-item"><a href="' . base_url('master/item') . '">Item</a></li>
+                    <li class="breadcrumb-item active">Edit</li>
+                '
+            ];
 
-        if (empty($data['item'])) {
+            if (empty($data['item'])) {
+                return redirect()->to(base_url('master/item'))
+                    ->with('error', 'Data item tidak ditemukan');
+            }
+
+            return view($this->theme->getThemePath() . '/master/item/edit', $data);
+        } catch (\Exception $e) {
+            log_message('error', 'Error in Item::edit: ' . $e->getMessage());
             return redirect()->to(base_url('master/item'))
-                ->with('error', 'Data item tidak ditemukan');
+                ->with('error', 'Terjadi kesalahan server: ' . $e->getMessage());
         }
-
-        return view($this->theme->getThemePath() . '/master/item/edit', $data);
     }
 
     public function edit_upload($id)
@@ -778,9 +791,10 @@ class Item extends BaseController
 
         try {
             $this->db->transStart();
-            
-            $item       = new \App\Models\ItemModel();
-            $itemVarian = new \App\Models\ItemVarianModel();
+
+            // Use models from constructor
+            $item       = $this->itemModel;
+            $itemVarian = $this->itemVarianModel;
             
             // Insert new variants
             foreach ($variants as $variant) {

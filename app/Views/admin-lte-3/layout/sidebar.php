@@ -413,14 +413,6 @@
                                     <p>Metode Pembayaran</p>
                                 </a>
                             </li>
-                            <!-- <li class="nav-item">
-                            <a href="<?= base_url('master/bank') ?>"
-                                class="nav-link <?= isMenuActive('master/bank') ? 'active' : '' ?>">
-                                <?= nbs(3) ?>
-                                <i class="fas fa-university nav-icon"></i>
-                                <p>Bank</p>
-                            </a>
-                        </li> -->
                         </ul>
                     </li>
 

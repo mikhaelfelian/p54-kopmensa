@@ -328,9 +328,9 @@
                         <form id="varian-form">
                             <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
                             <div class="mb-3">
-                                <button type="button" class="btn btn-success btn-sm rounded-0" onclick="addVarianRow()">
-                                    <i class="fa fa-plus"></i> Tambah Varian
-                                </button>
+                                                            <button type="button" class="btn btn-success btn-sm rounded-0" id="add-varian-btn">
+                                <i class="fa fa-plus"></i> Tambah Varian
+                            </button>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-striped varian-table" id="varian-table">
@@ -433,6 +433,11 @@
         // Add price row button event
         $('#add-price-btn').on('click', function () {
             addPriceRow();
+        });
+
+        // Add variant row button event
+        $('#add-varian-btn').on('click', function () {
+            addVarianRow();
         });
     });
 
@@ -651,7 +656,7 @@
             // Generate kode for variants that don't have one
             $('.varian-row').each(function (index) {
                 var $kodeInput = $(this).find('input[name*="[kode]"]');
-                var $namaInput = $(this).find('input[name*="[nama]"]');
+                var $namaInput = $(this).find('select[name*="[nama]"]');
 
                 if (!$kodeInput.val() && $namaInput.val()) {
                     // Generate base SKU: Convert to uppercase, remove special chars, limit to 8 chars
@@ -718,8 +723,13 @@
             <td class="align-middle">
                 <input type="hidden" name="variants[${varianIndex}][id]" value="">
                 <input type="hidden" name="variants[${varianIndex}][kode]" value="">
-                <input type="text" name="variants[${varianIndex}][nama]" class="form-control rounded-0" placeholder="Example: ICED, HOT, Size L, Color Red" required>
-                <div class="invalid-feedback">Variant name is required.</div>
+                <select name="variants[${varianIndex}][nama]" class="form-control rounded-0" required>
+                    <option value="">Select Variant</option>
+                    <?php foreach ($active_variants as $variant): ?>
+                        <option value="<?= $variant->nama ?>"><?= $variant->nama ?> (<?= $variant->kode ?>)</option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="invalid-feedback">Variant selection is required.</div>
             </td>
             <td class="align-middle">
                 <input type="text" name="variants[${varianIndex}][barcode]" class="form-control rounded-0" placeholder="Barcode (optional)">
@@ -753,11 +763,11 @@
         $(newRow).find('.varian-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
         $(newRow).find('.varian-base-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
 
-        // Auto-generate SKU when variant name is entered
+        // Auto-generate SKU when variant name is selected
         const kodeInput = $(newRow).find('input[name*="[kode]"]');
-        const namaInput = $(newRow).find('input[name*="[nama]"]');
+        const namaSelect = $(newRow).find('select[name*="[nama]"]');
 
-        namaInput.on('input', function () {
+        namaSelect.on('change', function () {
             const nama = $(this).val();
             if (nama) {
                 // Generate base SKU: Convert to uppercase, remove special chars, limit to 8 chars
@@ -825,8 +835,13 @@
                     newRow.innerHTML = `
                         <td class="align-middle">
                             <input type="hidden" name="variants[${index}][id]" value="${variant.id}">
-                            <input type="text" name="variants[${index}][nama]" class="form-control rounded-0" value="${variant.nama || ''}" required>
-                            <div class="invalid-feedback">Variant name is required.</div>
+                            <select name="variants[${index}][nama]" class="form-control rounded-0" required>
+                                <option value="">Select Variant</option>
+                                <?php foreach ($active_variants as $var): ?>
+                                    <option value="<?= $var->nama ?>"><?= $var->nama ?> (<?= $var->kode ?>)</option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="invalid-feedback">Variant selection is required.</div>
                         </td>
                         <td class="align-middle">
                             <input type="text" name="variants[${index}][barcode]" class="form-control rounded-0" value="${variant.barcode || ''}" placeholder="Barcode (optional)">
@@ -861,14 +876,43 @@
                 $('.varian-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
                 $('.varian-base-price-input').autoNumeric({ aSep: '.', aDec: ',', aPad: false });
 
-                // Generate SKUs for variants that don't have them
+                // Add SKU generation event handlers for existing variant dropdowns
+                $('select[name*="[nama]"]').on('change', function() {
+                    const nama = $(this).val();
+                    const row = $(this).closest('.varian-row');
+                    const kodeInput = row.find('input[name*="[kode]"]');
+                    
+                    if (nama && !kodeInput.val()) {
+                        // Generate base SKU: Convert to uppercase, remove special chars, limit to 8 chars
+                        let baseSku = nama.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
+
+                        // Check if SKU already exists and make it unique
+                        let finalSku = baseSku;
+                        let counter = 1;
+
+                        while (skuExists(finalSku)) {
+                            finalSku = baseSku + counter.toString().padStart(2, '0');
+                            counter++;
+                        }
+
+                        kodeInput.val(finalSku);
+                    }
+                });
+
+                // Set selected values for existing variants and generate SKUs
                 response.variants.forEach(function (variant, index) {
+                    // Set selected value for variant name dropdown
+                    const namaSelect = $(`select[name="variants[${index}][nama]"]`);
+                    if (namaSelect.length && variant.nama) {
+                        namaSelect.val(variant.nama);
+                    }
+                    
                     if (!variant.kode) {
-                        const namaInput = $(`input[name="variants[${index}][nama]"]`);
+
                         const kodeInput = $(`input[name="variants[${index}][kode]"]`);
 
-                        if (namaInput.val()) {
-                            let baseSku = namaInput.val().toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
+                        if (variant.nama) {
+                            let baseSku = variant.nama.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8);
                             let finalSku = baseSku;
                             let counter = 1;
 

@@ -99,7 +99,7 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], static function ($rou
 
     // Login processing
     $routes->post('cek_login', 'Auth::cek_login', ['as' => 'auth.login.attempt']);
-    $routes->post('login/cashier', 'Auth::cek_login_kasir', ['as' => 'auth.login.cashier.attempt']);
+    $routes->post('cek_login_kasir', 'Auth::cek_login_kasir', ['as' => 'auth.login.cashier.attempt']);
 
     // Logout (POST preferred for security)
     $routes->post('logout', 'Auth::logout', ['as' => 'auth.logout']);
