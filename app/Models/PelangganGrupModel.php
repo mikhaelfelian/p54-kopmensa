@@ -21,7 +21,7 @@ class PelangganGrupModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_pelanggan', 'grup', 'deskripsi', 'status'
+        'grup', 'deskripsi', 'status'
     ];
 
     // Dates
@@ -31,13 +31,15 @@ class PelangganGrupModel extends Model
     protected $updatedField  = 'updated_at';
 
     /**
-     * Get all active customer groups
+     * Get all active customer groups with member count
      */
     public function getActiveGroups()
     {
-        return $this->where('status', '1')
-                    ->groupBy('grup')
-                    ->orderBy('grup', 'ASC')
+        return $this->select('tbl_m_pelanggan_grup.*, COUNT(tbl_m_pelanggan_grup_member.id_pelanggan) as member_count')
+                    ->join('tbl_m_pelanggan_grup_member', 'tbl_m_pelanggan_grup_member.id_grup = tbl_m_pelanggan_grup.id', 'left')
+                    ->where('tbl_m_pelanggan_grup.status', '1')
+                    ->groupBy('tbl_m_pelanggan_grup.id')
+                    ->orderBy('tbl_m_pelanggan_grup.grup', 'ASC')
                     ->findAll();
     }
 
@@ -46,8 +48,10 @@ class PelangganGrupModel extends Model
      */
     public function getGroupsByCustomerId($customerId)
     {
-        return $this->where('id_pelanggan', $customerId)
-                    ->where('status', '1')
+        return $this->select('tbl_m_pelanggan_grup.*')
+                    ->join('tbl_m_pelanggan_grup_member', 'tbl_m_pelanggan_grup_member.id_grup = tbl_m_pelanggan_grup.id')
+                    ->where('tbl_m_pelanggan_grup_member.id_pelanggan', $customerId)
+                    ->where('tbl_m_pelanggan_grup.status', '1')
                     ->findAll();
     }
 
@@ -66,28 +70,29 @@ class PelangganGrupModel extends Model
     /**
      * Check if customer belongs to a specific group
      */
-    public function isCustomerInGroup($customerId, $groupName)
+    public function isCustomerInGroup($customerId, $groupId)
     {
-        return $this->where('id_pelanggan', $customerId)
-                    ->where('grup', $groupName)
-                    ->where('status', '1')
-                    ->countAllResults() > 0;
+        $db = \Config\Database::connect();
+        return $db->table('tbl_m_pelanggan_grup_member')
+                  ->where('id_pelanggan', $customerId)
+                  ->where('id_grup', $groupId)
+                  ->countAllResults() > 0;
     }
 
     /**
-     * Get groups with customer information for listing
+     * Get groups with member count for listing
      */
-    public function getGroupsWithCustomerInfo($perPage = 10, $keyword = '', $page = 1)
+    public function getGroupsWithMemberCount($perPage = 10, $keyword = '', $page = 1)
     {
-        $this->select('tbl_m_pelanggan_grup.*, tbl_m_pelanggan.nama as nama_pelanggan, tbl_m_pelanggan.no_telp as telepon_pelanggan')
-             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_m_pelanggan_grup.id_pelanggan', 'left')
+        $this->select('tbl_m_pelanggan_grup.*, COUNT(tbl_m_pelanggan_grup_member.id_pelanggan) as member_count')
+             ->join('tbl_m_pelanggan_grup_member', 'tbl_m_pelanggan_grup_member.id_grup = tbl_m_pelanggan_grup.id', 'left')
+             ->groupBy('tbl_m_pelanggan_grup.id')
              ->orderBy('tbl_m_pelanggan_grup.id', 'DESC');
 
         if ($keyword) {
             $this->groupStart()
                  ->like('tbl_m_pelanggan_grup.grup', $keyword)
                  ->orLike('tbl_m_pelanggan_grup.deskripsi', $keyword)
-                 ->orLike('tbl_m_pelanggan.nama', $keyword)
                  ->groupEnd();
         }
 
@@ -95,13 +100,82 @@ class PelangganGrupModel extends Model
     }
 
     /**
-     * Get single group with customer information
+     * Get single group with member count
      */
-    public function getGroupWithCustomerInfo($id)
+    public function getGroupWithMemberCount($id)
     {
-        return $this->select('tbl_m_pelanggan_grup.*, tbl_m_pelanggan.nama as nama_pelanggan, tbl_m_pelanggan.no_telp as telepon_pelanggan, tbl_m_pelanggan.alamat as alamat_pelanggan')
-                    ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_m_pelanggan_grup.id_pelanggan', 'left')
+        return $this->select('tbl_m_pelanggan_grup.*, COUNT(tbl_m_pelanggan_grup_member.id_pelanggan) as member_count')
+                    ->join('tbl_m_pelanggan_grup_member', 'tbl_m_pelanggan_grup_member.id_grup = tbl_m_pelanggan_grup.id', 'left')
                     ->where('tbl_m_pelanggan_grup.id', $id)
+                    ->groupBy('tbl_m_pelanggan_grup.id')
                     ->first();
+    }
+
+    /**
+     * Get group members
+     */
+    public function getGroupMembers($groupId)
+    {
+        $db = \Config\Database::connect();
+        return $db->table('tbl_m_pelanggan_grup_member')
+                  ->select('tbl_m_pelanggan_grup_member.*, tbl_m_pelanggan.nama, tbl_m_pelanggan.no_telp, tbl_m_pelanggan.alamat')
+                  ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_m_pelanggan_grup_member.id_pelanggan')
+                  ->where('tbl_m_pelanggan_grup_member.id_grup', $groupId)
+                  ->get()
+                  ->getResult();
+    }
+
+    /**
+     * Add member to group
+     */
+    public function addMemberToGroup($groupId, $customerId)
+    {
+        $db = \Config\Database::connect();
+        
+        // Check if already exists
+        $exists = $db->table('tbl_m_pelanggan_grup_member')
+                     ->where('id_grup', $groupId)
+                     ->where('id_pelanggan', $customerId)
+                     ->countAllResults();
+        
+        if ($exists == 0) {
+            return $db->table('tbl_m_pelanggan_grup_member')->insert([
+                'id_grup' => $groupId,
+                'id_pelanggan' => $customerId,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+        
+        return false; // Already exists
+    }
+
+    /**
+     * Remove member from group
+     */
+    public function removeMemberFromGroup($groupId, $customerId)
+    {
+        $db = \Config\Database::connect();
+        return $db->table('tbl_m_pelanggan_grup_member')
+                  ->where('id_grup', $groupId)
+                  ->where('id_pelanggan', $customerId)
+                  ->delete();
+    }
+
+    /**
+     * Get available customers (not in this group)
+     */
+    public function getAvailableCustomers($groupId)
+    {
+        $db = \Config\Database::connect();
+        return $db->table('tbl_m_pelanggan')
+                  ->select('tbl_m_pelanggan.*')
+                  ->whereNotIn('tbl_m_pelanggan.id', function($subQuery) use ($groupId) {
+                      $subQuery->select('id_pelanggan')
+                               ->from('tbl_m_pelanggan_grup_member')
+                               ->where('id_grup', $groupId);
+                  })
+                  ->where('tbl_m_pelanggan.status', '1')
+                  ->get()
+                  ->getResult();
     }
 }
