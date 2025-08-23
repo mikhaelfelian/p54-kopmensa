@@ -378,7 +378,7 @@
                                 <a href="<?= base_url('master/customer-group') ?>"
                                     class="nav-link <?= isMenuActive('master/customer-group') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
-                                    <i class="fas fa-layer-group nav-icon"></i>
+                                    <i class="fas fa-users-cog nav-icon"></i>
                                     <p>Grup Pelanggan</p>
                                 </a>
                             </li>

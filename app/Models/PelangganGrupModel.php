@@ -73,4 +73,35 @@ class PelangganGrupModel extends Model
                     ->where('status', '1')
                     ->countAllResults() > 0;
     }
+
+    /**
+     * Get groups with customer information for listing
+     */
+    public function getGroupsWithCustomerInfo($perPage = 10, $keyword = '', $page = 1)
+    {
+        $this->select('tbl_m_pelanggan_grup.*, tbl_m_pelanggan.nama as nama_pelanggan, tbl_m_pelanggan.no_telp as telepon_pelanggan')
+             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_m_pelanggan_grup.id_pelanggan', 'left')
+             ->orderBy('tbl_m_pelanggan_grup.id', 'DESC');
+
+        if ($keyword) {
+            $this->groupStart()
+                 ->like('tbl_m_pelanggan_grup.grup', $keyword)
+                 ->orLike('tbl_m_pelanggan_grup.deskripsi', $keyword)
+                 ->orLike('tbl_m_pelanggan.nama', $keyword)
+                 ->groupEnd();
+        }
+
+        return $this->paginate($perPage, 'adminlte_pagination', $page);
+    }
+
+    /**
+     * Get single group with customer information
+     */
+    public function getGroupWithCustomerInfo($id)
+    {
+        return $this->select('tbl_m_pelanggan_grup.*, tbl_m_pelanggan.nama as nama_pelanggan, tbl_m_pelanggan.no_telp as telepon_pelanggan, tbl_m_pelanggan.alamat as alamat_pelanggan')
+                    ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_m_pelanggan_grup.id_pelanggan', 'left')
+                    ->where('tbl_m_pelanggan_grup.id', $id)
+                    ->first();
+    }
 }
