@@ -58,7 +58,7 @@ class PelangganGrup extends BaseController
             'title' => 'Data Grup Pelanggan',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
-            'grup_list' => $this->pelangganGrupModel->getGroupsWithCustomerInfo($per_page, $query, $curr_page),
+            'grup_list' => $this->pelangganGrupModel->getGroupsWithMemberCount($per_page, $query, $curr_page),
             'pager' => $this->pelangganGrupModel->pager,
             'currentPage' => $curr_page,
             'perPage' => $per_page,
@@ -82,7 +82,6 @@ class PelangganGrup extends BaseController
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
             'validation' => $this->validation,
-            'pelanggan_list' => $this->pelangganModel->findAll(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -96,7 +95,6 @@ class PelangganGrup extends BaseController
 
     public function store()
     {
-        $id_pelanggan = $this->request->getVar('id_pelanggan');
         $grup = $this->request->getVar('grup');
         $deskripsi = $this->request->getVar('deskripsi');
         $status = $this->request->getVar('status') ?? '1';
@@ -107,13 +105,6 @@ class PelangganGrup extends BaseController
                 'rules' => 'required',
                 'errors' => [
                     'required' => 'CSRF token tidak valid'
-                ]
-            ],
-            'id_pelanggan' => [
-                'rules' => 'required|numeric',
-                'errors' => [
-                    'required' => 'Pelanggan harus dipilih',
-                    'numeric' => 'ID Pelanggan tidak valid'
                 ]
             ],
             'grup' => [
@@ -134,7 +125,6 @@ class PelangganGrup extends BaseController
 
         try {
             $data = [
-                'id_pelanggan' => $id_pelanggan,
                 'grup' => $grup,
                 'deskripsi' => $deskripsi,
                 'status' => $status
@@ -168,7 +158,6 @@ class PelangganGrup extends BaseController
             'user' => $this->ionAuth->user()->row(),
             'validation' => $this->validation,
             'grup' => $grup,
-            'pelanggan_list' => $this->pelangganModel->findAll(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -182,7 +171,6 @@ class PelangganGrup extends BaseController
 
     public function update($id)
     {
-        $id_pelanggan = $this->request->getVar('id_pelanggan');
         $grup = $this->request->getVar('grup');
         $deskripsi = $this->request->getVar('deskripsi');
         $status = $this->request->getVar('status') ?? '1';
@@ -193,13 +181,6 @@ class PelangganGrup extends BaseController
                 'rules' => 'required',
                 'errors' => [
                     'required' => 'CSRF token tidak valid'
-                ]
-            ],
-            'id_pelanggan' => [
-                'rules' => 'required|numeric',
-                'errors' => [
-                    'required' => 'Pelanggan harus dipilih',
-                    'numeric' => 'ID Pelanggan tidak valid'
                 ]
             ],
             'grup' => [
@@ -220,7 +201,6 @@ class PelangganGrup extends BaseController
 
         try {
             $data = [
-                'id_pelanggan' => $id_pelanggan,
                 'grup' => $grup,
                 'deskripsi' => $deskripsi,
                 'status' => $status
@@ -258,7 +238,7 @@ class PelangganGrup extends BaseController
 
     public function detail($id)
     {
-        $grup = $this->pelangganGrupModel->getGroupWithCustomerInfo($id);
+        $grup = $this->pelangganGrupModel->getGroupWithMemberCount($id);
         if (!$grup) {
             return redirect()->to(base_url('master/customer-group'))
                 ->with('error', 'Data grup pelanggan tidak ditemukan');
@@ -299,7 +279,7 @@ class PelangganGrup extends BaseController
             'title' => 'Data Grup Pelanggan Terhapus',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
-            'grup_list' => $this->pelangganGrupModel->getGroupsWithCustomerInfo($perPage, $keyword, $currentPage),
+            'grup_list' => $this->pelangganGrupModel->getGroupsWithMemberCount($perPage, $keyword, $currentPage),
             'pager' => $this->pelangganGrupModel->pager,
             'currentPage' => $currentPage,
             'perPage' => $perPage,
@@ -340,5 +320,122 @@ class PelangganGrup extends BaseController
 
         return redirect()->back()
             ->with('error', 'Gagal menghapus permanen data grup pelanggan');
+    }
+
+    /**
+     * Manage group members
+     */
+    public function members($groupId)
+    {
+        $grup = $this->pelangganGrupModel->find($groupId);
+        if (!$grup) {
+            return redirect()->to(base_url('master/customer-group'))
+                ->with('error', 'Data grup pelanggan tidak ditemukan');
+        }
+
+        $currentMembers = $this->pelangganGrupModel->getGroupMembers($groupId);
+        $availableCustomers = $this->pelangganGrupModel->getAvailableCustomers($groupId);
+
+        $data = [
+            'title' => 'Kelola Member Grup: ' . $grup->grup,
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'grup' => $grup,
+            'currentMembers' => $currentMembers,
+            'availableCustomers' => $availableCustomers,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/customer-group') . '">Grup Pelanggan</a></li>
+                <li class="breadcrumb-item active">Kelola Member</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/master/pelanggan_grup/members', $data);
+    }
+
+    /**
+     * Add member to group
+     */
+    public function addMember()
+    {
+        $groupId = $this->request->getVar('id_grup');
+        $customerId = $this->request->getVar('id_pelanggan');
+
+        if (!$groupId || !$customerId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
+        }
+
+        try {
+            if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
+                return $this->response->setJSON(['success' => true, 'message' => 'Member berhasil ditambahkan']);
+            } else {
+                return $this->response->setJSON(['success' => false, 'message' => 'Member sudah ada dalam grup ini']);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member']);
+        }
+    }
+
+    /**
+     * Remove member from group
+     */
+    public function removeMember()
+    {
+        $groupId = $this->request->getVar('id_grup');
+        $customerId = $this->request->getVar('id_pelanggan');
+
+        if (!$groupId || !$customerId) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
+        }
+
+        try {
+            if ($this->pelangganGrupModel->removeMemberFromGroup($groupId, $customerId)) {
+                return $this->response->setJSON(['success' => true, 'message' => 'Member berhasil dihapus dari grup']);
+            } else {
+                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus member dari grup']);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus member']);
+        }
+    }
+
+    /**
+     * Add multiple members to group (bulk)
+     */
+    public function addBulkMembers()
+    {
+        $groupId = $this->request->getVar('id_grup');
+        $customerIds = $this->request->getVar('customer_ids');
+
+        if (!$groupId || !$customerIds) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
+        }
+
+        if (!is_array($customerIds)) {
+            $customerIds = [$customerIds];
+        }
+
+        $successCount = 0;
+        $alreadyExistsCount = 0;
+
+        try {
+            foreach ($customerIds as $customerId) {
+                if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
+                    $successCount++;
+                } else {
+                    $alreadyExistsCount++;
+                }
+            }
+
+            $message = "Berhasil menambahkan {$successCount} member";
+            if ($alreadyExistsCount > 0) {
+                $message .= ", {$alreadyExistsCount} member sudah ada dalam grup";
+            }
+
+            return $this->response->setJSON(['success' => true, 'message' => $message]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member secara bulk']);
+        }
     }
 }

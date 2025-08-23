@@ -20,20 +20,6 @@
                 <div class="card-tools"></div>
             </div>
             <div class="card-body">
-                <?php $psnGagal = session()->getFlashdata('psn_gagal'); ?>
-
-                <div class="form-group <?= (!empty($psnGagal['id_pelanggan']) ? 'has-error' : '') ?>">
-                    <label class="control-label">Pelanggan*</label>
-                    <select class="form-control rounded-0<?= (!empty($psnGagal['id_pelanggan']) ? ' is-invalid' : '') ?>" name="id_pelanggan" id="id_pelanggan" required>
-                        <option value="">Pilih Pelanggan</option>
-                        <?php foreach ($pelanggan_list as $pelanggan): ?>
-                        <option value="<?= $pelanggan->id ?>" <?= old('id_pelanggan') == $pelanggan->id ? 'selected' : '' ?>>
-                            <?= $pelanggan->nama ?> - <?= $pelanggan->no_telp ?? 'No Telp' ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-
                 <div class="form-group <?= (!empty($psnGagal['grup']) ? 'has-error' : '') ?>">
                     <label class="control-label">Nama Grup*</label>
                     <?= form_input([

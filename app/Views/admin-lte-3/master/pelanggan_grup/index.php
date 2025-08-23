@@ -15,7 +15,7 @@
         <div class="row">
             <div class="col-md-6">
                 <a href="<?= base_url('master/customer-group/create') ?>" class="btn btn-sm btn-primary rounded-0">
-                    <i class="fas fa-plus"></i> Tambah Data
+                    <i class="fas fa-plus"></i> Tambah Grup
                 </a>
                 <a href="<?= base_url('master/customer-group/trash') ?>" class="btn btn-sm btn-danger rounded-0">
                     <i class="fas fa-trash"></i> Sampah (<?= $trashCount ?>)
@@ -31,9 +31,8 @@
                     <tr>
                         <th>No</th>
                         <th class="text-left">Nama Grup</th>
-                        <th class="text-left">Nama Pelanggan</th>
-                        <th class="text-left">Telepon</th>
                         <th class="text-left">Deskripsi</th>
+                        <th class="text-center">Jumlah Member</th>
                         <th class="text-center">Status</th>
                         <th class="text-center">Aksi</th>
                     </tr>
@@ -44,10 +43,9 @@
                                 'name' => 'keyword',
                                 'value' => $keyword ?? '',
                                 'class' => 'form-control form-control-sm rounded-0',
-                                'placeholder' => 'Cari grup, deskripsi, atau nama pelanggan...'
+                                'placeholder' => 'Cari grup atau deskripsi...'
                             ]) ?>
                         </th>
-                        <th></th>
                         <th></th>
                         <th></th>
                         <th></th>
@@ -66,12 +64,13 @@
                             ?>
                             <tr>
                                 <td class="text-center" width="3%"><?= $no++ ?>.</td>
-                                <td width="15%">
+                                <td width="25%">
                                     <span class="badge badge-primary"><?= esc($grup->grup) ?></span>
                                 </td>
-                                <td width="20%"><?= esc($grup->nama_pelanggan ?? '-') ?></td>
-                                <td width="15%"><?= esc($grup->telepon_pelanggan ?? '-') ?></td>
-                                <td width="25%"><?= esc($grup->deskripsi ?? '-') ?></td>
+                                <td width="35%"><?= esc($grup->deskripsi ?? '-') ?></td>
+                                <td class="text-center" width="15%">
+                                    <span class="badge badge-info"><?= $grup->member_count ?? 0 ?></span>
+                                </td>
                                 <td class="text-center" width="10%">
                                     <?php if ($grup->status == '1'): ?>
                                         <span class="badge badge-success">Aktif</span>
@@ -82,15 +81,19 @@
                                 <td class="text-center" width="12%">
                                     <div class="btn-group">
                                         <a href="<?= base_url("master/customer-group/detail/{$grup->id}") ?>"
-                                            class="btn btn-info btn-sm rounded-0">
+                                            class="btn btn-info btn-sm rounded-0" title="Detail">
                                             <i class="fas fa-eye"></i>
                                         </a>
+                                        <a href="<?= base_url("master/customer-group/members/{$grup->id}") ?>"
+                                            class="btn btn-success btn-sm rounded-0" title="Kelola Member">
+                                            <i class="fas fa-users"></i>
+                                        </a>
                                         <a href="<?= base_url("master/customer-group/edit/{$grup->id}") ?>"
-                                            class="btn btn-warning btn-sm rounded-0">
+                                            class="btn btn-warning btn-sm rounded-0" title="Edit Grup">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a href="<?= base_url("master/customer-group/delete/{$grup->id}") ?>"
-                                            class="btn btn-danger btn-sm rounded-0"
+                                            class="btn btn-danger btn-sm rounded-0" title="Hapus Grup"
                                             onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
@@ -100,7 +103,7 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="7" class="text-center">Tidak ada data</td>
+                            <td colspan="6" class="text-center">Tidak ada data</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
