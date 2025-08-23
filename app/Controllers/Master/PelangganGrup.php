@@ -286,7 +286,7 @@ class PelangganGrup extends BaseController
         $perPage = 10;
         $keyword = $this->request->getVar('keyword');
 
-        $this->pelangganGrupModel->where('status', '0');
+        $this->pelangganGrupModel->where('tbl_m_pelanggan_grup.status', '0');
 
         if ($keyword) {
             $this->pelangganGrupModel->groupStart()
