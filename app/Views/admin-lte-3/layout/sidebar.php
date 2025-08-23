@@ -347,10 +347,19 @@
                     </li>
 
                     <!-- Contact -->
+                    <?php
+                        $kontakMenus = [
+                            'master/supplier',
+                            'master/customer',
+                            'master/customer-group',
+                            'master/karyawan'
+                        ];
+                        $isKontakActive = isMenuActive($kontakMenus);
+                    ?>
                     <li
-                        class="nav-item has-treeview <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'menu-open' : '' ?>">
+                        class="nav-item has-treeview <?= $isKontakActive ? 'menu-open' : '' ?>">
                         <a href="#"
-                            class="nav-link <?= isMenuActive(['master/supplier', 'master/customer', 'master/karyawan']) ? 'active' : '' ?>">
+                            class="nav-link <?= $isKontakActive ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-users"></i>
                             <p>
                                 Kontak
