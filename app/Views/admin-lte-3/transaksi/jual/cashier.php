@@ -511,37 +511,7 @@ helper('form');
                         </div>
                     </div>
 
-                    <div class="row mb-2">
-                        <div class="col-6">Voucher:</div>
-                        <div class="col-6">
-                            <div class="input-group input-group-sm">
-                                <?= form_input([
-                                    'type' => 'text',
-                                    'class' => 'form-control form-control-sm rounded-0',
-                                    'id' => 'voucherCode',
-                                    'placeholder' => 'Kode voucher'
-                                ]); ?>
-                                <div class="input-group-append">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-0"
-                                        id="clearVoucher" title="Clear Voucher">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <small class="text-muted" id="voucherInfo"></small>
-                            <input type="hidden" id="voucherDiscount" name="voucherDiscount" value="0">
-                            <input type="hidden" id="voucherId" name="voucherId" value="">
-                            <input type="hidden" id="voucherType" name="voucherType" value="">
-                            <input type="hidden" id="voucherDiscountAmount" name="voucherDiscountAmount" value="0">
-                        </div>
-                    </div>
-
-                    <div class="row mb-2" id="voucherDiscountRow" style="display: none;">
-                        <div class="col-6">Potongan Voucher:</div>
-                        <div class="col-6 text-right">
-                            <span id="voucherDiscountDisplay">Rp 0</span>
-                        </div>
-                    </div>
+                    <!-- Voucher functionality is now handled as a payment method -->
                 </div>
 
                 <!-- Payment Methods Section -->
@@ -554,6 +524,20 @@ helper('form');
 
                 <div id="paymentMethods">
                     <!-- Payment methods will be added here -->
+                </div>
+                
+                <!-- Voucher Summary -->
+                <div id="voucherSummary" style="display: none;" class="mt-3 pt-3 border-top">
+                    <h6 class="mb-2">Potongan Voucher</h6>
+                    <div id="voucherDiscounts">
+                        <!-- Voucher discounts will be displayed here -->
+                    </div>
+                    <div class="row">
+                        <div class="col-6"><strong>Total Potongan:</strong></div>
+                        <div class="col-6 text-right">
+                            <span id="totalVoucherDiscount" class="text-success">Rp 0</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Payment Summary -->
@@ -1071,6 +1055,16 @@ helper('form');
         margin-bottom: 15px;
     }
 
+    /* Payment Note Field Styling */
+    .payment-note {
+        font-size: 0.875rem;
+    }
+    
+    .payment-note::placeholder {
+        color: #6c757d;
+        font-style: italic;
+    }
+
 
 </style>
 <?= $this->endSection() ?>
@@ -1115,10 +1109,9 @@ helper('form');
                     setTimeout(function () {
                         window.location.href = '<?= base_url('auth/login') ?>';
                     }, 2000);
-                } else {
-                    // Other errors - log but don't redirect
-                    console.warn('Session check failed:', error);
-                }
+                            } else {
+                // Other errors - don't redirect
+            }
             }
         });
     }
@@ -1323,7 +1316,14 @@ helper('form');
         $('#addPaymentMethod').off('click.payment').on('click.payment', addPaymentMethod);
         $(document).off('click.payment').on('click.payment', '.remove-payment', removePaymentMethod);
         $(document).off('input.payment').on('input.payment', '.payment-amount', calculatePaymentTotals);
-        $(document).off('change.payment').on('change.payment', '.payment-platform', calculatePaymentTotals);
+        $(document).off('change.payment').on('change.payment', '.payment-platform', handlePaymentPlatformChange);
+        
+        // Add event handler for payment amount changes to ensure values are captured
+        $(document).off('input.payment-capture').on('input.payment-capture', '.payment-amount', function() {
+            const amount = parseFloat($(this).val()) || 0;
+            const platformId = $(this).closest('.payment-method-row').find('.payment-platform').val();
+            console.log('Payment amount changed:', { amount, platformId, paymentRow: $(this).closest('.payment-method-row').data('payment-id') });
+        });
 
 
 
@@ -1360,6 +1360,21 @@ helper('form');
         $('#openPaymentModal').on('click', function () {
             $('#paymentMethodsModal').modal('show');
         });
+        
+        // Initialize payment methods when modal opens
+        $('#paymentMethodsModal').on('shown.bs.modal', function () {
+            initializePaymentMethods();
+            
+            // Ensure default values are set after initialization
+            setTimeout(() => {
+                const firstPaymentRow = $('[data-payment-id="1"]');
+                if (firstPaymentRow.length) {
+                    firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                    firstPaymentRow.find('.payment-amount').val('0'); // Default amount
+                    firstPaymentRow.find('.payment-note').val(''); // Default empty note
+                }
+            }, 200);
+        });
 
         // Confirm Payment Button
         $('#confirmPayment').on('click', function () {
@@ -1372,6 +1387,12 @@ helper('form');
         // Auto clear form when modal is closed
         $('#completeModal').on('hidden.bs.modal', function () {
             clearTransactionForm();
+        });
+        
+        // Clear payment methods when payment modal is closed
+        $('#paymentMethodsModal').on('hidden.bs.modal', function () {
+            $('#paymentMethods').empty();
+            paymentCounter = 0;
         });
 
         // Enter key to search
@@ -1533,11 +1554,9 @@ helper('form');
                         toastr.info('Test search successful but no products found');
                     }
                 },
-                error: function (xhr, status, error) {
-                    console.error('Test search error:', error);
-                    console.error('Response:', xhr.responseText);
-                    toastr.error('Test search failed: ' + error);
-                }
+                            error: function (xhr, status, error) {
+                toastr.error('Test search failed: ' + error);
+            }
             });
         });
 
@@ -1548,8 +1567,7 @@ helper('form');
         paymentCounter++;
         const platforms = <?= json_encode($platforms ?? []) ?>;
 
-
-
+        // Add voucher as a payment method option
         let platformOptions = '<option value="">Pilih Platform</option>';
         if (platforms && platforms.length > 0) {
             platforms.forEach(platform => {
@@ -1560,16 +1578,21 @@ helper('form');
         const paymentHtml = `
         <div class="payment-method-row border rounded p-2 mb-2 rounded-0" data-payment-id="${paymentCounter}">
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label>Platform</label>
                     <select class="form-control form-control-sm rounded-0 payment-platform" name="payments[${paymentCounter}][platform_id]">
                         ${platformOptions}
                     </select>
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-3">
                     <label>Jumlah</label>
                     <input type="number" class="form-control form-control-sm rounded-0 payment-amount" 
                            name="payments[${paymentCounter}][amount]" placeholder="0" step="100" min="0">
+                </div>
+                <div class="col-md-4">
+                    <label>Keterangan</label>
+                    <input type="text" class="form-control form-control-sm rounded-0 payment-note" 
+                           name="payments[${paymentCounter}][keterangan]" placeholder="Catatan pembayaran">
                 </div>
                 <div class="col-md-1">
                     <label>&nbsp;</label>
@@ -1579,8 +1602,6 @@ helper('form');
                     </button>
                 </div>
             </div>
-
-
         </div>
     `;
 
@@ -1588,15 +1609,274 @@ helper('form');
 
         // Initialize the first payment method
         if (paymentCounter === 1) {
-            // No need to set payment type since it's removed
+            // Set default platform for first payment method (Cash)
+            const firstPaymentRow = $(`[data-payment-id="${paymentCounter}"]`);
+            firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+            firstPaymentRow.find('.payment-amount').val('0'); // Default amount
+            firstPaymentRow.find('.payment-note').val(''); // Default empty note
         }
 
         calculatePaymentTotals();
     }
+    
+    // Initialize payment methods with default options
+    function initializePaymentMethods() {
+        // Clear existing payment methods
+        $('#paymentMethods').empty();
+        paymentCounter = 0;
+        
+        // Add first payment method
+        addPaymentMethod();
+        
+        // Ensure the first payment method has default values
+        setTimeout(() => {
+            const firstPaymentRow = $('[data-payment-id="1"]');
+            if (firstPaymentRow.length) {
+                firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                firstPaymentRow.find('.payment-amount').val('0'); // Default amount
+                firstPaymentRow.find('.payment-note').val(''); // Default empty note
+            }
+        }, 100);
+    }
+
+    // Handle payment platform change (including voucher)
+    function handlePaymentPlatformChange() {
+        const selectedPlatform = $(this).val();
+        const paymentRow = $(this).closest('.payment-method-row');
+        const amountInput = paymentRow.find('.payment-amount');
+        
+                if (selectedPlatform === '4') { // Hardcoded voucher value
+            // Show voucher input instead of amount input
+            amountInput.hide();
+            // Find the label that contains "Jumlah" and change it to "Kode Voucher"
+            paymentRow.find('label').filter(function() {
+                return $(this).text().trim() === 'Jumlah';
+            }).text('Kode Voucher');
+            
+            // Ensure amount input is hidden
+            paymentRow.find('.payment-amount').hide();
+            
+            // Replace amount input with voucher code input
+            if (!paymentRow.find('.voucher-code-input').length) {
+                const voucherInput = $(`
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-sm rounded-0 voucher-code-input" 
+                               name="payments[${paymentRow.data('payment-id')}][voucher_code]" 
+                               placeholder="Masukkan kode voucher">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-0 clear-voucher" 
+                                    title="Clear Voucher">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `);
+                amountInput.after(voucherInput);
+                
+                // Add clear voucher functionality
+                voucherInput.find('.clear-voucher').off('click.voucher').on('click.voucher', function() {
+                    clearVoucher(paymentRow);
+                });
+            } else {
+                // Show existing voucher input
+                paymentRow.find('.voucher-code-input').closest('.input-group').show();
+            }
+            
+            // Ensure voucher input is visible and amount input is hidden
+            paymentRow.find('.voucher-code-input').closest('.input-group').show();
+            paymentRow.find('.payment-amount').hide();
+            
+            // Add voucher validation and discount calculation
+            paymentRow.find('.voucher-code-input').off('blur.voucher').on('blur.voucher', function() {
+                const voucherCode = $(this).val().trim();
+                if (voucherCode) {
+                    validateVoucherCode(voucherCode, paymentRow);
+                }
+            });
+            
+            // Also validate on Enter key press
+            paymentRow.find('.voucher-code-input').off('keypress.voucher').on('keypress.voucher', function(e) {
+                if (e.which === 13) { // Enter key
+                    e.preventDefault();
+                    const voucherCode = $(this).val().trim();
+                    if (voucherCode) {
+                        validateVoucherCode(voucherCode, paymentRow);
+                    }
+                }
+            });
+        } else {
+            // Show regular amount input for other platforms
+            amountInput.show();
+            // Find the label that contains "Kode Voucher" and change it back to "Jumlah"
+            paymentRow.find('label').filter(function() { 
+                return $(this).text().trim() === 'Kode Voucher'; 
+            }).text('Jumlah');
+            paymentRow.find('.voucher-code-input').closest('.input-group').hide();
+            
+            // Ensure amount input is visible and voucher input is hidden
+            paymentRow.find('.payment-amount').show();
+            paymentRow.find('.voucher-code-input').closest('.input-group').hide();
+        }
+        
+        calculatePaymentTotals();
+    }
+
+    // Validate voucher code and calculate discount
+    function validateVoucherCode(voucherCode, paymentRow) {
+        // Show loading state
+        const voucherInput = paymentRow.find('.voucher-code-input');
+        const originalValue = voucherInput.val();
+        voucherInput.prop('disabled', true).val('Validating...');
+        
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/validate-voucher') ?>',
+            type: 'POST',
+            data: {
+                voucher_code: voucherCode
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.valid) {
+                    let discountAmount = 0;
+                    let discountText = '';
+                    const originalVoucherCode = voucherCode; // Store the original input value
+                    
+                    // Debug: Log response structure
+                    console.log('Voucher validation response:', response);
+                    
+                    // Handle different voucher types
+                    if (response.jenis_voucher === 'persen') {
+                        // Calculate percentage discount based on grand total
+                        const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+                        discountAmount = (grandTotal * response.discount) / 100;
+                        discountText = `${response.discount}%`;
+                    } else if (response.jenis_voucher === 'nominal') {
+                        discountAmount = response.discount_amount || 0;
+                        discountText = `Rp ${numberFormat(response.discount_amount)}`;
+                    }
+                    
+                    // Update the amount input with discount amount
+                    paymentRow.find('.payment-amount').val(discountAmount);
+                    
+                    // Show success message
+                    toastr.success(`Voucher valid! Potongan: ${discountText}`);
+                    
+                    // Add voucher info display
+                    if (!paymentRow.find('.voucher-info').length) {
+                        const voucherInfo = $(`
+                            <small class="text-success voucher-info">
+                                <i class="fas fa-check-circle"></i> Voucher: ${originalVoucherCode} - Potongan: ${discountText}
+                            </small>
+                        `);
+                        paymentRow.find('.payment-amount').after(voucherInfo);
+                    }
+                    
+                    // Store voucher data
+                    paymentRow.data('voucher-id', response.voucher_id);
+                    paymentRow.data('voucher-discount', discountAmount);
+                    paymentRow.data('voucher-code', originalVoucherCode);
+                    
+                    // Safely store voucher type with validation
+                    const voucherType = response.jenis_voucher || response.voucher_type || 'persen';
+                    paymentRow.data('voucher-type', voucherType);
+                    
+                    console.log('Stored voucher type:', voucherType);
+                    
+                } else {
+                    toastr.error(response.message || 'Voucher tidak valid');
+                    voucherInput.val('');
+                    paymentRow.find('.payment-amount').val(0);
+                }
+            },
+            error: function(xhr, status, error) {
+                toastr.error('Gagal memvalidasi voucher');
+                voucherInput.val(originalValue);
+                paymentRow.find('.payment-amount').val(0);
+            },
+            complete: function() {
+                voucherInput.prop('disabled', false);
+                
+                // If validation was successful, clear the "Validating..." text
+                if (paymentRow.data('voucher-discount') > 0) {
+                    voucherInput.val(paymentRow.data('voucher-code'));
+                }
+                
+                calculatePaymentTotals();
+            }
+        });
+    }
+    
+    // Clear voucher and reset payment row
+    function clearVoucher(paymentRow) {
+        // Clear voucher input
+        paymentRow.find('.voucher-code-input').val('');
+        
+        // Reset amount input
+        paymentRow.find('.payment-amount').val(0);
+        
+        // Remove voucher info display
+        paymentRow.find('.voucher-info').remove();
+        
+        // Clear voucher data
+        paymentRow.removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+        
+        // Show amount input again
+        paymentRow.find('.payment-amount').show();
+        // Find the label that contains "Kode Voucher" and change it back to "Jumlah"
+        paymentRow.find('label').filter(function() { 
+            return $(this).text().trim() === 'Kode Voucher'; 
+        }).text('Jumlah');
+        paymentRow.find('.voucher-code-input').closest('.input-group').hide();
+        
+        // Reset platform selection to empty
+        paymentRow.find('.payment-platform').val('');
+        
+        // Update calculations
+        calculatePaymentTotals();
+        
+        toastr.info('Voucher telah dibersihkan');
+    }
+    
+    // Update voucher summary display
+    function updateVoucherSummary(voucherDiscounts, totalDiscount) {
+        const voucherSummary = $('#voucherSummary');
+        const voucherDiscountsContainer = $('#voucherDiscounts');
+        const totalVoucherDiscount = $('#totalVoucherDiscount');
+        
+        if (voucherDiscounts.length > 0) {
+            // Show voucher summary
+            voucherSummary.show();
+            
+            // Update voucher discounts list
+            let discountsHtml = '';
+            voucherDiscounts.forEach(voucher => {
+                discountsHtml += `
+                    <div class="row mb-1">
+                        <div class="col-6">${voucher.code}</div>
+                        <div class="col-6 text-right text-success">- Rp ${numberFormat(voucher.amount)}</div>
+                    </div>
+                `;
+            });
+            voucherDiscountsContainer.html(discountsHtml);
+            
+            // Update total discount
+            totalVoucherDiscount.text(`- Rp ${numberFormat(totalDiscount)}`);
+        } else {
+            // Hide voucher summary
+            voucherSummary.hide();
+        }
+    }
 
     function removePaymentMethod() {
         const paymentId = $(this).data('payment-id');
-        $(`.payment-method-row[data-payment-id="${paymentId}"]`).remove();
+        const paymentRow = $(`.payment-method-row[data-payment-id="${paymentId}"]`);
+        
+        // Clear voucher data if this was a voucher payment
+        if (paymentRow.data('voucher-id')) {
+            paymentRow.removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+        }
+        
+        paymentRow.remove();
         calculatePaymentTotals();
     }
 
@@ -1607,22 +1887,51 @@ helper('form');
         // Remove dots (thousand separators) before parsing grand total
         const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/\./g, '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
 
-
-
+        // Calculate total paid (excluding vouchers)
         $('.payment-amount').each(function () {
-            const amount = parseFloat($(this).val()) || 0;
-            totalPaid += amount;
+            const paymentRow = $(this).closest('.payment-method-row');
+            const platform = paymentRow.find('.payment-platform').val();
+            
+            // Only add to totalPaid if it's NOT a voucher
+            if (platform !== '4') { // Hardcoded voucher value
+                const amount = parseFloat($(this).val()) || 0;
+                totalPaid += amount;
+            }
         });
+        
+        // Handle voucher discounts (vouchers reduce the total amount to be paid)
+        let totalVoucherDiscount = 0;
+        let voucherDiscounts = [];
+        $('.payment-platform').each(function() {
+            if ($(this).val() === '4') { // Hardcoded voucher value
+                const paymentRow = $(this).closest('.payment-method-row');
+                const voucherDiscount = paymentRow.data('voucher-discount') || 0;
+                const voucherCode = paymentRow.data('voucher-code') || paymentRow.find('.voucher-code-input').val();
+                if (voucherDiscount > 0 && voucherCode) {
+                    totalVoucherDiscount += voucherDiscount;
+                    voucherDiscounts.push({
+                        code: voucherCode,
+                        amount: voucherDiscount
+                    });
+                }
+            }
+        });
+        
+        // Update voucher summary display
+        updateVoucherSummary(voucherDiscounts, totalVoucherDiscount);
+        
+        // Apply voucher discount to the amount to be paid
+        const adjustedGrandTotal = Math.max(0, grandTotal - totalVoucherDiscount);
 
         // Update displays with formatted currency (showing dots as thousand separator)
         if ($('#grandTotalPayment').length) {
-            $('#grandTotalPayment').text(formatCurrency(grandTotal));
+            $('#grandTotalPayment').text(formatCurrency(adjustedGrandTotal));
         }
         if ($('#totalPaidAmount').length) {
             $('#totalPaidAmount').text(formatCurrency(totalPaid));
         }
 
-        const remaining = grandTotal - totalPaid;
+        const remaining = adjustedGrandTotal - totalPaid;
 
         if (remaining > 0) {
             if ($('#remainingAmount').length) {
@@ -1644,11 +1953,7 @@ helper('form');
         }
     }
 
-    function removePaymentMethod() {
-        const paymentId = $(this).data('payment-id');
-        $(`.payment-method-row[data-payment-id="${paymentId}"]`).remove();
-        calculatePaymentTotals();
-    }
+
 
 
 
@@ -1703,8 +2008,6 @@ helper('form');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('Error loading products:', error);
-                console.error('Response:', xhr.responseText);
                 $('#productGrid').html(`
                     <div class="col-12 text-center text-danger">
                         <i class="fas fa-exclamation-triangle"></i> Error memuat produk: ${error}
@@ -1770,8 +2073,6 @@ helper('form');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('Error searching products:', error);
-                console.error('Response:', xhr.responseText);
                 $('#productGrid').html(`
                     <div class="col-12 text-center text-danger">
                         <i class="fas fa-exclamation-triangle"></i> Error mencari produk: ${error}
@@ -1861,7 +2162,6 @@ helper('form');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('Error finding product by barcode:', error);
                 toastr.error('Gagal mencari produk: ' + error);
                 $('#productSearch').focus();
                 isBarcodeScan = false;
@@ -2011,21 +2311,6 @@ helper('form');
             },
             error: function (xhr, status, error) {
                 if (status !== 'abort') {
-                    console.error('Error loading products by category:', error);
-                    console.error('Response:', xhr.responseText);
-                    console.error('Status:', status);
-                    console.error('XHR:', xhr);
-                    console.error('HTTP Status:', xhr.status);
-                    console.error('Response Headers:', xhr.getAllResponseHeaders());
-
-                    // Try to parse response as JSON for more details
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        console.error('Parsed error response:', response);
-                    } catch (e) {
-                        console.error('Could not parse response as JSON');
-                    }
-
                     toastr.error('Gagal memuat produk berdasarkan kategori');
                 }
             },
@@ -2140,7 +2425,6 @@ helper('form');
                 }
             },
             error: function (xhr, status, error) {
-                console.error('Error loading more products:', error);
                 toastr.error('Gagal memuat produk tambahan');
             },
             complete: function () {
@@ -2188,7 +2472,6 @@ helper('form');
                     }, 2000);
                 } else {
                     // Other errors - try to add product directly without variants
-                    console.warn('Failed to get variants, adding product directly:', error);
                     addToCart(productId, productName, productCode, price);
                 }
             }
@@ -2490,6 +2773,21 @@ helper('form');
 
         // Calculate grand total (needed for both draft and completed transactions)
         const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
+        
+        // Calculate voucher discounts
+        let totalVoucherDiscount = 0;
+        $('.payment-platform').each(function() {
+            if ($(this).val() === '4') { // Hardcoded voucher value
+                const paymentRow = $(this).closest('.payment-method-row');
+                const voucherDiscount = paymentRow.data('voucher-discount') || 0;
+                if (voucherDiscount > 0) {
+                    totalVoucherDiscount += voucherDiscount;
+                }
+            }
+        });
+        
+        // Calculate adjusted grand total (after voucher discounts)
+        const adjustedGrandTotal = Math.max(0, grandTotal - totalVoucherDiscount);
 
         // Initialize payment variables (needed for both draft and completed transactions)
         let paymentMethods = [];
@@ -2501,7 +2799,6 @@ helper('form');
             const voucherId = $('#voucherId').val();
             if (voucherId && voucherId !== '') {
                 // Voucher will be marked as used in the backend when transaction is completed
-                console.log('Voucher applied:', voucherId);
             }
 
             // Validate payment methods
@@ -2511,23 +2808,79 @@ helper('form');
                 const platformId = $(this).find('.payment-platform').val();
                 const amount = parseFloat($(this).find('.payment-amount').val()) || 0;
 
+                console.log('Validating payment method:', { platformId, amount });
+
                 if (platformId && amount > 0) {
-                    hasValidPayment = true;
-                    paymentMethods.push({
-                        platform_id: platformId,
-                        amount: amount
-                    });
-                    totalPaymentAmount += amount;
+                    // Determine payment type based on platform (matching backend expectations)
+                    let paymentType = 'platform';
+                    if (platformId === '4') { // Hardcoded voucher value
+                        // Vouchers are NOT payment methods - they are discounts
+                        // Don't add them to paymentMethods array
+                        // They are already handled in the voucher discount calculation
+                    } else if (platformId === '1') {
+                        paymentType = '1'; // Backend expects '1' for cash
+                        hasValidPayment = true;
+                        const note = $(this).find('.payment-note').val() || '';
+                        const paymentMethod = {
+                            platform_id: platformId,
+                            amount: amount,
+                            type: paymentType,
+                            keterangan: note
+                        };
+                        console.log('Adding cash payment method:', paymentMethod);
+                        paymentMethods.push(paymentMethod);
+                        totalPaymentAmount += amount;
+                    } else if (platformId === '2') {
+                        paymentType = '2'; // Backend expects '2' for transfer
+                        hasValidPayment = true;
+                        const note = $(this).find('.payment-note').val() || '';
+                        const paymentMethod = {
+                            platform_id: platformId,
+                            amount: amount,
+                            type: paymentType,
+                            keterangan: note
+                        };
+                        console.log('Adding transfer payment method:', paymentMethod);
+                        paymentMethods.push(paymentMethod);
+                        totalPaymentAmount += amount;
+                    } else if (platformId === '3') {
+                        paymentType = '3'; // Backend expects '3' for credit/piutang
+                        hasValidPayment = true;
+                        const note = $(this).find('.payment-note').val() || '';
+                        const paymentMethod = {
+                            platform_id: platformId,
+                            amount: amount,
+                            type: paymentType,
+                            keterangan: note
+                        };
+                        console.log('Adding credit payment method:', paymentMethod);
+                        paymentMethods.push(paymentMethod);
+                        totalPaymentAmount += amount;
+                    } else {
+                        // For other platform IDs from database
+                        paymentType = 'platform';
+                        hasValidPayment = true;
+                        const note = $(this).find('.payment-note').val() || '';
+                        const paymentMethod = {
+                            platform_id: platformId,
+                            amount: amount,
+                            type: paymentType,
+                            keterangan: note
+                        };
+                        console.log('Adding platform payment method:', paymentMethod);
+                        paymentMethods.push(paymentMethod);
+                        totalPaymentAmount += amount;
+                    }
                 }
             });
 
             if (!hasValidPayment) {
-                toastr.error('Minimal harus ada satu platform pembayaran dengan jumlah > 0');
+                toastr.error('Minimal harus ada satu platform pembayaran dengan jumlah > 0. Silakan isi jumlah pembayaran.');
                 return;
             }
 
-            if (totalPaymentAmount < grandTotal) {
-                toastr.error(`Jumlah bayar (${formatCurrency(totalPaymentAmount)}) kurang dari total (${formatCurrency(grandTotal)})`);
+            if (totalPaymentAmount < adjustedGrandTotal) {
+                toastr.error(`Jumlah bayar (${formatCurrency(totalPaymentAmount)}) kurang dari total (${formatCurrency(adjustedGrandTotal)})`);
                 return;
             }
         } 
@@ -2548,31 +2901,140 @@ helper('form');
             merk: item.merk || ''
         }));
 
+        // Payment methods now include keterangan field for tbl_trans_jual_plat.keterangan
+
+        // Collect voucher information from payment methods
+        let voucherInfo = null;
+        $('.payment-platform').each(function() {
+            if ($(this).val() === '4') { // Hardcoded voucher value
+                const paymentRow = $(this).closest('.payment-method-row');
+                const voucherCode = paymentRow.data('voucher-code');
+                const voucherDiscount = paymentRow.data('voucher-discount');
+                const voucherId = paymentRow.data('voucher-id');
+                const voucherType = paymentRow.data('voucher-type'); // Get voucher type from payment row data
+                
+                console.log('Voucher data found:', { voucherCode, voucherDiscount, voucherId, voucherType });
+                
+                if (voucherCode && voucherDiscount > 0) {
+                    // Backend expects voucher_discount as percentage, not amount
+                    // Calculate percentage: (discount amount / grand total) * 100
+                    const voucherPercentage = (voucherDiscount / grandTotal) * 100;
+                    
+                    voucherInfo = {
+                        voucher_code: voucherCode,
+                        voucher_discount: voucherPercentage, // Send as percentage
+                        voucher_id: voucherId,
+                        voucher_type: voucherType || 'persen' // Use stored voucher type or default to 'persen'
+                    };
+                    
+                    console.log('Voucher info prepared:', voucherInfo);
+                }
+            }
+        });
+
+        // Calculate discount percentage from amount
+        const discountAmount = parseFloat($('#discountAmount').val()) || 0;
+        const discountType = $('#discountType').val() || 'nominal';
+        let discountPercent = 0;
+        
+        if (discountAmount > 0 && discountType === 'persen') {
+            discountPercent = discountAmount;
+        } else if (discountAmount > 0 && discountType === 'nominal') {
+            // Convert nominal discount to percentage for backend
+            discountPercent = (discountAmount / grandTotal) * 100;
+        }
+
+        // Get warehouse ID
+        const warehouse_id = $('#warehouse_id').val();
+        
+        // Validate required fields
+        if (!warehouse_id) {
+            toastr.error('Gudang harus dipilih');
+            return;
+        }
+        
+        if (isDraft === false && (!paymentMethods || paymentMethods.length === 0)) {
+            toastr.error('Metode pembayaran harus diisi');
+            return;
+        }
+        
+        // Calculate adjusted grand total after voucher discount
+        const transactionAdjustedTotal = grandTotal - (voucherInfo ? voucherInfo.voucher_discount * grandTotal / 100 : 0);
+        
+        if (isDraft === false && totalPaymentAmount < transactionAdjustedTotal) {
+            toastr.error(`Jumlah bayar (${formatCurrency(totalPaymentAmount)}) kurang dari total setelah voucher (${formatCurrency(transactionAdjustedTotal)})`);
+            return;
+        }
+
+        // Get CSRF token
+        const csrfToken = $('meta[name="csrf-token"]').attr('content') || $('input[name="csrf_token"]').val();
+        
         const transactionData = {
             cart: cleanCart,
             customer_id: $('#selectedCustomerId').val() || null,
-            customer_type: $('#selectedCustomerType').val(),
+            customer_type: $('#selectedCustomerType').val() || 'umum',
             customer_name: $('#selectedCustomerName').val() || null,
-            warehouse_id: $('#warehouse_id').val() || null,
-            discount_amount: parseFloat($('#discountAmount').val()) || 0,
-            discount_type: $('#discountType').val() || 'nominal',
-            voucher_code: $('#voucherCode').val() || null,
-            voucher_discount: parseFloat($('#voucherDiscount').val()) || 0,
-            voucher_id: $('#voucherId').val() || null,
-            voucher_type: $('#voucherType').val() || null,
-            voucher_discount_amount: parseFloat($('#voucherDiscountAmount').val()) || 0,
+            warehouse_id: warehouse_id,
+            discount_percent: discountPercent, // Backend expects this field
+            voucher_code: voucherInfo ? voucherInfo.voucher_code : null,
+            voucher_discount: voucherInfo ? voucherInfo.voucher_discount : 0,
+            voucher_id: voucherInfo ? voucherInfo.voucher_id : null,
+            voucher_type: voucherInfo ? voucherInfo.voucher_type : null, // Add voucher type
             payment_methods: isDraft ? [] : paymentMethods,
             total_amount_received: isDraft ? 0 : totalPaymentAmount,
-            grand_total: grandTotal,
+            grand_total: transactionAdjustedTotal, // Send adjusted total as grand_total
             is_draft: isDraft,
-            draft_id: currentDraftId // Include draft ID if converting from draft
+            draft_id: currentDraftId, // Include draft ID if converting from draft
+            csrf_token: csrfToken // Add CSRF token
         };
 
+        // Validate payment methods structure
+        let hasInvalidPaymentMethod = false;
+        
+        // Debug: Log payment methods being sent
+        console.log('Payment methods being sent:', paymentMethods);
+        console.log('Payment methods length:', paymentMethods.length);
+        
+        // Also log the actual DOM elements to see what's there
+        console.log('Payment method rows in DOM:', $('.payment-method-row').length);
+        $('.payment-method-row').each(function(index) {
+            const platformId = $(this).find('.payment-platform').val();
+            const amount = $(this).find('.payment-amount').val();
+            const note = $(this).find('.payment-note').val();
+            console.log(`DOM Payment method ${index}:`, { platformId, amount, note, paymentId: $(this).data('payment-id') });
+        });
+        
+        paymentMethods.forEach((pm, index) => {
+            console.log(`Payment method ${index}:`, pm);
+            
+            if (!pm.type) {
+                console.log(`Payment method ${index} missing type`);
+                hasInvalidPaymentMethod = true;
+            }
+            if (!pm.platform_id) {
+                console.log(`Payment method ${index} missing platform_id`);
+                hasInvalidPaymentMethod = true;
+            }
+            if (typeof pm.amount === 'undefined') {
+                console.log(`Payment method ${index} missing amount`);
+                hasInvalidPaymentMethod = true;
+            }
+            // Note: keterangan is optional, so no validation needed
+        });
+        
+        if (hasInvalidPaymentMethod) {
+            toastr.error('Ada kesalahan dalam struktur metode pembayaran. Silakan coba lagi.');
+            return;
+        }
+                
         // Show loading state
         const buttonId = isDraft ? '#saveAsDraft' : '#completeTransaction';
         const buttonText = isDraft ? 'Menyimpan Draft...' : 'Memproses...';
         $(buttonId).prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${buttonText}`);
 
+        // Debug: Log transaction data being sent
+        console.log('Transaction data being sent:', transactionData);
+        
         // Send transaction to server
         $.ajax({
             url: '<?= base_url('transaksi/jual/process-transaction') ?>',
@@ -2599,8 +3061,21 @@ helper('form');
                         // Build payment methods summary
                         let paymentSummary = '';
                         paymentMethods.forEach(pm => {
-                            paymentSummary += `Platform ${pm.platform_id}: ${formatCurrency(pm.amount)}<br>`;
+                            let paymentLabel = 'Platform';
+                            if (pm.type === '1') paymentLabel = 'Tunai';
+                            else if (pm.type === '2') paymentLabel = 'Transfer';
+                            else if (pm.type === '3') paymentLabel = 'Piutang';
+                            else if (pm.type === 'platform') paymentLabel = 'Platform';
+                            
+                            const note = pm.keterangan ? ` (${pm.keterangan})` : '';
+                            paymentSummary += `${paymentLabel}: ${formatCurrency(pm.amount)}${note}<br>`;
                         });
+                        
+                        // Add voucher information if present
+                        if (voucherInfo) {
+                            paymentSummary += `<br><strong>Voucher:</strong> ${voucherInfo.voucher_code} (-${formatCurrency(voucherInfo.voucher_discount)})<br>`;
+                        }
+                        
                         $('#finalPaymentMethod').html(paymentSummary);
                         $('#completeModal').modal('show');
 
@@ -2609,7 +3084,8 @@ helper('form');
                             id: response.transaction_id,
                             no_nota: response.no_nota,
                             total: response.total,
-                            change: response.change
+                            change: response.change,
+                            voucher_info: voucherInfo
                         };
 
                         toastr.success(response.message);
@@ -2622,14 +3098,14 @@ helper('form');
                 // Try to parse response for more details
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    console.error('Parsed error response:', response);
                     if (response.message) {
-                        toastr.error('Error: ' + response.message);
+                        toastr.error('Backend Error: ' + response.message);
+                    } else if (response.error) {
+                        toastr.error('Backend Error: ' + response.error);
                     } else {
                         toastr.error('Terjadi kesalahan saat memproses transaksi');
                     }
                 } catch (e) {
-                    console.error('Could not parse response as JSON');
                     toastr.error('Terjadi kesalahan saat memproses transaksi');
                 }
             },
@@ -2663,8 +3139,29 @@ helper('form');
         $('#voucherInfo').text('');
         $('#voucherDiscountRow').hide();
         $('#paymentMethod').val('');
-        // Clear payment amounts in all payment method rows
+        // Clear payment amounts and notes in all payment method rows
         $('.payment-amount').val('');
+        $('.payment-note').val('');
+        // Clear voucher data from all payment rows
+        $('.payment-method-row').each(function() {
+            $(this).removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+        });
+        
+        // Reset payment methods to default
+        $('#paymentMethods').empty();
+        paymentMethods = [];
+        paymentCounter = 0;
+        addPaymentMethod(); // Add first payment method by default
+        
+        // Ensure the first payment method has default values
+        setTimeout(() => {
+            const firstPaymentRow = $('[data-payment-id="1"]');
+            if (firstPaymentRow.length) {
+                firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                firstPaymentRow.find('.payment-amount').val('0'); // Default amount
+                firstPaymentRow.find('.payment-note').val(''); // Default empty note
+            }
+        }, 100);
         $('#productSearch').val('');
 
         // Reset warehouse selection and show message
@@ -2706,12 +3203,27 @@ helper('form');
         $('#voucherType').val('');
         $('#voucherDiscountAmount').val(0);
         $('#voucherDiscountRow').hide();
+        
+        // Clear voucher data from all payment rows
+        $('.payment-method-row').each(function() {
+            $(this).removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+        });
 
         // Reset payment methods
         $('#paymentMethods').empty();
         paymentMethods = [];
         paymentCounter = 0;
         addPaymentMethod(); // Add first payment method by default
+        
+        // Ensure the first payment method has default values
+        setTimeout(() => {
+            const firstPaymentRow = $('[data-payment-id="1"]');
+            if (firstPaymentRow.length) {
+                firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                firstPaymentRow.find('.payment-amount').val('0'); // Default amount
+                firstPaymentRow.find('.payment-note').val(''); // Default empty note
+            }
+        }, 100);
 
         // Clear product search
         $('#productSearch').val('');
@@ -3025,7 +3537,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 });
             },
             error: function () {
-                console.warn('Failed to load printers');
+                // Failed to load printers
             }
         });
     }
@@ -3354,10 +3866,9 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                                             video.play().then(() => {
                                                 status.innerHTML = '<p class="text-success"><i class="fas fa-camera"></i> Kamera aktif. Arahkan ke QR code</p>';
                                                 startQrDetection(video);
-                                            }).catch(retryErr => {
-                                                console.error('Retry failed:', retryErr);
-                                                status.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Gagal memulai video</p>';
-                                            });
+                                                                                    }).catch(retryErr => {
+                                            status.innerHTML = '<p class="text-danger"><i class="fas fa-exclamation-triangle"></i> Gagal memulai video</p>';
+                                        });
                                         }
                                     }, 500);
                                 } else {
@@ -3426,14 +3937,9 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 // Handle the QR scan result directly with the raw data
                 // Let handleQrScanResult handle all the parsing logic
                 handleQrScanResult(code.data);
-            } else if (code) {
-                console.log('Code object found but no data:', code);
-                console.log('Code object keys:', Object.keys(code));
-            } else {
-                console.log('No QR code detected in this frame');
             }
         } catch (error) {
-            console.error('QR detection error:', error);
+            // QR detection error
         }
     }
 
@@ -3453,7 +3959,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 });
                 qrStream = null;
             } catch (error) {
-                console.error('Error stopping camera tracks:', error);
+                // Error stopping camera tracks
             }
         }
 
@@ -3479,7 +3985,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 video.oncanplay = null;
 
             } catch (error) {
-                console.error('Error clearing video source:', error);
+                // Error clearing video source
             }
         }
 
@@ -3533,7 +4039,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
             if (trimmedData.startsWith('{') || trimmedData.startsWith('[')) {
                 try {
                     const parsedData = JSON.parse(trimmedData);
-                    console.log('Parsed JSON string:', parsedData);
 
                     // Extract customer ID from parsed JSON
                     if (parsedData.id_pelanggan) {
@@ -3691,7 +4196,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 }
             },
             error: function (xhr, status, error) {
-                console.error('Draft loading error:', xhr, status, error);
                 $loading.hide();
                 toastr.error('Gagal memuat daftar draft: ' + error);
             }
@@ -3769,20 +4273,17 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     [csrfTokenName]: csrfToken
                 },
                 dataType: 'json',
-                success: function (response) {
-                    console.log('Delete response:', response);
-                    if (response.success) {
-                        toastr.success('Draft berhasil dihapus!');
-                        loadDraftList(); // Reload the list
-                    } else {
-                        toastr.error(response.message || 'Gagal menghapus draft');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.error('Delete error:', xhr, status, error);
-                    console.error('Response text:', xhr.responseText);
-                    toastr.error('Gagal menghapus draft: ' + error);
+                            success: function (response) {
+                if (response.success) {
+                    toastr.success('Draft berhasil dihapus!');
+                    loadDraftList(); // Reload the list
+                } else {
+                    toastr.error(response.message || 'Gagal menghapus draft');
                 }
+            },
+                            error: function (xhr, status, error) {
+                toastr.error('Gagal menghapus draft: ' + error);
+            }
             });
         }
     }
@@ -3880,7 +4381,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 
                         printWindow.document.close();
                     }).catch(error => {
-                        console.error('Error processing drafts:', error);
                         toastr.error('Gagal memproses draft untuk print');
                     });
                 } else {

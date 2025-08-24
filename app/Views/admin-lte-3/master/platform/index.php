@@ -82,15 +82,17 @@
                                             class="btn btn-info btn-sm rounded-0">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="<?= base_url("master/platform/edit/{$platform->id}") ?>"
-                                            class="btn btn-warning btn-sm rounded-0">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="<?= base_url("master/platform/delete/{$platform->id}") ?>"
-                                            class="btn btn-danger btn-sm rounded-0"
-                                            onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
+                                        <?php if ($platform->status_sys != '1'): ?>
+                                            <a href="<?= base_url("master/platform/edit/{$platform->id}") ?>"
+                                                class="btn btn-warning btn-sm rounded-0">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="<?= base_url("master/platform/delete/{$platform->id}") ?>"
+                                                class="btn btn-danger btn-sm rounded-0"
+                                                onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        <?php endif; ?>
                                     </div>
                                 </td>
                             </tr>

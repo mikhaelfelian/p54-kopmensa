@@ -15,7 +15,7 @@ class CreateTblMPlatform extends Migration
 {
     public function up()
     {
-        $this->forge->addField([
+        $fields = [
             'id' => [
                 'type'           => 'INT',
                 'constraint'     => 11,
@@ -31,28 +31,33 @@ class CreateTblMPlatform extends Migration
             ],
             'created_at' => [
                 'type'    => 'DATETIME',
-                'null'    => true
+                'null'    => true,
+                'default' => null
             ],
             'updated_at' => [
                 'type'    => 'DATETIME',
-                'null'    => true
+                'null'    => true,
+                'default' => null
             ],
             'kode' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 160,
                 'null'       => true,
-                'default'    => null
+                'default'    => null,
+                'collate'    => 'utf8mb4_general_ci'
             ],
             'platform' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 160,
                 'null'       => true,
-                'default'    => null
+                'default'    => null,
+                'collate'    => 'utf8mb4_general_ci'
             ],
             'keterangan' => [
                 'type'       => 'TEXT',
                 'null'       => true,
-                'default'    => null
+                'default'    => null,
+                'collate'    => 'utf8mb4_general_ci'
             ],
             'persen' => [
                 'type'       => 'DECIMAL',
@@ -64,17 +69,29 @@ class CreateTblMPlatform extends Migration
                 'type'       => 'ENUM',
                 'constraint' => ['0', '1'],
                 'null'       => true,
-                'default'    => '1'
+                'default'    => '1',
+                'collate'    => 'utf8mb4_general_ci'
+            ],
+            'status_sys' => [
+                'type'       => 'ENUM',
+                'constraint' => ['0', '1'],
+                'null'       => true,
+                'default'    => '0',
+                'collate'    => 'utf8mb4_general_ci'
             ]
-        ]);
+        ];
 
-        $this->forge->addKey('id', true);
-        $this->forge->createTable('tbl_m_platform');
-        $this->db->query("ALTER TABLE `tbl_m_platform` COMMENT 'Platform Pembayaran'");
+        $this->forge->addField($fields);
+        $this->forge->addKey('id', true, true, 'BTREE');
+        $this->forge->createTable('tbl_m_platform', false, [
+            'ENGINE' => 'InnoDB',
+            'COLLATE' => 'utf8mb4_general_ci',
+            'COMMENT' => 'Table untuk platform pembayaran'
+        ]);
     }
 
     public function down()
     {
         $this->forge->dropTable('tbl_m_platform');
     }
-} 
+}

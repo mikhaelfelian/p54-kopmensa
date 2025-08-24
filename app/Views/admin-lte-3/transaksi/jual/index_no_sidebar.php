@@ -5,6 +5,18 @@
  * Github: github.com/mikhaelfelian
  * Description: Sales Transaction Cashier Interface View
  * This file represents the View.
+ * 
+ * Required Controller Data:
+ * - $transactions: Array of transaction records
+ * - $customers: Array of customer records
+ * - $cashiers: Array of cashier users from tbl_ion_user where ion_group = 5
+ * - $search: Current search term
+ * - $status: Current status filter
+ * - $cashierFilter: Current cashier filter
+ * - $dateFrom: Current date from filter
+ * - $dateTo: Current date to filter
+ * - $statusOptions: Array of status options
+ * - $pager: Pagination object
  */
 ?>
 <?= $this->extend(theme_path('main_no_sidebar')) ?>
@@ -28,7 +40,7 @@
             <div class="card-body">
                 <!-- Search and Filter -->
                 <div class="row mb-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <input type="text" class="form-control" id="searchInput" placeholder="Cari nota/pelanggan..."
                             value="<?= $search ?>">
                     </div>
@@ -41,12 +53,25 @@
                         </select>
                     </div>
                     <div class="col-md-2">
+                        <select class="form-control" id="cashierFilter">
+                            <option value="">Semua Kasir</option>
+                            <?php if (isset($cashiers) && !empty($cashiers)): ?>
+                                <?php foreach ($cashiers as $cashier): ?>
+                                    <option value="<?= $cashier->id ?>" <?= $cashierFilter == $cashier->id ? 'selected' : '' ?>>
+                                        <?= esc($cashier->first_name . ' ' . $cashier->last_name) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                        <small class="form-text text-muted">Filter berdasarkan kasir</small>
+                    </div>
+                    <div class="col-md-2">
                         <input type="date" class="form-control" id="dateFrom" value="<?= $dateFrom ?>">
                     </div>
                     <div class="col-md-2">
                         <input type="date" class="form-control" id="dateTo" value="<?= $dateTo ?>">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <button type="button" class="btn btn-secondary" id="searchBtn">
                             <i class="fas fa-search"></i> Cari
                         </button>
@@ -64,6 +89,7 @@
                                 <th width="5%" class="text-center">No</th>
                                 <th>No. Nota</th>
                                 <th>Pelanggan</th>
+                                <th>Kasir</th>
                                 <th class="text-right">Total</th>
                                 <th>Status</th>
                                 <th>Status Bayar</th>
@@ -73,7 +99,7 @@
                         <tbody>
                             <?php if (empty($transactions)): ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Tidak ada data transaksi</td>
+                                    <td colspan="10" class="text-center">Tidak ada data transaksi</td>
                                 </tr>
                             <?php else: ?>
                                 <?php
@@ -99,6 +125,20 @@
                                                 }
                                             }
                                             echo esc($customerName);
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <?php
+                                            $cashierName = 'Unknown';
+                                            if (isset($row->user_id) && $row->user_id) {
+                                                foreach ($cashiers as $cashier) {
+                                                    if ($cashier->id == $row->user_id) {
+                                                        $cashierName = esc($cashier->first_name . ' ' . $cashier->last_name);
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            echo $cashierName;
                                             ?>
                                         </td>
                                         <td class="text-right">
@@ -350,6 +390,7 @@
         $('#resetBtn').on('click', function () {
             $('#searchInput').val('');
             $('#statusFilter').val('');
+            $('#cashierFilter').val('');
             $('#dateFrom').val('');
             $('#dateTo').val('');
             performSearch();
@@ -366,6 +407,7 @@
     function performSearch() {
         const search = $('#searchInput').val();
         const status = $('#statusFilter').val();
+        const cashier = $('#cashierFilter').val();
         const dateFrom = $('#dateFrom').val();
         const dateTo = $('#dateTo').val();
 
@@ -374,6 +416,7 @@
 
         if (search) params.append('search', search);
         if (status) params.append('status', status);
+        if (cashier) params.append('cashier', cashier);
         if (dateFrom) params.append('date_from', dateFrom);
         if (dateTo) params.append('date_to', dateTo);
 

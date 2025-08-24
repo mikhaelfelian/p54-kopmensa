@@ -256,6 +256,8 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('customer-group/addMember', 'PelangganGrup::addMember');
     $routes->post('customer-group/removeMember', 'PelangganGrup::removeMember');
     $routes->post('customer-group/addBulkMembers', 'PelangganGrup::addBulkMembers');
+    $routes->post('customer-group/search-customers', 'PelangganGrup::searchCustomers');
+    $routes->get('customer-group/getCurrentMembers/(:num)', 'PelangganGrup::getCurrentMembers/$1');
 });
 
 // Platform Routes

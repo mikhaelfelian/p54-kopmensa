@@ -926,18 +926,21 @@ class TransJual extends BaseController
                 'status'            => $isDraft ? '0' : '1', // 0=Draft, 1=Completed
                 'status_nota'       => $isDraft ? '0' : '1', // 0=Draft, 1=Completed
                 'status_bayar'      => $isDraft ? '0' : ($hasPiutang ? '0' : '1'), // 0=Unpaid/Draft, 1=Paid
-                'status_ppn'        => '1'  // PPN included
+                'status_ppn'        => '1',  // PPN included
+                'voucher_code'      => $voucherCode,       // Voucher code from frontend
+                'voucher_discount'  => $voucherDiscount,   // Voucher discount percentage
+                'voucher_id'        => $this->request->getPost('voucher_id') ?: null, // Voucher ID if available
+                'voucher_type'      => $this->request->getPost('voucher_type') ?: null, // Voucher type (persen/nominal)
+                'voucher_discount_amount' => $voucherAmount // Calculated voucher amount in currency
             ];
 
             // Insert or update main transaction
             if ($draftId && !$isDraft) {
                 // Update existing draft to completed transaction
-                log_message('debug', 'Updating existing draft ID: ' . $draftId);
                 $this->transJualModel->update($draftId, $transactionData);
                 $transactionId = $draftId;
             } else {
                 // Insert new transaction
-                log_message('debug', 'Inserting new transaction - draftId: ' . ($draftId ?: 'null') . ', isDraft: ' . ($isDraft ? 'true' : 'false'));
                 $this->transJualModel->insert($transactionData);
                 $transactionId = $this->transJualModel->getInsertID();
             }
@@ -969,7 +972,7 @@ class TransJual extends BaseController
                     'harga'          => $item['price'],
                     'harga_beli'     => $itemDetails->harga_beli ?? 0,
                     'jml'            => $item['quantity'],
-                    'jml_satuan'     => $item['quantity'],
+                    'jml_satuan'     => 1,
                     'disk1'          => 0,
                     'disk2'          => 0,
                     'disk3'          => 0,
@@ -1001,7 +1004,7 @@ class TransJual extends BaseController
                     'keterangan'     => 'Penjualan - ' . $noNota,
                     'nominal'        => $item['price'],
                     'jml'            => $item['quantity'],
-                    'jml_satuan'     => $item['quantity'],
+                    'jml_satuan'     => 1,
                     'satuan'         => $itemDetails->satuan ?? 'PCS',
                     'status'         => '4', // Stok Keluar Penjualan
                     'sp'             => null
@@ -1017,24 +1020,62 @@ class TransJual extends BaseController
                     $this->transJualPlatModel->where('id_penjualan', $draftId)->delete();
                 }
                 
-                foreach ($paymentMethods as $payment) {
-                    if (!empty($payment['platform_id']) && !empty($payment['amount'])) {
+                // Debug: Log payment methods received
+                log_message('debug', 'Payment methods received: ' . json_encode($paymentMethods));
+                log_message('debug', 'Payment methods count: ' . count($paymentMethods));
+                log_message('debug', 'Payment methods type: ' . gettype($paymentMethods));
+                
+                foreach ($paymentMethods as $index => $payment) {
+                    // Debug: Log each payment
+                    log_message('debug', 'Processing payment: ' . json_encode($payment));
+                    
+                    // Debug: Check all available keys in payment array
+                    log_message('debug', 'Payment keys: ' . json_encode(array_keys($payment)));
+                    
+                    // Debug: Check exact values and types
+                    $platformId = $payment['platform_id'] ?? null;
+                    $amount = $payment['amount'] ?? null;
+                    $platformIdType = gettype($platformId);
+                    $amountType = gettype($amount);
+                    
+                    log_message('debug', "Platform ID: '$platformId' (type: $platformIdType), Amount: '$amount' (type: $amountType)");
+                    
+                    // Use multiple checks to ensure values are valid
+                    $platformIdValid = isset($payment['platform_id']) && $payment['platform_id'] !== '' && $payment['platform_id'] !== null;
+                    $amountValid = isset($payment['amount']) && $payment['amount'] !== '' && $payment['amount'] !== null && $payment['amount'] > 0;
+                    
+                    log_message('debug', "Platform ID valid: " . ($platformIdValid ? 'YES' : 'NO') . ", Amount valid: " . ($amountValid ? 'YES' : 'NO'));
+                    
+                    if ($platformIdValid && $amountValid) {
                         $platform = $this->platformModel->find($payment['platform_id']);
                         $platformData = [
                             'id_penjualan' => $transactionId,
                             'id_platform'  => $payment['platform_id'],
                             'no_nota'      => $noNota,
                             'platform'     => $platform->platform ?? $payment['type'],
-                            'keterangan'   => 'Pembayaran via ' . $payment['type'] . 
-                                            (!empty($payment['reference']) ? ' - ' . $payment['reference'] : ''),
+                            'keterangan'   => (!empty($payment['keterangan']) ? $payment['keterangan'] : ''),
                             'nominal'      => $payment['amount']
                         ];
+
+                        // Debug: Log platform data being inserted
+                        log_message('debug', 'Inserting platform data: ' . json_encode($platformData));
 
                         $this->transJualPlatModel->insert($platformData);
 
                         $this->transJualModel->update($transactionId, ['metode_bayar' => $payment['type']]);
+                    } else {
+                        // Debug: Log why payment was skipped with more detail
+                        log_message('debug', "Payment skipped - platform_id empty: " . (empty($payment['platform_id']) ? 'YES' : 'NO') . 
+                                           ", amount empty: " . (empty($payment['amount']) ? 'YES' : 'NO'));
+                        log_message('debug', 'Payment skipped - platform_id: ' . ($payment['platform_id'] ?? 'NULL') . ', amount: ' . ($payment['amount'] ?? 'NULL'));
                     }
                 }
+            }
+
+            // Mark voucher as used if transaction is completed and voucher was applied
+            if (!$isDraft && !empty($voucherCode) && !empty($this->request->getPost('voucher_id'))) {
+                $voucherId = $this->request->getPost('voucher_id');
+                $this->voucherModel->useVoucher($voucherId);
             }
 
             $this->db->transComplete();
@@ -1044,12 +1085,12 @@ class TransJual extends BaseController
             }
 
             return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Transaksi berhasil diproses',
-                'transaction_id' => $transactionId,
-                'no_nota' => $noNota,
-                'total' => $finalTotal,
-                'change' => $change
+                    'success'        => true,
+                    'message'        => 'Transaksi berhasil diproses',
+                    'transaction_id' => $transactionId,
+                    'no_nota'        => $noNota,
+                    'total'          => $finalTotal,
+                    'change'         => $change
             ]);
 
         } catch (\Exception $e) {

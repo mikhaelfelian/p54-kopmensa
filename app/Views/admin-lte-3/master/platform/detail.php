@@ -57,15 +57,17 @@
                     <i class="fas fa-arrow-left"></i> Kembali
                 </a>
                 <div class="float-right">
-                    <a href="<?= base_url("master/platform/edit/{$platform->id}") ?>" 
-                       class="btn btn-warning rounded-0">
-                        <i class="fas fa-edit"></i> Edit
-                    </a>
-                    <a href="<?= base_url("master/platform/delete/{$platform->id}") ?>"
-                       class="btn btn-danger rounded-0"
-                       onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
-                        <i class="fas fa-trash"></i> Hapus
-                    </a>
+                    <?php if ($platform->status_sys != '1'): ?>
+                        <a href="<?= base_url("master/platform/edit/{$platform->id}") ?>" 
+                           class="btn btn-warning rounded-0">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="<?= base_url("master/platform/delete/{$platform->id}") ?>"
+                           class="btn btn-danger rounded-0"
+                           onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
+                            <i class="fas fa-trash"></i> Hapus
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

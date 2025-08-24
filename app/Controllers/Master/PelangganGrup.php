@@ -373,9 +373,9 @@ class PelangganGrup extends BaseController
      */
     public function addMember()
     {
-        // Validate request method
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        // Validate request method - now accepts regular POST
+        if (!$this->request->getMethod() === 'post') {
+            return redirect()->back()->with('error', 'Invalid request method');
         }
 
         $groupId = $this->request->getVar('id_grup');
@@ -383,37 +383,31 @@ class PelangganGrup extends BaseController
 
         // Validate input
         if (!$groupId || !$customerId) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
+            return redirect()->back()->with('error', 'Data tidak lengkap');
         }
 
         // Validate group exists
         $group = $this->pelangganGrupModel->find($groupId);
         if (!$group) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Grup tidak ditemukan']);
+            return redirect()->back()->with('error', 'Grup tidak ditemukan');
         }
 
         // Validate customer exists
         $customer = $this->pelangganModel->find($customerId);
         if (!$customer) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Pelanggan tidak ditemukan']);
+            return redirect()->back()->with('error', 'Pelanggan tidak ditemukan');
         }
 
         try {
             if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
-                return $this->response->setJSON([
-                    'success' => true, 
-                    'message' => 'Member berhasil ditambahkan ke grup "' . $group->grup . '"',
-                    'data' => [
-                        'group_name' => $group->grup,
-                        'customer_name' => $customer->nama
-                    ]
-                ]);
+                return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
+                    ->with('success', 'Member berhasil ditambahkan ke grup "' . $group->grup . '"');
             } else {
-                return $this->response->setJSON(['success' => false, 'message' => 'Member sudah ada dalam grup ini']);
+                return redirect()->back()->with('error', 'Member sudah ada dalam grup ini');
             }
         } catch (\Exception $e) {
             log_message('error', 'Error adding member to group: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member: ' . $e->getMessage()]);
+            return redirect()->back()->with('error', 'Gagal menambahkan member: ' . $e->getMessage());
         }
     }
 
@@ -422,9 +416,9 @@ class PelangganGrup extends BaseController
      */
     public function removeMember()
     {
-        // Validate request method
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        // Validate request method - now accepts regular POST
+        if (!$this->request->getMethod() === 'post') {
+            return redirect()->back()->with('error', 'Invalid request method');
         }
 
         $groupId = $this->request->getVar('id_grup');
@@ -432,37 +426,31 @@ class PelangganGrup extends BaseController
 
         // Validate input
         if (!$groupId || !$customerId) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
+            return redirect()->back()->with('error', 'Data tidak lengkap');
         }
 
         // Validate group exists
         $group = $this->pelangganGrupModel->find($groupId);
         if (!$group) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Grup tidak ditemukan']);
+            return redirect()->back()->with('error', 'Grup tidak ditemukan');
         }
 
         // Validate customer exists
         $customer = $this->pelangganModel->find($customerId);
         if (!$customer) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Pelanggan tidak ditemukan']);
+            return redirect()->back()->with('error', 'Pelanggan tidak ditemukan');
         }
 
         try {
             if ($this->pelangganGrupModel->removeMemberFromGroup($groupId, $customerId)) {
-                return $this->response->setJSON([
-                    'success' => true, 
-                    'message' => 'Member berhasil dihapus dari grup "' . $group->grup . '"',
-                    'data' => [
-                        'group_name' => $group->grup,
-                        'customer_name' => $customer->nama
-                    ]
-                ]);
+                return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
+                    ->with('success', 'Member berhasil dihapus dari grup "' . $group->grup . '"');
             } else {
-                return $this->response->setJSON(['success' => false, 'message' => 'Member tidak ditemukan dalam grup ini']);
+                return redirect()->back()->with('error', 'Member tidak ditemukan dalam grup ini');
             }
         } catch (\Exception $e) {
             log_message('error', 'Error removing member from group: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus member: ' . $e->getMessage()]);
+            return redirect()->back()->with('error', 'Gagal menghapus member: ' . $e->getMessage());
         }
     }
 
@@ -471,17 +459,19 @@ class PelangganGrup extends BaseController
      */
     public function addBulkMembers()
     {
-        // Validate request method
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        // Validate request method - now accepts regular POST
+        if (!$this->request->getMethod() === 'post') {
+            return redirect()->to(base_url("master/customer-group/members/" . $this->request->getVar('id_grup')))
+                ->with('error', 'Invalid request method');
         }
 
         $groupId = $this->request->getVar('id_grup');
-        $customerIds = $this->request->getVar('customer_ids');
+        $customerIds = $this->request->getVar('id_pelanggan');
 
         // Validate input
         if (!$groupId || !$customerIds) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
+            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
+                ->with('error', 'Data tidak lengkap');
         }
 
         if (!is_array($customerIds)) {
@@ -491,13 +481,15 @@ class PelangganGrup extends BaseController
         // Validate group exists
         $group = $this->pelangganGrupModel->find($groupId);
         if (!$group) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Grup tidak ditemukan']);
+            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
+                ->with('error', 'Grup tidak ditemukan');
         }
 
         // Validate all customers exist
         $customers = $this->pelangganModel->whereIn('id', $customerIds)->findAll();
         if (count($customers) !== count($customerIds)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Beberapa pelanggan tidak ditemukan']);
+            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
+                ->with('error', 'Beberapa pelanggan tidak ditemukan');
         }
 
         $successCount = 0;
@@ -536,21 +528,133 @@ class PelangganGrup extends BaseController
                 $message .= ", {$alreadyExistsCount} member sudah ada dalam grup";
             }
 
-            return $this->response->setJSON([
-                'success' => true, 
-                'message' => $message,
-                'data' => [
-                    'total_requested' => count($customerIds),
-                    'success_count' => $successCount,
-                    'already_exists_count' => $alreadyExistsCount,
-                    'failed_count' => $failedCount,
-                    'results' => $results
-                ]
-            ]);
+            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
+                ->with('success', $message);
 
         } catch (\Exception $e) {
             log_message('error', 'Error adding bulk members to group: ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member secara bulk: ' . $e->getMessage()]);
+            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
+                ->with('error', 'Gagal menambahkan member secara bulk: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Search customers for adding to group (AJAX)
+     */
+    public function searchCustomers()
+    {
+        // Validate request method
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
+        $search = $this->request->getVar('search') ?? '';
+        $status = $this->request->getVar('status') ?? '';
+        $page = (int)($this->request->getVar('page') ?? 1);
+        $perPage = (int)($this->request->getVar('per_page') ?? 20);
+        $groupId = (int)($this->request->getVar('group_id') ?? 0);
+
+        try {
+            // Build query for available customers (not in the group)
+            $query = $this->pelangganModel->select('id, nama, no_telp, status, kode')
+                ->where('status_hps', '0'); // Not deleted
+
+            // Apply search filter
+            if ($search) {
+                $query->groupStart()
+                    ->like('nama', $search)
+                    ->orLike('no_telp', $search)
+                    ->orLike('kode', $search)
+                    ->groupEnd();
+            }
+
+            // Apply status filter
+            if ($status !== '') {
+                $query->where('status', $status);
+            }
+
+            // Exclude customers already in the group
+            if ($groupId > 0) {
+                $existingMembers = $this->db->table('tbl_m_pelanggan_grup_member')
+                    ->select('id_pelanggan')
+                    ->where('id_grup', $groupId)
+                    ->get()
+                    ->getResultArray();
+                
+                $existingIds = array_column($existingMembers, 'id_pelanggan');
+                if (!empty($existingIds)) {
+                    $query->whereNotIn('id', $existingIds);
+                }
+            }
+
+            // Get total count for pagination
+            $totalAvailable = $query->countAllResults(false);
+
+            // Apply pagination
+            $offset = ($page - 1) * $perPage;
+            $customers = $query->limit($perPage, $offset)->findAll();
+
+            // Get current members count for the group
+            $totalCurrent = 0;
+            if ($groupId > 0) {
+                $totalCurrent = $this->db->table('tbl_m_pelanggan_grup_member')
+                    ->where('id_grup', $groupId)
+                    ->countAllResults();
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'customers' => $customers,
+                'total_available' => $totalAvailable,
+                'total_current' => $totalCurrent,
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => ceil($totalAvailable / $perPage)
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error searching customers: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'Gagal mencari pelanggan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get current members of a group (AJAX)
+     */
+    public function getCurrentMembers($groupId)
+    {
+        // Validate request method
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
+        try {
+            $groupId = (int)$groupId;
+            
+            // Get current members with customer details
+            $members = $this->db->table('tbl_m_pelanggan_grup_member pgm')
+                ->select('pgm.id_pelanggan, p.nama, p.no_telp, p.status')
+                ->join('tbl_m_pelanggan p', 'p.id = pgm.id_pelanggan')
+                ->where('pgm.id_grup', $groupId)
+                ->where('p.status_hps', '0') // Not deleted
+                ->orderBy('p.nama', 'ASC')
+                ->get()
+                ->getResult();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'members' => $members
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Error getting current members: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false, 
+                'message' => 'Gagal mengambil data member: ' . $e->getMessage()
+            ]);
         }
     }
 }
