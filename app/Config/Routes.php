@@ -249,6 +249,13 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('customer-group/trash', 'PelangganGrup::trash');
     $routes->get('customer-group/restore/(:num)', 'PelangganGrup::restore/$1');
     $routes->get('customer-group/delete_permanent/(:num)', 'PelangganGrup::delete_permanent/$1');
+    $routes->get('customer-group/add-member/(:num)', 'PelangganGrup::add_member/$1');
+    $routes->post('customer-group/store-member', 'PelangganGrup::store_member');
+    $routes->get('customer-group/delete-member/(:num)', 'PelangganGrup::delete_member/$1');
+    $routes->get('customer-group/members/(:num)', 'PelangganGrup::members/$1');
+    $routes->post('customer-group/addMember', 'PelangganGrup::addMember');
+    $routes->post('customer-group/removeMember', 'PelangganGrup::removeMember');
+    $routes->post('customer-group/addBulkMembers', 'PelangganGrup::addBulkMembers');
 });
 
 // Platform Routes

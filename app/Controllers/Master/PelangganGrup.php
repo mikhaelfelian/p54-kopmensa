@@ -334,7 +334,15 @@ class PelangganGrup extends BaseController
         }
 
         $currentMembers = $this->pelangganGrupModel->getGroupMembers($groupId);
-        $availableCustomers = $this->pelangganGrupModel->getAvailableCustomers($groupId);
+        
+        // Pagination and search parameters
+        $page = $this->request->getVar('page') ?? 1;
+        $perPage = 5; // Show only 20 customers per page
+        $search = $this->request->getVar('search') ?? '';
+        $status = $this->request->getVar('status') ?? '';
+        
+        $availableCustomers = $this->pelangganGrupModel->getAvailableCustomersPaginated($groupId, $perPage, $page, $search, $status);
+        $totalAvailable = $this->pelangganGrupModel->getTotalAvailableCustomers($groupId, $search, $status);
 
         $data = [
             'title' => 'Kelola Member Grup: ' . $grup->grup,
@@ -343,6 +351,12 @@ class PelangganGrup extends BaseController
             'grup' => $grup,
             'currentMembers' => $currentMembers,
             'availableCustomers' => $availableCustomers,
+            'pager' => $this->pelangganGrupModel->pager,
+            'currentPage' => $page,
+            'perPage' => $perPage,
+            'totalAvailable' => $totalAvailable,
+            'search' => $search,
+            'status' => $status,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -359,21 +373,47 @@ class PelangganGrup extends BaseController
      */
     public function addMember()
     {
+        // Validate request method
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
         $groupId = $this->request->getVar('id_grup');
         $customerId = $this->request->getVar('id_pelanggan');
 
+        // Validate input
         if (!$groupId || !$customerId) {
             return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
         }
 
+        // Validate group exists
+        $group = $this->pelangganGrupModel->find($groupId);
+        if (!$group) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Grup tidak ditemukan']);
+        }
+
+        // Validate customer exists
+        $customer = $this->pelangganModel->find($customerId);
+        if (!$customer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Pelanggan tidak ditemukan']);
+        }
+
         try {
             if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
-                return $this->response->setJSON(['success' => true, 'message' => 'Member berhasil ditambahkan']);
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'message' => 'Member berhasil ditambahkan ke grup "' . $group->grup . '"',
+                    'data' => [
+                        'group_name' => $group->grup,
+                        'customer_name' => $customer->nama
+                    ]
+                ]);
             } else {
                 return $this->response->setJSON(['success' => false, 'message' => 'Member sudah ada dalam grup ini']);
             }
         } catch (\Exception $e) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member']);
+            log_message('error', 'Error adding member to group: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member: ' . $e->getMessage()]);
         }
     }
 
@@ -382,21 +422,47 @@ class PelangganGrup extends BaseController
      */
     public function removeMember()
     {
+        // Validate request method
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
         $groupId = $this->request->getVar('id_grup');
         $customerId = $this->request->getVar('id_pelanggan');
 
+        // Validate input
         if (!$groupId || !$customerId) {
             return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
         }
 
+        // Validate group exists
+        $group = $this->pelangganGrupModel->find($groupId);
+        if (!$group) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Grup tidak ditemukan']);
+        }
+
+        // Validate customer exists
+        $customer = $this->pelangganModel->find($customerId);
+        if (!$customer) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Pelanggan tidak ditemukan']);
+        }
+
         try {
             if ($this->pelangganGrupModel->removeMemberFromGroup($groupId, $customerId)) {
-                return $this->response->setJSON(['success' => true, 'message' => 'Member berhasil dihapus dari grup']);
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'message' => 'Member berhasil dihapus dari grup "' . $group->grup . '"',
+                    'data' => [
+                        'group_name' => $group->grup,
+                        'customer_name' => $customer->nama
+                    ]
+                ]);
             } else {
-                return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus member dari grup']);
+                return $this->response->setJSON(['success' => false, 'message' => 'Member tidak ditemukan dalam grup ini']);
             }
         } catch (\Exception $e) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus member']);
+            log_message('error', 'Error removing member from group: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menghapus member: ' . $e->getMessage()]);
         }
     }
 
@@ -405,9 +471,15 @@ class PelangganGrup extends BaseController
      */
     public function addBulkMembers()
     {
+        // Validate request method
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        }
+
         $groupId = $this->request->getVar('id_grup');
         $customerIds = $this->request->getVar('customer_ids');
 
+        // Validate input
         if (!$groupId || !$customerIds) {
             return $this->response->setJSON(['success' => false, 'message' => 'Data tidak lengkap']);
         }
@@ -416,15 +488,46 @@ class PelangganGrup extends BaseController
             $customerIds = [$customerIds];
         }
 
+        // Validate group exists
+        $group = $this->pelangganGrupModel->find($groupId);
+        if (!$group) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Grup tidak ditemukan']);
+        }
+
+        // Validate all customers exist
+        $customers = $this->pelangganModel->whereIn('id', $customerIds)->findAll();
+        if (count($customers) !== count($customerIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Beberapa pelanggan tidak ditemukan']);
+        }
+
         $successCount = 0;
         $alreadyExistsCount = 0;
+        $failedCount = 0;
+        $results = [];
 
         try {
             foreach ($customerIds as $customerId) {
+                $customer = array_filter($customers, function($c) use ($customerId) {
+                    return $c->id == $customerId;
+                });
+                $customer = reset($customer);
+
                 if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
                     $successCount++;
+                    $results[] = [
+                        'customer_id' => $customerId,
+                        'customer_name' => $customer->nama,
+                        'status' => 'success',
+                        'message' => 'Berhasil ditambahkan'
+                    ];
                 } else {
                     $alreadyExistsCount++;
+                    $results[] = [
+                        'customer_id' => $customerId,
+                        'customer_name' => $customer->nama,
+                        'status' => 'exists',
+                        'message' => 'Sudah ada dalam grup'
+                    ];
                 }
             }
 
@@ -433,9 +536,21 @@ class PelangganGrup extends BaseController
                 $message .= ", {$alreadyExistsCount} member sudah ada dalam grup";
             }
 
-            return $this->response->setJSON(['success' => true, 'message' => $message]);
+            return $this->response->setJSON([
+                'success' => true, 
+                'message' => $message,
+                'data' => [
+                    'total_requested' => count($customerIds),
+                    'success_count' => $successCount,
+                    'already_exists_count' => $alreadyExistsCount,
+                    'failed_count' => $failedCount,
+                    'results' => $results
+                ]
+            ]);
+
         } catch (\Exception $e) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member secara bulk']);
+            log_message('error', 'Error adding bulk members to group: ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Gagal menambahkan member secara bulk: ' . $e->getMessage()]);
         }
     }
 }

@@ -178,4 +178,68 @@ class PelangganGrupModel extends Model
                   ->get()
                   ->getResult();
     }
+
+    /**
+     * Get available customers for a group (paginated)
+     */
+    public function getAvailableCustomersPaginated($groupId, $perPage = 20, $page = 1, $search = '', $status = '')
+    {
+        $offset = ($page - 1) * $perPage;
+        
+        $query = $this->db->table('tbl_m_pelanggan p')
+            ->select('p.id, p.nama, p.no_telp, p.status')
+            ->where('p.status', '1') // Only active customers
+            ->whereNotIn('p.id', function($subQuery) use ($groupId) {
+                $subQuery->select('pgm.id_pelanggan')
+                    ->from('tbl_m_pelanggan_grup_member pgm')
+                    ->where('pgm.id_grup', $groupId);
+            });
+        
+        // Apply search filter
+        if (!empty($search)) {
+            $query->groupStart()
+                ->like('p.nama', $search)
+                ->orLike('p.no_telp', $search)
+                ->groupEnd();
+        }
+        
+        // Apply status filter
+        if (!empty($status)) {
+            $query->where('p.status', $status);
+        }
+        
+        return $query->orderBy('p.nama', 'ASC')
+            ->limit($perPage, $offset)
+            ->get()
+            ->getResult();
+    }
+
+    /**
+     * Get total count of available customers for a group
+     */
+    public function getTotalAvailableCustomers($groupId, $search = '', $status = '')
+    {
+        $query = $this->db->table('tbl_m_pelanggan p')
+            ->where('p.status', '1') // Only active customers
+            ->whereNotIn('p.id', function($subQuery) use ($groupId) {
+                $subQuery->select('pgm.id_pelanggan')
+                    ->from('tbl_m_pelanggan_grup_member pgm')
+                    ->where('pgm.id_grup', $groupId);
+            });
+        
+        // Apply search filter
+        if (!empty($search)) {
+            $query->groupStart()
+                ->like('p.nama', $search)
+                ->orLike('p.no_telp', $search)
+                ->groupEnd();
+        }
+        
+        // Apply status filter
+        if (!empty($status)) {
+            $query->where('p.status', $status);
+        }
+        
+        return $query->countAllResults();
+    }
 }
