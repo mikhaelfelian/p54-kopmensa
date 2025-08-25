@@ -36,21 +36,7 @@ $per_page = $per_page ?? '10';
                         </a>
                     </div>
                     <div class="col-md-6">
-                        <?= form_open('', ['method' => 'get', 'class' => 'float-right']) ?>
-                        <div class="input-group input-group-sm">
-                            <?= form_input([
-                                'name' => 'keyword',
-                                'class' => 'form-control rounded-0',
-                                'value' => $keyword ?? '',
-                                'placeholder' => 'Cari...'
-                            ]) ?>
-                            <div class="input-group-append">
-                                <button class="btn btn-sm btn-primary rounded-0" type="submit">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <?= form_close() ?>
+                        <!-- Search functionality moved to filter section below -->
                     </div>
                 </div>
             </div>

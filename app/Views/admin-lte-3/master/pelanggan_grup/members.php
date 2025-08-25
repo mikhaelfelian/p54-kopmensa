@@ -168,75 +168,75 @@
                     </div>
                 </form>
 
-                <!-- Bulk Actions -->
+                    <!-- Bulk Actions -->
                 <?= form_open(base_url('master/customer-group/addBulkMembers'), ['id' => 'bulkForm', 'onsubmit' => 'return validateBulkForm()']) ?>
                 <input type="hidden" name="id_grup" value="<?= $grup->id ?>">
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <div class="form-check">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
                             <label class="form-check-label" for="selectAllTable">
                                 <strong>Pilih Semua</strong> (<span id="selectedCount">0</span> terpilih)
                             </label>
                         </div>
-                    </div>
-                    <div class="col-md-6 text-right">
+                        </div>
+                        <div class="col-md-6 text-right">
                         <button type="submit" class="btn btn-primary btn-sm rounded-0" id="bulkAddBtn" disabled>
-                            <i class="fas fa-users"></i> Tambah Terpilih
-                        </button>
+                                <i class="fas fa-users"></i> Tambah Terpilih
+                            </button>
                         <button type="button" class="btn btn-success btn-sm rounded-0" id="addAllBtn">
-                            <i class="fas fa-plus-circle"></i> Tambah Semua
-                        </button>
+                                <i class="fas fa-plus-circle"></i> Tambah Semua
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Customer Table -->
-                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Customer Table -->
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                     <table class="table table-striped table-hover mb-0">
-                        <thead class="sticky-top bg-white text-black">
-                            <tr>
+                            <thead class="sticky-top bg-white text-black">
+                                <tr>
                                 <th class="text-center align-middle" width="5%">
                                     <label style="margin:0; cursor:pointer;">
                                         <input type="checkbox" id="selectAllTable" class="form-check-input">
                                     </label>
-                                </th>
-                                <th>Nama Pelanggan</th>
-                                <th width="15%">Telepon</th>
-                                <th width="10%">Status</th>
-                                <th width="12%">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($availableCustomers)): ?>
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-3">
-                                        <i class="fas fa-user-plus fa-2x mb-2"></i>
-                                        <p class="mb-0">Tidak ada pelanggan tersedia</p>
-                                    </td>
+                                    </th>
+                                    <th>Nama Pelanggan</th>
+                                    <th width="15%">Telepon</th>
+                                    <th width="10%">Status</th>
+                                    <th width="12%">Aksi</th>
                                 </tr>
-                            <?php else: ?>
-                                <?php foreach ($availableCustomers as $customer): ?>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($availableCustomers)): ?>
                                     <tr>
-                                        <td class="text-center">
+                                        <td colspan="5" class="text-center text-muted py-3">
+                                            <i class="fas fa-user-plus fa-2x mb-2"></i>
+                                            <p class="mb-0">Tidak ada pelanggan tersedia</p>
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($availableCustomers as $customer): ?>
+                                    <tr>
+                                            <td class="text-center">
                                             <input type="checkbox" name="customer_ids[]"
                                                 class="customer-checkbox form-check-input" value="<?= $customer->id ?>">
-                                        </td>
-                                        <td>
-                                            <strong><?= esc($customer->nama) ?></strong>
-                                            <?php if (isset($customer->no_telp) && $customer->no_telp): ?>
-                                                <br><small class="text-muted"><?= esc($customer->no_telp) ?></small>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <?= esc($customer->no_telp ?? '-') ?>
-                                        </td>
-                                        <td class="text-center">
-                                            <span
-                                                class="badge badge-<?= ($customer->status ?? '1') == '1' ? 'success' : 'danger' ?>">
-                                                <?= ($customer->status ?? '1') == '1' ? 'Aktif' : 'Non-Aktif' ?>
-                                            </span>
-                                        </td>
-                                        <td class="text-center">
+                                            </td>
+                                            <td>
+                                                <strong><?= esc($customer->nama) ?></strong>
+                                                <?php if (isset($customer->no_telp) && $customer->no_telp): ?>
+                                                    <br><small class="text-muted"><?= esc($customer->no_telp) ?></small>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="text-center">
+                                                <?= esc($customer->no_telp ?? '-') ?>
+                                            </td>
+                                            <td class="text-center">
+                                                <span
+                                                    class="badge badge-<?= ($customer->status ?? '1') == '1' ? 'success' : 'danger' ?>">
+                                                    <?= ($customer->status ?? '1') == '1' ? 'Aktif' : 'Non-Aktif' ?>
+                                                </span>
+                                            </td>
+                                            <td class="text-center">
                                             <form method="POST" action="<?= base_url('master/customer-group/addMember') ?>"
                                                 style="display: inline;">
                                                 <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>">
@@ -248,90 +248,90 @@
                                                     <i class="fas fa-user-plus"></i>
                                                 </button>
                                             </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 <?= form_close() ?>
 
-                <!-- Pagination and Info -->
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i>
-                            Menampilkan <?= count($availableCustomers) ?> dari <?= $totalAvailable ?> pelanggan
-                            (Halaman <?= $currentPage ?> dari <?= ceil($totalAvailable / $perPage) ?>)
-                        </small>
+                    <!-- Pagination and Info -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i>
+                                Menampilkan <?= count($availableCustomers) ?> dari <?= $totalAvailable ?> pelanggan
+                                (Halaman <?= $currentPage ?> dari <?= ceil($totalAvailable / $perPage) ?>)
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-0"
+                                onclick="exportSelectedCustomers()">
+                                <i class="fas fa-download"></i> Export Terpilih
+                            </button>
+                        </div>
                     </div>
-                    <div class="col-md-6 text-right">
-                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-0"
-                            onclick="exportSelectedCustomers()">
-                            <i class="fas fa-download"></i> Export Terpilih
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Pagination Controls -->
-                <?php if ($totalAvailable > $perPage): ?>
-                    <div class="row mt-2">
-                        <div class="col-12">
-                            <nav aria-label="Customer pagination">
-                                <ul class="pagination pagination-sm justify-content-center mb-0">
-                                    <?php if ($currentPage > 1): ?>
-                                        <li class="page-item">
-                                            <a class="page-link"
+                    <!-- Pagination Controls -->
+                    <?php if ($totalAvailable > $perPage): ?>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <nav aria-label="Customer pagination">
+                                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                                        <?php if ($currentPage > 1): ?>
+                                            <li class="page-item">
+                                                <a class="page-link"
                                                 href="<?= current_url() ?>?page=<?= $currentPage - 1 ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status) ?>">
-                                                <i class="fas fa-chevron-left"></i>
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
+                                                    <i class="fas fa-chevron-left"></i>
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
 
-                                    <?php
-                                    $startPage = max(1, $currentPage - 2);
+                                        <?php
+                                        $startPage = max(1, $currentPage - 2);
                                     $endPage = min(ceil($totalAvailable / $perPage), $currentPage + 2);
 
-                                    if ($startPage > 1): ?>
-                                        <li class="page-item">
-                                            <a class="page-link"
+                                        if ($startPage > 1): ?>
+                                            <li class="page-item">
+                                                <a class="page-link"
                                                 href="<?= current_url() ?>?page=1&search=<?= urlencode($search) ?>&status=<?= urlencode($status) ?>">1</a>
-                                        </li>
-                                        <?php if ($startPage > 2): ?>
+                                            </li>
+                                            <?php if ($startPage > 2): ?>
                                             <li class="page-item disabled"><span class="page-link">...</span></li>
                                         <?php endif; ?>
-                                    <?php endif; ?>
+                                        <?php endif; ?>
 
-                                    <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
-                                        <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
-                                            <a class="page-link"
+                                        <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                                            <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
+                                                <a class="page-link"
                                                 href="<?= current_url() ?>?page=<?= $i ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status) ?>"><?= $i ?></a>
-                                        </li>
-                                    <?php endfor; ?>
+                                            </li>
+                                        <?php endfor; ?>
 
                                     <?php if ($endPage < ceil($totalAvailable / $perPage)): ?>
                                         <?php if ($endPage < ceil($totalAvailable / $perPage) - 1): ?>
                                             <li class="page-item disabled"><span class="page-link">...</span></li>
-                                        <?php endif; ?>
-                                        <li class="page-item">
-                                            <a class="page-link"
+                                            <?php endif; ?>
+                                            <li class="page-item">
+                                                <a class="page-link"
                                                 href="<?= current_url() ?>?page=<?= ceil($totalAvailable / $perPage) ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status) ?>"><?= ceil($totalAvailable / $perPage) ?></a>
-                                        </li>
-                                    <?php endif; ?>
+                                            </li>
+                                        <?php endif; ?>
 
                                     <?php if ($currentPage < ceil($totalAvailable / $perPage)): ?>
-                                        <li class="page-item">
-                                            <a class="page-link"
+                                            <li class="page-item">
+                                                <a class="page-link"
                                                 href="<?= current_url() ?>?page=<?= $currentPage + 1 ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($search) ?>">
-                                                <i class="fas fa-chevron-right"></i>
-                                            </a>
-                                        </li>
-                                    <?php endif; ?>
-                                </ul>
-                            </nav>
+                                                    <i class="fas fa-chevron-right"></i>
+                                                </a>
+                                            </li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </nav>
+                            </div>
                         </div>
-                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -364,7 +364,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-success">Ya, Tambah Semua</button>
-                </div>
+            </div>
             </form>
         </div>
     </div>
