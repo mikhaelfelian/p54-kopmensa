@@ -67,6 +67,18 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('transaksi/payments', 'Transaksi::getPaymentMethods');
         $routes->post('transaksi/validate/voucher', 'Transaksi::validateVoucher');
         $routes->post('transaksi/validate/customer', 'Transaksi::validateCustomer');
+
+        // Dashboard endpoints
+        $routes->get('dashboard', 'Dashboard::index');
+        $routes->get('dashboard/basic-metrics', 'Dashboard::basicMetrics');
+        $routes->get('dashboard/sales-analytics', 'Dashboard::salesAnalytics');
+        $routes->get('dashboard/recent-transactions', 'Dashboard::recentTransactions');
+        $routes->get('dashboard/performance-metrics', 'Dashboard::performanceMetrics');
+        $routes->get('dashboard/monthly-sales', 'Dashboard::monthlySales');
+        $routes->get('dashboard/daily-sales', 'Dashboard::dailySales');
+        $routes->get('dashboard/sales-by-category', 'Dashboard::salesByCategory');
+        $routes->get('dashboard/top-products/(:num)', 'Dashboard::topProducts/$1');
+        $routes->get('dashboard/top-products', 'Dashboard::topProducts');
     });
 });
 
