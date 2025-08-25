@@ -107,7 +107,7 @@ class TransBeli extends BaseController
                 ->findAll();
 
             // Get active warehouses
-            $gudang = $this->gudangModel->where('status_otl', '0')->where('status_hps', '0')->where('status', '1')->findAll();
+            $gudang = $this->gudangModel->where('status', '1')->where('status_hps', '0')->where('status', '1')->findAll();
 
             $data = [
                 'title'         => 'Terima Barang - ' . $transaksi->no_nota,
