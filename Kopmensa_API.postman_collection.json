@@ -755,6 +755,301 @@
                 ]
               }
             ]
+          },
+          {
+            "name": "Dashboard",
+            "item": [
+              {
+                "name": "Main Dashboard Data",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Dashboard data retrieved successfully\",\n  \"data\": {\n    \"basic_metrics\": {\n      \"total_sales_transactions\": 150,\n      \"total_revenue\": 25000000,\n      \"total_purchase_transactions\": 45,\n      \"total_expenses\": 18000000,\n      \"total_profit\": 7000000,\n      \"total_stock\": 1250\n    },\n    \"analytics\": {\n      \"monthly_sales\": [...],\n      \"daily_sales\": [...],\n      \"sales_by_category\": [...],\n      \"top_selling_products\": [...]\n    },\n    \"recent_data\": {\n      \"recent_sales\": [...],\n      \"recent_purchases\": [...],\n      \"latest_products\": [...]\n    },\n    \"performance\": {\n      \"current_month_sales\": 8500000,\n      \"previous_month_sales\": 7200000,\n      \"sales_growth_percentage\": 18.06,\n      \"average_order_value\": 166666.67,\n      \"monthly_target\": 50000000,\n      \"daily_target\": 1612903.23,\n      \"today_sales\": 1200000,\n      \"monthly_progress_percentage\": 17.0,\n      \"daily_progress_percentage\": 74.4,\n      \"total_customers\": 89,\n      \"new_customers_this_month\": 12\n    }\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Basic Metrics",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/basic-metrics",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "basic-metrics"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/basic-metrics", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "basic-metrics"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Basic metrics retrieved successfully\",\n  \"data\": {\n    \"total_sales_transactions\": 150,\n    \"total_revenue\": 25000000,\n    \"total_purchase_transactions\": 45,\n    \"total_expenses\": 18000000,\n    \"total_profit\": 7000000,\n    \"total_stock\": 1250\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Sales Analytics",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/sales-analytics",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "sales-analytics"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/sales-analytics", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "sales-analytics"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Sales analytics retrieved successfully\",\n  \"data\": {\n    \"monthly_sales\": [\n      {\n        \"month\": \"Jan 2024\",\n        \"month_code\": \"2024-01\",\n        \"total_sales\": 8500000,\n        \"transaction_count\": 51\n      }\n    ],\n    \"daily_sales\": [\n      {\n        \"day\": 1,\n        \"date\": \"2024-01-01\",\n        \"total_sales\": 1200000,\n        \"transaction_count\": 8\n      }\n    ],\n    \"sales_by_category\": [\n      {\n        \"category_id\": 1,\n        \"category_name\": \"Elektronik\",\n        \"total_sales\": 8500000,\n        \"total_items\": 45\n      }\n    ],\n    \"top_selling_products\": [\n      {\n        \"product_id\": 123,\n        \"product_name\": \"Laptop ASUS\",\n        \"total_quantity\": 25,\n        \"total_sales\": 125000000,\n        \"transaction_count\": 18\n      }\n    ]\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Recent Transactions",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/recent-transactions",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "recent-transactions"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/recent-transactions", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "recent-transactions"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Recent transactions retrieved successfully\",\n  \"data\": {\n    \"recent_sales\": [\n      {\n        \"id\": 1,\n        \"no_nota\": \"TRX-20240801-0001\",\n        \"jml_gtotal\": 100000,\n        \"tgl_masuk\": \"2024-08-01 10:00:00\"\n      }\n    ],\n    \"recent_purchases\": [\n      {\n        \"id\": 1,\n        \"no_nota\": \"PUR-20240801-0001\",\n        \"jml_gtotal\": 80000,\n        \"tgl_masuk\": \"2024-08-01 09:00:00\"\n      }\n    ],\n    \"latest_products\": [\n      {\n        \"id\": 1,\n        \"kode\": \"ITEM-001\",\n        \"produk\": \"Kopi Hitam\",\n        \"harga\": 50000\n      }\n    ]\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Performance Metrics",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/performance-metrics",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "performance-metrics"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/performance-metrics", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "performance-metrics"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Performance metrics retrieved successfully\",\n  \"data\": {\n    \"current_month_sales\": 8500000,\n    \"previous_month_sales\": 7200000,\n    \"sales_growth_percentage\": 18.06,\n    \"average_order_value\": 166666.67,\n    \"monthly_target\": 50000000,\n    \"daily_target\": 1612903.23,\n    \"today_sales\": 1200000,\n    \"monthly_progress_percentage\": 17.0,\n    \"daily_progress_percentage\": 74.4,\n    \"total_customers\": 89,\n    \"new_customers_this_month\": 12\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Monthly Sales Data",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/monthly-sales",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "monthly-sales"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/monthly-sales", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "monthly-sales"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Monthly sales data retrieved successfully\",\n  \"data\": [\n    {\n      \"month\": \"Jan 2024\",\n      \"month_code\": \"2024-01\",\n      \"total_sales\": 8500000,\n      \"transaction_count\": 51\n    },\n    {\n      \"month\": \"Feb 2024\",\n      \"month_code\": \"2024-02\",\n      \"total_sales\": 9200000,\n      \"transaction_count\": 48\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Daily Sales Data",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/daily-sales",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "daily-sales"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/daily-sales", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "daily-sales"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Daily sales data retrieved successfully\",\n  \"data\": [\n    {\n      \"day\": 1,\n      \"date\": \"2024-01-01\",\n      \"total_sales\": 1200000,\n      \"transaction_count\": 8\n    },\n    {\n      \"day\": 2,\n      \"date\": \"2024-01-02\",\n      \"total_sales\": 1500000,\n      \"transaction_count\": 12\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Sales by Category",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/sales-by-category",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "sales-by-category"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/sales-by-category", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "sales-by-category"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Sales by category retrieved successfully\",\n  \"data\": [\n    {\n      \"category_id\": 1,\n      \"category_name\": \"Elektronik\",\n      \"total_sales\": 8500000,\n      \"total_items\": 45\n    },\n    {\n      \"category_id\": 2,\n      \"category_name\": \"Fashion\",\n      \"total_sales\": 6500000,\n      \"total_items\": 38\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Top Selling Products",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/top-products",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "top-products"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Default Limit (5)",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/top-products", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "top-products"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Top selling products retrieved successfully\",\n  \"data\": [\n    {\n      \"product_id\": 123,\n      \"product_name\": \"Laptop ASUS\",\n      \"total_quantity\": 25,\n      \"total_sales\": 125000000,\n      \"transaction_count\": 18\n    },\n    {\n      \"product_id\": 124,\n      \"product_name\": \"Smartphone Samsung\",\n      \"total_quantity\": 20,\n      \"total_sales\": 80000000,\n      \"transaction_count\": 15\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Top Selling Products with Custom Limit",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/dashboard/top-products/10",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "dashboard", "top-products", "10"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Custom Limit (10)",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/dashboard/top-products/10", "host": ["{{baseUrl}}"], "path": ["api", "pos", "dashboard", "top-products", "10"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Top selling products retrieved successfully\",\n  \"data\": [\n    {\n      \"product_id\": 123,\n      \"product_name\": \"Laptop ASUS\",\n      \"total_quantity\": 25,\n      \"total_sales\": 125000000,\n      \"transaction_count\": 18\n    },\n    {\n      \"product_id\": 124,\n      \"product_name\": \"Smartphone Samsung\",\n      \"total_quantity\": 20,\n      \"total_sales\": 80000000,\n      \"transaction_count\": 15\n    },\n    {\n      \"product_id\": 125,\n      \"product_name\": \"Headphone Sony\",\n      \"total_quantity\": 18,\n      \"total_sales\": 45000000,\n      \"transaction_count\": 12\n    }\n  ]\n}"
+                  }
+                ]
+              }
+            ]
           }
         ]
       }
