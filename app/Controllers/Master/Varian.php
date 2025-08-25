@@ -26,27 +26,72 @@ class Varian extends BaseController
 
     public function index()
     {
+        // Get filter parameters
+        $keyword = $this->request->getGet('keyword');
+        $status = $this->request->getGet('status');
+        $per_page = $this->request->getGet('per_page') ?? 10;
+        
+        // Set current page and per page
         $currentPage = $this->request->getVar('page_varian') ?? 1;
-        $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
+        $perPage = (int) $per_page;
 
-        if ($keyword) {
+        // Start building the query
+        $this->varianModel->select('*');
+        
+        // Apply keyword search
+        if (!empty($keyword)) {
             $this->varianModel->groupStart()
                 ->like('nama', $keyword)
                 ->orLike('kode', $keyword)
                 ->orLike('keterangan', $keyword)
                 ->groupEnd();
         }
+        
+        // Apply status filter
+        if ($status !== null && $status !== '') {
+            $this->varianModel->where('status', $status);
+        }
+        
+        // Get total count for pagination
+        $total = $this->varianModel->countAllResults(false);
+        
+        // Reset and rebuild query for pagination
+        $this->varianModel->resetQuery();
+        $this->varianModel->select('*');
+        
+        // Apply keyword search again
+        if (!empty($keyword)) {
+            $this->varianModel->groupStart()
+                ->like('nama', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('keterangan', $keyword)
+                ->groupEnd();
+        }
+        
+        // Apply status filter again
+        if ($status !== null && $status !== '') {
+            $this->varianModel->where('status', $status);
+        }
+        
+        // Get paginated results
+        $varian = $this->varianModel->paginate($perPage, 'varian');
+        $pager = $this->varianModel->pager;
+
+        // Debug: Check if we have data
+        log_message('info', 'Varian Controller - Keyword: ' . ($keyword ?? 'null') . ', Status: ' . ($status ?? 'null') . ', Total: ' . $total . ', Count: ' . count($varian));
 
         $data = [
             'title'         => 'Data Varian',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'varian'        => $this->varianModel->paginate($perPage, 'varian'),
-            'pager'         => $this->varianModel->pager,
+            'varian'        => $varian,
+            'total'         => $total,
+            'pager'         => $pager,
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
             'keyword'       => $keyword,
+            'status'        => $status,
+            'per_page'      => $per_page,
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
