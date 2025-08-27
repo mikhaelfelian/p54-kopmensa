@@ -595,6 +595,26 @@
                                     </li>
                                 </ul>
                             </li>
+                            
+                            <!-- Refund Requests Menu -->
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/refund') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/refund') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-money-bill-wave nav-icon"></i>
+                                    <p>Permintaan Refund</p>
+                                </a>
+                            </li>
+                            
+                            <!-- Refund Approval Menu (for Superadmin) -->
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/refund/approval') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/refund/approval') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-gavel nav-icon"></i>
+                                    <p>Persetujuan Refund</p>
+                                </a>
+                            </li>
                         </ul>
                     </li>
 

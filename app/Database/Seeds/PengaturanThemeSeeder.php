@@ -14,8 +14,8 @@ class PengaturanThemeSeeder extends Seeder
         if ($pengaturan) {
             $data = [
                 'id_pengaturan' => $pengaturan->id,
-                'nama'          => 'Quirk Admin Theme',
-                'path'          => 'quirk',
+                'nama'          => 'AdminLTE 3 Theme',
+                'path'          => 'admin-lte-3',
                 'status'        => 1,
             ];
             

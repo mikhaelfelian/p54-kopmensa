@@ -8,7 +8,7 @@ class PengaturanModel extends Model
     protected $table = 'tbl_pengaturan';
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType = 'array';
+    protected $returnType = 'object';
     protected $useSoftDeletes = false;
     protected $protectFields = true;
     protected $allowedFields = [
@@ -43,7 +43,7 @@ class PengaturanModel extends Model
     public function updateSettings($data) {
         $settings = $this->first();
         if ($settings) {
-            return $this->update($settings['id'], $data);
+            return $this->update($settings->id, $data);
         }
         return false;
     }

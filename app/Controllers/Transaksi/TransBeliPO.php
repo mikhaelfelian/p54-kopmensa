@@ -582,15 +582,23 @@ class TransBeliPO extends BaseController
             $this->db->table('tbl_trans_beli_faktur')->insert($invoiceData);
             $invoiceId = $this->db->insertID();
 
-            // Calculate total and create invoice details
+            // Calculate total and create invoice details using master prices
             $total = 0;
+            $itemHargaModel = new \App\Models\ItemHargaModel();
+            
             foreach ($poDetails as $detail) {
+                // Get master price for this item
+                $masterPrice = $itemHargaModel->getPriceByQuantity($detail->id_item, $detail->jml);
+                
+                // Use master price if available, otherwise use PO price
+                $harga = $masterPrice ? $masterPrice->harga : ($detail->harga ?? 0);
+                
                 $detailData = [
                     'id_faktur'     => $invoiceId,
                     'id_item'       => $detail->id_item,
                     'jml'           => $detail->jml,
-                    'harga'         => $detail->harga ?? 0,
-                    'subtotal'      => ($detail->jml * ($detail->harga ?? 0)),
+                    'harga'         => $harga,
+                    'subtotal'      => ($detail->jml * $harga),
                     'created_at'    => date('Y-m-d H:i:s')
                 ];
                 

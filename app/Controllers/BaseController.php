@@ -46,7 +46,7 @@ abstract class BaseController extends Controller
      *
      * @var list<string>
      */
-    protected $helpers = ['tanggalan', 'general', 'theme', 'angka'];
+    protected $helpers = ['tanggalan', 'general', 'theme', 'angka', 'text'];
 
     /**
      * Data array for views

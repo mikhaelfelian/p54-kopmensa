@@ -9,7 +9,7 @@ class PengaturanThemeModel extends Model
     protected $table = 'tbl_pengaturan_theme';
     protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType = 'array';
+    protected $returnType = 'object';
     protected $useSoftDeletes = false;
     protected $protectFields = true;
     protected $allowedFields = [
@@ -52,6 +52,6 @@ class PengaturanThemeModel extends Model
      */
     public function getThemePath() {
         $theme = $this->getActiveTheme();
-        return $theme ? $theme['path'] : 'admin-lte-3';
+        return $theme ? $theme->path : 'admin-lte-3';
     }
 } 

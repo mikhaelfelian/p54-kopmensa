@@ -464,6 +464,16 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('retur/jual/search-items', 'ReturJual::searchItems');
     $routes->post('retur/jual/search-items', 'ReturJual::searchItems');
     $routes->get('retur/jual/test', 'ReturJual::testEndpoint');
+    
+    // Refund Request Routes
+    $routes->get('refund', 'RefundRequest::index');
+    $routes->get('refund/create', 'RefundRequest::create');
+    $routes->post('refund/store', 'RefundRequest::store');
+    $routes->get('refund/(:num)', 'RefundRequest::show/$1');
+    $routes->get('refund/approval', 'RefundRequest::approval');
+    $routes->get('refund/approve/(:num)', 'RefundRequest::approve/$1');
+    $routes->post('refund/reject/(:num)', 'RefundRequest::reject/$1');
+    $routes->get('refund/get-transaction/(:num)', 'RefundRequest::getTransactionDetails/$1');
 });
 
 // Public API routes

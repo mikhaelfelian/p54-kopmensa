@@ -15,7 +15,7 @@ class PengaturanSeeder extends Seeder
             'deskripsi'        => 'Sistem informasi manajemen penjualan dan pembelian',
             'kota'             => 'Semarang',
             'url'              => 'http://localhost/p54-kopmensa',
-            'theme'            => 'quirk',
+            'theme'            => 'admin-lte-3',
             'pagination_limit' => 10,
             'favicon'          => 'favicon.ico',
             'logo'            => 'logo.png',
