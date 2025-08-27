@@ -312,21 +312,14 @@ class Pelanggan extends BaseController
                     ->with('error', 'Data pelanggan tidak ditemukan');
             }
 
-            // Pastikan username dan email tidak null sebelum register
-            // Generate username from first name (no space)
+            // Generate username if not provided
             if (!empty($nama)) {
-                // Take first word (first name), remove spaces, and generate username
                 $firstName      = preg_replace('/[^a-zA-Z0-9]/', '', trim($nama));
-                $safeUsername   = generateUsername($firstName);
+                $safeUsername   = $username ?: generateUsername($firstName);
             } else {
-                $safeUsername = null;
+                $safeUsername = $username ?: null;
             }
-            $safeEmail = $email ?: $safeUsername . '@' . env('app.domain');
-
-            // Find user by email or username
-            $userByEmail    = $safeEmail ? $this->ionAuth->where('email', $safeEmail)->users()->row() : null;
-            $userByUsername = $safeUsername ? $this->ionAuth->where('username', $safeUsername)->users()->row() : null;
-            $user           = $userByEmail ?: $userByUsername;
+            $safeEmail = $email ?: ($safeUsername ? $safeUsername . '@' . env('app.domain') : null);
 
             // Prepare additional data for ion_auth
             $additional_data = [
@@ -335,39 +328,41 @@ class Pelanggan extends BaseController
                 'tipe'       => '2'
             ];
 
-            // if ($pelanggan->id_user) {
-            //     // Update user
-            //     $user_id = $pelanggan->id_user;
-            //     $update_data = [
-            //         'email'      => $safeEmail,
-            //         'username'   => $safeUsername,
-            //         'first_name' => $nama,
-            //         'phone'      => $no_telp,
-            //         'tipe'       => '2'
-            //     ];
-            //     if (!empty($password)) {
-            //         $update_data['password'] = $password;
-            //     }
-            //     if (!$this->ionAuth->update($user_id, $update_data)) {
-            //         throw new \RuntimeException('Gagal mengupdate user login: ' . implode(', ', $this->ionAuth->errors_array()));
-            //     }
-            // } else {
-            //     // Only register if username and email are not null
-            //     if (!$safeUsername || !$safeEmail) {
-            //         throw new \RuntimeException('Username dan Email tidak boleh kosong untuk membuat user login.');
-            //     }
+            // Handle user login update/creation
+            $user_id = $pelanggan->id_user;
 
-            //     $user_id = $this->ionAuth->register(
-            //         $safeUsername,
-            //         $safeUsername,
-            //         $safeEmail,
-            //         $additional_data,
-            //         [3] // group 3 = pelanggan/anggota, adjust as needed
-            //     );
-            //     if (!$user_id) {
-            //         throw new \RuntimeException('Gagal membuat user login: ' . implode(', ', $this->ionAuth->errors_array()));
-            //     }
-            // }
+            if ($user_id) {
+                // Update user
+                $update_data = [
+                    'email'      => $safeEmail,
+                    'username'   => $safeUsername,
+                    'first_name' => $nama,
+                    'phone'      => $no_telp,
+                    'tipe'       => '2'
+                ];
+                if (!empty($password)) {
+                    $update_data['password'] = $password;
+                }
+                if (!$this->ionAuth->update($user_id, $update_data)) {
+                    throw new \RuntimeException('Gagal mengupdate user login: ' . implode(', ', $this->ionAuth->errors_array()));
+                }
+            } else {
+                // Only register if username and email are not null
+                if (!$safeUsername || !$safeEmail) {
+                    throw new \RuntimeException('Username dan Email tidak boleh kosong untuk membuat user login.');
+                }
+
+                $user_id = $this->ionAuth->register(
+                    $safeUsername,
+                    $password ?: $safeUsername,
+                    $safeEmail,
+                    $additional_data,
+                    [3] // group 3 = pelanggan/anggota, adjust as needed
+                );
+                if (!$user_id) {
+                    throw new \RuntimeException('Gagal membuat user login: ' . implode(', ', $this->ionAuth->errors_array()));
+                }
+            }
 
             // Update pelanggan data
             $data = [
@@ -389,11 +384,11 @@ class Pelanggan extends BaseController
             }
 
             return redirect()->to(base_url('master/customer'))
-                ->with('success', 'Data pelanggan berhasil diupdate '.$pelanggan->id_user);
+                ->with('success', 'Data pelanggan berhasil diupdate');
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Gagal mengupdate data pelanggan');
+                ->with('error', 'Gagal mengupdate data pelanggan: ' . $e->getMessage());
         }
     }
 

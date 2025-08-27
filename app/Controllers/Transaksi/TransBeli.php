@@ -16,6 +16,7 @@ use App\Models\TransBeliPODetModel;
 use App\Models\TransBeliModel;
 use App\Models\TransBeliDetModel;
 use App\Models\SupplierModel;
+use App\Models\ItemModel;
 
 
 class TransBeli extends BaseController
@@ -23,6 +24,7 @@ class TransBeli extends BaseController
     protected $transPOModel;
     protected $transBeliModel;
     protected $supplierModel;
+    protected $itemModel;
 
     public function __construct()
     {
@@ -32,6 +34,7 @@ class TransBeli extends BaseController
         $this->transBeliPOModel   = new TransBeliPODetModel();
         $this->transBeliPODetModel= new TransBeliPODetModel();
         $this->supplierModel      = new SupplierModel();
+        $this->itemModel          = new ItemModel();
 
     }
 
@@ -457,22 +460,22 @@ class TransBeli extends BaseController
             }
 
             // Get form data
-            $id_item = $this->request->getPost('id_item');
-            $jml = (float) $this->request->getPost('jml');
-            $id_satuan = $this->request->getPost('id_satuan');
-            $harga = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('harga'));
-            $potongan = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('potongan') ?? '0');
-            $disk1 = (float) ($this->request->getPost('disk1') ?? 0);
-            $disk2 = (float) ($this->request->getPost('disk2') ?? 0);
-            $disk3 = (float) ($this->request->getPost('disk3') ?? 0);
+            $id_item    = $this->request->getPost('id_item');
+            $jml        = (float) $this->request->getPost('jml');
+            $id_satuan  = $this->request->getPost('id_satuan');
+            $harga      = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('harga'));
+            $potongan   = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('potongan') ?? '0');
+            $disk1      = (float) ($this->request->getPost('disk1') ?? 0);
+            $disk2      = (float) ($this->request->getPost('disk2') ?? 0);
+            $disk3      = (float) ($this->request->getPost('disk3') ?? 0);
 
             // Get item details
             $item = $this->db->table('tbl_m_item')
-                            ->select('tbl_m_item.*, tbl_m_satuan.satuanBesar')
-                            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-                            ->where('tbl_m_item.id', $id_item)
-                            ->get()
-                            ->getRow();
+                             ->select('tbl_m_item.*, tbl_m_satuan.satuanBesar')
+                             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                             ->where('tbl_m_item.id', $id_item)
+                             ->get()
+                             ->getRow();
 
             if (!$item) {
                 return $this->response->setJSON([
@@ -496,16 +499,22 @@ class TransBeli extends BaseController
 
             // Calculate subtotal
             $subtotal = $jml * $harga;
-            
+
             // Apply discounts
             $total_disk = $disk1 + $disk2 + $disk3;
             if ($total_disk > 0) {
                 $subtotal = $subtotal - ($subtotal * ($total_disk / 100));
             }
-            
+
             // Apply potongan
             if ($potongan > 0) {
                 $subtotal = $subtotal - $potongan;
+            }
+
+            // Calculate harga_beli (unit price after all discounts and potongan)
+            $harga_beli = 0;
+            if ($jml > 0) {
+                $harga_beli = $subtotal / $jml;
             }
 
             // Check if item already exists in cart
@@ -559,6 +568,10 @@ class TransBeli extends BaseController
                 $this->transBeliDetModel->insert($insertData);
                 $action = 'added';
             }
+
+            // Save harga_beli (final price after discount and potongan) to tbl_m_item.harga_beli
+            // Use $this->itemModel->update(...)
+            $this->itemModel->update($id_item, ['harga_beli' => $harga_beli]);
 
             $this->db->transComplete();
 
