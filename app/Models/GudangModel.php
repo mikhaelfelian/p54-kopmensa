@@ -105,6 +105,21 @@ class GudangModel extends Model
                     ->orderBy('nama', 'ASC')
                     ->findAll();
     }
+
+    /**
+     * Mendapatkan outlets dalam format dropdown (id => nama)
+     */
+    public function getOutletsForDropdown()
+    {
+        $outlets = $this->getOutlets();
+        $dropdown = [];
+        
+        foreach ($outlets as $outlet) {
+            $dropdown[$outlet->id] = $outlet->nama;
+        }
+        
+        return $dropdown;
+    }
     
     /**
      * Mendapatkan item stok di outlets saja

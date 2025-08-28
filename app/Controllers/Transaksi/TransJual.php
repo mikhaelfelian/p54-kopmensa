@@ -24,6 +24,7 @@ use App\Models\ItemHistModel;
 use App\Models\VoucherModel;
 use App\Models\PengaturanModel;
 use App\Models\KategoriModel;
+use App\Models\ShiftModel;
 use App\Services\PrinterService;
 
 
@@ -43,6 +44,7 @@ class TransJual extends BaseController
     protected $voucherModel;
     protected $pengaturanModel;
     protected $kategoriModel;
+    protected $shiftModel;
     protected $printerService;
 
 
@@ -62,6 +64,7 @@ class TransJual extends BaseController
         $this->voucherModel        = new VoucherModel();
         $this->pengaturanModel     = new PengaturanModel();
         $this->kategoriModel       = new KategoriModel();
+        $this->shiftModel          = new ShiftModel();
         $this->printerService      = new PrinterService();
     }
 
@@ -85,10 +88,44 @@ class TransJual extends BaseController
     }
 
     /**
+     * Check if there's an active shift for the current outlet
+     */
+    private function checkActiveShift()
+    {
+        // Skip shift check for superadmin
+        if (session()->get('group_id') == 1) {
+            return true;
+        }
+
+        $outlet_id = session()->get('kasir_outlet');
+        if (!$outlet_id) {
+            session()->setFlashdata('error', 'Outlet tidak terpilih');
+            return false;
+        }
+
+        $activeShift = $this->shiftModel->getActiveShift($outlet_id);
+        if (!$activeShift) {
+            session()->setFlashdata('error', 'Tidak ada shift aktif. Silakan buka shift terlebih dahulu sebelum melakukan transaksi.');
+            return false;
+        }
+
+        // Store active shift info in session for easy access
+        session()->set('active_shift_id', $activeShift['id']);
+        session()->set('active_shift_code', $activeShift['shift_code']);
+        
+        return true;
+    }
+
+    /**
      * Display cashier interface for sales transactions
      */
     public function index()
     {
+        // Check shift status first
+        if (!$this->checkActiveShift()) {
+            return redirect()->to('/shift/open');
+        }
+
         // Get current page for pagination
         $currentPage = $this->request->getVar('page_transjual') ?? 1;
         $perPage     = $this->pengaturan->pagination_limit ?? 10;
@@ -518,6 +555,11 @@ class TransJual extends BaseController
      */
     public function cashier()
     {
+        // Check shift status first
+        if (!$this->checkActiveShift()) {
+            return redirect()->to('/transaksi/shift/open')->with('error', 'Shift Belum dibuka');
+        }
+
         // Get related data for dropdowns (formatted)
         $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
         $sales      = $this->karyawanModel->where('status', '1')->findAll();
@@ -555,6 +597,11 @@ class TransJual extends BaseController
      */
     public function create()
     {
+        // Check shift status first
+        if (!$this->checkActiveShift()) {
+            return redirect()->to('/shift/open');
+        }
+
         // Get related data for dropdowns
         $customers  = $this->pelangganModel->where('status_blokir', '0')->findAll();
         $sales      = $this->karyawanModel->where('status', '1')->findAll();

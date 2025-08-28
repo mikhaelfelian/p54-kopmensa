@@ -35,16 +35,6 @@
                     <!-- Transaksi -->
                     <li class="nav-header">TRANSAKSI</li>
                     <?php
-                    // Integrate isMenuActive with all transaksi menu routes (Pembelian)
-                    $transaksiMenus = [
-                        'transaksi/po',
-                        'transaksi/po/create',
-                        'transaksi/beli',
-                        'transaksi/beli/create',
-                        'transaksi/retur/beli'
-                    ];
-                    $isTransaksiActive = isMenuActive($transaksiMenus);
-
                     // Integrate isMenuActive with all penjualan menu routes
                     $penjualanMenus = [
                         'transaksi/jual',
@@ -66,58 +56,10 @@
                         'transaksi/retur/jual/exchange'
                     ];
                     $isReturJualActive = isMenuActive($returJualMenus);
+
+                    // Check if shift management is active
+                    $isShiftActive = isMenuActive(['transaksi/shift', 'transaksi/petty', 'transaksi/petty-category']);
                     ?>
-                    <li class="nav-item has-treeview <?= $isTransaksiActive ? 'menu-open' : '' ?>">
-                        <a href="#" class="nav-link <?= $isTransaksiActive ? 'active' : '' ?>">
-                            <i class="nav-icon fas fa-exchange-alt"></i>
-                            <p>
-                                Pembelian
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
-                        </a>
-                        <ul class="nav nav-treeview" <?= $isTransaksiActive ? 'style="display: block;"' : 'style="display: none;"' ?>>
-                            <li class="nav-item">
-                                <a href="<?= base_url('transaksi/po/create') ?>"
-                                    class="nav-link <?= isMenuActive('transaksi/po/create') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-shopping-cart nav-icon"></i>
-                                    <p>Purchase Order</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('transaksi/beli/create') ?>"
-                                    class="nav-link <?= isMenuActive('transaksi/beli/create') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-cart-plus nav-icon"></i>
-                                    <p>Faktur</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('transaksi/po') ?>"
-                                    class="nav-link <?= isMenuActive('transaksi/po') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-list nav-icon"></i>
-                                    <p>Data Purchase Order</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('transaksi/beli') ?>"
-                                    class="nav-link <?= isMenuActive('transaksi/beli') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-list nav-icon"></i>
-                                    <p>Data Pembelian</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('transaksi/retur/beli') ?>"
-                                    class="nav-link <?= isMenuActive('transaksi/retur/beli') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-undo nav-icon"></i>
-                                    <p>Retur Pembelian</p>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
                     <li class="nav-item has-treeview <?= $isPenjualanActive ? 'menu-open' : '' ?>">
                         <a href="#" class="nav-link <?= $isPenjualanActive ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-cash-register"></i>
@@ -193,7 +135,62 @@
                                             <p>Retur Tukar Barang</p>
                                         </a>
                                     </li>
+
+                                    <!-- Refund Requests Menu -->
+                                    <li class="nav-item">
+                                        <a href="<?= base_url('transaksi/refund') ?>"
+                                            class="nav-link <?= isMenuActive('transaksi/refund') ? 'active' : '' ?>">
+                                            <?= nbs(4) ?>
+                                            <i class="fas fa-money-bill-wave nav-icon"></i>
+                                            <p>Permintaan Refund</p>
+                                        </a>
+                                    </li>
                                 </ul>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Shift Management -->
+                    <li class="nav-item has-treeview <?= $isShiftActive ? 'menu-open' : '' ?>">
+                        <a href="#" class="nav-link <?= $isShiftActive ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-clock"></i>
+                            <p>
+                                Shift Management
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/shift') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/shift') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-clock nav-icon"></i>
+                                    <p>Shift Management</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/shift/open') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/shift/open') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-play nav-icon"></i>
+                                    <p>Buka Shift</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/petty') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/petty') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-money-bill-wave nav-icon"></i>
+                                    <p>Petty Cash</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/petty-category') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/petty-category') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-tags nav-icon"></i>
+                                    <p>Kategori Petty Cash</p>
+                                </a>
                             </li>
                         </ul>
                     </li>
@@ -221,6 +218,38 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
+                                <a href="<?= base_url('gudang/transfer') ?>"
+                                    class="nav-link <?= isMenuActive('gudang/transfer') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-exchange-alt nav-icon"></i>
+                                    <p>Transfer</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('gudang/penerimaan') ?>"
+                                    class="nav-link <?= isMenuActive('gudang/penerimaan') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-truck-loading nav-icon"></i>
+                                    <p>Penerimaan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('gudang/stok') ?>"
+                                    class="nav-link <?= isMenuActive('gudang/stok') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-clipboard-list nav-icon"></i>
+                                    <p>Inventori</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('gudang/opname') ?>"
+                                    class="nav-link <?= isMenuActive('gudang/opname') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-boxes nav-icon"></i>
+                                    <p>Stock Opname</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="<?= base_url('gudang/input_stok') ?>"
                                     class="nav-link <?= isMenuActive('gudang/input_stok') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
@@ -230,11 +259,105 @@
                             </li>
                         </ul>
                     </li>
+
+                    <!-- Reports -->
+                    <li class="nav-header">LAPORAN</li>
+                    <?php
+                    // Integrate isMenuActive with all Laporan menu routes
+                    $laporanMenus = [
+                        'laporan/sale',
+                        'laporan/purchase',
+                        'laporan/stock',
+                        'laporan/outlet'
+                    ];
+                    $isLaporanActive = isMenuActive($laporanMenus);
+                    ?>
+                    <li class="nav-item has-treeview <?= $isLaporanActive ? 'menu-open' : '' ?>">
+                        <a href="#" class="nav-link <?= $isLaporanActive ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-chart-bar"></i>
+                            <p>
+                                Laporan
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/sale') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/sale') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-shopping-cart nav-icon"></i>
+                                    <p>Laporan Penjualan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/purchase') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/purchase') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-shopping-bag nav-icon"></i>
+                                    <p>Laporan Pembelian</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/stock') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/stock') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-boxes nav-icon"></i>
+                                    <p>Laporan Stok</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/outlet') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/outlet') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-store nav-icon"></i>
+                                    <p>Laporan Outlet</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- Settings -->
+                    <li class="nav-header">PENGATURAN</li>
+                    <li class="nav-item has-treeview <?= isMenuActive('pengaturan') ? 'menu-open' : '' ?>">
+                        <a href="#" class="nav-link <?= isMenuActive('pengaturan') ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-cog"></i>
+                            <p>
+                                Pengaturan
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="<?= base_url('pengaturan/app') ?>"
+                                    class="nav-link <?= isMenuActive('pengaturan/app') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-cogs nav-icon"></i>
+                                    <p>Aplikasi</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('pengaturan/api-tokens') ?>"
+                                    class="nav-link <?= isMenuActive('pengaturan/api-tokens') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-key nav-icon"></i>
+                                    <p>API Tokens</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('pengaturan/printer') ?>"
+                                    class="nav-link <?= isMenuActive('pengaturan/printer') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-print nav-icon"></i>
+                                    <p>Printer</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 </ul>
             </nav>
             <!-- /.sidebar-menu -->
         </div>
-    <?php  else: ?>
+    <?php else: ?>
         <div class="sidebar">
             <!-- Sidebar Menu -->
             <nav class="mt-2">
@@ -348,18 +471,16 @@
 
                     <!-- Contact -->
                     <?php
-                        $kontakMenus = [
-                            'master/supplier',
-                            'master/customer',
-                            'master/customer-group',
-                            'master/karyawan'
-                        ];
-                        $isKontakActive = isMenuActive($kontakMenus);
+                    $kontakMenus = [
+                        'master/supplier',
+                        'master/customer',
+                        'master/customer-group',
+                        'master/karyawan'
+                    ];
+                    $isKontakActive = isMenuActive($kontakMenus);
                     ?>
-                    <li
-                        class="nav-item has-treeview <?= $isKontakActive ? 'menu-open' : '' ?>">
-                        <a href="#"
-                            class="nav-link <?= $isKontakActive ? 'active' : '' ?>">
+                    <li class="nav-item has-treeview <?= $isKontakActive ? 'menu-open' : '' ?>">
+                        <a href="#" class="nav-link <?= $isKontakActive ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-users"></i>
                             <p>
                                 Kontak
@@ -403,7 +524,8 @@
                     </li>
 
                     <!-- Payment -->
-                    <li class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
+                    <li
+                        class="nav-item has-treeview <?= isMenuActive(['master/platform', 'master/bank']) ? 'menu-open' : '' ?>">
                         <a href="#"
                             class="nav-link <?= isMenuActive(['master/platform', 'master/bank']) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-money-bill-wave"></i>
@@ -595,7 +717,7 @@
                                     </li>
                                 </ul>
                             </li>
-                            
+
                             <!-- Refund Requests Menu -->
                             <li class="nav-item">
                                 <a href="<?= base_url('transaksi/refund') ?>"
@@ -605,7 +727,7 @@
                                     <p>Permintaan Refund</p>
                                 </a>
                             </li>
-                            
+
                             <!-- Refund Approval Menu (for Superadmin) -->
                             <li class="nav-item">
                                 <a href="<?= base_url('transaksi/refund/approval') ?>"

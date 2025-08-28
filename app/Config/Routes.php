@@ -79,6 +79,35 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('dashboard/sales-by-category', 'Dashboard::salesByCategory');
         $routes->get('dashboard/top-products/(:num)', 'Dashboard::topProducts/$1');
         $routes->get('dashboard/top-products', 'Dashboard::topProducts');
+
+        // Shift Management endpoints
+        $routes->post('shift/active', 'Shift::getActiveShift');
+        $routes->post('shift/open', 'Shift::openShift');
+        $routes->post('shift/close', 'Shift::closeShift');
+        $routes->get('shift/details/(:num)', 'Shift::getShiftDetails/$1');
+        $routes->post('shift/details', 'Shift::getShiftDetails');
+        $routes->post('shift/summary', 'Shift::getShiftSummary');
+        $routes->post('shift/list', 'Shift::getShiftsByOutlet');
+        $routes->post('shift/status', 'Shift::checkShiftStatus');
+        $routes->get('shift/outlets', 'Shift::getOutlets');
+
+        // Petty Cash endpoints
+        $routes->post('petty/list', 'Petty::getPettyCash');
+        $routes->post('petty/create', 'Petty::create');
+        $routes->post('petty/update', 'Petty::update');
+        $routes->post('petty/delete', 'Petty::delete');
+        $routes->get('petty/categories', 'Petty::getCategories');
+        $routes->post('petty/summary', 'Petty::getSummary');
+
+        // Petty Cash Category endpoints
+        $routes->get('petty-category/list', 'PettyCategory::getCategories');
+        $routes->get('petty-category/with-usage', 'PettyCategory::getCategoriesWithUsage');
+        $routes->get('petty-category/(:num)', 'PettyCategory::getCategory/$1');
+        $routes->post('petty-category/create', 'PettyCategory::create');
+        $routes->post('petty-category/update', 'PettyCategory::update');
+        $routes->post('petty-category/toggle-status', 'PettyCategory::toggleStatus');
+        $routes->post('petty-category/delete', 'PettyCategory::delete');
+        $routes->get('petty-category/search', 'PettyCategory::search');
     });
 });
 
@@ -222,6 +251,64 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('karyawan/update/(:num)', 'Karyawan::update/$1');
     $routes->get('karyawan/delete/(:num)', 'Karyawan::delete/$1');
     $routes->get('karyawan/detail/(:num)', 'Karyawan::detail/$1');
+});
+
+/*****
+ * SHIFT MANAGEMENT ROUTES
+ * These routes handle shift management operations including:
+ * - Shift opening/closing
+ * - Petty cash management
+ * - Petty cash categories
+ * All routes are protected by auth filter
+ ****/
+
+// Shift Management Routes
+$routes->group('transaksi/shift', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
+    $routes->get('/', 'ShiftController::index');
+    $routes->get('open', 'ShiftController::showOpenForm');
+    $routes->post('open', 'ShiftController::storeShift');
+    $routes->get('close/(:num)', 'ShiftController::closeShift/$1');
+    $routes->post('close', 'ShiftController::processClose');
+    $routes->get('approve/(:num)', 'ShiftController::approveShift/$1');
+    $routes->get('view/(:num)', 'ShiftController::viewShift/$1');
+    $routes->get('check-status', 'ShiftController::checkShiftStatus');
+    $routes->get('summary', 'ShiftController::getShiftSummary');
+    
+    // API routes for AJAX calls
+    $routes->post('api/open', 'ShiftController::apiOpenShift');
+    $routes->post('api/close', 'ShiftController::apiCloseShift');
+});
+
+// Petty Cash Routes
+$routes->group('transaksi/petty', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
+    $routes->get('/', 'PettyController::index');
+    $routes->get('create', 'PettyController::showCreateForm');
+    $routes->post('create', 'PettyController::storePetty');
+    $routes->get('edit/(:num)', 'PettyController::showEditForm/$1');
+    $routes->post('edit/(:num)', 'PettyController::updatePetty/$1');
+    $routes->get('view/(:num)', 'PettyController::viewDetail/$1');
+    $routes->get('approve/(:num)', 'PettyController::approve/$1');
+    $routes->get('void/(:num)', 'PettyController::void/$1');
+    $routes->post('void/(:num)', 'PettyController::void/$1');
+    $routes->get('delete/(:num)', 'PettyController::delete/$1');
+    $routes->get('pending-approvals', 'PettyController::getPendingApprovals');
+    $routes->get('category-report', 'PettyController::getCategoryReport');
+    
+    // API routes for AJAX calls
+    $routes->post('api/create', 'PettyController::apiCreate');
+});
+
+// Petty Cash Category Routes
+$routes->group('transaksi/petty-category', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
+    $routes->get('/', 'PettyCategoryController::index');
+    $routes->get('create', 'PettyCategoryController::showCreateForm');
+    $routes->post('create', 'PettyCategoryController::storeCategory');
+    $routes->get('edit/(:num)', 'PettyCategoryController::showEditForm/$1');
+    $routes->post('edit/(:num)', 'PettyCategoryController::updateCategory/$1');
+    $routes->get('toggle-status/(:num)', 'PettyCategoryController::toggleStatus/$1');
+    $routes->get('delete/(:num)', 'PettyCategoryController::delete/$1');
+    $routes->get('search', 'PettyCategoryController::search');
+    $routes->get('dropdown', 'PettyCategoryController::getCategoriesForDropdown');
 });
 
 // Supplier Routes

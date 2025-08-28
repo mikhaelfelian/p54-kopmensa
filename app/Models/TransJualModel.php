@@ -193,4 +193,29 @@ class TransJualModel extends Model
             ->limit($limit)
             ->findAll();
     }
+
+    /**
+     * Get sales summary by shift (placeholder - shift_id not yet implemented in sales table)
+     */
+    public function getSalesSummaryByShift($shift_id)
+    {
+        // TODO: Add shift_id field to tbl_trans_jual table
+        // For now, return empty summary
+        return [
+            'total_transactions' => 0,
+            'total_cash_sales' => 0,
+            'total_non_cash_sales' => 0,
+            'total_sales' => 0
+        ];
+    }
+
+    /**
+     * Get sales transactions by shift (placeholder - shift_id not yet implemented in sales table)
+     */
+    public function getSalesByShift($shift_id)
+    {
+        // TODO: Add shift_id field to tbl_trans_jual table
+        // For now, return empty array
+        return [];
+    }
 }
