@@ -11,9 +11,12 @@ namespace App\Controllers\Api\Pos;
 
 use App\Controllers\BaseController;
 use App\Models\PettyCategoryModel;
+use CodeIgniter\API\ResponseTrait;
 
 class PettyCategory extends BaseController
 {
+    use ResponseTrait;
+
     protected $categoryModel;
 
     public function __construct()
@@ -28,10 +31,7 @@ class PettyCategory extends BaseController
     {
         $categories = $this->categoryModel->getActiveCategories();
         
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $categories
-        ]);
+        return $this->respond($categories);
     }
 
     /**
@@ -41,10 +41,7 @@ class PettyCategory extends BaseController
     {
         $categories = $this->categoryModel->getCategoriesWithUsage();
         
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $categories
-        ]);
+        return $this->respond($categories);
     }
 
     /**
@@ -57,24 +54,15 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category ID required'
-            ]);
+            return $this->failValidationError('Category ID required');
         }
 
         $category = $this->categoryModel->find($id);
         if (!$category) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category not found'
-            ]);
+            return $this->failNotFound('Category not found');
         }
 
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $category
-        ]);
+        return $this->respond($category);
     }
 
     /**
@@ -87,19 +75,13 @@ class PettyCategory extends BaseController
         $is_active = $this->request->getPost('is_active') ?? 1;
 
         if (!$name) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category name is required'
-            ]);
+            return $this->failValidationError('Category name is required');
         }
 
         // Check if name already exists
         $existingCategory = $this->categoryModel->where('name', $name)->first();
         if ($existingCategory) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category name already exists'
-            ]);
+            return $this->failValidationError('Category name already exists');
         }
 
         $data = [
@@ -109,19 +91,12 @@ class PettyCategory extends BaseController
         ];
 
         if ($this->categoryModel->insert($data)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Category created successfully',
-                'data' => [
-                    'id' => $this->categoryModel->insertID,
-                    'name' => $name
-                ]
+            return $this->respond([
+                'id' => $this->categoryModel->insertID,
+                'name' => $name
             ]);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to create category'
-            ]);
+            return $this->failServerError('Failed to create category');
         }
     }
 
@@ -135,18 +110,12 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category ID required'
-            ]);
+            return $this->failValidationError('Category ID required');
         }
 
         $category = $this->categoryModel->find($id);
         if (!$category) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category not found'
-            ]);
+            return $this->failNotFound('Category not found');
         }
 
         $name = $this->request->getPost('name');
@@ -154,19 +123,13 @@ class PettyCategory extends BaseController
         $is_active = $this->request->getPost('is_active');
 
         if (!$name) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category name is required'
-            ]);
+            return $this->failValidationError('Category name is required');
         }
 
         // Check if name already exists (excluding current category)
         $existingCategory = $this->categoryModel->where('name', $name)->where('id !=', $id)->first();
         if ($existingCategory) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category name already exists'
-            ]);
+            return $this->failValidationError('Category name already exists');
         }
 
         $data = [
@@ -180,15 +143,9 @@ class PettyCategory extends BaseController
         }
 
         if ($this->categoryModel->update($id, $data)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Category updated successfully'
-            ]);
+            return $this->respond(['message' => 'Category updated successfully']);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to update category'
-            ]);
+            return $this->failServerError('Failed to update category');
         }
     }
 
@@ -202,22 +159,13 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category ID required'
-            ]);
+            return $this->failValidationError('Category ID required');
         }
 
         if ($this->categoryModel->toggleStatus($id)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Category status updated successfully'
-            ]);
+            return $this->respond(['message' => 'Category status updated successfully']);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to update category status'
-            ]);
+            return $this->failServerError('Failed to update category status');
         }
     }
 
@@ -231,29 +179,17 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Category ID required'
-            ]);
+            return $this->failValidationError('Category ID required');
         }
 
         if (!$this->categoryModel->canDelete($id)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Cannot delete category that is still in use'
-            ]);
+            return $this->failValidationError('Cannot delete category that is still in use');
         }
 
         if ($this->categoryModel->delete($id)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Category deleted successfully'
-            ]);
+            return $this->respond(['message' => 'Category deleted successfully']);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to delete category'
-            ]);
+            return $this->failServerError('Failed to delete category');
         }
     }
 
@@ -265,17 +201,11 @@ class PettyCategory extends BaseController
         $keyword = $this->request->getPost('keyword') ?? $this->request->getGet('keyword');
         
         if (!$keyword) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Search keyword required'
-            ]);
+            return $this->failValidationError('Search keyword required');
         }
 
         $categories = $this->categoryModel->searchCategories($keyword);
         
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $categories
-        ]);
+        return $this->respond($categories);
     }
 }

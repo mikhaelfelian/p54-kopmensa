@@ -199,10 +199,7 @@ class Transaksi extends BaseController
 
         // Check if shift is open before allowing transaction
         if (!$this->isShiftOpen($input['id_gudang'], $input['id_user'])) {
-            return $this->respond([
-                'success' => false,
-                'message' => 'Shift tidak terbuka. Silakan buka shift terlebih dahulu.'
-            ], 400);
+            return $this->failValidationError('Shift tidak terbuka. Silakan buka shift terlebih dahulu.');
         }
 
         // Validate required fields
@@ -219,10 +216,7 @@ class Transaksi extends BaseController
             !is_array($input['cart']) ||
             count($input['cart']) === 0
         ) {
-            return $this->respond([
-                'success' => false,
-                'message' => 'Data transaksi utama atau cart tidak lengkap'
-            ], 400);
+            return $this->failValidationError('Data transaksi utama atau cart tidak lengkap');
         }
 
         try {
@@ -339,23 +333,16 @@ class Transaksi extends BaseController
             }
 
             return $this->respond([
-                [
-                    'success'         => true,
-                    'message'         => 'Transaksi berhasil diproses',
-                    'transaction_id'  => $transactionId,
-                    'no_nota'         => $input['no_nota'],
-                    'total'           => $input['jml_gtotal'],
-                    'change'          => isset($input['jml_kembali']) ? $input['jml_kembali'] : 0
-                ]
+                'transaction_id'  => $transactionId,
+                'no_nota'         => $input['no_nota'],
+                'total'           => $input['jml_gtotal'],
+                'change'          => isset($input['jml_kembali']) ? $input['jml_kembali'] : 0
             ]);
         } catch (\Exception $e) {
             if (isset($db) && $db->transStatus() !== false) {
                 $db->transRollback();
             }
-            return $this->respond([
-                'success' => false,
-                'message' => 'Gagal memproses transaksi: ' . $e->getMessage()
-            ], 500);
+            return $this->failServerError('Gagal memproses transaksi: ' . $e->getMessage());
         }
     }
 

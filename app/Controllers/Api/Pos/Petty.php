@@ -14,9 +14,12 @@ use App\Models\PettyModel;
 use App\Models\ShiftModel;
 use App\Models\PettyCategoryModel;
 use App\Models\GudangModel;
+use CodeIgniter\API\ResponseTrait;
 
 class Petty extends BaseController
 {
+    use ResponseTrait;
+
     protected $pettyModel;
     protected $shiftModel;
     protected $categoryModel;
@@ -38,20 +41,13 @@ class Petty extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID required'
-            ]);
+            return $this->failValidationError('Outlet ID required');
         }
 
         // Check if there's an active shift
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         if (!$activeShift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'No active shift found. Please open shift first.',
-                'code' => 'NO_ACTIVE_SHIFT'
-            ]);
+            return $this->failValidationError('No active shift found. Please open shift first.');
         }
 
         $filters = [
@@ -66,16 +62,13 @@ class Petty extends BaseController
         $pettyEntries = $this->pettyModel->getPettyCashWithDetails(null, $filters);
         $summary = $this->pettyModel->getPettyCashSummaryByShift($activeShift['id']);
 
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => [
-                'petty_entries' => $pettyEntries,
-                'summary' => $summary,
-                'active_shift' => [
-                    'id' => $activeShift['id'],
-                    'shift_code' => $activeShift['shift_code'],
-                    'start_at' => $activeShift['start_at']
-                ]
+        return $this->respond([
+            'petty_entries' => $pettyEntries,
+            'summary' => $summary,
+            'active_shift' => [
+                'id' => $activeShift['id'],
+                'shift_code' => $activeShift['shift_code'],
+                'start_at' => $activeShift['start_at']
             ]
         ]);
     }
@@ -94,36 +87,23 @@ class Petty extends BaseController
 
         // Validate required fields
         if (!$outlet_id || !$direction || !$amount || !$reason) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID, direction, amount, and reason are required'
-            ]);
+            return $this->failValidationError('Outlet ID, direction, amount, and reason are required');
         }
 
         // Check if there's an active shift
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         if (!$activeShift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'No active shift found. Please open shift first.',
-                'code' => 'NO_ACTIVE_SHIFT'
-            ]);
+            return $this->failValidationError('No active shift found. Please open shift first.');
         }
 
         // Validate direction
         if (!in_array($direction, ['IN', 'OUT'])) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Direction must be IN or OUT'
-            ]);
+            return $this->failValidationError('Direction must be IN or OUT');
         }
 
         // Validate amount
         if (!is_numeric($amount) || $amount <= 0) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Amount must be a positive number'
-            ]);
+            return $this->failValidationError('Amount must be a positive number');
         }
 
         // Prepare data
@@ -144,21 +124,14 @@ class Petty extends BaseController
             // Update shift petty totals
             $this->updateShiftPettyTotals($activeShift['id']);
             
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Petty cash entry created successfully',
-                'data' => [
-                    'id' => $this->pettyModel->insertID,
-                    'shift_id' => $activeShift['id'],
-                    'amount' => $amount,
-                    'direction' => $direction
-                ]
+            return $this->respond([
+                'id' => $this->pettyModel->insertID,
+                'shift_id' => $activeShift['id'],
+                'amount' => $amount,
+                'direction' => $direction
             ]);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to create petty cash entry'
-            ]);
+            return $this->failServerError('Failed to create petty cash entry');
         }
     }
 
@@ -169,10 +142,7 @@ class Petty extends BaseController
     {
         $categories = $this->categoryModel->getActiveCategories();
         
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => $categories
-        ]);
+        return $this->respond($categories);
     }
 
     /**
@@ -183,33 +153,23 @@ class Petty extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID required'
-            ]);
+            return $this->failValidationError('Outlet ID required');
         }
 
         // Check if there's an active shift
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         if (!$activeShift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'No active shift found. Please open shift first.',
-                'code' => 'NO_ACTIVE_SHIFT'
-            ]);
+            return $this->failValidationError('No active shift found. Please open shift first.');
         }
 
         $summary = $this->pettyModel->getPettyCashSummaryByShift($activeShift['id']);
         
-        return $this->response->setJSON([
-            'success' => true,
-            'data' => [
-                'summary' => $summary,
-                'shift_info' => [
-                    'id' => $activeShift['id'],
-                    'shift_code' => $activeShift['shift_code'],
-                    'start_at' => $activeShift['start_at']
-                ]
+        return $this->respond([
+            'summary' => $summary,
+            'shift_info' => [
+                'id' => $activeShift['id'],
+                'shift_code' => $activeShift['shift_code'],
+                'start_at' => $activeShift['start_at']
             ]
         ]);
     }
@@ -224,26 +184,17 @@ class Petty extends BaseController
         }
 
         if (!$id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Petty cash entry ID required'
-            ]);
+            return $this->failValidationError('Petty cash entry ID required');
         }
 
         $petty = $this->pettyModel->find($id);
         if (!$petty) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Petty cash entry not found'
-            ]);
+            return $this->failNotFound('Petty cash entry not found');
         }
 
         // Check if can edit (only draft or posted status)
         if ($petty['status'] === 'void') {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Cannot edit voided entry'
-            ]);
+            return $this->failValidationError('Cannot edit voided entry');
         }
 
         $direction = $this->request->getPost('direction');
@@ -252,10 +203,7 @@ class Petty extends BaseController
         $category_id = $this->request->getPost('category_id');
 
         if (!$direction || !$amount || !$reason) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Direction, amount, and reason are required'
-            ]);
+            return $this->failValidationError('Direction, amount, and reason are required');
         }
 
         $data = [
@@ -269,15 +217,9 @@ class Petty extends BaseController
             // Update shift petty totals
             $this->updateShiftPettyTotals($petty['shift_id']);
             
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Petty cash entry updated successfully'
-            ]);
+            return $this->respond(['message' => 'Petty cash entry updated successfully']);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to update petty cash entry'
-            ]);
+            return $this->failServerError('Failed to update petty cash entry');
         }
     }
 
@@ -291,37 +233,22 @@ class Petty extends BaseController
         }
 
         if (!$id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Petty cash entry ID required'
-            ]);
+            return $this->failValidationError('Petty cash entry ID required');
         }
 
         $petty = $this->pettyModel->find($id);
         if (!$petty) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Petty cash entry not found'
-            ]);
+            return $this->failNotFound('Petty cash entry not found');
         }
 
         if ($petty['status'] !== 'draft') {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Only draft entries can be deleted'
-            ]);
+            return $this->failValidationError('Only draft entries can be deleted');
         }
 
         if ($this->pettyModel->delete($id)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Petty cash entry deleted successfully'
-            ]);
+            return $this->respond(['message' => 'Petty cash entry deleted successfully']);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to delete petty cash entry'
-            ]);
+            return $this->failServerError('Failed to delete petty cash entry');
         }
     }
 
