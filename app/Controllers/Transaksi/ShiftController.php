@@ -101,23 +101,24 @@ class ShiftController extends BaseController
                 'status'            => 'open'
             ];
 
-            // Debug: Log the data being inserted
-            log_message('debug', 'Shift storeShift - data to insert: ' . json_encode($data));
-
             if ($this->shiftModel->insert($data)) {
-                log_message('debug', 'Shift storeShift - Successfully inserted shift with ID: ' . $this->shiftModel->insertID);
-                session()->setFlashdata('success', 'Shift berhasil dibuka');
+                // Set session kasir_shift with last insert id before redirect
+                $lastInsertId = $this->shiftModel->getInsertID();
+                session()->set('kasir_shift', $lastInsertId);
+
+                if (session()->has('kasir_outlet')) {
+                    session()->setFlashdata('success', 'Shift berhasil dibuka');
+                    return redirect()->to('/transaksi/jual/cashier');
+                }
                 return redirect()->to('/transaksi/shift');
             } else {
                 // Debug: Log any database errors
                 $db_error = $this->shiftModel->db->error();
-                log_message('error', 'Shift storeShift - database error: ' . json_encode($db_error));
                 session()->setFlashdata('error', 'Gagal membuka shift: ' . ($db_error['message'] ?? 'Unknown error'));
             }
         } else {
             // Debug: Log validation errors
             $validation_errors = $this->validator->getErrors();
-            log_message('error', 'Shift storeShift - validation errors: ' . json_encode($validation_errors));
             session()->setFlashdata('error', 'Validasi gagal: ' . implode(', ', $validation_errors));
         }
 
@@ -161,9 +162,14 @@ class ShiftController extends BaseController
         $counted_cash = $this->request->getPost('counted_cash');
         $notes = $this->request->getPost('notes');
 
+        // Clean the counted_cash value - remove any formatting and convert to decimal
+        if (is_string($counted_cash)) {
+            $counted_cash = format_angka_db($counted_cash);
+        }
+
         $rules = [
             'shift_id' => 'required|integer',
-            'counted_cash' => 'required|decimal',
+            'counted_cash' => 'required|numeric',
             'notes' => 'permit_empty|max_length[500]'
         ];
 

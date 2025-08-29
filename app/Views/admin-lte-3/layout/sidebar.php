@@ -165,7 +165,7 @@
                                     class="nav-link <?= isMenuActive('transaksi/shift') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-clock nav-icon"></i>
-                                    <p>Shift Management</p>
+                                    <p>Data Shift</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -182,14 +182,6 @@
                                     <?= nbs(3) ?>
                                     <i class="fas fa-money-bill-wave nav-icon"></i>
                                     <p>Petty Cash</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('transaksi/petty-category') ?>"
-                                    class="nav-link <?= isMenuActive('transaksi/petty-category') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-tags nav-icon"></i>
-                                    <p>Kategori Petty Cash</p>
                                 </a>
                             </li>
                         </ul>

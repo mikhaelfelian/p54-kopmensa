@@ -1,5 +1,10 @@
 <?= $this->extend(theme_path('main')) ?>
 
+<?php
+// Load shift helper for transaction counting
+helper('shift');
+?>
+
 <?= $this->section('content') ?>
 <div class="card rounded-0">
     <div class="card-header">
@@ -23,8 +28,8 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="counted_cash">Uang yang Dihitung (Rp) <span class="text-danger">*</span></label>
-                                <input type="number" name="counted_cash" id="counted_cash" class="form-control" 
-                                       step="0.01" min="0" required placeholder="0.00">
+                                <input type="text" name="counted_cash" id="counted_cash" class="form-control autonumber" 
+                                       required placeholder="5.000">
                                 <small class="form-text text-muted">Jumlah uang yang sebenarnya ada di kasir</small>
                             </div>
                         </div>
@@ -32,7 +37,7 @@
                             <div class="form-group">
                                 <label for="expected_cash">Uang yang Diharapkan (Rp)</label>
                                 <input type="text" id="expected_cash" class="form-control" 
-                                       value="<?= number_format($shift['expected_cash'], 2) ?>" readonly>
+                                       value="<?= format_angka($shift['expected_cash'], 0) ?>" readonly>
                                 <small class="form-text text-muted">Opening Float + Sales Cash + Petty Cash</small>
                             </div>
                         </div>
@@ -55,7 +60,7 @@
             <div class="col-md-4">
                 <table class="table table-sm">
                     <tr>
-                        <td>Shift Code:</td>
+                        <td>Kode Shift:</td>
                         <td><strong><?= $shift['shift_code'] ?></strong></td>
                     </tr>
                     <tr>
@@ -63,7 +68,7 @@
                         <td><?= $shift['outlet_name'] ?? 'N/A' ?></td>
                     </tr>
                     <tr>
-                        <td>Dibuka Oleh:</td>
+                        <td>Dibuka oleh:</td>
                         <td><?= ($shift['user_open_name'] ?? '') . ' ' . ($shift['user_open_lastname'] ?? '') ?></td>
                     </tr>
                     <tr>
@@ -71,24 +76,28 @@
                         <td><?= date('d/m/Y H:i', strtotime($shift['start_at'])) ?></td>
                     </tr>
                     <tr>
-                        <td>Opening Float:</td>
-                        <td class="text-right"><strong><?= number_format($shift['open_float'], 2) ?></strong></td>
+                        <td>Uang Modal:</td>
+                        <td class="text-right"><strong><?= format_angka($shift['open_float'], 0) ?></strong></td>
                     </tr>
                     <tr>
-                        <td>Sales Cash:</td>
-                        <td class="text-right"><?= number_format($shift['sales_cash_total'], 2) ?></td>
+                        <td>Total Transaksi:</td>
+                        <td class="text-right"><strong><?= get_shift_transaction_count() ?></strong></td>
                     </tr>
                     <tr>
-                        <td>Petty Cash IN:</td>
-                        <td class="text-right text-success"><?= number_format($shift['petty_in_total'], 2) ?></td>
+                        <td>Pendapatan:</td>
+                        <td class="text-right"><?= format_angka($salesSummary['total_sales'], 0) ?></td>
                     </tr>
                     <tr>
-                        <td>Petty Cash OUT:</td>
-                        <td class="text-right text-danger"><?= number_format($shift['petty_out_total'], 2) ?></td>
+                        <td>Kas Kecil Masuk:</td>
+                        <td class="text-right text-success"><?= format_angka($shift['petty_in_total'], 0) ?></td>
+                    </tr>
+                    <tr>
+                        <td>Kas Kecil Keluar:</td>
+                        <td class="text-right text-danger"><?= format_angka($shift['petty_out_total'], 0) ?></td>
                     </tr>
                     <tr class="table-info">
                         <td><strong>Total Diharapkan:</strong></td>
-                        <td class="text-right"><strong><?= number_format($shift['expected_cash'], 2) ?></strong></td>
+                        <td class="text-right"><strong><?= format_angka($shift['expected_cash'], 0) ?></strong></td>
                     </tr>
                 </table>
             </div>
@@ -100,39 +109,48 @@
 <?= $this->section('js') ?>
 <script>
 $(document).ready(function() {
-    // Format currency input
-    $('#counted_cash').on('input', function() {
-        let value = $(this).val();
-        if (value && !isNaN(value)) {
-            $(this).val(parseFloat(value).toFixed(2));
-        }
+    // Initialize autoNumeric for counted_cash: only allow thousands separator (dot), no decimals, no decimals shown
+    $('#counted_cash').autoNumeric('init', {
+        aSep: '.',
+        aDec: ',',
+        mDec: 0, // No decimals
+        aPad: false // Do not pad decimals
     });
 
     // Calculate difference when counted cash changes
     $('#counted_cash').on('change', function() {
-        let counted = parseFloat($(this).val()) || 0;
-        let expected = parseFloat('<?= $shift['expected_cash'] ?>') || 0;
+        // Get value as integer using autoNumeric
+        let counted = parseInt($(this).autoNumeric('get')) || 0;
+        let expected = parseInt('<?= (int)$shift['expected_cash'] ?>') || 0;
         let difference = counted - expected;
-        
         // Show difference alert
-        if (Math.abs(difference) > 0.01) {
+        if (Math.abs(difference) > 0) {
             let alertClass = difference > 0 ? 'alert-success' : 'alert-danger';
             let alertText = difference > 0 ? 'Lebih' : 'Kurang';
             
             if (!$('#difference-alert').length) {
                 $('#counted_cash').after(`
                     <div id="difference-alert" class="alert ${alertClass} alert-sm mt-2">
-                        <i class="icon fas fa-info"></i> ${alertText}: Rp ${Math.abs(difference).toFixed(2)}
+                        <i class="icon fas fa-info"></i> ${alertText}: Rp ${Math.abs(difference).toLocaleString('id-ID')}
                     </div>
                 `);
             } else {
                 $('#difference-alert').removeClass('alert-success alert-danger')
                     .addClass(alertClass)
-                    .html(`<i class="icon fas fa-info"></i> ${alertText}: Rp ${Math.abs(difference).toFixed(2)}`);
+                    .html(`<i class="icon fas fa-info"></i> ${alertText}: Rp ${Math.abs(difference).toLocaleString('id-ID')}`);
             }
         } else {
             $('#difference-alert').remove();
         }
+    });
+
+    // Form submission - convert autoNumeric formatted value to integer
+    $('#closeShiftForm').on('submit', function(e) {
+        var countedCashInput = $('#counted_cash');
+        var rawValue = countedCashInput.autoNumeric('get');
+        var intValue = parseInt(rawValue.replace(/\./g, '')) || 0;
+        countedCashInput.val(intValue);
+        return true;
     });
 });
 </script>
