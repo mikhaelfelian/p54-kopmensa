@@ -240,6 +240,7 @@ class Transaksi extends BaseController
                 'id_sales'       => $input['id_sales'],
                 'id_pelanggan'   => $input['id_pelanggan'],
                 'id_gudang'      => $input['id_gudang'],
+                'id_shift'       => $input['id_shift'],
                 'no_nota'        => $input['no_nota'],
                 'tgl_masuk'      => $input['tgl_masuk'],
                 'tgl_bayar'      => isset($input['tgl_bayar']) ? $input['tgl_bayar'] : null,
