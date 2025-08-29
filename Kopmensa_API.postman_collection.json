@@ -1116,6 +1116,341 @@
             ]
           }
         ]
+      },
+      {
+        "name": "petty-cash",
+        "item": [
+          {
+            "name": "Get Petty Cash List",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash"]
+              }
+            }
+          },
+          {
+            "name": "Get Petty Cash Detail",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/detail/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "detail", "1"]
+              }
+            }
+          },
+          {
+            "name": "Create Petty Cash",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"shift_id\": 1,\n  \"outlet_id\": 1,\n  \"category_id\": 1,\n  \"direction\": \"OUT\",\n  \"amount\": 50000,\n  \"reason\": \"Pembelian alat tulis\"\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/store",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "store"]
+              }
+            }
+          },
+          {
+            "name": "Update Petty Cash",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"category_id\": 2,\n  \"amount\": 75000,\n  \"reason\": \"Pembelian alat tulis dan kertas\"\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/update/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "update", "1"]
+              }
+            }
+          },
+          {
+            "name": "Delete Petty Cash",
+            "request": {
+              "method": "DELETE",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/delete/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "delete", "1"]
+              }
+            }
+          },
+          {
+            "name": "Approve Petty Cash",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/approve/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "approve", "1"]
+              }
+            }
+          },
+          {
+            "name": "Reject Petty Cash",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"rejection_reason\": \"Dokumen tidak lengkap\"\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/reject/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "reject", "1"]
+              }
+            }
+          },
+          {
+            "name": "Void Petty Cash",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"void_reason\": \"Kesalahan input data\"\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/void/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "void", "1"]
+              }
+            }
+          },
+          {
+            "name": "Get Petty Cash Summary",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-cash/summary?outlet_id=1&date_from=2025-01-01&date_to=2025-01-31",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-cash", "summary"]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "shift-management",
+        "item": [
+          {
+            "name": "Get Shift List",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/shift",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "shift"]
+              }
+            }
+          },
+          {
+            "name": "Get Shift Detail",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/shift/detail/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "shift", "detail", "1"]
+              }
+            }
+          },
+          {
+            "name": "Open Shift",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"outlet_id\": 1,\n  \"saldo_awal\": 1000000\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/shift/open",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "shift", "open"]
+              }
+            }
+          },
+          {
+            "name": "Close Shift",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"saldo_akhir\": 950000,\n  \"notes\": \"Shift berakhir normal\"\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/shift/close/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "shift", "close", "1"]
+              }
+            }
+          },
+          {
+            "name": "Get Shift Summary",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/shift/summary/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "shift", "summary", "1"]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "petty-category",
+        "item": [
+          {
+            "name": "Get Category List",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-category",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-category"]
+              }
+            }
+          },
+          {
+            "name": "Get Category Detail",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-category/detail/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-category", "detail", "1"]
+              }
+            }
+          },
+          {
+            "name": "Create Category",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"Alat Tulis\",\n  \"is_active\": 1\n}"
+              },
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-category/store",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-category", "store"]
+              }
+            }
+          },
+          {
+            "name": "Update Category",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/json" }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"name\": \"Alat Tulis & Kertas\",\n  \"is_active\": 1\n}"
+              },
+                              "url": {
+                  "raw": "{{baseUrl}}/api/pos/petty-category/update/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "pos", "petty-category", "update", "1"]
+                }
+            }
+          },
+          {
+            "name": "Delete Category",
+            "request": {
+              "method": "DELETE",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-category/delete/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-category", "delete", "1"]
+              }
+            }
+          },
+          {
+            "name": "Toggle Category Status",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/petty-category/toggle-status/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "petty-category", "toggle-status", "1"]
+              }
+            }
+          }
+        ]
       }
     ],
     "variable": [

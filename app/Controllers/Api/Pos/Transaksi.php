@@ -11,6 +11,7 @@ use App\Models\ItemHistModel;
 use App\Models\PlatformModel;
 use App\Models\PelangganModel;
 use App\Models\VoucherModel;
+use App\Models\ShiftModel;
 use CodeIgniter\API\ResponseTrait;
 
 /**
@@ -37,6 +38,24 @@ class Transaksi extends BaseController
         $this->mPlatform       = new PlatformModel();
         $this->mPelanggan      = new PelangganModel();
         $this->mVoucher        = new VoucherModel();
+        $this->mShift          = new ShiftModel();
+    }
+
+    /**
+     * Check if shift is open for the current user and outlet
+     * 
+     * @param int $outlet_id
+     * @param int $user_id
+     * @return bool
+     */
+    private function isShiftOpen($outlet_id, $user_id)
+    {
+        $activeShift = $this->mShift->where('outlet_id', $outlet_id)
+                                   ->where('kasir_user_id', $user_id)
+                                   ->where('status', 'open')
+                                   ->first();
+        
+        return $activeShift !== null;
     }
 
     /**
@@ -177,6 +196,14 @@ class Transaksi extends BaseController
     public function store()
     {
         $input = $this->request->getJSON(true);
+
+        // Check if shift is open before allowing transaction
+        if (!$this->isShiftOpen($input['id_gudang'], $input['id_user'])) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'Shift tidak terbuka. Silakan buka shift terlebih dahulu.'
+            ], 400);
+        }
 
         // Validate required fields
         if (
