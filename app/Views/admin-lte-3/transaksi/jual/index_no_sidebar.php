@@ -212,12 +212,21 @@
             </div>
             <div class="card-body p-3 rounded-0">
                 <div class="d-flex flex-column gap-3">
-                    <button type="button"
-                        class="btn btn-success btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center"
-                        onclick="openCashier()">
+                    <a href="<?= base_url('transaksi/jual/cashier') ?>"
+                        class="btn btn-success btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center">
                         <i class="fas fa-cash-register fa-lg mr-3"></i>
                         <span class="font-weight-bold" style="font-size:1.1rem;">Buka Kasir</span>
-                    </button>
+                    </a>
+                    <a href="<?= base_url('transaksi/shift') ?>"
+                        class="btn btn-primary btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center">
+                        <i class="fas fa-user-clock fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Manajemen Shift</span>
+                    </a>
+                    <a href="<?= base_url('transaksi/petty') ?>"
+                        class="btn btn-warning btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center">
+                        <i class="fas fa-wallet fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Kas Kecil</span>
+                    </a>
                 </div>
             </div>
         </div>
