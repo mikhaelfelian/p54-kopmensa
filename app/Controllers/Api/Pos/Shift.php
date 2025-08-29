@@ -48,10 +48,34 @@ class Shift extends BaseController
 
         $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, $per_page, ($page - 1) * $per_page);
         
-        return $this->respond([
-            'success' => true,
-            'data' => $shifts
-        ]);
+        // Format items as array of objects with only the required fields
+        $formattedItems = [];
+        foreach ($shifts as $shift) {
+            $formattedItems[] = [
+                'id' => (int) $shift['id'],
+                'shift_code' => $shift['shift_code'],
+                'outlet_id' => (int) $shift['outlet_id'],
+                'outlet_name' => $shift['outlet_name'] ?? 'Unknown Outlet',
+                'user_open_id' => (int) $shift['user_open_id'],
+                'user_open_name' => $shift['user_open_name'] ?? 'Unknown User',
+                'start_at' => $shift['start_at'],
+                'end_at' => $shift['end_at'],
+                'open_float' => (float) $shift['open_float'],
+                'status' => $shift['status'],
+                'created_at' => $shift['created_at'],
+                'updated_at' => $shift['updated_at'],
+            ];
+        }
+
+        $data = [
+            'total' => count($shifts),
+            'current_page' => (int) $page,
+            'per_page' => $per_page,
+            'total_page' => ceil(count($shifts) / $per_page),
+            'items' => $formattedItems,
+        ];
+
+        return $this->respond($data);
     }
 
     /**
@@ -140,11 +164,7 @@ class Shift extends BaseController
             ]
         ];
 
-        return $this->respond([
-            'success' => true,
-            'message' => 'Shift summary retrieved successfully',
-            'data' => $summary
-        ]);
+        return $this->respond($summary);
     }
 
     /**
@@ -189,15 +209,11 @@ class Shift extends BaseController
 
         if ($this->shiftModel->insert($data)) {
             return $this->respond([
-                'success' => true,
-                'message' => 'Shift opened successfully',
-                'data' => [
-                    'shift_id' => $this->shiftModel->insertID,
-                    'shift_code' => $shift_code,
-                    'outlet_id' => $outlet_id,
-                    'saldo_awal' => $saldo_awal,
-                    'start_at' => $data['start_at']
-                ]
+                'shift_id' => $this->shiftModel->insertID,
+                'shift_code' => $shift_code,
+                'outlet_id' => $outlet_id,
+                'saldo_awal' => $saldo_awal,
+                'start_at' => $data['start_at']
             ]);
         } else {
             return $this->failServerError('Failed to open shift');
@@ -240,14 +256,10 @@ class Shift extends BaseController
         // Close the shift
         if ($this->shiftModel->closeShift($shift_id, $user_id, $saldo_akhir, $notes)) {
             return $this->respond([
-                'success' => true,
-                'message' => 'Shift closed successfully',
-                'data' => [
-                    'shift_id' => $shift_id,
-                    'shift_code' => $shift['shift_code'],
-                    'saldo_akhir' => $saldo_akhir,
-                    'close_time' => date('Y-m-d H:i:s')
-                ]
+                'shift_id' => $shift_id,
+                'shift_code' => $shift['shift_code'],
+                'saldo_akhir' => $saldo_akhir,
+                'close_time' => date('Y-m-d H:i:s')
             ]);
         } else {
             return $this->failServerError('Failed to close shift');
@@ -269,18 +281,12 @@ class Shift extends BaseController
         
         if (!$activeShift) {
             return $this->respond([
-                'success' => false,
-                'message' => 'No active shift found',
                 'code' => 'NO_ACTIVE_SHIFT',
                 'data' => null
             ]);
         }
 
-        return $this->respond([
-            'success' => true,
-            'message' => 'Active shift found',
-            'data' => $activeShift
-        ]);
+        return $this->respond($activeShift);
     }
 
     /**
@@ -331,10 +337,7 @@ class Shift extends BaseController
 
         $summary = $this->shiftModel->getShiftSummary($outlet_id, $date);
         
-        return $this->respond([
-            'success' => true,
-            'data' => $summary
-        ]);
+        return $this->respond($summary);
     }
 
     /**
@@ -352,10 +355,7 @@ class Shift extends BaseController
 
         $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, $limit, $offset);
         
-        return $this->respond([
-            'success' => true,
-            'data' => $shifts
-        ]);
+        return $this->respond($shifts);
     }
 
     /**
@@ -372,11 +372,8 @@ class Shift extends BaseController
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         
         return $this->respond([
-            'success' => true,
-            'data' => [
-                'has_active_shift' => !empty($activeShift),
-                'shift' => $activeShift
-            ]
+            'has_active_shift' => !empty($activeShift),
+            'shift' => $activeShift
         ]);
     }
 
@@ -387,10 +384,7 @@ class Shift extends BaseController
     {
         $outlets = $this->gudangModel->getOutletsForDropdown();
         
-        return $this->respond([
-            'success' => true,
-            'data' => $outlets
-        ]);
+        return $this->respond($outlets);
     }
 
     /**
