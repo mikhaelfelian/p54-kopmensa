@@ -96,6 +96,10 @@ class PettyModel extends Model
             $builder->where('tbl_pos_petty_cash.outlet_id', $filters['outlet_id']);
         }
 
+        if (!empty($filters['shift_id'])) {
+            $builder->where('tbl_pos_petty_cash.shift_id', $filters['shift_id']);
+        }
+
         if (!empty($filters['user_id'])) {
             $builder->where('tbl_pos_petty_cash.kasir_user_id', $filters['user_id']);
         }

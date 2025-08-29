@@ -529,4 +529,59 @@ class Transaksi extends BaseController
             ]);
         }
     }
+
+    /**
+     * Get voucher information by ID or code
+     * 
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function getVoucher()
+    {
+        $voucherId = $this->request->getGet('id') ?? $this->request->getPost('id');
+        $voucherCode = $this->request->getGet('code') ?? $this->request->getPost('code');
+        
+        if (empty($voucherId) && empty($voucherCode)) {
+            return $this->failValidationError('Voucher ID or code is required');
+        }
+
+        try {
+            $mVoucher = $this->mVoucher;
+            $voucher = null;
+            
+            if ($voucherId) {
+                $voucher = $mVoucher->find($voucherId);
+            } elseif ($voucherCode) {
+                $voucher = $mVoucher->getVoucherByCode($voucherCode);
+            }
+            
+            if (!$voucher) {
+                return $this->failNotFound('Voucher not found');
+            }
+
+            // Check if voucher is valid and available
+            $isValid = $mVoucher->isVoucherValid($voucher->kode_voucher ?? $voucher->id);
+            
+            $voucherData = [
+                'id' => $voucher->id,
+                'kode_voucher' => $voucher->kode_voucher ?? $voucher->kode,
+                'nama_voucher' => $voucher->nama_voucher ?? $voucher->nama,
+                'jenis_voucher' => $voucher->jenis_voucher ?? $voucher->jenis,
+                'nominal' => (float) ($voucher->nominal ?? 0),
+                'min_pembelian' => (float) ($voucher->min_pembelian ?? 0),
+                'max_diskon' => (float) ($voucher->max_diskon ?? 0),
+                'kuota' => (int) ($voucher->kuota ?? 0),
+                'kuota_terpakai' => (int) ($voucher->kuota_terpakai ?? 0),
+                'tgl_mulai' => $voucher->tgl_mulai ?? $voucher->tanggal_mulai,
+                'tgl_berakhir' => $voucher->tgl_berakhir ?? $voucher->tanggal_berakhir,
+                'status' => $voucher->status ?? '1',
+                'is_valid' => $isValid,
+                'sisa_kuota' => max(0, ($voucher->kuota ?? 0) - ($voucher->kuota_terpakai ?? 0))
+            ];
+
+            return $this->respond($voucherData);
+
+        } catch (\Exception $e) {
+            return $this->failServerError('Failed to get voucher: ' . $e->getMessage());
+        }
+    }
 }

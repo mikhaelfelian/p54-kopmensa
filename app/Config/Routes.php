@@ -289,30 +289,30 @@ $routes->group('transaksi/shift', ['namespace' => 'App\Controllers\Transaksi', '
 // Petty Cash Routes under transaksi/
 $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
     $routes->group('petty', function ($routes) {
-        $routes->get('/', 'PettyController::index');
-        $routes->get('create', 'PettyController::create');
-        $routes->post('store', 'PettyController::store');
-        $routes->get('edit/(:num)', 'PettyController::edit/$1');
-        $routes->post('update/(:num)', 'PettyController::update/$1');
-        $routes->get('view/(:num)', 'PettyController::viewDetail/$1');
-        $routes->get('delete/(:num)', 'PettyController::delete/$1');
-        $routes->get('approve/(:num)', 'PettyController::approve/$1');
-        $routes->post('void/(:num)', 'PettyController::void/$1');
-        $routes->get('summary', 'PettyController::getSummary');
-        $routes->get('pending-approvals', 'PettyController::getPendingApprovals');
-        $routes->get('category-report', 'PettyController::getCategoryReport');
-        $routes->post('api-create', 'PettyController::apiCreate');
+        $routes->get('/', 'Petty::index');
+        $routes->get('create', 'Petty::create');
+        $routes->post('store', 'Petty::store');
+        $routes->get('edit/(:num)', 'Petty::edit/$1');
+        $routes->post('update/(:num)', 'Petty::update/$1');
+        $routes->get('view/(:num)', 'Petty::viewDetail/$1');
+        $routes->get('delete/(:num)', 'Petty::delete/$1');
+        $routes->get('approve/(:num)', 'Petty::approve/$1');
+        $routes->post('void/(:num)', 'Petty::void/$1');
+        $routes->get('summary', 'Petty::getSummary');
+        $routes->get('pending-approvals', 'Petty::getPendingApprovals');
+        $routes->get('category-report', 'Petty::getCategoryReport');
+        $routes->post('api-create', 'Petty::apiCreate');
 
         // Category routes
         $routes->group('category', function ($routes) {
-            $routes->get('/', 'PettyCategoryController::index');
-            $routes->get('create', 'PettyCategoryController::create');
-            $routes->post('store', 'PettyCategoryController::store');
-            $routes->get('edit/(:num)', 'PettyCategoryController::edit/$1');
-            $routes->post('update/(:num)', 'PettyCategoryController::update/$1');
-            $routes->get('delete/(:num)', 'PettyCategoryController::delete/$1');
-            $routes->get('toggle-status/(:num)', 'PettyCategoryController::toggleStatus/$1');
-            $routes->get('get-categories', 'PettyCategoryController::getCategories');
+            $routes->get('/', 'PettyCategory::index');
+            $routes->get('create', 'PettyCategory::create');
+            $routes->post('store', 'PettyCategory::store');
+            $routes->get('edit/(:num)', 'PettyCategory::edit/$1');
+            $routes->post('update/(:num)', 'PettyCategory::update/$1');
+            $routes->get('delete/(:num)', 'PettyCategory::delete/$1');
+            $routes->get('toggle-status/(:num)', 'PettyCategory::toggleStatus/$1');
+            $routes->get('get-categories', 'PettyCategory::getCategories');
         });
     });
 });

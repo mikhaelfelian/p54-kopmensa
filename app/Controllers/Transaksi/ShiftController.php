@@ -212,16 +212,16 @@ class ShiftController extends BaseController
         }
 
         // Get petty cash entries
-        $pettyEntries = $this->pettyModel->getPettyCashByShift($shift_id);
+        $pettyEntries = $this->pettyModel->getPettyCashWithDetails(['shift_id' => $shift_id]);
         
         // Get sales entries
         $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
 
         $data = array_merge($this->data, [
-            'title' => 'Detail Shift',
-            'shift' => $shift,
-            'pettyEntries' => $pettyEntries,
-            'salesEntries' => $salesEntries
+            'title'         => 'Detail Shift',
+            'shift'         => $shift,
+            'pettyEntries'  => $pettyEntries,
+            'salesEntries'  => $salesEntries,
         ]);
         
         return view('admin-lte-3/shift/view', $data);

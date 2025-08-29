@@ -6,7 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\PettyCategoryModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
-class PettyCategoryController extends BaseController
+class PettyCategory extends BaseController
 {
     protected $categoryModel;
 

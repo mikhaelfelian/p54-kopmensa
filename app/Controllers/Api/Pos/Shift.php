@@ -93,18 +93,15 @@ class Shift extends BaseController
         }
 
         // Get petty cash entries for this shift
-        $pettyEntries = $this->pettyModel->getPettyCashByShift($shift_id);
+        $pettyEntries = $this->pettyModel->getPettyCashWithDetails(['shift_id' => $shift_id]);
         
         // Get sales entries for this shift
         $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
 
         return $this->respond([
-            'success' => true,
-            'data' => [
-                'shift' => $shift,
-                'petty_entries' => $pettyEntries,
-                'sales_entries' => $salesEntries
-            ]
+            'shift' => $shift,
+            'petty_entries' => $pettyEntries,
+            'sales_entries' => $salesEntries
         ]);
     }
 
@@ -308,18 +305,15 @@ class Shift extends BaseController
         }
 
         // Get petty cash entries for this shift
-        $pettyEntries = $this->pettyModel->getPettyCashByShift($shift_id);
+        $pettyEntries = $this->pettyModel->getPettyCashWithDetails(['shift_id' => $shift_id]);
         
         // Get sales entries for this shift
         $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
 
         return $this->respond([
-            'success' => true,
-            'data' => [
-                'shift' => $shift,
-                'petty_entries' => $pettyEntries,
-                'sales_entries' => $salesEntries
-            ]
+            'shift' => $shift,
+            'petty_entries' => $pettyEntries,
+            'sales_entries' => $salesEntries
         ]);
     }
 

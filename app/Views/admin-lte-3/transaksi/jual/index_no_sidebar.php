@@ -227,6 +227,16 @@
                         <i class="fas fa-wallet fa-lg mr-3"></i>
                         <span class="font-weight-bold" style="font-size:1.1rem;">Kas Kecil</span>
                     </a>
+                    <a href="<?= base_url('transaksi/retur/jual/refund') ?>"
+                        class="btn btn-danger btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center">
+                        <i class="fas fa-undo-alt fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Retur Penjualan</span>
+                    </a>
+                    <a href="<?= base_url('/transaksi/refund') ?>"
+                        class="btn btn-info btn-lg rounded-0 py-3 mb-2 shadow-sm text-left d-flex align-items-center">
+                        <i class="fas fa-money-bill-wave fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Refund</span>
+                    </a>
                 </div>
             </div>
         </div>

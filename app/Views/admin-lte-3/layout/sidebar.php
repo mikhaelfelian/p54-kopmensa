@@ -119,20 +119,20 @@
                                             <p>Data Retur</p>
                                         </a>
                                     </li>
-                                    <li class="nav-item">
+                                    <!-- <li class="nav-item">
                                         <a href="<?= base_url('transaksi/retur/jual/refund') ?>"
                                             class="nav-link <?= isMenuActive('transaksi/retur/jual/refund') ? 'active' : '' ?>">
                                             <?= nbs(4) ?>
                                             <i class="fas fa-money-bill-wave nav-icon"></i>
                                             <p>Retur Refund</p>
                                         </a>
-                                    </li>
+                                    </li> -->
                                     <li class="nav-item">
                                         <a href="<?= base_url('transaksi/retur/jual/exchange') ?>"
                                             class="nav-link <?= isMenuActive('transaksi/retur/jual/exchange') ? 'active' : '' ?>">
                                             <?= nbs(4) ?>
                                             <i class="fas fa-exchange-alt nav-icon"></i>
-                                            <p>Retur Tukar Barang</p>
+                                            <p>Tukar Barang</p>
                                         </a>
                                     </li>
 
@@ -142,7 +142,7 @@
                                             class="nav-link <?= isMenuActive('transaksi/refund') ? 'active' : '' ?>">
                                             <?= nbs(4) ?>
                                             <i class="fas fa-money-bill-wave nav-icon"></i>
-                                            <p>Permintaan Refund</p>
+                                            <p>Pengembalian Dana</p>
                                         </a>
                                     </li>
                                 </ul>
