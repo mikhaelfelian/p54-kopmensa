@@ -414,6 +414,70 @@
                 }
               },
               {
+                "name": "Merk",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/merk?per_page=10&keyword=&page=1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "merk"],
+                    "query": [
+                      { "key": "per_page", "value": "10" },
+                      { "key": "keyword", "value": "" },
+                      { "key": "page", "value": "1" }
+                    ]
+                  }
+                }
+              },
+              {
+                "name": "Merk Detail",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/merk/detail/1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "merk", "detail", "1"]
+                  }
+                }
+              },
+              {
+                "name": "Merk All",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/merk/all",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "merk", "all"]
+                  }
+                }
+              },
+              {
+                "name": "Merk Search",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/merk/search?q=nike",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "merk", "search"],
+                    "query": [
+                      { "key": "q", "value": "nike", "description": "Search keyword for brand name or code" }
+                    ]
+                  }
+                }
+              },
+              {
                 "name": "Outlet",
                 "request": {
                   "method": "GET",
