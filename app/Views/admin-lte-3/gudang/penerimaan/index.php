@@ -237,11 +237,13 @@
                             </td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="<?= base_url("gudang/terima/{$row->id}") ?>" 
-                                       class="btn btn-success btn-sm" 
-                                       title="Terima Barang">
-                                        <i class="fas fa-check"></i> Terima
-                                    </a>
+                                    <?php if (($row->status_terima ?? '0') != '1'): ?>
+                                        <a href="<?= base_url("gudang/terima/{$row->id}") ?>" 
+                                        class="btn btn-success btn-sm" 
+                                        title="Terima Barang">
+                                            <i class="fas fa-check"></i> Terima
+                                        </a>
+                                    <?php endif; ?>
                                     <a href="<?= base_url("transaksi/beli/detail/{$row->id}") ?>" 
                                        class="btn btn-info btn-sm" 
                                        title="Detail Transaksi">
