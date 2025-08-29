@@ -14,9 +14,12 @@ use App\Models\ShiftModel;
 use App\Models\GudangModel;
 use App\Models\PettyModel;
 use App\Models\TransJualModel;
+use CodeIgniter\API\ResponseTrait;
 
 class Shift extends BaseController
 {
+    use ResponseTrait;
+
     protected $shiftModel;
     protected $gudangModel;
     protected $pettyModel;
@@ -36,19 +39,16 @@ class Shift extends BaseController
     public function index()
     {
         $outlet_id = $this->request->getGet('outlet_id');
-        $per_page = $this->request->getGet('per_page') ?? 10;
-        $page = $this->request->getGet('page') ?? 1;
+        $per_page = (int) ($this->request->getGet('per_page') ?? 10);
+        $page = (int) ($this->request->getGet('page') ?? 1);
         
         if (!$outlet_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID required'
-            ]);
+            return $this->failValidationError('Outlet ID required');
         }
 
         $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, $per_page, ($page - 1) * $per_page);
         
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'data' => $shifts
         ]);
@@ -60,18 +60,12 @@ class Shift extends BaseController
     public function detail($shift_id = null)
     {
         if (!$shift_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift ID required'
-            ]);
+            return $this->failValidationError('Shift ID required');
         }
 
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
         if (!$shift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift not found'
-            ]);
+            return $this->failNotFound('Shift not found');
         }
 
         // Get petty cash entries for this shift
@@ -80,7 +74,7 @@ class Shift extends BaseController
         // Get sales entries for this shift
         $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
 
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'data' => [
                 'shift' => $shift,
@@ -96,19 +90,13 @@ class Shift extends BaseController
     public function summary($shift_id = null)
     {
         if (!$shift_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift ID required'
-            ]);
+            return $this->failValidationError('Shift ID required');
         }
 
         // Get shift details
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
         if (!$shift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift not found'
-            ]);
+            return $this->failNotFound('Shift not found');
         }
 
         // Get petty cash summary for this shift
@@ -152,7 +140,7 @@ class Shift extends BaseController
             ]
         ];
 
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'message' => 'Shift summary retrieved successfully',
             'data' => $summary
@@ -169,29 +157,18 @@ class Shift extends BaseController
         $user_id = $this->request->getPost('user_id');
 
         if (!$outlet_id || !$saldo_awal || !$user_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID, saldo awal, and user ID are required'
-            ]);
+            return $this->failValidationError('Outlet ID, saldo awal, and user ID are required');
         }
 
         // Check if there's already an active shift
         $existingShift = $this->shiftModel->getActiveShift($outlet_id);
         if ($existingShift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'There is already an active shift for this outlet',
-                'code' => 'SHIFT_ALREADY_OPEN',
-                'data' => $existingShift
-            ]);
+            return $this->failValidationError('There is already an active shift for this outlet');
         }
 
         // Validate saldo awal
         if (!is_numeric($saldo_awal) || $saldo_awal < 0) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Saldo awal must be a positive number'
-            ]);
+            return $this->failValidationError('Saldo awal must be a positive number');
         }
 
         // Generate shift code
@@ -211,7 +188,7 @@ class Shift extends BaseController
         ];
 
         if ($this->shiftModel->insert($data)) {
-            return $this->response->setJSON([
+            return $this->respond([
                 'success' => true,
                 'message' => 'Shift opened successfully',
                 'data' => [
@@ -223,10 +200,7 @@ class Shift extends BaseController
                 ]
             ]);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to open shift'
-            ]);
+            return $this->failServerError('Failed to open shift');
         }
     }
 
@@ -244,41 +218,28 @@ class Shift extends BaseController
         $user_id = $this->request->getPost('user_id');
 
         if (!$shift_id || !$saldo_akhir || !$user_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift ID, saldo akhir, and user ID are required'
-            ]);
+            return $this->failValidationError('Shift ID, saldo akhir, and user ID are required');
         }
 
         // Get shift details
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
         if (!$shift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift not found'
-            ]);
+            return $this->failNotFound('Shift not found');
         }
 
         // Check if shift is already closed
         if ($shift['status'] !== 'open') {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift is not open or already closed',
-                'code' => 'SHIFT_NOT_OPEN'
-            ]);
+            return $this->failValidationError('Shift is not open or already closed');
         }
 
         // Validate saldo akhir
         if (!is_numeric($saldo_akhir) || $saldo_akhir < 0) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Saldo akhir must be a positive number'
-            ]);
+            return $this->failValidationError('Saldo akhir must be a positive number');
         }
 
         // Close the shift
         if ($this->shiftModel->closeShift($shift_id, $user_id, $saldo_akhir, $notes)) {
-            return $this->response->setJSON([
+            return $this->respond([
                 'success' => true,
                 'message' => 'Shift closed successfully',
                 'data' => [
@@ -289,10 +250,7 @@ class Shift extends BaseController
                 ]
             ]);
         } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to close shift'
-            ]);
+            return $this->failServerError('Failed to close shift');
         }
     }
 
@@ -304,16 +262,13 @@ class Shift extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID required'
-            ]);
+            return $this->failValidationError('Outlet ID required');
         }
 
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         
         if (!$activeShift) {
-            return $this->response->setJSON([
+            return $this->respond([
                 'success' => false,
                 'message' => 'No active shift found',
                 'code' => 'NO_ACTIVE_SHIFT',
@@ -321,7 +276,7 @@ class Shift extends BaseController
             ]);
         }
 
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'message' => 'Active shift found',
             'data' => $activeShift
@@ -338,18 +293,12 @@ class Shift extends BaseController
         }
 
         if (!$shift_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift ID required'
-            ]);
+            return $this->failValidationError('Shift ID required');
         }
 
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
         if (!$shift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift not found'
-            ]);
+            return $this->failNotFound('Shift not found');
         }
 
         // Get petty cash entries for this shift
@@ -358,7 +307,7 @@ class Shift extends BaseController
         // Get sales entries for this shift
         $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
 
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'data' => [
                 'shift' => $shift,
@@ -377,15 +326,12 @@ class Shift extends BaseController
         $date = $this->request->getPost('date') ?? date('Y-m-d');
         
         if (!$outlet_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID required'
-            ]);
+            return $this->failValidationError('Outlet ID required');
         }
 
         $summary = $this->shiftModel->getShiftSummary($outlet_id, $date);
         
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'data' => $summary
         ]);
@@ -397,19 +343,16 @@ class Shift extends BaseController
     public function getShiftsByOutlet()
     {
         $outlet_id = $this->request->getPost('outlet_id');
-        $limit = $this->request->getPost('limit') ?? 50;
-        $offset = $this->request->getPost('offset') ?? 0;
+        $limit = (int) ($this->request->getPost('limit') ?? 50);
+        $offset = (int) ($this->request->getPost('offset') ?? 0);
         
         if (!$outlet_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID required'
-            ]);
+            return $this->failValidationError('Outlet ID required');
         }
 
         $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, $limit, $offset);
         
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'data' => $shifts
         ]);
@@ -423,15 +366,12 @@ class Shift extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID required'
-            ]);
+            return $this->failValidationError('Outlet ID required');
         }
 
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'data' => [
                 'has_active_shift' => !empty($activeShift),
@@ -447,7 +387,7 @@ class Shift extends BaseController
     {
         $outlets = $this->gudangModel->getOutletsForDropdown();
         
-        return $this->response->setJSON([
+        return $this->respond([
             'success' => true,
             'data' => $outlets
         ]);
