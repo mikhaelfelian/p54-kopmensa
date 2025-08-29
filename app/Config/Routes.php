@@ -81,9 +81,13 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('dashboard/top-products', 'Dashboard::topProducts');
 
         // Shift Management endpoints
+        $routes->get('shift', 'Shift::index');
+        $routes->get('shift/detail/(:num)', 'Shift::detail/$1');
+        $routes->get('shift/summary/(:num)', 'Shift::summary/$1');
         $routes->post('shift/active', 'Shift::getActiveShift');
-        $routes->post('shift/open', 'Shift::openShift');
-        $routes->post('shift/close', 'Shift::closeShift');
+        $routes->post('shift/open', 'Shift::open');
+        $routes->post('shift/close/(:num)', 'Shift::close/$1');
+        $routes->post('shift/close', 'Shift::close');
         $routes->get('shift/details/(:num)', 'Shift::getShiftDetails/$1');
         $routes->post('shift/details', 'Shift::getShiftDetails');
         $routes->post('shift/summary', 'Shift::getShiftSummary');

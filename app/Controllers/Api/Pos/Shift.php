@@ -31,6 +31,272 @@ class Shift extends BaseController
     }
 
     /**
+     * Get shift list
+     */
+    public function index()
+    {
+        $outlet_id = $this->request->getGet('outlet_id');
+        $per_page = $this->request->getGet('per_page') ?? 10;
+        $page = $this->request->getGet('page') ?? 1;
+        
+        if (!$outlet_id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Outlet ID required'
+            ]);
+        }
+
+        $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, $per_page, ($page - 1) * $per_page);
+        
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $shifts
+        ]);
+    }
+
+    /**
+     * Get shift detail by ID
+     */
+    public function detail($shift_id = null)
+    {
+        if (!$shift_id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift ID required'
+            ]);
+        }
+
+        $shift = $this->shiftModel->getShiftWithDetails($shift_id);
+        if (!$shift) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift not found'
+            ]);
+        }
+
+        // Get petty cash entries for this shift
+        $pettyEntries = $this->pettyModel->getPettyCashByShift($shift_id);
+        
+        // Get sales entries for this shift
+        $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => [
+                'shift' => $shift,
+                'petty_entries' => $pettyEntries,
+                'sales_entries' => $salesEntries
+            ]
+        ]);
+    }
+
+    /**
+     * Get shift summary by ID (GET request)
+     */
+    public function summary($shift_id = null)
+    {
+        if (!$shift_id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift ID required'
+            ]);
+        }
+
+        // Get shift details
+        $shift = $this->shiftModel->getShiftWithDetails($shift_id);
+        if (!$shift) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift not found'
+            ]);
+        }
+
+        // Get petty cash summary for this shift
+        $pettySummary = $this->pettyModel->getPettyCashSummaryByShift($shift_id);
+        
+        // Get sales summary for this shift
+        $salesSummary = $this->transJualModel->getSalesSummaryByShift($shift_id);
+
+        // Calculate totals
+        $totalCashIn = $shift['open_float'] + ($pettySummary['total_in'] ?? 0) + ($salesSummary['total_cash'] ?? 0);
+        $totalCashOut = ($pettySummary['total_out'] ?? 0);
+        $expectedCash = $totalCashIn - $totalCashOut;
+
+        $summary = [
+            'shift_id' => $shift_id,
+            'shift_code' => $shift['shift_code'],
+            'outlet_id' => $shift['outlet_id'],
+            'outlet_name' => $shift['outlet_name'] ?? 'Unknown Outlet',
+            'user_open' => $shift['user_open_name'] ?? 'Unknown User',
+            'start_at' => $shift['start_at'],
+            'end_at' => $shift['status'] === 'closed' ? $shift['end_at'] : null,
+            'status' => $shift['status'],
+            'open_float' => (float) $shift['open_float'],
+            'sales_summary' => [
+                'total_transactions' => $salesSummary['total_transactions'] ?? 0,
+                'total_amount' => (float) ($salesSummary['total_amount'] ?? 0),
+                'total_cash' => (float) ($salesSummary['total_cash'] ?? 0),
+                'total_non_cash' => (float) ($salesSummary['total_non_cash'] ?? 0)
+            ],
+            'petty_cash_summary' => [
+                'total_in' => (float) ($pettySummary['total_in'] ?? 0),
+                'total_out' => (float) ($pettySummary['total_out'] ?? 0),
+                'total_transactions' => ($pettySummary['total_transactions'] ?? 0)
+            ],
+            'cash_summary' => [
+                'total_cash_in' => $totalCashIn,
+                'total_cash_out' => $totalCashOut,
+                'expected_cash' => $expectedCash,
+                'counted_cash' => $shift['status'] === 'closed' ? (float) ($shift['counted_cash'] ?? 0) : null,
+                'cash_difference' => $shift['status'] === 'closed' ? ($expectedCash - (float) ($shift['counted_cash'] ?? 0)) : null
+            ]
+        ];
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Shift summary retrieved successfully',
+            'data' => $summary
+        ]);
+    }
+
+    /**
+     * Open new shift
+     */
+    public function open()
+    {
+        $outlet_id = $this->request->getPost('outlet_id');
+        $saldo_awal = $this->request->getPost('saldo_awal');
+        $user_id = $this->request->getPost('user_id');
+
+        if (!$outlet_id || !$saldo_awal || !$user_id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Outlet ID, saldo awal, and user ID are required'
+            ]);
+        }
+
+        // Check if there's already an active shift
+        $existingShift = $this->shiftModel->getActiveShift($outlet_id);
+        if ($existingShift) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'There is already an active shift for this outlet',
+                'code' => 'SHIFT_ALREADY_OPEN',
+                'data' => $existingShift
+            ]);
+        }
+
+        // Validate saldo awal
+        if (!is_numeric($saldo_awal) || $saldo_awal < 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Saldo awal must be a positive number'
+            ]);
+        }
+
+        // Generate shift code
+        $shift_code = $this->generateShiftCode($outlet_id);
+
+        $data = [
+            'shift_code' => $shift_code,
+            'outlet_id' => $outlet_id,
+            'user_open_id' => $user_id,
+            'start_at' => date('Y-m-d H:i:s'),
+            'open_float' => $saldo_awal,
+            'sales_cash_total' => 0.00,
+            'petty_in_total' => 0.00,
+            'petty_out_total' => 0.00,
+            'expected_cash' => $saldo_awal,
+            'status' => 'open'
+        ];
+
+        if ($this->shiftModel->insert($data)) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Shift opened successfully',
+                'data' => [
+                    'shift_id' => $this->shiftModel->insertID,
+                    'shift_code' => $shift_code,
+                    'outlet_id' => $outlet_id,
+                    'saldo_awal' => $saldo_awal,
+                    'start_at' => $data['start_at']
+                ]
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to open shift'
+            ]);
+        }
+    }
+
+    /**
+     * Close active shift
+     */
+    public function close($shift_id = null)
+    {
+        if (!$shift_id) {
+            $shift_id = $this->request->getPost('shift_id');
+        }
+
+        $saldo_akhir = $this->request->getPost('saldo_akhir');
+        $notes = $this->request->getPost('notes');
+        $user_id = $this->request->getPost('user_id');
+
+        if (!$shift_id || !$saldo_akhir || !$user_id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift ID, saldo akhir, and user ID are required'
+            ]);
+        }
+
+        // Get shift details
+        $shift = $this->shiftModel->getShiftWithDetails($shift_id);
+        if (!$shift) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift not found'
+            ]);
+        }
+
+        // Check if shift is already closed
+        if ($shift['status'] !== 'open') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift is not open or already closed',
+                'code' => 'SHIFT_NOT_OPEN'
+            ]);
+        }
+
+        // Validate saldo akhir
+        if (!is_numeric($saldo_akhir) || $saldo_akhir < 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Saldo akhir must be a positive number'
+            ]);
+        }
+
+        // Close the shift
+        if ($this->shiftModel->closeShift($shift_id, $user_id, $saldo_akhir, $notes)) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Shift closed successfully',
+                'data' => [
+                    'shift_id' => $shift_id,
+                    'shift_code' => $shift['shift_code'],
+                    'saldo_akhir' => $saldo_akhir,
+                    'close_time' => date('Y-m-d H:i:s')
+                ]
+            ]);
+        } else {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Failed to close shift'
+            ]);
+        }
+    }
+
+    /**
      * Get active shift for outlet
      */
     public function getActiveShift()
@@ -60,140 +326,6 @@ class Shift extends BaseController
             'message' => 'Active shift found',
             'data' => $activeShift
         ]);
-    }
-
-    /**
-     * Open new shift
-     */
-    public function openShift()
-    {
-        $outlet_id = $this->request->getPost('outlet_id');
-        $open_float = $this->request->getPost('open_float');
-        $user_id = $this->request->getPost('user_id');
-
-        if (!$outlet_id || !$open_float || !$user_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Outlet ID, open float, and user ID are required'
-            ]);
-        }
-
-        // Check if there's already an active shift
-        $existingShift = $this->shiftModel->getActiveShift($outlet_id);
-        if ($existingShift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'There is already an active shift for this outlet',
-                'code' => 'SHIFT_ALREADY_OPEN',
-                'data' => $existingShift
-            ]);
-        }
-
-        // Validate open float
-        if (!is_numeric($open_float) || $open_float < 0) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Open float must be a positive number'
-            ]);
-        }
-
-        // Generate shift code
-        $shift_code = $this->generateShiftCode($outlet_id);
-
-        $data = [
-            'shift_code' => $shift_code,
-            'outlet_id' => $outlet_id,
-            'user_open_id' => $user_id,
-            'start_at' => date('Y-m-d H:i:s'),
-            'open_float' => $open_float,
-            'sales_cash_total' => 0.00,
-            'petty_in_total' => 0.00,
-            'petty_out_total' => 0.00,
-            'expected_cash' => $open_float,
-            'status' => 'open'
-        ];
-
-        if ($this->shiftModel->insert($data)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Shift opened successfully',
-                'data' => [
-                    'shift_id' => $this->shiftModel->insertID,
-                    'shift_code' => $shift_code,
-                    'outlet_id' => $outlet_id,
-                    'open_float' => $open_float,
-                    'start_at' => $data['start_at']
-                ]
-            ]);
-        } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to open shift'
-            ]);
-        }
-    }
-
-    /**
-     * Close active shift
-     */
-    public function closeShift()
-    {
-        $shift_id = $this->request->getPost('shift_id');
-        $counted_cash = $this->request->getPost('counted_cash');
-        $notes = $this->request->getPost('notes');
-        $user_id = $this->request->getPost('user_id');
-
-        if (!$shift_id || !$counted_cash || !$user_id) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift ID, counted cash, and user ID are required'
-            ]);
-        }
-
-        // Get shift details
-        $shift = $this->shiftModel->getShiftWithDetails($shift_id);
-        if (!$shift) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift not found'
-            ]);
-        }
-
-        // Check if shift is already closed
-        if ($shift['status'] !== 'open') {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Shift is not open or already closed',
-                'code' => 'SHIFT_NOT_OPEN'
-            ]);
-        }
-
-        // Validate counted cash
-        if (!is_numeric($counted_cash) || $counted_cash < 0) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Counted cash must be a positive number'
-            ]);
-        }
-
-        // Close the shift
-        if ($this->shiftModel->closeShift($shift_id, $user_id, $counted_cash, $notes)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Shift closed successfully',
-                'data' => [
-                    'shift_id' => $shift_id,
-                    'shift_code' => $shift['shift_code'],
-                    'counted_cash' => $counted_cash,
-                    'close_time' => date('Y-m-d H:i:s')
-                ]
-            ]);
-        } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Failed to close shift'
-            ]);
-        }
     }
 
     /**
