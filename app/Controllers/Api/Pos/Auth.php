@@ -29,9 +29,12 @@ class Auth extends BaseController
 
     public function login()
     {
-        $identity = $this->request->getPost('user');
-        $password = $this->request->getPost('pass');
-        $outlet   = $this->request->getPost('outlet');
+        $identity    = $this->request->getPost('user');
+        $password    = $this->request->getPost('pass');
+        $outlet      = $this->request->getPost('outlet');
+        $deviceId    = $this->request->getPost('device_id');
+        $deviceName  = $this->request->getPost('device_name');
+        $deviceIp    = $this->request->getPost('device_ip');
 
         $ionAuth = new \IonAuth\Libraries\IonAuth();
         if (!$ionAuth->login($identity, $password)) {
@@ -78,17 +81,33 @@ class Auth extends BaseController
             'iat' => $issuedAt,
             'exp' => $issuedAt + $jwtConfig->exp,
             'data' => [
+                'id'          => $user->id,
                 'first_name'  => $user->first_name,
                 'username'    => $user->username,
                 'email'       => $user->email,
                 'profile'     => $profileUrl,
-                'id'          => $user->id,
                 'outlet_id'   => $outlet,
-                'outlet_name' => $outletName
+                'outlet_name' => $outletName,
+                'device_id'   => $deviceId ?? null,
+                'device_name' => $deviceName ?? null,
+                'device_ip'   => $deviceIp ?? null,
             ]
         ];
 
-        $token = JWT::encode($payload, $jwtConfig->key, $jwtConfig->alg);
+        // Ensure the JWT key is a string (not boolean or null)
+        $jwtKey = $jwtConfig->key;
+        if (!is_string($jwtKey)) {
+            // Try to cast to string if possible, or throw a clear error
+            if (is_null($jwtKey) || is_bool($jwtKey)) {
+                return $this->respond([
+                    'success' => false,
+                    'message' => 'JWT key is not properly configured. Please set a valid string key in your JWT config.'
+                ], 500);
+            }
+            $jwtKey = (string) $jwtKey;
+        }
+
+        $token = JWT::encode($payload, $jwtKey, $jwtConfig->alg);
 
         return $this->respond([
             'status'   => 200,

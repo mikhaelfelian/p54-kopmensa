@@ -327,6 +327,21 @@
                             "key": "outlet",
                             "value": "<outlet_id>",
                             "description": "Outlet ID yang dipilih saat login"
+                          },
+                          {
+                            "key": "device_id",
+                            "value": "<device_id>",
+                            "description": "ID unik perangkat yang digunakan untuk login"
+                          },
+                          {
+                            "key": "device_name",
+                            "value": "<device_name>",
+                            "description": "Nama perangkat yang digunakan untuk login"
+                          },
+                          {
+                            "key": "device_ip",
+                            "value": "<device_ip>",
+                            "description": "IP address perangkat yang digunakan untuk login"
                           }
                         ]
                       }
@@ -1114,11 +1129,9 @@
                 ]
               }
             ]
-          }
-        ]
-      },
-      {
-        "name": "petty-cash",
+          },
+          {
+            "name": "petty-cash",
         "item": [
           {
             "name": "Get Petty Cash List",
@@ -1452,10 +1465,11 @@
           }
         ]
       }
-    ],
-    "variable": [
-      { "key": "baseUrl", "value": "https://dev.kopmensa.com" },
-      { "key": "jwt_token", "value": "" }
     ]
   }
-  
+],
+"variable": [
+  { "key": "baseUrl", "value": "http://localhost/p54-kopmensa/" },
+  { "key": "jwt_token", "value": "" }
+]
+}
