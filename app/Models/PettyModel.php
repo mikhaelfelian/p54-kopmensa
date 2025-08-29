@@ -9,25 +9,13 @@ class PettyModel extends Model
     protected $table            = 'tbl_pos_petty_cash';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
+    protected $returnType       = 'object';
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'shift_id',
-        'outlet_id',
-        'kasir_user_id',
-        'category_id',
-        'direction',
-        'amount',
-        'reason',
-        'ref_no',
-        'attachment_path',
-        'status',
-        'approved_by',
-        'approved_at',
-        'created_at',
-        'updated_at',
-        'deleted_at'
+        'shift_id', 'outlet_id', 'kasir_user_id', 'category_id', 'direction', 
+        'amount', 'reason', 'ref_no', 'attachment_path', 'status', 'approved_by', 'approved_at',
+        'created_at', 'updated_at', 'deleted_at'
     ];
 
     // Dates
@@ -38,211 +26,383 @@ class PettyModel extends Model
     protected $deletedField  = 'deleted_at';
 
     // Validation
-    protected $validationRules      = [
-        'shift_id' => 'required|integer',
-        'outlet_id' => 'required|integer',
-        'kasir_user_id' => 'required|integer',
-        'direction' => 'required|in_list[IN,OUT]',
-        'amount' => 'required|decimal',
-        'status' => 'required|in_list[draft,posted,void]'
+    protected $validationRules = [
+        'shift_id'       => 'required|integer',
+        'outlet_id'      => 'required|integer',
+        'kasir_user_id'  => 'required|integer',
+        'category_id'    => 'permit_empty|integer',
+        'direction'      => 'required|in_list[IN,OUT]',
+        'amount'         => 'required|numeric|greater_than[0]',
+        'reason'         => 'required|min_length[10]',
+        'status'         => 'required|in_list[draft,posted,void]'
     ];
-    protected $validationMessages   = [];
-    protected $skipValidation       = false;
-    protected $cleanValidationRules = true;
 
-    // Callbacks
-    protected $allowCallbacks = true;
-    protected $beforeInsert   = [];
-    protected $afterInsert    = [];
-    protected $beforeUpdate   = [];
-    protected $afterUpdate    = [];
-    protected $beforeFind     = [];
-    protected $afterFind      = [];
-    protected $beforeDelete   = [];
-    protected $afterDelete    = [];
+    protected $validationMessages = [
+        'shift_id' => [
+            'required' => 'Shift ID harus diisi',
+            'integer' => 'Shift ID harus berupa angka'
+        ],
+        'outlet_id' => [
+            'required' => 'Outlet harus dipilih',
+            'integer' => 'Outlet ID harus berupa angka'
+        ],
+        'kasir_user_id' => [
+            'required' => 'Kasir harus dipilih',
+            'integer' => 'Kasir ID harus berupa angka'
+        ],
+        'category_id' => [
+            'integer' => 'Kategori ID harus berupa angka'
+        ],
+        'direction' => [
+            'required' => 'Arah transaksi harus dipilih',
+            'in_list' => 'Arah transaksi harus IN atau OUT'
+        ],
+        'amount' => [
+            'required' => 'Jumlah harus diisi',
+            'numeric' => 'Jumlah harus berupa angka',
+            'greater_than' => 'Jumlah harus lebih dari 0'
+        ],
+        'reason' => [
+            'required' => 'Alasan harus diisi',
+            'min_length' => 'Alasan minimal 10 karakter'
+        ],
+        'status' => [
+            'required' => 'Status harus diisi',
+            'in_list' => 'Status tidak valid'
+        ]
+    ];
 
     /**
-     * Get petty cash entries with related data
+     * Get petty cash with related data
      */
-    public function getPettyCashWithDetails($id = null, $filters = [])
+    public function getPettyCashWithDetails($filters = [], $limit = null, $offset = 0)
     {
-        $builder = $this->db->table('tbl_pos_petty_cash pc')
-            ->select('
-                pc.*,
-                s.shift_code,
-                g.nama as outlet_name,
-                g.kode as outlet_code,
-                u_kasir.first_name as kasir_first_name,
-                u_kasir.last_name as kasir_last_name,
-                pc_cat.name as category_name,
-                u_approve.first_name as approver_first_name,
-                u_approve.last_name as approver_last_name
-            ')
-            ->join('tbl_m_shift s', 's.id = pc.shift_id', 'left')
-            ->join('tbl_m_gudang g', 'g.id = pc.outlet_id', 'left')
-            ->join('tbl_ion_users u_kasir', 'u_kasir.id = pc.kasir_user_id', 'left')
-            ->join('tbl_m_petty_category pc_cat', 'pc_cat.id = pc.category_id', 'left')
-            ->join('tbl_ion_users u_approve', 'u_approve.id = pc.approved_by', 'left');
-
-        if ($id) {
-            $builder->where('pc.id', $id);
-            return $builder->get()->getRowArray();
-        }
+        $builder = $this->select('
+            tbl_pos_petty_cash.*,
+            tbl_ion_users.first_name as user_name,
+            tbl_ion_users.last_name as user_lastname,
+            tbl_m_gudang.nama as outlet_name,
+            tbl_m_petty_category.name as kategori_nama,
+            approver.first_name as approver_name,
+            approver.last_name as approver_lastname
+        ')
+        ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_pos_petty_cash.kasir_user_id', 'left')
+        ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_pos_petty_cash.outlet_id', 'left')
+        ->join('tbl_m_petty_category', 'tbl_m_petty_category.id = tbl_pos_petty_cash.category_id', 'left')
+        ->join('tbl_ion_users approver', 'approver.id = tbl_pos_petty_cash.approved_by', 'left');
 
         // Apply filters
         if (!empty($filters['outlet_id'])) {
-            $builder->where('pc.outlet_id', $filters['outlet_id']);
+            $builder->where('tbl_pos_petty_cash.outlet_id', $filters['outlet_id']);
         }
 
-        if (!empty($filters['shift_id'])) {
-            $builder->where('pc.shift_id', $filters['shift_id']);
-        }
-
-        if (!empty($filters['direction'])) {
-            $builder->where('pc.direction', $filters['direction']);
+        if (!empty($filters['user_id'])) {
+            $builder->where('tbl_pos_petty_cash.kasir_user_id', $filters['user_id']);
         }
 
         if (!empty($filters['status'])) {
-            $builder->where('pc.status', $filters['status']);
+            $builder->where('tbl_pos_petty_cash.status', $filters['status']);
+        }
+
+        if (!empty($filters['direction'])) {
+            $builder->where('tbl_pos_petty_cash.direction', $filters['direction']);
         }
 
         if (!empty($filters['date_from'])) {
-            $builder->where('DATE(pc.created_at) >=', $filters['date_from']);
+            $builder->where('tbl_pos_petty_cash.created_at >=', $filters['date_from']);
         }
 
         if (!empty($filters['date_to'])) {
-            $builder->where('DATE(pc.created_at) <=', $filters['date_to']);
+            $builder->where('tbl_pos_petty_cash.created_at <=', $filters['date_to']);
         }
 
-        $builder->orderBy('pc.created_at', 'DESC');
-
-        return $builder->get()->getResultArray();
-    }
-
-    /**
-     * Get petty cash entries by shift
-     */
-    public function getPettyCashByShift($shift_id)
-    {
-        return $this->getPettyCashWithDetails(null, ['shift_id' => $shift_id]);
-    }
-
-    /**
-     * Get petty cash entries by outlet
-     */
-    public function getPettyCashByOutlet($outlet_id, $date_from = null, $date_to = null)
-    {
-        $filters = ['outlet_id' => $outlet_id];
-        
-        if ($date_from) {
-            $filters['date_from'] = $date_from;
-        }
-        
-        if ($date_to) {
-            $filters['date_to'] = $date_to;
+        if (!empty($filters['search'])) {
+            $builder->groupStart()
+                ->like('tbl_pos_petty_cash.reason', $filters['search'])
+                ->orLike('tbl_m_petty_category.name', $filters['search'])
+                ->orLike('tbl_ion_users.first_name', $filters['search'])
+                ->orLike('tbl_ion_users.last_name', $filters['search'])
+                ->groupEnd();
         }
 
-        return $this->getPettyCashWithDetails(null, $filters);
+        $builder->orderBy('tbl_pos_petty_cash.created_at', 'DESC');
+
+        if ($limit) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get()->getResult();
     }
 
     /**
-     * Get petty cash summary by shift
+     * Get petty cash summary by outlet
      */
-    public function getPettyCashSummaryByShift($shift_id)
+    public function getSummaryByOutlet($outletId = null, $dateFrom = null, $dateTo = null)
     {
-        $builder = $this->db->table('tbl_pos_petty_cash pc')
-            ->select('
-                SUM(CASE WHEN pc.direction = "IN" THEN pc.amount ELSE 0 END) as total_in,
-                SUM(CASE WHEN pc.direction = "OUT" THEN pc.amount ELSE 0 END) as total_out,
-                COUNT(CASE WHEN pc.direction = "IN" THEN 1 END) as count_in,
-                COUNT(CASE WHEN pc.direction = "OUT" THEN 1 END) as count_out,
-                COUNT(*) as total_entries
-            ')
-            ->where('pc.shift_id', $shift_id)
-            ->where('pc.status !=', 'void');
+        $builder = $this->select('
+            outlet_id,
+            direction,
+            COUNT(*) as total_transactions,
+            SUM(amount) as total_amount
+        ');
 
-        return $builder->get()->getRowArray();
+        if ($outletId) {
+            $builder->where('outlet_id', $outletId);
+        }
+
+        if ($dateFrom) {
+            $builder->where('created_at >=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $builder->where('created_at <=', $dateTo);
+        }
+
+        $builder->where('status', 'posted')
+                ->groupBy(['outlet_id', 'direction']);
+
+        return $builder->get()->getResult();
     }
 
     /**
-     * Get petty cash summary by outlet and date range
+     * Get petty cash summary by category
      */
-    public function getPettyCashSummaryByOutlet($outlet_id, $date_from, $date_to)
+    public function getSummaryByCategory($outletId = null, $dateFrom = null, $dateTo = null)
     {
-        $builder = $this->db->table('tbl_pos_petty_cash pc')
-            ->select('
-                SUM(CASE WHEN pc.direction = "IN" THEN pc.amount ELSE 0 END) as total_in,
-                SUM(CASE WHEN pc.direction = "OUT" THEN pc.amount ELSE 0 END) as total_out,
-                COUNT(CASE WHEN pc.direction = "IN" THEN 1 END) as count_in,
-                COUNT(CASE WHEN pc.direction = "OUT" THEN 1 END) as count_out,
-                COUNT(*) as total_entries
-            ')
-            ->where('pc.outlet_id', $outlet_id)
-            ->where('pc.status !=', 'void')
-            ->where('DATE(pc.created_at) >=', $date_from)
-            ->where('DATE(pc.created_at) <=', $date_to);
+        $builder = $this->select('
+            tbl_m_petty_category.name as kategori_nama,
+            COUNT(*) as total_transactions,
+            SUM(tbl_pos_petty_cash.amount) as total_amount
+        ')
+        ->join('tbl_m_petty_category', 'tbl_m_petty_category.id = tbl_pos_petty_cash.category_id', 'left');
 
-        return $builder->get()->getRowArray();
-    }
+        if ($outletId) {
+            $builder->where('tbl_pos_petty_cash.outlet_id', $outletId);
+        }
 
-    /**
-     * Approve petty cash entry
-     */
-    public function approvePettyCash($id, $approved_by)
-    {
-        return $this->update($id, [
-            'approved_by' => $approved_by,
-            'approved_at' => date('Y-m-d H:i:s'),
-            'status' => 'posted'
-        ]);
-    }
+        if ($dateFrom) {
+            $builder->where('tbl_pos_petty_cash.created_at >=', $dateFrom);
+        }
 
-    /**
-     * Void petty cash entry
-     */
-    public function voidPettyCash($id, $reason = '')
-    {
-        return $this->update($id, [
-            'status' => 'void',
-            'reason' => $reason
-        ]);
+        if ($dateTo) {
+            $builder->where('tbl_pos_petty_cash.created_at <=', $dateTo);
+        }
+
+        $builder->where('tbl_pos_petty_cash.status', 'posted')
+                ->groupBy(['tbl_m_petty_category.id', 'tbl_m_petty_category.name'])
+                ->orderBy('total_amount', 'DESC');
+
+        return $builder->get()->getResult();
     }
 
     /**
      * Get pending approvals
      */
-    public function getPendingApprovals($outlet_id = null)
+    public function getPendingApprovals($outletId = null)
     {
-        $builder = $this->where('status', 'draft');
-        
-        if ($outlet_id) {
-            $builder->where('outlet_id', $outlet_id);
+        $builder = $this->select('
+            tbl_pos_petty_cash.*,
+            tbl_ion_users.first_name as user_name,
+            tbl_ion_users.last_name as user_lastname,
+            tbl_m_gudang.nama as outlet_name,
+            tbl_m_petty_category.name as kategori_nama
+        ')
+        ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_pos_petty_cash.kasir_user_id', 'left')
+        ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_pos_petty_cash.outlet_id', 'left')
+        ->join('tbl_m_petty_category', 'tbl_m_petty_category.id = tbl_pos_petty_cash.category_id', 'left')
+        ->where('tbl_pos_petty_cash.status', 'draft');
+
+        if ($outletId) {
+            $builder->where('tbl_pos_petty_cash.outlet_id', $outletId);
         }
 
-        return $builder->findAll();
+        return $builder->orderBy('tbl_pos_petty_cash.created_at', 'ASC')
+                      ->get()
+                      ->getResult();
     }
 
     /**
-     * Get petty cash by category
+     * Approve petty cash
      */
-    public function getPettyCashByCategory($outlet_id, $date_from, $date_to)
+    public function approvePettyCash($id, $approverId, $notes = null)
     {
-        $builder = $this->db->table('tbl_pos_petty_cash pc')
-            ->select('
-                pc.category_id,
-                pc_cat.name as category_name,
-                SUM(CASE WHEN pc.direction = "IN" THEN pc.amount ELSE 0 END) as total_in,
-                SUM(CASE WHEN pc.direction = "OUT" THEN pc.amount ELSE 0 END) as total_out,
-                COUNT(*) as total_entries
-            ')
-            ->join('tbl_m_petty_category pc_cat', 'pc_cat.id = pc.category_id', 'left')
-            ->where('pc.outlet_id', $outlet_id)
-            ->where('pc.status !=', 'void')
-            ->where('DATE(pc.created_at) >=', $date_from)
-            ->where('DATE(pc.created_at) <=', $date_to)
-            ->groupBy('pc.category_id, pc_cat.name')
-            ->orderBy('total_out', 'DESC');
+        return $this->update($id, [
+            'status' => 'posted',
+            'approved_by' => $approverId,
+            'approved_at' => date('Y-m-d H:i:s')
+        ]);
+    }
 
-        return $builder->get()->getResultArray();
+    /**
+     * Reject petty cash
+     */
+    public function rejectPettyCash($id, $rejectorId, $reason)
+    {
+        return $this->update($id, [
+            'status' => 'void',
+            'approved_by' => $rejectorId,
+            'approved_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    /**
+     * Void petty cash
+     */
+    public function voidPettyCash($id, $userId, $reason)
+    {
+        return $this->update($id, [
+            'status' => 'void',
+            'approved_by' => $userId,
+            'approved_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    /**
+     * Get total petty cash by outlet and date range
+     */
+    public function getTotalByOutletAndDate($outletId, $dateFrom, $dateTo)
+    {
+        $result = $this->select('
+            SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as total_masuk,
+            SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_keluar,
+            COUNT(CASE WHEN direction = "IN" THEN 1 END) as count_masuk,
+            COUNT(CASE WHEN direction = "OUT" THEN 1 END) as count_keluar
+        ')
+        ->where('outlet_id', $outletId)
+        ->where('created_at >=', $dateFrom)
+        ->where('created_at <=', $dateTo)
+        ->where('status', 'posted')
+        ->get()
+        ->getRow();
+
+        return [
+            'total_masuk' => $result->total_masuk ?? 0,
+            'total_keluar' => $result->total_keluar ?? 0,
+            'count_masuk' => $result->count_masuk ?? 0,
+            'count_keluar' => $result->count_keluar ?? 0,
+            'net_amount' => ($result->total_masuk ?? 0) - ($result->total_keluar ?? 0)
+        ];
+    }
+
+    /**
+     * Get total records for pagination
+     */
+    public function getTotalRecords($filters = [])
+    {
+        $builder = $this->select('COUNT(*) as total')
+                        ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_pos_petty_cash.kasir_user_id', 'left')
+                        ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_pos_petty_cash.outlet_id', 'left')
+                        ->join('tbl_m_petty_category', 'tbl_m_petty_category.id = tbl_pos_petty_cash.category_id', 'left');
+
+        // Apply filters
+        if (!empty($filters['outlet_id'])) {
+            $builder->where('tbl_pos_petty_cash.outlet_id', $filters['outlet_id']);
+        }
+
+        if (!empty($filters['user_id'])) {
+            $builder->where('tbl_pos_petty_cash.kasir_user_id', $filters['user_id']);
+        }
+
+        if (!empty($filters['status'])) {
+            $builder->where('tbl_pos_petty_cash.status', $filters['status']);
+        }
+
+        if (!empty($filters['direction'])) {
+            $builder->where('tbl_pos_petty_cash.direction', $filters['direction']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $builder->where('tbl_pos_petty_cash.created_at >=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $builder->where('tbl_pos_petty_cash.created_at <=', $filters['date_to']);
+        }
+
+        if (!empty($filters['search'])) {
+            $builder->groupStart()
+                ->like('tbl_pos_petty_cash.reason', $filters['search'])
+                ->orLike('tbl_m_petty_category.name', $filters['search'])
+                ->orLike('tbl_ion_users.first_name', $filters['search'])
+                ->orLike('tbl_ion_users.last_name', $filters['search'])
+                ->groupEnd();
+        }
+
+        $result = $builder->get()->getRow();
+        return $result ? $result->total : 0;
+    }
+
+    /**
+     * Get petty cash summary by shift
+     */
+    public function getPettyCashSummaryByShift($shiftId)
+    {
+        $result = $this->select('
+            SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as total_in,
+            SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_out,
+            COUNT(CASE WHEN direction = "IN" THEN 1 END) as count_in,
+            COUNT(CASE WHEN direction = "OUT" THEN 1 END) as count_out
+        ')
+        ->where('shift_id', $shiftId)
+        ->where('status', 'posted')
+        ->get()
+        ->getRow();
+
+        return [
+            'total_in' => $result->total_in ?? 0,
+            'total_out' => $result->total_out ?? 0,
+            'count_in' => $result->count_in ?? 0,
+            'count_out' => $result->count_out ?? 0,
+            'net_amount' => ($result->total_in ?? 0) - ($result->total_out ?? 0)
+        ];
+    }
+
+    /**
+     * Get petty cash summary by outlet (for summary page)
+     */
+    public function getPettyCashSummaryByOutlet($outletId, $dateFrom, $dateTo)
+    {
+        $result = $this->select('
+            SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as total_in,
+            SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_out,
+            COUNT(CASE WHEN direction = "IN" THEN 1 END) as count_in,
+            COUNT(CASE WHEN direction = "OUT" THEN 1 END) as count_out
+        ')
+        ->where('outlet_id', $outletId)
+        ->where('created_at >=', $dateFrom)
+        ->where('created_at <=', $dateTo)
+        ->where('status', 'posted')
+        ->get()
+        ->getRow();
+
+        return [
+            'total_in' => $result->total_in ?? 0,
+            'total_out' => $result->total_out ?? 0,
+            'count_in' => $result->count_in ?? 0,
+            'count_out' => $result->count_out ?? 0,
+            'net_amount' => ($result->total_in ?? 0) - ($result->total_out ?? 0)
+        ];
+    }
+
+    /**
+     * Get petty cash by category (for category report)
+     */
+    public function getPettyCashByCategory($outletId, $dateFrom, $dateTo)
+    {
+        $builder = $this->select('
+            tbl_m_petty_category.name as category_name,
+            COUNT(*) as total_transactions,
+            SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as total_in,
+            SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_out
+        ')
+        ->join('tbl_m_petty_category', 'tbl_m_petty_category.id = tbl_pos_petty_cash.category_id', 'left')
+        ->where('tbl_pos_petty_cash.outlet_id', $outletId)
+        ->where('tbl_pos_petty_cash.created_at >=', $dateFrom)
+        ->where('tbl_pos_petty_cash.created_at <=', $dateTo)
+        ->where('tbl_pos_petty_cash.status', 'posted')
+        ->groupBy(['tbl_m_petty_category.id', 'tbl_m_petty_category.name'])
+        ->orderBy('total_transactions', 'DESC');
+
+        return $builder->get()->getResult();
     }
 }

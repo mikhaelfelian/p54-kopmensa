@@ -333,4 +333,16 @@ class GudangModel extends Model
         
         return $result ? $result->total_stok : 0;
     }
+
+    /**
+     * Mendapatkan semua outlets aktif (status_otl = '1')
+     */
+    public function getActiveOutlets()
+    {
+        return $this->where('status_otl', '1')
+                    ->where('status', '1') // hanya yang aktif
+                    ->where('status_hps', '0') // tidak terhapus
+                    ->orderBy('nama', 'ASC')
+                    ->findAll();
+    }
 } 

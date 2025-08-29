@@ -35,11 +35,26 @@ class PettyController extends BaseController
             'status' => $this->request->getGet('status') ?? ''
         ];
 
+        // Pagination
+        $page = $this->request->getGet('page') ?? 1;
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+
+        // Get total records for pagination
+        $totalRecords = $this->pettyModel->getTotalRecords($filters);
+        
+        // Get paginated data
+        $pettyEntries = $this->pettyModel->getPettyCashWithDetails($filters, $perPage, $offset);
+
         $data = array_merge($this->data, [
             'title' => 'Petty Cash Management',
-            'pettyEntries' => $this->pettyModel->getPettyCashWithDetails(null, $filters),
+            'pettyEntries' => $pettyEntries,
             'summary' => $this->pettyModel->getPettyCashSummaryByOutlet($filters['outlet_id'], $filters['date_from'], $filters['date_to']),
-            'filters' => $filters
+            'filters' => $filters,
+            'outlets' => $this->gudangModel->getActiveOutlets(),
+            'currentPage' => $page,
+            'perPage' => $perPage,
+            'totalRecords' => $totalRecords
         ]);
         
         return view('admin-lte-3/petty/index', $data);
@@ -118,13 +133,65 @@ class PettyController extends BaseController
         return view('admin-lte-3/petty/create', $data);
     }
 
+    public function store()
+    {
+        // Check if there's an active shift
+        $outlet_id = session()->get('outlet_id');
+        $activeShift = $this->shiftModel->getActiveShift($outlet_id);
+
+        if (!$activeShift) {
+            session()->setFlashdata('error', 'Tidak ada shift aktif. Silakan buka shift terlebih dahulu.');
+            return redirect()->to('/transaksi/petty');
+        }
+
+        $rules = [
+            'direction'    => 'required|in_list[IN,OUT]',
+            'amount'       => 'required',
+            'reason'       => 'required|max_length[255]',
+            'category_id'  => 'permit_empty|integer',
+        ];
+
+        if ($this->validate($rules)) {
+            // Use format_angka_db for amount before validation and insert
+            $amount = $this->request->getPost('amount');
+            $amount_db = format_angka_db($amount);
+
+            $data = [
+                'shift_id'      => $activeShift['id'],
+                'outlet_id'     => $outlet_id,
+                'kasir_user_id' => $this->ionAuth->user()->row()->id,
+                'category_id'   => $this->request->getPost('category_id') ?: null,
+                'direction'     => $this->request->getPost('direction'),
+                'amount'        => $amount_db,
+                'reason'        => $this->request->getPost('reason'),
+                'ref_no'        => $this->request->getPost('ref_no') ?: null,
+                'status'        => 'posted', // Auto approve for now
+            ];
+
+            if ($this->pettyModel->insert($data)) {
+                // Update shift petty totals
+                $this->updateShiftPettyTotals($activeShift['id']);
+
+                session()->setFlashdata('success', 'Petty cash berhasil ditambahkan');
+                return redirect()->to('/transaksi/petty');
+            } else {
+                session()->setFlashdata('error', 'Gagal menambahkan petty cash');
+            }
+        } else {
+            session()->setFlashdata('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
+        }
+
+        return redirect()->back()->withInput();
+    }
+
     public function edit($id)
     {
-        $petty = $this->pettyModel->getPettyCashWithDetails($id);
-        if (!$petty) {
+        $petty = $this->pettyModel->getPettyCashWithDetails(['id' => $id]);
+        if (empty($petty)) {
             session()->setFlashdata('error', 'Petty cash tidak ditemukan');
             return redirect()->to('/transaksi/petty');
         }
+        $petty = $petty[0]; // Get first result
 
         // Check if can edit (only draft or posted status)
         if ($petty['status'] === 'void') {
@@ -174,11 +241,12 @@ class PettyController extends BaseController
 
     public function viewDetail($id)
     {
-        $petty = $this->pettyModel->getPettyCashWithDetails($id);
-        if (!$petty) {
+        $petty = $this->pettyModel->getPettyCashWithDetails(['id' => $id]);
+        if (empty($petty)) {
             session()->setFlashdata('error', 'Petty cash tidak ditemukan');
             return redirect()->to('/transaksi/petty');
         }
+        $petty = $petty[0]; // Get first result
 
         $data = array_merge($this->data, [
             'title' => 'Detail Petty Cash',
@@ -290,6 +358,25 @@ class PettyController extends BaseController
         ]);
         
         return view('admin-lte-3/petty/category_report', $data);
+    }
+
+    public function getSummary()
+    {
+        $outlet_id = session()->get('outlet_id');
+        $date_from = $this->request->getGet('date_from') ?? date('Y-m-d', strtotime('-30 days'));
+        $date_to = $this->request->getGet('date_to') ?? date('Y-m-d');
+        
+        $data = array_merge($this->data, [
+            'title' => 'Ringkasan Petty Cash',
+            'summary' => $this->pettyModel->getSummaryByOutlet($outlet_id, $date_from, $date_to),
+            'categorySummary' => $this->pettyModel->getSummaryByCategory($outlet_id, $date_from, $date_to),
+            'filters' => [
+                'date_from' => $date_from,
+                'date_to' => $date_to
+            ]
+        ]);
+        
+        return view('admin-lte-3/petty/summary', $data);
     }
 
     private function updateShiftPettyTotals($shift_id)

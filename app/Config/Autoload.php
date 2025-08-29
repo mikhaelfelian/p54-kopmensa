@@ -104,5 +104,6 @@ class Autoload extends AutoloadConfig
         'tanggalan',
         'permission',
         'akses',
+        'shift',
     ];
 }

@@ -4,6 +4,7 @@ namespace App\Controllers\Transaksi;
 
 use App\Controllers\BaseController;
 use App\Models\PettyCategoryModel;
+use CodeIgniter\HTTP\ResponseInterface;
 
 class PettyCategoryController extends BaseController
 {
@@ -16,130 +17,176 @@ class PettyCategoryController extends BaseController
 
     public function index()
     {
-        $data = array_merge($this->data, [
-            'title' => 'Petty Cash Categories',
-            'categories' => $this->categoryModel->getCategoriesWithUsage()
-        ]);
-        
-        return view('admin-lte-3/petty_category/index', $data);
+        $categories = $this->categoryModel->findAll();
+
+        $data = [
+            'title' => 'Kategori Petty Cash',
+            'categories' => $categories,
+            'user' => $this->ionAuth->user()->row(),
+            'Pengaturan' => $this->pengaturan
+        ];
+
+        return view('admin-lte-3/petty/category/index', $data);
     }
 
     public function create()
     {
-        if ($this->request->getMethod() === 'post') {
-            $rules = [
-                'name' => 'required|max_length[100]',
-                'is_active' => 'required|in_list[0,1]'
-            ];
+        $data = [
+            'title' => 'Tambah Kategori Petty Cash',
+            'Pengaturan' => $this->pengaturan
+        ];
 
-            if ($this->validate($rules)) {
-                $data = [
-                    'name' => $this->request->getPost('name'),
-                    'is_active' => $this->request->getPost('is_active')
-                ];
+        return view('admin-lte-3/petty/category/create', $data);
+    }
 
-                if ($this->categoryModel->insert($data)) {
-                    session()->setFlashdata('success', 'Kategori berhasil ditambahkan');
-                    return redirect()->to('/transaksi/petty-category');
-                } else {
-                    session()->setFlashdata('error', 'Gagal menambahkan kategori');
-                }
-            } else {
-                session()->setFlashdata('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
-            }
+    public function store()
+    {
+        // Validation rules
+        $rules = [
+            'kode' => 'required|min_length[2]|max_length[10]|is_unique[petty_categories.kode,id,{id}]',
+            'nama' => 'required|min_length[3]|max_length[100]',
+            'deskripsi' => 'permit_empty|max_length[255]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
         }
 
-        $data = array_merge($this->data, [
-            'title' => 'Tambah Kategori Petty Cash'
-        ]);
-        
-        return view('admin-lte-3/petty_category/create', $data);
+        // Prepare data
+        $data = [
+            'kode' => strtoupper($this->request->getPost('kode')),
+            'nama' => $this->request->getPost('nama'),
+            'deskripsi' => $this->request->getPost('deskripsi'),
+            'status' => '1',
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+
+        // Save to database
+        if ($this->categoryModel->insert($data)) {
+            return redirect()->to('transaksi/petty/category')
+                ->with('success', 'Kategori berhasil ditambahkan');
+        } else {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal menambahkan kategori');
+        }
     }
 
     public function edit($id)
     {
         $category = $this->categoryModel->find($id);
         if (!$category) {
-            session()->setFlashdata('error', 'Kategori tidak ditemukan');
-            return redirect()->to('/transaksi/petty-category');
+            return redirect()->to('transaksi/petty/category')
+                ->with('error', 'Data kategori tidak ditemukan');
         }
 
-        if ($this->request->getMethod() === 'post') {
-            $rules = [
-                'name' => 'required|max_length[100]',
-                'is_active' => 'required|in_list[0,1]'
-            ];
-
-            if ($this->validate($rules)) {
-                $data = [
-                    'name' => $this->request->getPost('name'),
-                    'is_active' => $this->request->getPost('is_active')
-                ];
-
-                if ($this->categoryModel->update($id, $data)) {
-                    session()->setFlashdata('success', 'Kategori berhasil diupdate');
-                    return redirect()->to('/transaksi/petty-category');
-                } else {
-                    session()->setFlashdata('error', 'Gagal mengupdate kategori');
-                }
-            } else {
-                session()->setFlashdata('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
-            }
-        }
-
-        $data = array_merge($this->data, [
+        $data = [
             'title' => 'Edit Kategori Petty Cash',
-            'category' => $category
-        ]);
-        
-        return view('admin-lte-3/petty_category/edit', $data);
+            'category' => $category,
+            'Pengaturan' => $this->pengaturan
+        ];
+
+        return view('admin-lte-3/petty/category/edit', $data);
     }
 
-    public function toggleStatus($id)
+    public function update($id)
     {
-        if ($this->categoryModel->toggleStatus($id)) {
-            session()->setFlashdata('success', 'Status kategori berhasil diubah');
-        } else {
-            session()->setFlashdata('error', 'Gagal mengubah status kategori');
+        $category = $this->categoryModel->find($id);
+        if (!$category) {
+            return redirect()->to('transaksi/petty/category')
+                ->with('error', 'Data kategori tidak ditemukan');
         }
-        
-        return redirect()->to('/transaksi/petty-category');
+
+        // Validation rules
+        $rules = [
+            'kode' => 'required|min_length[2]|max_length[10]|is_unique[petty_categories.kode,id,' . $id . ']',
+            'nama' => 'required|min_length[3]|max_length[100]',
+            'deskripsi' => 'permit_empty|max_length[255]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $this->validator->getErrors());
+        }
+
+        // Prepare data
+        $data = [
+            'kode' => strtoupper($this->request->getPost('kode')),
+            'nama' => $this->request->getPost('nama'),
+            'deskripsi' => $this->request->getPost('deskripsi'),
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+
+        // Update database
+        if ($this->categoryModel->update($id, $data)) {
+            return redirect()->to('transaksi/petty/category')
+                ->with('success', 'Kategori berhasil diupdate');
+        } else {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal mengupdate kategori');
+        }
     }
 
     public function delete($id)
     {
-        if (!$this->categoryModel->canDelete($id)) {
-            session()->setFlashdata('error', 'Kategori tidak dapat dihapus karena masih digunakan');
-            return redirect()->to('/transaksi/petty-category');
+        $category = $this->categoryModel->find($id);
+        if (!$category) {
+            return redirect()->to('transaksi/petty/category')
+                ->with('error', 'Data kategori tidak ditemukan');
+        }
+
+        // Check if category is used in transactions
+        if ($this->categoryModel->isCategoryUsed($id)) {
+            return redirect()->to('transaksi/petty/category')
+                ->with('error', 'Kategori tidak dapat dihapus karena masih digunakan dalam transaksi');
         }
 
         if ($this->categoryModel->delete($id)) {
-            session()->setFlashdata('success', 'Kategori berhasil dihapus');
+            return redirect()->to('transaksi/petty/category')
+                ->with('success', 'Kategori berhasil dihapus');
         } else {
-            session()->setFlashdata('error', 'Gagal menghapus kategori');
+            return redirect()->to('transaksi/petty/category')
+                ->with('error', 'Gagal menghapus kategori');
         }
-        
-        return redirect()->to('/transaksi/petty-category');
     }
 
-    public function search()
+    public function toggleStatus($id)
     {
-        $keyword = $this->request->getGet('keyword');
-        $categories = $this->categoryModel->searchCategories($keyword);
+        $category = $this->categoryModel->find($id);
+        if (!$category) {
+            return redirect()->to('transaksi/petty/category')
+                ->with('error', 'Data kategori tidak ditemukan');
+        }
+
+        $newStatus = $category->status == '1' ? '0' : '1';
+        $statusText = $newStatus == '1' ? 'diaktifkan' : 'dinonaktifkan';
+
+        $data = [
+            'status' => $newStatus,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+
+        if ($this->categoryModel->update($id, $data)) {
+            return redirect()->to('transaksi/petty/category')
+                ->with('success', 'Kategori berhasil ' . $statusText);
+        } else {
+            return redirect()->to('transaksi/petty/category')
+                ->with('error', 'Gagal mengubah status kategori');
+        }
+    }
+
+    public function getCategories()
+    {
+        $categories = $this->categoryModel->getActiveCategories();
         
-        $data = array_merge($this->data, [
-            'title' => 'Search Categories',
-            'categories' => $categories,
-            'keyword' => $keyword
+        return $this->response->setJSON([
+            'success' => true,
+            'data' => $categories
         ]);
-        
-        return view('admin-lte-3/petty_category/search', $data);
-    }
-
-    public function getCategoriesForDropdown()
-    {
-        $categories = $this->categoryModel->getCategoriesForDropdown();
-        
-        return $this->response->setJSON($categories);
     }
 }

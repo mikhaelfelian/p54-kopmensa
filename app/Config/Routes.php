@@ -15,40 +15,40 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
- 
- /* API POS */
+
+/* API POS */
 
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($routes) {
-        // API Authentication routes
-        $routes->group('anggota', function ($routes) {
-            $routes->post('login', 'Anggota\Auth::login');
-            $routes->get('search', 'Anggota\Auth::search');
-        });
+    // API Authentication routes
+    $routes->group('anggota', function ($routes) {
+        $routes->post('login', 'Anggota\Auth::login');
+        $routes->get('search', 'Anggota\Auth::search');
+    });
 
-        // API Authentication routes for cashier
-        $routes->group('pos', function ($routes) {
-            $routes->post('login', 'Pos\Auth::login');
+    // API Authentication routes for cashier
+    $routes->group('pos', function ($routes) {
+        $routes->post('login', 'Pos\Auth::login');
 
-            // Outlet endpoints
-            $routes->get('outlet', 'Pos\Store::getOutlets');
-            $routes->get('outlet/detail/(:num)', 'Pos\Store::getOutlets/$1');
-        });
+        // Outlet endpoints
+        $routes->get('outlet', 'Pos\Store::getOutlets');
+        $routes->get('outlet/detail/(:num)', 'Pos\Store::getOutlets/$1');
+    });
 
-        // Protected API routes (require JWT authentication)
-        $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
-            $routes->get('profile', 'Anggota\\Auth::profile');
-            $routes->get('logout', 'Anggota\\Auth::logout');
-            
-            // PIN Management routes
-            $routes->post('set-pin', 'Anggota\\Auth::setPin');
-            $routes->post('validate-pin', 'Anggota\\Auth::validatePin');
-            $routes->post('change-pin', 'Anggota\\Auth::changePin');
-            $routes->get('pin-status', 'Anggota\\Auth::pinStatus');
-            $routes->post('reset-pin', 'Anggota\\Auth::resetPin');
-        });
+    // Protected API routes (require JWT authentication)
+    $routes->group('anggota', ['filter' => 'jwtauth'], function ($routes) {
+        $routes->get('profile', 'Anggota\\Auth::profile');
+        $routes->get('logout', 'Anggota\\Auth::logout');
 
-        // POS API routes (protected by JWT except for /outlets)
-        $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {
+        // PIN Management routes
+        $routes->post('set-pin', 'Anggota\\Auth::setPin');
+        $routes->post('validate-pin', 'Anggota\\Auth::validatePin');
+        $routes->post('change-pin', 'Anggota\\Auth::changePin');
+        $routes->get('pin-status', 'Anggota\\Auth::pinStatus');
+        $routes->post('reset-pin', 'Anggota\\Auth::resetPin');
+    });
+
+    // POS API routes (protected by JWT except for /outlets)
+    $routes->group('pos', ['filter' => 'jwtauth', 'namespace' => 'App\Controllers\Api\Pos'], function ($routes) {
 
         /* Produk */
         $routes->get('produk', 'Produk::getAll');
@@ -114,7 +114,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
 // ── Root: direct to login page
 $routes->get('/', 'Auth::login', [
     'namespace' => 'App\Controllers',
-    'as'        => 'root',
+    'as' => 'root',
 ]);
 
 /**
@@ -161,8 +161,8 @@ $routes->group('auth', ['namespace' => 'App\Controllers'], static function ($rou
  */
 $routes->get('dashboard', 'Dashboard::index', [
     'namespace' => 'App\Controllers',
-    'filter'    => 'auth',
-    'as'        => 'dashboard.index',
+    'filter' => 'auth',
+    'as' => 'dashboard.index',
 ]);
 
 
@@ -273,42 +273,44 @@ $routes->group('transaksi/shift', ['namespace' => 'App\Controllers\Transaksi', '
     $routes->get('view/(:num)', 'ShiftController::viewShift/$1');
     $routes->get('check-status', 'ShiftController::checkShiftStatus');
     $routes->get('summary', 'ShiftController::getShiftSummary');
-    
+    $routes->get('dashboard', 'ShiftController::dashboard');
+    $routes->get('count', 'ShiftController::getCount');
+    $routes->get('amount', 'ShiftController::getTotalAmount');
+
     // API routes for AJAX calls
     $routes->post('api/open', 'ShiftController::apiOpenShift');
     $routes->post('api/close', 'ShiftController::apiCloseShift');
 });
 
-// Petty Cash Routes
-$routes->group('transaksi/petty', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'PettyController::index');
-    $routes->get('create', 'PettyController::showCreateForm');
-    $routes->post('create', 'PettyController::storePetty');
-    $routes->get('edit/(:num)', 'PettyController::showEditForm/$1');
-    $routes->post('edit/(:num)', 'PettyController::updatePetty/$1');
-    $routes->get('view/(:num)', 'PettyController::viewDetail/$1');
-    $routes->get('approve/(:num)', 'PettyController::approve/$1');
-    $routes->get('void/(:num)', 'PettyController::void/$1');
-    $routes->post('void/(:num)', 'PettyController::void/$1');
-    $routes->get('delete/(:num)', 'PettyController::delete/$1');
-    $routes->get('pending-approvals', 'PettyController::getPendingApprovals');
-    $routes->get('category-report', 'PettyController::getCategoryReport');
-    
-    // API routes for AJAX calls
-    $routes->post('api/create', 'PettyController::apiCreate');
-});
+// Petty Cash Routes under transaksi/
+$routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
+    $routes->group('petty', function ($routes) {
+        $routes->get('/', 'PettyController::index');
+        $routes->get('create', 'PettyController::create');
+        $routes->post('store', 'PettyController::store');
+        $routes->get('edit/(:num)', 'PettyController::edit/$1');
+        $routes->post('update/(:num)', 'PettyController::update/$1');
+        $routes->get('view/(:num)', 'PettyController::viewDetail/$1');
+        $routes->get('delete/(:num)', 'PettyController::delete/$1');
+        $routes->get('approve/(:num)', 'PettyController::approve/$1');
+        $routes->post('void/(:num)', 'PettyController::void/$1');
+        $routes->get('summary', 'PettyController::getSummary');
+        $routes->get('pending-approvals', 'PettyController::getPendingApprovals');
+        $routes->get('category-report', 'PettyController::getCategoryReport');
+        $routes->post('api-create', 'PettyController::apiCreate');
 
-// Petty Cash Category Routes
-$routes->group('transaksi/petty-category', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'PettyCategoryController::index');
-    $routes->get('create', 'PettyCategoryController::showCreateForm');
-    $routes->post('create', 'PettyCategoryController::storeCategory');
-    $routes->get('edit/(:num)', 'PettyCategoryController::showEditForm/$1');
-    $routes->post('edit/(:num)', 'PettyCategoryController::updateCategory/$1');
-    $routes->get('toggle-status/(:num)', 'PettyCategoryController::toggleStatus/$1');
-    $routes->get('delete/(:num)', 'PettyCategoryController::delete/$1');
-    $routes->get('search', 'PettyCategoryController::search');
-    $routes->get('dropdown', 'PettyCategoryController::getCategoriesForDropdown');
+        // Category routes
+        $routes->group('category', function ($routes) {
+            $routes->get('/', 'PettyCategoryController::index');
+            $routes->get('create', 'PettyCategoryController::create');
+            $routes->post('store', 'PettyCategoryController::store');
+            $routes->get('edit/(:num)', 'PettyCategoryController::edit/$1');
+            $routes->post('update/(:num)', 'PettyCategoryController::update/$1');
+            $routes->get('delete/(:num)', 'PettyCategoryController::delete/$1');
+            $routes->get('toggle-status/(:num)', 'PettyCategoryController::toggleStatus/$1');
+            $routes->get('get-categories', 'PettyCategoryController::getCategories');
+        });
+    });
 });
 
 // Supplier Routes
@@ -511,19 +513,19 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
 
     // Add route for get_variants
     $routes->get('jual/get_variants/(:num)', 'TransJual::get_variants/$1');
-    
+
     // Draft management routes
     $routes->get('jual/get-drafts', 'TransJual::getDrafts');
     $routes->get('jual/get-draft/(:num)', 'TransJual::getDraft/$1');
     $routes->post('jual/delete-draft/(:num)', 'TransJual::deleteDraft/$1');
-    
+
     // Print transaction data route
-            $routes->get('jual/get-transaction-for-print/(:num)', 'TransJual::getTransactionForPrint/$1');
-        $routes->get('jual/print-receipt-view', 'TransJual::printReceiptView');
-    
+    $routes->get('jual/get-transaction-for-print/(:num)', 'TransJual::getTransactionForPrint/$1');
+    $routes->get('jual/print-receipt-view', 'TransJual::printReceiptView');
+
     // Session refresh endpoint
     $routes->get('jual/refresh-session', 'TransJual::refreshSession');
-    
+
     // QR Scanner for Piutang transactions (no CSRF to allow mobile scanning)
     $routes->get('jual/qr-scanner/(:num)', 'TransJual::qrScanner/$1');
     // Moved outside group for CSRF bypass
@@ -551,7 +553,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('retur/jual/search-items', 'ReturJual::searchItems');
     $routes->post('retur/jual/search-items', 'ReturJual::searchItems');
     $routes->get('retur/jual/test', 'ReturJual::testEndpoint');
-    
+
     // Refund Request Routes
     $routes->get('refund', 'RefundRequest::index');
     $routes->get('refund/create', 'RefundRequest::create');
@@ -599,10 +601,10 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
 $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function ($routes) {
     $routes->get('app', 'Pengaturan::index');
     $routes->post('app/update', 'Pengaturan::update');
-    
+
     // API Tokens route
     $routes->get('api-tokens', 'Pengaturan::apiTokens');
-    
+
     // Printer management routes
     $routes->group('printer', ['namespace' => 'App\Controllers\Pengaturan'], function ($routes) {
         $routes->get('/', 'Printer::index');
@@ -614,7 +616,7 @@ $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'aut
         $routes->get('set-default/(:num)', 'Printer::setDefault/$1');
         $routes->get('test/(:num)', 'Printer::testConnection/$1');
     });
-    
+
     // PU Menu management routes
     $routes->group('pu-menu', ['namespace' => 'App\Controllers\Pengaturan'], function ($routes) {
         $routes->get('/', 'PuMenu::index');

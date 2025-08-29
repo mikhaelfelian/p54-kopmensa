@@ -19,7 +19,6 @@ use App\Models\ItemStokModel;
 use App\Models\KaryawanModel;
 use App\Models\GudangModel;
 use App\Models\PlatformModel;
-use App\Models\OutletModel;
 use App\Models\ItemHistModel;
 use App\Models\VoucherModel;
 use App\Models\PengaturanModel;
@@ -39,7 +38,6 @@ class TransJual extends BaseController
     protected $karyawanModel;
     protected $gudangModel;
     protected $platformModel;
-    protected $outletModel;
     protected $itemHistModel;
     protected $voucherModel;
     protected $pengaturanModel;
@@ -59,7 +57,6 @@ class TransJual extends BaseController
         $this->karyawanModel       = new KaryawanModel();
         $this->gudangModel         = new GudangModel();
         $this->platformModel       = new PlatformModel();
-        $this->outletModel         = new OutletModel();
         $this->itemHistModel       = new ItemHistModel();
         $this->voucherModel        = new VoucherModel();
         $this->pengaturanModel     = new PengaturanModel();
@@ -957,6 +954,7 @@ class TransJual extends BaseController
                 'id_sales'          => $warehouseId ?? 0, // Can be added later if needed
                 'id_pelanggan'      => $pelanggan->id_user ?? 2,
                 'id_gudang'         => $warehouseId,
+                'id_shift'          => session()->get('kasir_shift'),
                 'no_nota'           => $noNota,
                 'tgl_masuk'         => date('Y-m-d H:i:s'),
                 'tgl_bayar'         => $isDraft ? null : date('Y-m-d H:i:s'),

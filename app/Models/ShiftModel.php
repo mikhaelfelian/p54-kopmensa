@@ -217,4 +217,12 @@ class ShiftModel extends Model
 
         return $builder->get()->getRowArray();
     }
+
+    /**
+     * Alias for getShiftSummary method
+     */
+    public function getSummary($outlet_id = null, $date = null)
+    {
+        return $this->getShiftSummary($outlet_id, $date);
+    }
 }

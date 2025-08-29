@@ -20,8 +20,11 @@
                         <label for="outlet_id">Outlet <span class="text-danger">*</span></label>
                         <select name="outlet_id" id="outlet_id" class="form-control" required>
                             <option value="">Pilih Outlet</option>
-                            <?php foreach ($outlets as $id => $name) : ?>
-                                <option value="<?= $id ?>"><?= $name ?></option>
+                            <?php 
+                                $selectedOutlet = session('kasir_outlet');
+                                foreach ($outlets as $id => $name) : 
+                            ?>
+                                <option value="<?= $id ?>" <?= ($id == $selectedOutlet) ? 'selected' : '' ?>><?= $name ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

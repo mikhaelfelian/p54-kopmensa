@@ -45,6 +45,12 @@ class CreateTblTransJual extends Migration
                 'null'       => true,
                 'default'    => null
             ],
+            'id_shift' => [
+                'type'       => 'INT',
+                'constraint' => 11,
+                'null'       => true,
+                'default'    => null
+            ],
             'no_nota' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 50,

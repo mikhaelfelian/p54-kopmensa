@@ -24,6 +24,7 @@ class TransJualModel extends Model
         'id_sales',
         'id_pelanggan',
         'id_gudang',
+        'id_shift',
         'no_nota',
         'created_at',
         'updated_at',
@@ -199,13 +200,25 @@ class TransJualModel extends Model
      */
     public function getSalesSummaryByShift($shift_id)
     {
-        // TODO: Add shift_id field to tbl_trans_jual table
-        // For now, return empty summary
+        // Count transactions and sum sales for the given shift_id
+        $builder = $this->db->table('tbl_trans_jual');
+        $builder->select([
+            'COUNT(id) as total_transactions',
+            'SUM(CASE WHEN metode_bayar = "cash" THEN jml_gtotal ELSE 0 END) as total_cash_sales',
+            'SUM(CASE WHEN metode_bayar != "cash" THEN jml_gtotal ELSE 0 END) as total_non_cash_sales',
+            'SUM(jml_gtotal) as total_sales'
+        ]);
+        $builder->where('id_shift', $shift_id);
+        $builder->where('status', '1'); // Only finalized/valid transactions
+
+        $result = $builder->get()->getRowArray();
+
+        // Ensure all keys exist and are numeric
         return [
-            'total_transactions' => 0,
-            'total_cash_sales' => 0,
-            'total_non_cash_sales' => 0,
-            'total_sales' => 0
+            'total_transactions'   => (int)($result['total_transactions'] ?? 0),
+            'total_cash_sales'     => (float)($result['total_cash_sales'] ?? 0),
+            'total_non_cash_sales' => (float)($result['total_non_cash_sales'] ?? 0),
+            'total_sales'          => (float)($result['total_sales'] ?? 0)
         ];
     }
 
