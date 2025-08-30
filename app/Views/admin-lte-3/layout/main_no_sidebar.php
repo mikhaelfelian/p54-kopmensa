@@ -55,7 +55,7 @@ if (!isset($Pengaturan)) {
     <!-- jQuery UI -->
     <link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>">
 
-    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/JAutonumber/autonumeric.js') ?>"></script>
+    <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/JAutoNumber/autonumeric.js') ?>"></script>
     <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.js') ?>"></script>
     <script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/moment/moment.min.js') ?>"></script>
     <link href="<?= base_url('public/assets/theme/admin-lte-3/plugins/jquery-ui/jquery-ui.min.css') ?>" rel="stylesheet">

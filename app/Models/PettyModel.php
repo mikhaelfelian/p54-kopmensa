@@ -77,12 +77,14 @@ class PettyModel extends Model
      */
     public function getPettyCashWithDetails($filters = [], $limit = null, $offset = 0)
     {
+
+        
         $builder = $this->select('
             tbl_pos_petty_cash.*,
             tbl_ion_users.first_name as user_name,
             tbl_ion_users.last_name as user_lastname,
             tbl_m_gudang.nama as outlet_name,
-            tbl_m_petty_category.name as kategori_nama,
+            tbl_m_petty_category.nama as kategori_nama,
             approver.first_name as approver_name,
             approver.last_name as approver_lastname
         ')
@@ -123,7 +125,7 @@ class PettyModel extends Model
         if (!empty($filters['search'])) {
             $builder->groupStart()
                 ->like('tbl_pos_petty_cash.reason', $filters['search'])
-                ->orLike('tbl_m_petty_category.name', $filters['search'])
+                ->orLike('tbl_m_petty_category.nama', $filters['search'])
                 ->orLike('tbl_ion_users.first_name', $filters['search'])
                 ->orLike('tbl_ion_users.last_name', $filters['search'])
                 ->groupEnd();
@@ -134,6 +136,8 @@ class PettyModel extends Model
         if ($limit) {
             $builder->limit($limit, $offset);
         }
+
+
 
         return $builder->get()->getResult();
     }
@@ -174,7 +178,7 @@ class PettyModel extends Model
     public function getSummaryByCategory($outletId = null, $dateFrom = null, $dateTo = null)
     {
         $builder = $this->select('
-            tbl_m_petty_category.name as kategori_nama,
+            tbl_m_petty_category.nama as kategori_nama,
             COUNT(*) as total_transactions,
             SUM(tbl_pos_petty_cash.amount) as total_amount
         ')
@@ -193,7 +197,7 @@ class PettyModel extends Model
         }
 
         $builder->where('tbl_pos_petty_cash.status', 'posted')
-                ->groupBy(['tbl_m_petty_category.id', 'tbl_m_petty_category.name'])
+                ->groupBy(['tbl_m_petty_category.id', 'tbl_m_petty_category.nama'])
                 ->orderBy('total_amount', 'DESC');
 
         return $builder->get()->getResult();
@@ -209,7 +213,7 @@ class PettyModel extends Model
             tbl_ion_users.first_name as user_name,
             tbl_ion_users.last_name as user_lastname,
             tbl_m_gudang.nama as outlet_name,
-            tbl_m_petty_category.name as kategori_nama
+            tbl_m_petty_category.nama as kategori_nama
         ')
         ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_pos_petty_cash.kasir_user_id', 'left')
         ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_pos_petty_cash.outlet_id', 'left')
@@ -293,6 +297,8 @@ class PettyModel extends Model
      */
     public function getTotalRecords($filters = [])
     {
+
+        
         $builder = $this->select('COUNT(*) as total')
                         ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_pos_petty_cash.kasir_user_id', 'left')
                         ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_pos_petty_cash.outlet_id', 'left')
@@ -326,13 +332,16 @@ class PettyModel extends Model
         if (!empty($filters['search'])) {
             $builder->groupStart()
                 ->like('tbl_pos_petty_cash.reason', $filters['search'])
-                ->orLike('tbl_m_petty_category.name', $filters['search'])
+                ->orLike('tbl_m_petty_category.nama', $filters['search'])
                 ->orLike('tbl_ion_users.first_name', $filters['search'])
                 ->orLike('tbl_ion_users.last_name', $filters['search'])
                 ->groupEnd();
         }
 
+
+        
         $result = $builder->get()->getRow();
+        
         return $result ? $result->total : 0;
     }
 
@@ -394,7 +403,7 @@ class PettyModel extends Model
     public function getPettyCashByCategory($outletId, $dateFrom, $dateTo)
     {
         $builder = $this->select('
-            tbl_m_petty_category.name as category_name,
+            tbl_m_petty_category.nama as category_name,
             COUNT(*) as total_transactions,
             SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as total_in,
             SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_out
@@ -404,7 +413,7 @@ class PettyModel extends Model
         ->where('tbl_pos_petty_cash.created_at >=', $dateFrom)
         ->where('tbl_pos_petty_cash.created_at <=', $dateTo)
         ->where('tbl_pos_petty_cash.status', 'posted')
-        ->groupBy(['tbl_m_petty_category.id', 'tbl_m_petty_category.name'])
+        ->groupBy(['tbl_m_petty_category.id', 'tbl_m_petty_category.nama'])
         ->orderBy('total_transactions', 'DESC');
 
         return $builder->get()->getResult();

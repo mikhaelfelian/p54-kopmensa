@@ -30,7 +30,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="open_float">Opening Float (Rp) <span class="text-danger">*</span></label>
+                        <label for="open_float">Uang Modal (Rp) <span class="text-danger">*</span></label>
                         <input type="text" name="open_float" id="open_float" class="form-control autonumber" 
                                required placeholder="5.000">
                         <small class="form-text text-muted">Jumlah uang yang tersedia di kasir saat shift dibuka</small>

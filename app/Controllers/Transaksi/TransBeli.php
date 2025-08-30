@@ -446,7 +446,7 @@ class TransBeli extends BaseController
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Validasi gagal',
-                    'errors' => $this->validator->getErrors()
+                    'errors'  => $this->validator->getErrors()
                 ])->setStatusCode(400);
             }
 
@@ -460,22 +460,22 @@ class TransBeli extends BaseController
             }
 
             // Get form data
-            $id_item    = $this->request->getPost('id_item');
-            $jml        = (float) $this->request->getPost('jml');
-            $id_satuan  = $this->request->getPost('id_satuan');
-            $harga      = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('harga'));
-            $potongan   = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('potongan') ?? '0');
-            $disk1      = (float) ($this->request->getPost('disk1') ?? 0);
-            $disk2      = (float) ($this->request->getPost('disk2') ?? 0);
-            $disk3      = (float) ($this->request->getPost('disk3') ?? 0);
+            $id_item   = $this->request->getPost('id_item');
+            $jml       = (float) $this->request->getPost('jml');
+            $id_satuan = $this->request->getPost('id_satuan');
+            $harga     = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('harga'));
+            $potongan  = (float) str_replace(['.', ','], ['', '.'], $this->request->getPost('potongan') ?? '0');
+            $disk1     = (float) ($this->request->getPost('disk1') ?? 0);
+            $disk2     = (float) ($this->request->getPost('disk2') ?? 0);
+            $disk3     = (float) ($this->request->getPost('disk3') ?? 0);
 
             // Get item details
             $item = $this->db->table('tbl_m_item')
-                             ->select('tbl_m_item.*, tbl_m_satuan.satuanBesar')
-                             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-                             ->where('tbl_m_item.id', $id_item)
-                             ->get()
-                             ->getRow();
+                ->select('tbl_m_item.*, tbl_m_satuan.satuanBesar')
+                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                ->where('tbl_m_item.id', $id_item)
+                ->get()
+                ->getRow();
 
             if (!$item) {
                 return $this->response->setJSON([
@@ -486,9 +486,9 @@ class TransBeli extends BaseController
 
             // Get satuan details
             $satuan = $this->db->table('tbl_m_satuan')
-                              ->where('id', $id_satuan)
-                              ->get()
-                              ->getRow();
+                ->where('id', $id_satuan)
+                ->get()
+                ->getRow();
 
             if (!$satuan) {
                 return $this->response->setJSON([
@@ -519,25 +519,25 @@ class TransBeli extends BaseController
 
             // Check if item already exists in cart
             $existingItem = $this->transBeliDetModel
-                                ->where('id_pembelian', $id)
-                                ->where('id_item', $id_item)
-                                ->first();
+                ->where('id_pembelian', $id)
+                ->where('id_item', $id_item)
+                ->first();
 
             $this->db->transStart();
 
             if ($existingItem) {
                 // Update existing item
                 $updateData = [
-                    'jml' => $jml,
-                    'id_satuan' => $id_satuan,
-                    'satuan' => $satuan->satuanBesar,
+                    'jml'        => $jml,
+                    'id_satuan'  => $id_satuan,
+                    'satuan'     => $satuan->satuanBesar,
                     'jml_satuan' => $satuan->jml ?? 1,
-                    'harga' => $harga,
-                    'potongan' => $potongan,
-                    'disk1' => $disk1,
-                    'disk2' => $disk2,
-                    'disk3' => $disk3,
-                    'subtotal' => $subtotal,
+                    'harga'      => $harga,
+                    'potongan'   => $potongan,
+                    'disk1'      => $disk1,
+                    'disk2'      => $disk2,
+                    'disk3'      => $disk3,
+                    'subtotal'   => $subtotal,
                     'updated_at' => date('Y-m-d H:i:s')
                 ];
 
@@ -546,23 +546,23 @@ class TransBeli extends BaseController
             } else {
                 // Insert new item
                 $insertData = [
-                    'id_user' => $this->ionAuth->user()->row()->id,
-                    'id_pembelian' => $id,
-                    'id_item' => $id_item,
-                    'id_satuan' => $id_satuan,
-                    'tgl_masuk' => $transaksi->tgl_masuk,
-                    'kode' => $item->kode,
-                    'item' => $item->item,
-                    'jml' => $jml,
-                    'jml_satuan' => $satuan->jml ?? 1,
-                    'satuan' => $satuan->satuanBesar,
-                    'harga' => $harga,
-                    'potongan' => $potongan,
-                    'disk1' => $disk1,
-                    'disk2' => $disk2,
-                    'disk3' => $disk3,
-                    'subtotal' => $subtotal,
-                    'created_at' => date('Y-m-d H:i:s')
+                    'id_user'     => $this->ionAuth->user()->row()->id,
+                    'id_pembelian'=> $id,
+                    'id_item'     => $id_item,
+                    'id_satuan'   => $id_satuan,
+                    'tgl_masuk'   => $transaksi->tgl_masuk,
+                    'kode'        => $item->kode,
+                    'item'        => $item->item,
+                    'jml'         => $jml,
+                    'jml_satuan'  => $satuan->jml ?? 1,
+                    'satuan'      => $satuan->satuanBesar,
+                    'harga'       => $harga,
+                    'potongan'    => $potongan,
+                    'disk1'       => $disk1,
+                    'disk2'       => $disk2,
+                    'disk3'       => $disk3,
+                    'subtotal'    => $subtotal,
+                    'created_at'  => date('Y-m-d H:i:s')
                 ];
 
                 $this->transBeliDetModel->insert($insertData);
@@ -570,7 +570,6 @@ class TransBeli extends BaseController
             }
 
             // Save harga_beli (final price after discount and potongan) to tbl_m_item.harga_beli
-            // Use $this->itemModel->update(...)
             $this->itemModel->update($id_item, ['harga_beli' => $harga_beli]);
 
             $this->db->transComplete();
@@ -582,12 +581,11 @@ class TransBeli extends BaseController
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Item berhasil ' . ($action == 'added' ? 'ditambahkan' : 'diupdate'),
-                'data' => [
-                    'item' => $item->item,
+                'data'    => [
+                    'item'   => $item->item,
                     'action' => $action
                 ]
             ]);
-
         } catch (\Exception $e) {
             return $this->response->setJSON([
                 'success' => false,
@@ -634,9 +632,9 @@ class TransBeli extends BaseController
                 throw new \Exception('Jumlah dan harga harus diisi');
             }
 
-            // Convert currency format to number
-            $harga = str_replace(['.', ','], ['', '.'], $harga);
-            $potongan = str_replace(['.', ','], ['', '.'], $potongan);
+            // Format angka ke format database
+            $harga = format_angka_db($harga);
+            $potongan = format_angka_db($potongan);
 
             // Get satuan data
             $satuan = $this->db->table('tbl_m_satuan')->where('id', $id_satuan)->get()->getRow();
@@ -644,22 +642,26 @@ class TransBeli extends BaseController
             // Calculate subtotal
             $subtotal = ($jml * $harga) - $potongan;
 
+            // Hitung harga_beli per item
+            $harga_beli = $jml > 0 ? $subtotal / $jml : 0;
+
             // Update item
             $updateData = [
-                'jml' => $jml,
-                'id_satuan' => $id_satuan,
-                'satuan' => $satuan ? $satuan->satuanBesar : 'PCS',
-                'harga' => $harga,
-                'potongan' => $potongan,
-                'subtotal' => $subtotal,
-                'updated_at' => date('Y-m-d H:i:s')
+                'jml'         => $jml,
+                'id_satuan'   => $id_satuan,
+                'satuan'      => $satuan ? $satuan->satuanBesar : 'PCS',
+                'harga'       => $harga,
+                'potongan'    => $potongan,
+                'subtotal'    => $subtotal,
+                'updated_at'  => date('Y-m-d H:i:s'),
             ];
 
             $this->transBeliDetModel->update($id, $updateData);
+            $this->itemModel->update($item->id_item, ['harga_beli' => $harga_beli]);
 
             return $this->response->setJSON([
                 'success' => true,
-                'message' => 'Item berhasil diupdate'
+                'message' => 'Item berhasil diupdate '.$item->id_item
             ]);
 
         } catch (\Exception $e) {
@@ -771,19 +773,57 @@ class TransBeli extends BaseController
             }
 
             // Get transaction items
-            $items = $this->transBeliDetModel->where('id_pembelian', $id)->findAll();
+            $items = $this->transBeliDetModel->select('SUM(diskon) as jml_diskon, SUM(potongan) as jml_potongan, SUM(subtotal) as jml_gtotal')->where('id_pembelian', $id)->first();
             if (empty($items)) {
                 throw new \Exception('Transaksi tidak memiliki item');
             }
 
+            // Hitung total-totalan dari detail
+            $jml_total     = $items->jml_gtotal - $items->jml_potongan - $items->jml_diskon;
+            $jml_potongan  = $items->jml_potongan;
+            $jml_diskon    = $items->jml_diskon;
+            $jml_subtotal  = $items->jml_gtotal;
+            // Hitung DPP, PPN, dan jml_ppn sesuai status_ppn
+            // status_ppn: 1 = include, 2 = exclude (added)
+            $jml_dpp = 0;
+            $ppn = 0;
+            $jml_ppn = 0;
+
+            // Gunakan nilai PPN dari pengaturan
+            $ppn = $this->pengaturan->ppn;
+            if ($transaksi->status_ppn == 1) {
+                // PPN included (sudah termasuk di subtotal)
+                // DPP = subtotal / (1 + (ppn/100)), PPN = $ppn%
+                $jml_dpp = $jml_subtotal / (1 + ($ppn / 100));
+                $jml_ppn = $jml_subtotal - $jml_dpp;
+            } elseif ($transaksi->status_ppn == 2) {
+                // PPN added (di luar subtotal)
+                // DPP = subtotal, PPN = $ppn%
+                $jml_dpp = $jml_subtotal;
+                $jml_ppn = $jml_dpp * ($ppn / 100);
+            }else{
+                $ppn = 0;
+            }
+            
+            $jml_gtotal    = $jml_subtotal + $jml_ppn;
+
             // Start transaction
             $this->db->transStart();
 
-            // Update transaction status to processed
-            $this->transBeliModel->update($id, [
-                'status_nota' => '1', // Processed
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
+            // Update transaction status to processed + update total fields
+            $data = [
+                'status_nota'   => '1', // Processed
+                'status_bayar'  => '0', // Paid
+                'jml_total'     => $jml_total,
+                'jml_potongan'  => $jml_potongan,
+                'jml_diskon'    => $jml_diskon,
+                'jml_subtotal'  => $jml_subtotal,
+                'jml_dpp'       => $jml_dpp,
+                'ppn'           => $ppn,
+                'jml_ppn'       => $jml_ppn,
+                'jml_gtotal'    => $jml_gtotal,
+            ];
+            $this->transBeliModel->update($id, $data);
 
             // If PO exists, update PO status
             if (!empty($transaksi->id_po)) {
@@ -807,7 +847,7 @@ class TransBeli extends BaseController
                 $this->db->transRollback();
             }
             
-            return redirect()->back()
+            return redirect()->to('transaksi/beli')
                             ->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
         }
     }

@@ -1,4 +1,12 @@
 <?php
+/**
+ * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
+ * Date: <?= date('Y-m-d') ?>
+
+ * Github: github.com/mikhaelfelian
+ * description: Model for Petty Cash Category (tbl_m_petty_category)
+ * This file represents the Model.
+ */
 
 namespace App\Models;
 
@@ -13,7 +21,7 @@ class PettyCategoryModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'name', 'is_active', 'created_at', 'updated_at'
+        'nama', 'kode', 'deskripsi', 'status', 'created_at', 'updated_at'
     ];
 
     // Dates
@@ -24,20 +32,31 @@ class PettyCategoryModel extends Model
 
     // Validation
     protected $validationRules = [
-        'name'      => 'required|min_length[3]|max_length[100]|is_unique[tbl_m_petty_category.name,id,{id}]',
-        'is_active' => 'required|in_list[1,0]'
+        'nama'      => 'required|min_length[3]|max_length[100]|is_unique[tbl_m_petty_category.nama,id,{id}]',
+        'kode'      => 'required|min_length[2]|max_length[100]|is_unique[tbl_m_petty_category.kode,id,{id}]',
+        'deskripsi' => 'permit_empty|max_length[100]',
+        'status'    => 'required|in_list[1,0]'
     ];
 
     protected $validationMessages = [
-        'name' => [
-            'required' => 'Nama kategori harus diisi',
+        'nama' => [
+            'required'   => 'Nama kategori harus diisi',
             'min_length' => 'Nama kategori minimal 3 karakter',
             'max_length' => 'Nama kategori maksimal 100 karakter',
-            'is_unique' => 'Nama kategori sudah digunakan'
+            'is_unique'  => 'Nama kategori sudah digunakan'
         ],
-        'is_active' => [
+        'kode' => [
+            'required'   => 'Kode kategori harus diisi',
+            'min_length' => 'Kode kategori minimal 2 karakter',
+            'max_length' => 'Kode kategori maksimal 100 karakter',
+            'is_unique'  => 'Kode kategori sudah digunakan'
+        ],
+        'deskripsi' => [
+            'max_length' => 'Deskripsi maksimal 100 karakter'
+        ],
+        'status' => [
             'required' => 'Status aktif harus diisi',
-            'in_list' => 'Status aktif tidak valid'
+            'in_list'  => 'Status aktif tidak valid'
         ]
     ];
 
@@ -46,8 +65,8 @@ class PettyCategoryModel extends Model
      */
     public function getActiveCategories()
     {
-        return $this->where('is_active', '1')
-                    ->orderBy('name', 'ASC')
+        return $this->where('status', '1')
+                    ->orderBy('nama', 'ASC')
                     ->findAll();
     }
 
@@ -60,7 +79,7 @@ class PettyCategoryModel extends Model
         $dropdown = [];
         
         foreach ($categories as $category) {
-            $dropdown[$category->id] = $category->name;
+            $dropdown[$category->id] = $category->kode . ' - ' . $category->nama;
         }
         
         return $dropdown;

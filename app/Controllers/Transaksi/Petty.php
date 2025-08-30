@@ -8,7 +8,7 @@ use App\Models\ShiftModel;
 use App\Models\PettyCategoryModel;
 use App\Models\GudangModel;
 
-class PettyController extends BaseController
+class Petty extends BaseController
 {
     protected $pettyModel;
     protected $shiftModel;
@@ -28,12 +28,20 @@ class PettyController extends BaseController
     public function index()
     {
         $filters = [
-            'outlet_id' => session()->get('outlet_id'),
+            'outlet_id' => session()->get('kasir_outlet'),
             'date_from' => $this->request->getGet('date_from') ?? date('Y-m-d', strtotime('-30 days')),
             'date_to' => $this->request->getGet('date_to') ?? date('Y-m-d'),
             'direction' => $this->request->getGet('direction') ?? '',
             'status' => $this->request->getGet('status') ?? ''
         ];
+        
+        // Ensure dates are in proper format for database comparison
+        if ($filters['date_from']) {
+            $filters['date_from'] = date('Y-m-d 00:00:00', strtotime($filters['date_from']));
+        }
+        if ($filters['date_to']) {
+            $filters['date_to'] = date('Y-m-d 23:59:59', strtotime($filters['date_to']));
+        }
 
         // Pagination
         $page = $this->request->getGet('page') ?? 1;
@@ -47,7 +55,7 @@ class PettyController extends BaseController
         $pettyEntries = $this->pettyModel->getPettyCashWithDetails($filters, $perPage, $offset);
 
         $data = array_merge($this->data, [
-            'title' => 'Petty Cash Management',
+            'title' => 'Manajemen Kas',
             'pettyEntries' => $pettyEntries,
             'summary' => $this->pettyModel->getPettyCashSummaryByOutlet($filters['outlet_id'], $filters['date_from'], $filters['date_to']),
             'filters' => $filters,
@@ -63,7 +71,7 @@ class PettyController extends BaseController
     public function create()
     {
         // Check if there's an active shift
-        $outlet_id = session()->get('outlet_id');
+        $outlet_id = session()->get('kasir_outlet');
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
 
         // Prepare variables for form repopulation
@@ -120,14 +128,15 @@ class PettyController extends BaseController
         }
 
         $data = array_merge($this->data, [
-            'title' => 'Tambah Petty Cash',
-            'activeShift' => $activeShift,
-            'categories' => $this->categoryModel->getActiveCategories(),
-            'direction' => $direction,
-            'amount' => $amount,
-            'reason' => $reason,
-            'category_id' => $category_id,
-            'ref_no' => $ref_no
+            'title'        => 'Tambah Petty Cash',
+            'activeShift'  => $activeShift,
+            'categories'   => $this->categoryModel->getActiveCategories(),
+            'direction'    => $direction,
+            'amount'       => $amount,
+            'reason'       => $reason,
+            'category_id'  => $category_id,
+            'ref_no'       => $ref_no,
+            'outlets'      => $this->gudangModel->getActiveOutlets(),
         ]);
 
         return view('admin-lte-3/petty/create', $data);
@@ -136,19 +145,22 @@ class PettyController extends BaseController
     public function store()
     {
         // Check if there's an active shift
-        $outlet_id = session()->get('outlet_id');
+        $outlet_id = session()->get('kasir_outlet');
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
 
+        // Debug: Log the shift check
+        log_message('info', 'Petty store - outlet_id: ' . $outlet_id . ', activeShift: ' . json_encode($activeShift));
+
         if (!$activeShift) {
+            // Debug: Log why shift validation failed
+            log_message('error', 'Petty store - No active shift found for outlet_id: ' . $outlet_id);
+            
             session()->setFlashdata('error', 'Tidak ada shift aktif. Silakan buka shift terlebih dahulu.');
             return redirect()->to('/transaksi/petty');
         }
 
         $rules = [
-            'direction'    => 'required|in_list[IN,OUT]',
             'amount'       => 'required',
-            'reason'       => 'required|max_length[255]',
-            'category_id'  => 'permit_empty|integer',
         ];
 
         if ($this->validate($rules)) {
@@ -331,7 +343,7 @@ class PettyController extends BaseController
 
     public function getPendingApprovals()
     {
-        $outlet_id = session()->get('outlet_id');
+        $outlet_id = session()->get('kasir_outlet');
         $pendingApprovals = $this->pettyModel->getPendingApprovals($outlet_id);
         
         $data = array_merge($this->data, [
@@ -344,7 +356,7 @@ class PettyController extends BaseController
 
     public function getCategoryReport()
     {
-        $outlet_id = session()->get('outlet_id');
+        $outlet_id = session()->get('kasir_outlet');
         $date_from = $this->request->getGet('date_from') ?? date('Y-m-d', strtotime('-30 days'));
         $date_to = $this->request->getGet('date_to') ?? date('Y-m-d');
         
@@ -362,7 +374,7 @@ class PettyController extends BaseController
 
     public function getSummary()
     {
-        $outlet_id = session()->get('outlet_id');
+        $outlet_id = session()->get('kasir_outlet');
         $date_from = $this->request->getGet('date_from') ?? date('Y-m-d', strtotime('-30 days'));
         $date_to = $this->request->getGet('date_to') ?? date('Y-m-d');
         
@@ -393,7 +405,7 @@ class PettyController extends BaseController
     // API Methods for AJAX calls
     public function apiCreate()
     {
-        $outlet_id = session()->get('outlet_id');
+        $outlet_id = session()->get('kasir_outlet');
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         
         if (!$activeShift) {

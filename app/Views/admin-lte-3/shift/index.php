@@ -23,7 +23,7 @@
                         <th>Waktu Mulai</th>
                         <th>Waktu Selesai</th>
                         <th>Status</th>
-                        <th>Uang Awal (Open Float)</th>
+                        <th>Uang Modal</th>
                         <th>Penjualan Tunai</th>
                         <th>Kas Kecil</th>
                         <th>Aksi</th>
@@ -36,8 +36,8 @@
                                 <td><?= $shift['shift_code'] ?></td>
                                 <td><?= $shift['outlet_name'] ?? 'Outlet ID: ' . $shift['outlet_id'] ?></td>
                                 <td><?= ($shift['user_open_name'] ?? 'User ID: ' . $shift['user_open_id']) . ' ' . ($shift['user_open_lastname'] ?? '') ?></td>
-                                <td><?= date('d/m/Y H:i', strtotime($shift['start_at'])) ?></td>
-                                <td><?= $shift['end_at'] ? date('d/m/Y H:i', strtotime($shift['end_at'])) : '-' ?></td>
+                                <td><?= tgl_indo8($shift['start_at']) ?></td>
+                                <td><?= $shift['end_at'] ? tgl_indo8($shift['end_at']) : '-' ?></td>
                                 <td>
                                     <?php
                                     $statusClass = '';
@@ -66,10 +66,10 @@
                                     ?>
                                     <span class="<?= $statusClass ?>"><?= $statusText ?></span>
                                 </td>
-                                <td class="text-right"><?= number_format($shift['open_float'], 2) ?></td>
-                                <td class="text-right"><?= number_format($shift['sales_cash_total'], 2) ?></td>
+                                <td class="text-right"><?= format_angka($shift['open_float']) ?></td>
+                                <td class="text-right"><?= format_angka($shift['sales_cash_total']) ?></td>
                                 <td class="text-right">
-                                    <?= number_format($shift['petty_in_total'] - $shift['petty_out_total'], 2) ?>
+                                    <?= format_angka($shift['petty_in_total'] - $shift['petty_out_total']) ?>
                                 </td>
                                 <td>
                                     <div class="btn-group">

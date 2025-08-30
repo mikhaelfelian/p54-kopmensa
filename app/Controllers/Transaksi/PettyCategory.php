@@ -33,7 +33,8 @@ class PettyCategory extends BaseController
     {
         $data = [
             'title' => 'Tambah Kategori Petty Cash',
-            'Pengaturan' => $this->pengaturan
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row()
         ];
 
         return view('admin-lte-3/petty/category/create', $data);
@@ -43,25 +44,27 @@ class PettyCategory extends BaseController
     {
         // Validation rules
         $rules = [
-            'kode' => 'required|min_length[2]|max_length[10]|is_unique[petty_categories.kode,id,{id}]',
-            'nama' => 'required|min_length[3]|max_length[100]',
-            'deskripsi' => 'permit_empty|max_length[255]'
+            'kode' => 'required',
+            'nama' => 'required'
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to('transaksi/petty/category/create')
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
         }
 
-        // Prepare data
+        // Prepare data using variables for each input
+        $kode      = strtoupper(trim($this->request->getPost('kode')));
+        $nama      = trim($this->request->getPost('nama'));
+        $deskripsi = trim($this->request->getPost('deskripsi'));
+        $status    = '1';
+
         $data = [
-            'kode' => strtoupper($this->request->getPost('kode')),
-            'nama' => $this->request->getPost('nama'),
-            'deskripsi' => $this->request->getPost('deskripsi'),
-            'status' => '1',
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
+            'kode'      => $kode,
+            'nama'      => $nama,
+            'deskripsi' => $deskripsi,
+            'status'    => $status,
         ];
 
         // Save to database
@@ -102,7 +105,7 @@ class PettyCategory extends BaseController
 
         // Validation rules
         $rules = [
-            'kode' => 'required|min_length[2]|max_length[10]|is_unique[petty_categories.kode,id,' . $id . ']',
+            'kode' => 'required|min_length[2]|max_length[10]|is_unique[tbl_m_petty_category.kode,id,' . $id . ']',
             'nama' => 'required|min_length[3]|max_length[100]',
             'deskripsi' => 'permit_empty|max_length[255]'
         ];

@@ -28,17 +28,6 @@ helper('form');
             
             <?= form_open('transaksi/retur/jual/store', ['id' => 'form-retur']) ?>
             <div class="card-body">
-                <!-- Alert Messages -->
-                <?php if (session()->getFlashdata('errors')): ?>
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            <?php foreach (session()->getFlashdata('errors') as $error): ?>
-                                <li><?= esc($error) ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-
                 <!-- Hidden Fields -->
                 <input type="hidden" name="retur_type" value="<?= $retur_type ?>">
                 <input type="hidden" name="id_gudang" value="1">

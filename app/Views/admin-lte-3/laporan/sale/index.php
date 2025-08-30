@@ -63,9 +63,9 @@
                             <label>Sales</label>
                             <select name="id_sales" class="form-control form-control-sm">
                                 <option value="">Semua Sales</option>
-                                <?php foreach ($salesList as $sales): ?>
-                                    <option value="<?= $sales->id ?>" <?= $idSales == $sales->id ? 'selected' : '' ?>>
-                                        <?= $sales->nama ?>
+                                <?php foreach ($salesList as $salesItem): ?>
+                                    <option value="<?= $salesItem->id ?>" <?= $idSales == $salesItem->id ? 'selected' : '' ?>>
+                                        <?= $salesItem->nama ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>

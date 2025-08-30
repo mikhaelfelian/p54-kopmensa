@@ -120,7 +120,7 @@ helper('form');
 
 <?= $this->section('js') ?>
 <!-- Select2 is already included in the main layout -->
-<script src="<?= base_url('assets/theme/admin-lte-3/plugins/JAutoNumber/autonumeric.js') ?>"></script>
+<script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/JAutoNumber/autonumeric.js') ?>"></script>
 <script>
 $(document).ready(function() {
     // Initialize Select2

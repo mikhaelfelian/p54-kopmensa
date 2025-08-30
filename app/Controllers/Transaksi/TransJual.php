@@ -1720,6 +1720,73 @@ class TransJual extends BaseController
     }
 
     /**
+     * Search customer by id_user, kode, nama, or no_telp
+     */
+    public function searchCustomer()
+    {
+        try {
+            $searchTerm = $this->request->getGet('q') ?? '';
+            
+            if (empty($searchTerm)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Search term is required'
+                ]);
+            }
+
+            $customers = $this->pelangganModel->searchCustomer($searchTerm);
+            
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $customers
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal mencari customer: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get customer by id_user
+     */
+    public function getCustomerByIdUser()
+    {
+        try {
+            $idUser = $this->request->getGet('id_user') ?? '';
+            
+            if (empty($idUser)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'ID User is required'
+                ]);
+            }
+
+            $customer = $this->pelangganModel->getCustomerByIdUser($idUser);
+            
+            if (!$customer) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Customer tidak ditemukan'
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $customer
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memuat data customer: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Display shared print receipt view
      */
     public function printReceiptView()

@@ -119,18 +119,35 @@ class InputStok extends BaseController
 
     public function store()
     {
+        // Debug: Log the incoming data
+        log_message('info', 'InputStok store method called with data: ' . json_encode($this->request->getPost()));
+        
         $rules = [
-            'tgl_terima' => 'required',
-            'id_supplier' => 'required|integer',
-            'id_gudang' => 'required|integer',
-            'items' => 'required',
-            'items.*.id_item' => 'required|integer',
-            'items.*.id_satuan' => 'required|integer',
-            'items.*.jml' => 'required|numeric|greater_than[0]',
+            'tgl_terima'         => 'required|valid_date',
+            'id_supplier'        => 'required|integer',
+            'id_gudang'          => 'required|integer',
+            'items'              => 'required',
+            'items.*.id_item'    => 'required|integer',
+            'items.*.id_satuan'  => 'required|integer',
+            'items.*.jml'        => 'required|numeric|greater_than[0]',
         ];
 
         if (!$this->validate($rules)) {
+            log_message('error', 'InputStok validation failed: ' . json_encode($this->validator->getErrors()));
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
+        }
+
+        // Additional validation for items array
+        $items = $this->request->getPost('items');
+        if (empty($items) || !is_array($items)) {
+            return redirect()->back()->withInput()->with('error', 'Data item tidak boleh kosong dan harus berupa array');
+        }
+
+        // Validate each item has required fields
+        foreach ($items as $index => $item) {
+            if (empty($item['id_item']) || empty($item['id_satuan']) || empty($item['jml'])) {
+                return redirect()->back()->withInput()->with('error', 'Data item pada baris ' . ($index + 1) . ' tidak lengkap');
+            }
         }
 
         $db = \Config\Database::connect();
@@ -161,7 +178,6 @@ class InputStok extends BaseController
             }
 
             // Insert details and update stock
-            $items = $this->request->getPost('items');
             foreach ($items as $item) {
                 // Insert detail
                 $detailData = [

@@ -64,7 +64,7 @@
                                             <option value="">Pilih Kategori</option>
                                             <?php foreach ($categories as $category): ?>
                                                 <option value="<?= $category->id ?>" <?= (old('category_id', $pettyEntry->category_id) == $category->id) ? 'selected' : '' ?>>
-                                                    <?= $category->name ?>
+                                                    <?= $category->nama ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>

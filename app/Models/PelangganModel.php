@@ -103,4 +103,36 @@ class PelangganModel extends Model
         $this->orderBy('id', 'DESC');
         return parent::paginate($perPage, $group, $page, $segment);
     }
+
+    /**
+     * Search customer by id_user, kode, nama, or no_telp
+     */
+    public function searchCustomer($searchTerm)
+    {
+        return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit')
+                    ->where('status', '1') // Only active customers
+                    ->where('status_blokir', '0') // Not blocked
+                    ->groupStart()
+                        ->like('id_user', $searchTerm)
+                        ->orLike('kode', $searchTerm)
+                        ->orLike('nama', $searchTerm)
+                        ->orLike('no_telp', $searchTerm)
+                    ->groupEnd()
+                    ->orderBy('nama', 'ASC')
+                    ->limit(10)
+                    ->get()
+                    ->getResult();
+    }
+
+    /**
+     * Get customer by id_user
+     */
+    public function getCustomerByIdUser($idUser)
+    {
+        return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit')
+                    ->where('id_user', $idUser)
+                    ->where('status', '1')
+                    ->where('status_blokir', '0')
+                    ->first();
+    }
 } 
