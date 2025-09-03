@@ -60,13 +60,21 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('category', 'Kategori::index');
         $routes->get('category/(:num)', 'Kategori::detail/$1');
 
+        // Brand/Merk endpoints
+        $routes->get('merk', 'Merk::index');
+        $routes->get('merk/detail/(:num)', 'Merk::detail/$1');
+        $routes->get('merk/all', 'Merk::all');
+        $routes->get('merk/search', 'Merk::search');
+
         // Transaction endpoints
         $routes->get('transaksi', 'Transaksi::getTransaction');
         $routes->get('transaksi/(:num)', 'Transaksi::getTransaction/$1');
         $routes->post('transaksi/store', 'Transaksi::store');
         $routes->get('transaksi/payments', 'Transaksi::getPaymentMethods');
         $routes->post('transaksi/validate/voucher', 'Transaksi::validateVoucher');
+        $routes->post('transaksi/validate-voucher', 'Transaksi::validateVoucher');
         $routes->post('transaksi/validate/customer', 'Transaksi::validateCustomer');
+        $routes->post('transaksi/validate-customer', 'Transaksi::validateCustomer');
 
         // Dashboard endpoints
         $routes->get('dashboard', 'Dashboard::index');
@@ -108,6 +116,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('petty-category', 'PettyCategory::index');
         $routes->get('petty-category/list', 'PettyCategory::getCategories');
         $routes->get('petty-category/with-usage', 'PettyCategory::getCategoriesWithUsage');
+        $routes->get('petty-category/detail/(:num)', 'PettyCategory::getCategory/$1');
         $routes->get('petty-category/(:num)', 'PettyCategory::getCategory/$1');
         $routes->post('petty-category/create', 'PettyCategory::create');
         $routes->post('petty-category/update', 'PettyCategory::update');
