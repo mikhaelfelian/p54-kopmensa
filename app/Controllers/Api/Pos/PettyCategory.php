@@ -136,6 +136,11 @@ class PettyCategory extends BaseController
             return $this->failNotFound('Category not found');
         }
 
+        // Convert to array if it's an object
+        if (is_object($category)) {
+            $category = (array) $category;
+        }
+
         $name = $this->request->getPost('name');
         $description = $this->request->getPost('description');
         $is_active = $this->request->getPost('is_active');
@@ -180,8 +185,29 @@ class PettyCategory extends BaseController
             return $this->failValidationErrors('Category ID required');
         }
 
-        if ($this->categoryModel->toggleStatus($id)) {
-            return $this->respond(['message' => 'Category status updated successfully']);
+        $category = $this->categoryModel->find($id);
+        if (!$category) {
+            return $this->failNotFound('Category not found');
+        }
+
+        // Convert to array if it's an object
+        if (is_object($category)) {
+            $category = (array) $category;
+        }
+
+        // Toggle status (1 to 0, 0 to 1)
+        $newStatus = $category['status'] == '1' ? '0' : '1';
+        
+        $data = [
+            'status' => $newStatus,
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+
+        if ($this->categoryModel->update($id, $data)) {
+            return $this->respond([
+                'message' => 'Category status updated successfully',
+                'new_status' => $newStatus
+            ]);
         } else {
             return $this->failServerError('Failed to update category status');
         }
@@ -200,7 +226,20 @@ class PettyCategory extends BaseController
             return $this->failValidationErrors('Category ID required');
         }
 
-        if (!$this->categoryModel->canDelete($id)) {
+        $category = $this->categoryModel->find($id);
+        if (!$category) {
+            return $this->failNotFound('Category not found');
+        }
+
+        // Convert to array if it's an object
+        if (is_object($category)) {
+            $category = (array) $category;
+        }
+
+        // Check if category is used in petty cash entries
+        $pettyModel = new \App\Models\PettyModel();
+        $isUsed = $pettyModel->where('category_id', $id)->first();
+        if ($isUsed) {
             return $this->failValidationErrors('Cannot delete category that is still in use');
         }
 
@@ -222,7 +261,14 @@ class PettyCategory extends BaseController
             return $this->failValidationErrors('Search keyword required');
         }
 
-        $categories = $this->categoryModel->searchCategories($keyword);
+        $categories = $this->categoryModel->where('status', '1')
+            ->groupStart()
+            ->like('nama', $keyword)
+            ->orLike('kode', $keyword)
+            ->orLike('deskripsi', $keyword)
+            ->groupEnd()
+            ->orderBy('nama', 'ASC')
+            ->findAll();
         
         return $this->respond($categories);
     }
