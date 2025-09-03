@@ -105,6 +105,16 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
 
         // Petty Cash endpoints
         $routes->get('petty-cash', 'Petty::index');
+        $routes->get('petty-cash/detail/(:num)', 'Petty::detail/$1');
+        $routes->post('petty-cash/store', 'Petty::create');
+        $routes->post('petty-cash/update/(:num)', 'Petty::update/$1');
+        $routes->delete('petty-cash/delete/(:num)', 'Petty::delete/$1');
+        $routes->post('petty-cash/approve/(:num)', 'Petty::approve/$1');
+        $routes->post('petty-cash/reject/(:num)', 'Petty::reject/$1');
+        $routes->post('petty-cash/void/(:num)', 'Petty::void/$1');
+        $routes->get('petty-cash/summary', 'Petty::getSummary');
+        
+        // Legacy petty endpoints (for backward compatibility)
         $routes->post('petty/list', 'Petty::getPettyCash');
         $routes->post('petty/create', 'Petty::create');
         $routes->post('petty/update', 'Petty::update');
@@ -114,9 +124,15 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
 
         // Petty Cash Category endpoints
         $routes->get('petty-category', 'PettyCategory::index');
+        $routes->get('petty-category/detail/(:num)', 'PettyCategory::getCategory/$1');
+        $routes->post('petty-category/store', 'PettyCategory::create');
+        $routes->post('petty-category/update/(:num)', 'PettyCategory::update/$1');
+        $routes->delete('petty-category/delete/(:num)', 'PettyCategory::delete/$1');
+        $routes->post('petty-category/toggle-status/(:num)', 'PettyCategory::toggleStatus/$1');
+        
+        // Legacy petty-category endpoints (for backward compatibility)
         $routes->get('petty-category/list', 'PettyCategory::getCategories');
         $routes->get('petty-category/with-usage', 'PettyCategory::getCategoriesWithUsage');
-        $routes->get('petty-category/detail/(:num)', 'PettyCategory::getCategory/$1');
         $routes->get('petty-category/(:num)', 'PettyCategory::getCategory/$1');
         $routes->post('petty-category/create', 'PettyCategory::create');
         $routes->post('petty-category/update', 'PettyCategory::update');

@@ -75,6 +75,11 @@ class PettyCategory extends BaseController
             return $this->failNotFound('Category not found');
         }
 
+        // Convert to array if it's an object
+        if (is_object($category)) {
+            $category = (array) $category;
+        }
+
         return $this->respond($category);
     }
 
@@ -220,5 +225,13 @@ class PettyCategory extends BaseController
         $categories = $this->categoryModel->searchCategories($keyword);
         
         return $this->respond($categories);
+    }
+
+    /**
+     * Create new petty cash category (store method for POST)
+     */
+    public function store()
+    {
+        return $this->create();
     }
 }

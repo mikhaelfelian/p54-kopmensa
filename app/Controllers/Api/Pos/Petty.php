@@ -233,6 +233,11 @@ class Petty extends BaseController
             return $this->failNotFound('Petty cash entry not found');
         }
 
+        // Convert to array if it's an object
+        if (is_object($petty)) {
+            $petty = (array) $petty;
+        }
+
         // Check if can edit (only draft or posted status)
         if ($petty['status'] === 'void') {
             return $this->failValidationErrors('Cannot edit voided entry');
@@ -282,6 +287,11 @@ class Petty extends BaseController
             return $this->failNotFound('Petty cash entry not found');
         }
 
+        // Convert to array if it's an object
+        if (is_object($petty)) {
+            $petty = (array) $petty;
+        }
+
         if ($petty['status'] !== 'draft') {
             return $this->failValidationErrors('Only draft entries can be deleted');
         }
@@ -290,6 +300,131 @@ class Petty extends BaseController
             return $this->respond(['message' => 'Petty cash entry deleted successfully']);
         } else {
             return $this->failServerError('Failed to delete petty cash entry');
+        }
+    }
+
+    /**
+     * Get petty cash detail by ID
+     */
+    public function detail($id = null)
+    {
+        if (!$id) {
+            return $this->failValidationErrors('Petty cash entry ID required');
+        }
+
+        $petty = $this->pettyModel->getPettyCashWithDetails(['id' => $id]);
+        if (empty($petty)) {
+            return $this->failNotFound('Petty cash entry not found');
+        }
+
+        return $this->respond($petty[0]);
+    }
+
+    /**
+     * Approve petty cash entry
+     */
+    public function approve($id = null)
+    {
+        if (!$id) {
+            return $this->failValidationErrors('Petty cash entry ID required');
+        }
+
+        $petty = $this->pettyModel->find($id);
+        if (!$petty) {
+            return $this->failNotFound('Petty cash entry not found');
+        }
+
+        // Convert to array if it's an object
+        if (is_object($petty)) {
+            $petty = (array) $petty;
+        }
+
+        if ($petty['status'] !== 'draft') {
+            return $this->failValidationErrors('Only draft entries can be approved');
+        }
+
+        $approved_by = $this->request->getPost('user_id') ?? 1; // From mobile app
+        
+        if ($this->pettyModel->approvePettyCash($id, $approved_by)) {
+            return $this->respond(['message' => 'Petty cash entry approved successfully']);
+        } else {
+            return $this->failServerError('Failed to approve petty cash entry');
+        }
+    }
+
+    /**
+     * Reject petty cash entry
+     */
+    public function reject($id = null)
+    {
+        if (!$id) {
+            return $this->failValidationErrors('Petty cash entry ID required');
+        }
+
+        $petty = $this->pettyModel->find($id);
+        if (!$petty) {
+            return $this->failNotFound('Petty cash entry not found');
+        }
+
+        // Convert to array if it's an object
+        if (is_object($petty)) {
+            $petty = (array) $petty;
+        }
+
+        if ($petty['status'] !== 'draft') {
+            return $this->failValidationErrors('Only draft entries can be rejected');
+        }
+
+        $rejection_reason = $this->request->getPost('rejection_reason') ?? 'Rejected by supervisor';
+        $rejected_by = $this->request->getPost('user_id') ?? 1; // From mobile app
+
+        $data = [
+            'status' => 'rejected',
+            'rejection_reason' => $rejection_reason,
+            'rejected_by' => $rejected_by,
+            'rejected_at' => date('Y-m-d H:i:s')
+        ];
+
+        if ($this->pettyModel->update($id, $data)) {
+            return $this->respond(['message' => 'Petty cash entry rejected successfully']);
+        } else {
+            return $this->failServerError('Failed to reject petty cash entry');
+        }
+    }
+
+    /**
+     * Void petty cash entry
+     */
+    public function void($id = null)
+    {
+        if (!$id) {
+            return $this->failValidationErrors('Petty cash entry ID required');
+        }
+
+        $petty = $this->pettyModel->find($id);
+        if (!$petty) {
+            return $this->failNotFound('Petty cash entry not found');
+        }
+
+        // Convert to array if it's an object
+        if (is_object($petty)) {
+            $petty = (array) $petty;
+        }
+
+        if ($petty['status'] === 'void') {
+            return $this->failValidationErrors('Entry is already voided');
+        }
+
+        $void_reason = $this->request->getPost('void_reason') ?? 'Voided by user';
+        $voided_by = $this->request->getPost('user_id') ?? 1; // From mobile app
+        
+        if ($this->pettyModel->voidPettyCash($id, $voided_by, $void_reason)) {
+            // Update shift petty totals
+            $this->updateShiftPettyTotals($petty['shift_id']);
+            
+            return $this->respond(['message' => 'Petty cash entry voided successfully']);
+        } else {
+            return $this->failServerError('Failed to void petty cash entry');
         }
     }
 
