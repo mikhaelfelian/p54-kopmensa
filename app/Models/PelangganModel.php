@@ -106,18 +106,32 @@ class PelangganModel extends Model
 
     /**
      * Search customer by id_user, kode, nama, or no_telp
+     * Prioritizes exact matches on id_user first
      */
     public function searchCustomer($searchTerm)
     {
+        // First try exact match on id_user
+        $exactIdUser = $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit')
+                    ->where('status', '1')
+                    ->where('status_blokir', '0')
+                    ->where('id_user', $searchTerm)
+                    ->first();
+        
+        if ($exactIdUser) {
+            return [$exactIdUser]; // Return exact match first
+        }
+        
+        // If no exact match, search with LIKE conditions
         return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit')
-                    ->where('status', '1') // Only active customers
-                    ->where('status_blokir', '0') // Not blocked
+                    ->where('status', '1')
+                    ->where('status_blokir', '0')
                     ->groupStart()
                         ->like('id_user', $searchTerm)
                         ->orLike('kode', $searchTerm)
                         ->orLike('nama', $searchTerm)
                         ->orLike('no_telp', $searchTerm)
                     ->groupEnd()
+                    ->orderBy('id_user', 'ASC') // Order by id_user first
                     ->orderBy('nama', 'ASC')
                     ->limit(10)
                     ->get()
@@ -135,4 +149,6 @@ class PelangganModel extends Model
                     ->where('status_blokir', '0')
                     ->first();
     }
+
+
 } 

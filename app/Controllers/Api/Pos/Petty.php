@@ -34,6 +34,47 @@ class Petty extends BaseController
     }
 
     /**
+     * Get petty cash overview (GET endpoint)
+     */
+    public function index()
+    {
+        $outlet_id = $this->request->getGet('outlet_id');
+        
+        if (!$outlet_id) {
+            return $this->failValidationErrors('Outlet ID required');
+        }
+
+        // Check if there's an active shift
+        $activeShift = $this->shiftModel->getActiveShift($outlet_id);
+        if (!$activeShift) {
+            return $this->respond([
+                'active_shift' => null,
+                'message' => 'No active shift found. Please open shift first.'
+            ]);
+        }
+
+        // Get petty cash summary for current shift
+        $summary = $this->pettyModel->getPettyCashSummaryByShift($activeShift['id']);
+        
+        // Get recent petty cash entries (last 10)
+        $recentEntries = $this->pettyModel->getPettyCashWithDetails(null, [
+            'outlet_id' => $outlet_id,
+            'shift_id' => $activeShift['id'],
+            'limit' => 10
+        ]);
+
+        return $this->respond([
+            'active_shift' => [
+                'id' => $activeShift['id'],
+                'shift_code' => $activeShift['shift_code'],
+                'start_at' => $activeShift['start_at']
+            ],
+            'summary' => $summary,
+            'recent_entries' => $recentEntries
+        ]);
+    }
+
+    /**
      * Get petty cash entries for current shift
      */
     public function getPettyCash()
@@ -41,13 +82,13 @@ class Petty extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->failValidationError('Outlet ID required');
+            return $this->failValidationErrors('Outlet ID required');
         }
 
         // Check if there's an active shift
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         if (!$activeShift) {
-            return $this->failValidationError('No active shift found. Please open shift first.');
+            return $this->failValidationErrors('No active shift found. Please open shift first.');
         }
 
         $filters = [
@@ -87,23 +128,23 @@ class Petty extends BaseController
 
         // Validate required fields
         if (!$outlet_id || !$direction || !$amount || !$reason) {
-            return $this->failValidationError('Outlet ID, direction, amount, and reason are required');
+            return $this->failValidationErrors('Outlet ID, direction, amount, and reason are required');
         }
 
         // Check if there's an active shift
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         if (!$activeShift) {
-            return $this->failValidationError('No active shift found. Please open shift first.');
+            return $this->failValidationErrors('No active shift found. Please open shift first.');
         }
 
         // Validate direction
         if (!in_array($direction, ['IN', 'OUT'])) {
-            return $this->failValidationError('Direction must be IN or OUT');
+            return $this->failValidationErrors('Direction must be IN or OUT');
         }
 
         // Validate amount
         if (!is_numeric($amount) || $amount <= 0) {
-            return $this->failValidationError('Amount must be a positive number');
+            return $this->failValidationErrors('Amount must be a positive number');
         }
 
         // Prepare data
@@ -153,13 +194,13 @@ class Petty extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->failValidationError('Outlet ID required');
+            return $this->failValidationErrors('Outlet ID required');
         }
 
         // Check if there's an active shift
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         if (!$activeShift) {
-            return $this->failValidationError('No active shift found. Please open shift first.');
+            return $this->failValidationErrors('No active shift found. Please open shift first.');
         }
 
         $summary = $this->pettyModel->getPettyCashSummaryByShift($activeShift['id']);
@@ -184,7 +225,7 @@ class Petty extends BaseController
         }
 
         if (!$id) {
-            return $this->failValidationError('Petty cash entry ID required');
+            return $this->failValidationErrors('Petty cash entry ID required');
         }
 
         $petty = $this->pettyModel->find($id);
@@ -194,7 +235,7 @@ class Petty extends BaseController
 
         // Check if can edit (only draft or posted status)
         if ($petty['status'] === 'void') {
-            return $this->failValidationError('Cannot edit voided entry');
+            return $this->failValidationErrors('Cannot edit voided entry');
         }
 
         $direction = $this->request->getPost('direction');
@@ -203,7 +244,7 @@ class Petty extends BaseController
         $category_id = $this->request->getPost('category_id');
 
         if (!$direction || !$amount || !$reason) {
-            return $this->failValidationError('Direction, amount, and reason are required');
+            return $this->failValidationErrors('Direction, amount, and reason are required');
         }
 
         $data = [
@@ -233,7 +274,7 @@ class Petty extends BaseController
         }
 
         if (!$id) {
-            return $this->failValidationError('Petty cash entry ID required');
+            return $this->failValidationErrors('Petty cash entry ID required');
         }
 
         $petty = $this->pettyModel->find($id);
@@ -242,7 +283,7 @@ class Petty extends BaseController
         }
 
         if ($petty['status'] !== 'draft') {
-            return $this->failValidationError('Only draft entries can be deleted');
+            return $this->failValidationErrors('Only draft entries can be deleted');
         }
 
         if ($this->pettyModel->delete($id)) {

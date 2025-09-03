@@ -15,6 +15,7 @@ use App\Models\GudangModel;
 use App\Models\PettyModel;
 use App\Models\TransJualModel;
 use CodeIgniter\API\ResponseTrait;
+use IonAuth\Libraries\IonAuth;
 
 class Shift extends BaseController
 {
@@ -24,6 +25,7 @@ class Shift extends BaseController
     protected $gudangModel;
     protected $pettyModel;
     protected $transJualModel;
+    protected $ionAuth;
 
     public function __construct()
     {
@@ -31,6 +33,7 @@ class Shift extends BaseController
         $this->gudangModel = new GudangModel();
         $this->pettyModel = new PettyModel();
         $this->transJualModel = new TransJualModel();
+        $this->ionAuth = new IonAuth();
     }
 
     /**
@@ -43,7 +46,7 @@ class Shift extends BaseController
         $page = (int) ($this->request->getGet('page') ?? 1);
         
         if (!$outlet_id) {
-            return $this->failValidationError('Outlet ID required');
+            return $this->failValidationErrors('Outlet ID required');
         }
 
         $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, $per_page, ($page - 1) * $per_page);
@@ -84,7 +87,7 @@ class Shift extends BaseController
     public function detail($shift_id = null)
     {
         if (!$shift_id) {
-            return $this->failValidationError('Shift ID required');
+            return $this->failValidationErrors('Shift ID required');
         }
 
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
@@ -111,7 +114,7 @@ class Shift extends BaseController
     public function summary($shift_id = null)
     {
         if (!$shift_id) {
-            return $this->failValidationError('Shift ID required');
+            return $this->failValidationErrors('Shift ID required');
         }
 
         // Get shift details
@@ -174,18 +177,34 @@ class Shift extends BaseController
         $user_id = $this->request->getPost('user_id');
 
         if (!$outlet_id || !$saldo_awal || !$user_id) {
-            return $this->failValidationError('Outlet ID, saldo awal, and user ID are required');
+            return $this->failValidationErrors('Outlet ID, saldo awal, and user ID are required');
         }
 
         // Check if there's already an active shift
         $existingShift = $this->shiftModel->getActiveShift($outlet_id);
         if ($existingShift) {
-            return $this->failValidationError('There is already an active shift for this outlet');
+            return $this->failValidationErrors('There is already an active shift for this outlet');
         }
 
         // Validate saldo awal
         if (!is_numeric($saldo_awal) || $saldo_awal < 0) {
-            return $this->failValidationError('Saldo awal must be a positive number');
+            return $this->failValidationErrors('Saldo awal must be a positive number');
+        }
+
+        // Validate user exists
+        $user = $this->ionAuth->user($user_id)->row();
+        if (!$user) {
+            return $this->failValidationErrors('User ID does not exist');
+        }
+
+        // Validate outlet exists
+        $outlet = $this->gudangModel->where('id', $outlet_id)
+                                   ->where('status_otl', '1')
+                                   ->where('status', '1')
+                                   ->where('status_hps', '0')
+                                   ->first();
+        if (!$outlet) {
+            return $this->failValidationErrors('Outlet ID does not exist or is not active');
         }
 
         // Generate shift code
@@ -222,32 +241,54 @@ class Shift extends BaseController
      */
     public function close($shift_id = null)
     {
+        // Accept both POST and JSON input
+        $input = $this->request->getJSON(true) ?: $this->request->getPost();
+
+        // Prefer parameter, fallback to input
         if (!$shift_id) {
-            $shift_id = $this->request->getPost('shift_id');
+            $shift_id = isset($input['shift_id']) ? $input['shift_id'] : null;
         }
 
-        $saldo_akhir = $this->request->getPost('saldo_akhir');
-        $notes = $this->request->getPost('notes');
-        $user_id = $this->request->getPost('user_id');
+        $saldo_akhir = isset($input['saldo_akhir']) ? $input['saldo_akhir'] : null;
+        $notes = isset($input['notes']) ? $input['notes'] : null;
+        $user_id = isset($input['user_id']) ? $input['user_id'] : null;
 
-        if (!$shift_id || !$saldo_akhir || !$user_id) {
-            return $this->failValidationError('Shift ID, saldo akhir, and user ID are required');
+        // Validate required fields (allow saldo_akhir = 0)
+        if (
+            empty($shift_id) ||
+            !isset($saldo_akhir) || $saldo_akhir === '' ||
+            empty($user_id)
+        ) {
+            return $this->failValidationErrors('Shift ID, saldo akhir, and user ID are required');
         }
 
         // Get shift details
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
         if (!$shift) {
-            return $this->failNotFound('Shift not found');
+            return $this->response->setStatusCode(404)
+                ->setJSON([
+                    "status" => 404,
+                    "error" => 404,
+                    "messages" => [
+                        "error" => "Shift not found"
+                    ]
+                ]);
         }
 
         // Check if shift is already closed
         if ($shift['status'] !== 'open') {
-            return $this->failValidationError('Shift is not open or already closed');
+            return $this->failValidationErrors('Shift is not open or already closed');
         }
 
         // Validate saldo akhir
         if (!is_numeric($saldo_akhir) || $saldo_akhir < 0) {
-            return $this->failValidationError('Saldo akhir must be a positive number');
+            return $this->failValidationErrors('Saldo akhir must be a positive number');
+        }
+
+        // Validate user exists
+        $user = $this->ionAuth->user($user_id)->row();
+        if (!$user) {
+            return $this->failValidationErrors('User ID does not exist');
         }
 
         // Close the shift
@@ -271,7 +312,7 @@ class Shift extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->failValidationError('Outlet ID required');
+            return $this->failValidationErrors('Outlet ID required');
         }
 
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
@@ -296,7 +337,7 @@ class Shift extends BaseController
         }
 
         if (!$shift_id) {
-            return $this->failValidationError('Shift ID required');
+            return $this->failValidationErrors('Shift ID required');
         }
 
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
@@ -326,7 +367,7 @@ class Shift extends BaseController
         $date = $this->request->getPost('date') ?? date('Y-m-d');
         
         if (!$outlet_id) {
-            return $this->failValidationError('Outlet ID required');
+            return $this->failValidationErrors('Outlet ID required');
         }
 
         $summary = $this->shiftModel->getShiftSummary($outlet_id, $date);
@@ -344,7 +385,7 @@ class Shift extends BaseController
         $offset = (int) ($this->request->getPost('offset') ?? 0);
         
         if (!$outlet_id) {
-            return $this->failValidationError('Outlet ID required');
+            return $this->failValidationErrors('Outlet ID required');
         }
 
         $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, $limit, $offset);
@@ -360,7 +401,7 @@ class Shift extends BaseController
         $outlet_id = $this->request->getPost('outlet_id');
         
         if (!$outlet_id) {
-            return $this->failValidationError('Outlet ID required');
+            return $this->failValidationErrors('Outlet ID required');
         }
 
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);

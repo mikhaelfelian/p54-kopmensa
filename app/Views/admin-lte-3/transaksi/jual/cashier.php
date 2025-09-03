@@ -159,24 +159,24 @@ helper('form');
                         </div>
                     </div>
                     <div class="col-12">
-                        <!-- Scan Anggota Field (hidden by default) -->
+                        <!-- Scan Customer Field (hidden by default) -->
                         <div class="form-group scan-anggota-field mb-3" id="scanAnggotaGroup" style="display: none;">
-                            <label for="scanAnggota">Scan QR Code Anggota</label>
+                            <label for="scanAnggota">Scan QR Code Customer</label>
                             <div class="input-group">
                                 <input type="text" class="form-control form-control-sm" id="scanAnggota"
-                                    placeholder="Scan QR code atau ketik nomor kartu">
+                                    placeholder="Scan QR code atau ketik nomor kartu/nama customer">
                                 <div class="input-group-append">
                                     <button type="button" class="btn btn-outline-secondary btn-sm" id="openQrScanner">
                                         <i class="fas fa-camera"></i>
                                     </button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" id="searchAnggota">
-                                        <i class="fas fa-qrcode"></i>
+                                        <i class="fas fa-search"></i>
                                     </button>
                                 </div>
                             </div>
                             <small class="text-muted">
                                 <i class="fas fa-info-circle"></i>
-                                Scan QR code atau ketik nomor kartu anggota
+                                Scan QR code atau ketik nomor kartu/nama customer
                             </small>
 
                             <!-- QR Scanner Modal -->
@@ -185,7 +185,7 @@ helper('form');
                                 <div class="modal-dialog modal-lg" role="document">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Scan QR Code Anggota</h5>
+                                            <h5 class="modal-title">Scan QR Code Customer</h5>
                                             <button type="button" class="close" data-dismiss="modal">
                                                 <span>&times;</span>
                                             </button>
@@ -215,7 +215,7 @@ helper('form');
                                 <div class="alert alert-info alert-sm">
                                     <div class="row">
                                         <div class="col-12">
-                                            <strong>Informasi Anggota:</strong>
+                                            <strong>Informasi Customer:</strong>
                                         </div>
                                     </div>
                                     <div class="row mt-2">
@@ -3654,36 +3654,36 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         $('#searchAnggota').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
 
         $.ajax({
-            url: '<?= base_url('api/anggota/search') ?>',
+            url: '<?= base_url('transaksi/jual/search-customer') ?>',
             type: 'GET',
             dataType: 'json',
-            data: { kartu: customerId },
+            data: { q: customerId },
             success: function (response) {
-                if (response && response.success && response.data) {
-                    const anggota = response.data;
+                if (response && response.success && response.data && response.data.length > 0) {
+                    const customer = response.data[0]; // Get first result
 
                     // Store customer data
-                    $('#selectedCustomerId').val(anggota.id_user);
-                    $('#selectedCustomerName').val(anggota.nama);
+                    $('#selectedCustomerId').val(customer.id);
+                    $('#selectedCustomerName').val(customer.nama);
 
-                    // Show anggota info in the display section
-                    $('#displayCustomerName').text(anggota.nama);
-                    $('#displayCustomerCard').text(anggota.nomor_kartu || customerId);
+                    // Show customer info in the display section
+                    $('#displayCustomerName').text(customer.nama);
+                    $('#displayCustomerCard').text(customer.kode || customer.id_user || customerId);
                     $('#customerInfoDisplay').show();
 
-                    // Show detailed anggota info below
-                    $('#anggotaNama').text(anggota.nama || '-');
-                    $('#anggotaKode').text(anggota.nomor_kartu || customerId || '-');
-                    $('#anggotaAlamat').text(anggota.alamat || '-');
+                    // Show detailed customer info below
+                    $('#anggotaNama').text(customer.nama || '-');
+                    $('#anggotaKode').text(customer.kode || customer.id_user || customerId || '-');
+                    $('#anggotaAlamat').text(customer.alamat || '-');
                     $('#anggotaInfo').show();
 
                     // Clear scan input
                     $('#scanAnggota').val('');
 
-                    // Show success message only once
-                    toastr.success('Anggota ditemukan: ' + anggota.nama);
+                    // Show success message
+                    toastr.success('Customer ditemukan: ' + customer.nama);
                 } else {
-                    toastr.error('Anggota tidak ditemukan');
+                    toastr.error('Customer tidak ditemukan');
                     $('#customerInfoDisplay').hide();
                     $('#anggotaInfo').hide();
                     $('#selectedCustomerId').val('');
@@ -3722,12 +3722,12 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
     // Load available printers
     loadPrinters();
 
-    // Manual anggota search function
+    // Manual customer search function (searches tbl_m_pelanggan)
     function searchAnggota() {
-        let kartuNumber = $('#scanAnggota').val().trim();
+        let searchTerm = $('#scanAnggota').val().trim();
 
-        if (!kartuNumber) {
-            toastr.warning('Masukkan nomor kartu anggota');
+        if (!searchTerm) {
+            toastr.warning('Masukkan nomor kartu, nama, atau scan QR code customer');
             return;
         }
 
@@ -3735,36 +3735,52 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         $('#searchAnggota').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
 
         $.ajax({
-            url: '<?= base_url('api/anggota/search') ?>',
+            url: '<?= base_url('transaksi/jual/search-customer') ?>',
             type: 'GET',
             dataType: 'json',
-            data: { kartu: kartuNumber },
+            data: { q: searchTerm },
             success: function (response) {
                 if (response && response.success && response.data) {
-                    const anggota = response.data;
+                    let customer;
+                    
+                    // Handle both single customer object and array of customers
+                    if (Array.isArray(response.data)) {
+                        if (response.data.length > 0) {
+                            customer = response.data[0]; // Get first result
+                        } else {
+                            toastr.error('Customer tidak ditemukan');
+                            $('#customerInfoDisplay').hide();
+                            $('#anggotaInfo').hide();
+                            $('#selectedCustomerId').val('');
+                            $('#selectedCustomerName').val('');
+                            return;
+                        }
+                    } else {
+                        customer = response.data; // Single customer object
+                    }
 
                     // Store customer data
-                    $('#selectedCustomerId').val(anggota.id);
-                    $('#selectedCustomerName').val(anggota.nama);
+                    $('#selectedCustomerId').val(customer.id);
+                    $('#selectedCustomerName').val(customer.nama);
 
-                    // Show anggota info in the display section
-                    $('#displayCustomerName').text(anggota.nama);
-                    $('#displayCustomerCard').text(anggota.nomor_kartu || kartuNumber);
+                    // Show customer info in the display section
+                    $('#displayCustomerName').text(customer.nama);
+                    $('#displayCustomerCard').text(customer.kode || customer.id_user || searchTerm);
                     $('#customerInfoDisplay').show();
 
-                    // Show detailed anggota info below
-                    $('#anggotaNama').text(anggota.nama || '-');
-                    $('#anggotaKode').text(anggota.nomor_kartu || kartuNumber || '-');
-                    $('#anggotaAlamat').text(anggota.alamat || '-');
+                    // Show detailed customer info below
+                    $('#anggotaNama').text(customer.nama || '-');
+                    $('#anggotaKode').text(customer.kode || customer.id_user || searchTerm || '-');
+                    $('#anggotaAlamat').text(customer.alamat || '-');
                     $('#anggotaInfo').show();
 
                     // Clear scan input
                     $('#scanAnggota').val('');
 
-                    // Show success message only once
-                    toastr.success('Anggota ditemukan: ' + anggota.nama);
+                    // Show success message
+                    toastr.success('Customer ditemukan: ' + customer.nama);
                 } else {
-                    toastr.error('Anggota tidak ditemukan');
+                    toastr.error('Customer tidak ditemukan');
                     $('#customerInfoDisplay').hide();
                     $('#anggotaInfo').hide();
                     $('#selectedCustomerId').val('');
@@ -3778,13 +3794,14 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                         window.location.href = '<?= base_url('auth/login') ?>';
                     }, 2000);
                 } else if (xhr.status === 404) {
-                    toastr.error('Anggota tidak ditemukan');
+                    toastr.error('Customer tidak ditemukan');
                     $('#customerInfoDisplay').hide();
+                    $('#anggotaInfo').hide();
                     $('#selectedCustomerId').val('');
                     $('#selectedCustomerName').val('');
                 } else {
                     const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : (xhr.statusText || error || 'Error');
-                    toastr.error('Gagal mencari anggota: ' + msg);
+                    toastr.error('Gagal mencari customer: ' + msg);
                 }
             },
             complete: function () {

@@ -1786,6 +1786,8 @@ class TransJual extends BaseController
         }
     }
 
+
+
     /**
      * Display shared print receipt view
      */

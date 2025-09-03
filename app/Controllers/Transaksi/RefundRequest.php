@@ -70,12 +70,14 @@ class RefundRequest extends BaseController
     {
         // Get sales transactions that haven't been refunded
         $salesTransactions = $this->transJualModel
-            ->select('tbl_trans_jual.*, tbl_m_pelanggan.nama as customer_nama')
+            ->select('tbl_trans_jual.*, COALESCE(tbl_m_pelanggan.nama, "UMUM") as customer_nama')
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
             ->where('tbl_trans_jual.status_bayar', '1') // Only paid transactions
             ->where('tbl_trans_jual.status_retur', '0') // Not returned
             ->orderBy('tbl_trans_jual.created_at', 'DESC')
             ->findAll();
+
+
 
         $data = [
             'title' => 'Buat Permintaan Refund',
@@ -100,7 +102,7 @@ class RefundRequest extends BaseController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to(base_url('transaksi/refund/create'))
                 ->withInput()
                 ->with('errors', $this->validator->getErrors());
         }
@@ -148,7 +150,7 @@ class RefundRequest extends BaseController
                 ->with('success', 'Permintaan refund berhasil dibuat dan menunggu persetujuan');
 
         } catch (\Exception $e) {
-            return redirect()->back()
+            return redirect()->to(current_url())
                 ->withInput()
                 ->with('error', 'Gagal membuat permintaan refund: ' . $e->getMessage());
         }
@@ -286,7 +288,7 @@ class RefundRequest extends BaseController
 
         try {
             $transaction = $this->transJualModel
-                ->select('tbl_trans_jual.*, tbl_m_pelanggan.nama as customer_name')
+                ->select('tbl_trans_jual.*, COALESCE(tbl_m_pelanggan.nama, "UMUM") as customer_name')
                 ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
                 ->find($id);
 

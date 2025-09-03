@@ -9,10 +9,14 @@ use CodeIgniter\HTTP\ResponseInterface;
 class PettyCategory extends BaseController
 {
     protected $categoryModel;
+    protected $ionAuth;
+    protected $pengaturan;
 
     public function __construct()
     {
         $this->categoryModel = new PettyCategoryModel();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
+        $this->pengaturan = new \App\Models\PengaturanModel();
     }
 
     public function index()

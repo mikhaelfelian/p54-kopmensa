@@ -25,6 +25,16 @@ class Transaksi extends BaseController
 {
     use ResponseTrait;
 
+    protected $mTransJual;
+    protected $mTransJualDet;
+    protected $mTransJualPlat;
+    protected $mItem;
+    protected $mItemHist;
+    protected $mPlatform;
+    protected $mPelanggan;
+    protected $mVoucher;
+    protected $mShift;
+
     /**
      * Initialize all model properties in the constructor for reuse.
      */
@@ -51,7 +61,7 @@ class Transaksi extends BaseController
     private function isShiftOpen($outlet_id, $user_id)
     {
         $activeShift = $this->mShift->where('outlet_id', $outlet_id)
-                                   ->where('kasir_user_id', $user_id)
+                                   ->where('user_open_id', $user_id)
                                    ->where('status', 'open')
                                    ->first();
         
@@ -199,7 +209,7 @@ class Transaksi extends BaseController
 
         // Check if shift is open before allowing transaction
         if (!$this->isShiftOpen($input['id_gudang'], $input['id_user'])) {
-            return $this->failValidationError('Shift tidak terbuka. Silakan buka shift terlebih dahulu.');
+            return $this->failValidationErrors('Shift tidak terbuka. Silakan buka shift terlebih dahulu.');
         }
 
         // Validate required fields
@@ -216,7 +226,7 @@ class Transaksi extends BaseController
             !is_array($input['cart']) ||
             count($input['cart']) === 0
         ) {
-            return $this->failValidationError('Data transaksi utama atau cart tidak lengkap');
+            return $this->failValidationErrors('Data transaksi utama atau cart tidak lengkap');
         }
 
         try {
@@ -541,7 +551,7 @@ class Transaksi extends BaseController
         $voucherCode = $this->request->getGet('code') ?? $this->request->getPost('code');
         
         if (empty($voucherId) && empty($voucherCode)) {
-            return $this->failValidationError('Voucher ID or code is required');
+            return $this->failValidationErrors('Voucher ID or code is required');
         }
 
         try {

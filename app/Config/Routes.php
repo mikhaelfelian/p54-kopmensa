@@ -96,6 +96,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->get('shift/outlets', 'Shift::getOutlets');
 
         // Petty Cash endpoints
+        $routes->get('petty-cash', 'Petty::index');
         $routes->post('petty/list', 'Petty::getPettyCash');
         $routes->post('petty/create', 'Petty::create');
         $routes->post('petty/update', 'Petty::update');
@@ -104,6 +105,7 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->post('petty/summary', 'Petty::getSummary');
 
         // Petty Cash Category endpoints
+        $routes->get('petty-category', 'PettyCategory::index');
         $routes->get('petty-category/list', 'PettyCategory::getCategories');
         $routes->get('petty-category/with-usage', 'PettyCategory::getCategoriesWithUsage');
         $routes->get('petty-category/(:num)', 'PettyCategory::getCategory/$1');
@@ -511,6 +513,8 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('jual/get-details/(:num)', 'TransJual::getTransactionDetails/$1');
     $routes->match(['get', 'post'], 'jual/search-items', 'TransJual::searchItems');
     $routes->get('jual/get-customer/(:num)', 'TransJual::getCustomerInfo/$1');
+    $routes->get('jual/search-customer', 'TransJual::searchCustomer');
+    $routes->get('jual/get-customer-by-iduser', 'TransJual::getCustomerByIdUser');
     $routes->get('jual/generate-nota', 'TransJual::generateNotaNumber');
     $routes->post('jual/validate-voucher', 'TransJual::validateVoucher');
     $routes->post('jual/process-transaction', 'TransJual::processTransaction');
@@ -567,6 +571,16 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('refund/approve/(:num)', 'RefundRequest::approve/$1');
     $routes->post('refund/reject/(:num)', 'RefundRequest::reject/$1');
     $routes->get('refund/get-transaction/(:num)', 'RefundRequest::getTransactionDetails/$1');
+    
+    // Additional routes with transaksi prefix for compatibility
+    $routes->get('transaksi/refund', 'RefundRequest::index');
+    $routes->get('transaksi/refund/create', 'RefundRequest::create');
+    $routes->post('transaksi/refund/store', 'RefundRequest::store');
+    $routes->get('transaksi/refund/(:num)', 'RefundRequest::show/$1');
+    $routes->get('transaksi/refund/approval', 'RefundRequest::approval');
+    $routes->get('transaksi/refund/approve/(:num)', 'RefundRequest::approve/$1');
+    $routes->post('transaksi/refund/reject/(:num)', 'RefundRequest::reject/$1');
+    $routes->get('transaksi/refund/get-transaction/(:num)', 'RefundRequest::getTransactionDetails/$1');
 });
 
 // Public API routes

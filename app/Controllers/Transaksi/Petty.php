@@ -15,6 +15,7 @@ class Petty extends BaseController
     protected $categoryModel;
     protected $gudangModel;
     protected $ionAuth;
+    protected $data;
 
     public function __construct()
     {
@@ -23,6 +24,12 @@ class Petty extends BaseController
         $this->categoryModel = new PettyCategoryModel();
         $this->gudangModel = new GudangModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
+        
+        // Initialize common data
+        $this->data = [
+            'user' => $this->ionAuth->user()->row(),
+            'pengaturan' => new \App\Models\PengaturanModel()
+        ];
     }
 
     public function index()
@@ -306,8 +313,9 @@ class Petty extends BaseController
         }
 
         $reason = $this->request->getPost('reason') ?? 'Divoid oleh user';
+        $userId = $this->ionAuth->user()->row()->id;
         
-        if ($this->pettyModel->voidPettyCash($id, $reason)) {
+        if ($this->pettyModel->voidPettyCash($id, $userId, $reason)) {
             // Update shift petty totals
             $this->updateShiftPettyTotals($petty['shift_id']);
             

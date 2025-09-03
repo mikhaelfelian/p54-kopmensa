@@ -25,6 +25,19 @@ class PettyCategory extends BaseController
     }
 
     /**
+     * Get petty cash categories overview (GET endpoint)
+     */
+    public function index()
+    {
+        $categories = $this->categoryModel->getActiveCategories();
+        
+        return $this->respond([
+            'categories' => $categories,
+            'total' => count($categories)
+        ]);
+    }
+
+    /**
      * Get all petty cash categories
      */
     public function getCategories()
@@ -54,7 +67,7 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->failValidationError('Category ID required');
+            return $this->failValidationErrors('Category ID required');
         }
 
         $category = $this->categoryModel->find($id);
@@ -75,13 +88,13 @@ class PettyCategory extends BaseController
         $is_active = $this->request->getPost('is_active') ?? 1;
 
         if (!$name) {
-            return $this->failValidationError('Category name is required');
+            return $this->failValidationErrors('Category name is required');
         }
 
         // Check if name already exists
         $existingCategory = $this->categoryModel->where('name', $name)->first();
         if ($existingCategory) {
-            return $this->failValidationError('Category name already exists');
+            return $this->failValidationErrors('Category name already exists');
         }
 
         $data = [
@@ -110,7 +123,7 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->failValidationError('Category ID required');
+            return $this->failValidationErrors('Category ID required');
         }
 
         $category = $this->categoryModel->find($id);
@@ -123,13 +136,13 @@ class PettyCategory extends BaseController
         $is_active = $this->request->getPost('is_active');
 
         if (!$name) {
-            return $this->failValidationError('Category name is required');
+            return $this->failValidationErrors('Category name is required');
         }
 
         // Check if name already exists (excluding current category)
         $existingCategory = $this->categoryModel->where('name', $name)->where('id !=', $id)->first();
         if ($existingCategory) {
-            return $this->failValidationError('Category name already exists');
+            return $this->failValidationErrors('Category name already exists');
         }
 
         $data = [
@@ -159,7 +172,7 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->failValidationError('Category ID required');
+            return $this->failValidationErrors('Category ID required');
         }
 
         if ($this->categoryModel->toggleStatus($id)) {
@@ -179,11 +192,11 @@ class PettyCategory extends BaseController
         }
 
         if (!$id) {
-            return $this->failValidationError('Category ID required');
+            return $this->failValidationErrors('Category ID required');
         }
 
         if (!$this->categoryModel->canDelete($id)) {
-            return $this->failValidationError('Cannot delete category that is still in use');
+            return $this->failValidationErrors('Cannot delete category that is still in use');
         }
 
         if ($this->categoryModel->delete($id)) {
@@ -201,7 +214,7 @@ class PettyCategory extends BaseController
         $keyword = $this->request->getPost('keyword') ?? $this->request->getGet('keyword');
         
         if (!$keyword) {
-            return $this->failValidationError('Search keyword required');
+            return $this->failValidationErrors('Search keyword required');
         }
 
         $categories = $this->categoryModel->searchCategories($keyword);
