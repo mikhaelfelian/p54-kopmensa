@@ -1469,7 +1469,7 @@
   }
 ],
 "variable": [
-  { "key": "baseUrl", "value": "http://localhost/p54-kopmensa/" },
+  { "key": "baseUrl", "value": "https://dev.kopmensa/" },
   { "key": "jwt_token", "value": "" }
 ]
 }
