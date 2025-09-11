@@ -63,9 +63,9 @@
                             <!-- Outlet Filter -->
                             <div class="col-md-3">
                                 <div class="form-group">
-                                    <label>Filter Gudang</label>
+                                    <label>Filter Warehouse / Store</label>
                                     <select name="outlet_filter" class="form-control rounded-0">
-                                        <option value="">- Semua Gudang -</option>
+                                        <option value="">- Semua Warehouse / Store -</option>
                                         <?php if (isset($outlets) && !empty($outlets)): ?>
                                             <?php foreach ($outlets as $outlet): ?>
                                                 <option value="<?= $outlet->id ?>" <?= (isset($outlet_filter) && $outlet_filter == $outlet->id) ? 'selected' : '' ?>>
@@ -77,8 +77,23 @@
                                 </div>
                             </div>
                             
+                            <!-- Items per page -->
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    <label>Items per Page</label>
+                                    <select name="per_page" class="form-control rounded-0">
+                                        <option value="50" <?= (isset($_GET['per_page']) && $_GET['per_page'] == '50') ? 'selected' : '' ?>>50</option>
+                                        <option value="100" <?= (isset($_GET['per_page']) && $_GET['per_page'] == '100') ? 'selected' : 'selected' ?>>100 (Default)</option>
+                                        <option value="200" <?= (isset($_GET['per_page']) && $_GET['per_page'] == '200') ? 'selected' : '' ?>>200</option>
+                                        <option value="500" <?= (isset($_GET['per_page']) && $_GET['per_page'] == '500') ? 'selected' : '' ?>>500</option>
+                                        <option value="1000" <?= (isset($_GET['per_page']) && $_GET['per_page'] == '1000') ? 'selected' : '' ?>>1000</option>
+                                        <option value="-1" <?= (isset($_GET['per_page']) && $_GET['per_page'] == '-1') ? 'selected' : '' ?>>All Items</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
                             <!-- Stockable Filter -->
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <div class="form-group">
                                     <label>Status Stok</label>
                                     <select name="stok" class="form-control rounded-0">

@@ -12,17 +12,20 @@ namespace App\Controllers\Master;
 use App\Controllers\BaseController;
 use App\Models\PelangganModel;
 use App\Models\PengaturanModel;
+use App\Models\TransJualModel;
 
 class Pelanggan extends BaseController
 {
     protected $pelangganModel;
     protected $validation;
     protected $pengaturan;
+    protected $transJualModel;
 
     public function __construct()
     {
         $this->pelangganModel = new PelangganModel();
         $this->pengaturan = new PengaturanModel();
+        $this->transJualModel = new TransJualModel();
         $this->validation = \Config\Services::validation();
     }
 
@@ -54,12 +57,32 @@ class Pelanggan extends BaseController
 
         // Get total records for pagination
         $total = $query->countAllResults(false);
+        
+        // Get pelanggan data
+        $pelanggans = $query->paginate($perPage, 'pelanggan');
+        
+        // Calculate monthly purchases for each member
+        $currentMonth = date('Y-m');
+        foreach ($pelanggans as &$pelanggan) {
+            $monthlyPurchase = $this->transJualModel->select('
+                    COUNT(id) as total_transactions,
+                    COALESCE(SUM(jml_total), 0) as total_amount
+                ')
+                ->where('id_pelanggan', $pelanggan->id)
+                ->where('DATE_FORMAT(tgl_masuk, "%Y-%m")', $currentMonth)
+                ->where('status_nota', '1')
+                ->where('status_hps', '0')
+                ->first();
+                
+            $pelanggan->monthly_transactions = $monthlyPurchase->total_transactions ?? 0;
+            $pelanggan->monthly_amount = $monthlyPurchase->total_amount ?? 0;
+        }
 
         $data = [
             'title'          => 'Data Pelanggan / Anggota',
             'Pengaturan'     => $this->pengaturan,
             'user'           => $this->ionAuth->user()->row(),
-            'pelanggans'     => $query->paginate($perPage, 'pelanggan'),
+            'pelanggans'     => $pelanggans,
             'pager'          => $this->pelangganModel->pager,
             'currentPage'    => $currentPage,
             'perPage'        => $perPage,
@@ -82,6 +105,167 @@ class Pelanggan extends BaseController
         ];
 
         return $this->view($this->theme->getThemePath() . '/master/pelanggan/index', $data);
+    }
+
+    /**
+     * Reset member account
+     */
+    public function resetAccount($id)
+    {
+        $pelanggan = $this->pelangganModel->find($id);
+        
+        if (!$pelanggan) {
+            return redirect()->to('master/pelanggan')->with('error', 'Member tidak ditemukan');
+        }
+
+        // Reset account by clearing blocked status and notes
+        $data = [
+            'status' => '1', // Active
+            'blocked_reason' => null,
+            'blocked_date' => null,
+            'blocked_by' => null,
+            'tgl_ubah' => date('Y-m-d H:i:s')
+        ];
+
+        if ($this->pelangganModel->update($id, $data)) {
+            // Also reset user account if exists
+            if ($pelanggan->id_user) {
+                $ionAuth = new \IonAuth\Libraries\IonAuth();
+                $ionAuth->activate($pelanggan->id_user);
+            }
+
+            return redirect()->to('master/pelanggan')->with('success', 'Account berhasil direset');
+        } else {
+            return redirect()->to('master/pelanggan')->with('error', 'Gagal mereset account');
+        }
+    }
+
+    /**
+     * Block member account
+     */
+    public function blockAccount($id)
+    {
+        $pelanggan = $this->pelangganModel->find($id);
+        
+        if (!$pelanggan) {
+            return redirect()->to('master/pelanggan')->with('error', 'Member tidak ditemukan');
+        }
+
+        $reason = $this->request->getPost('reason');
+        
+        if (empty($reason)) {
+            return redirect()->back()->with('error', 'Alasan pemblokiran harus diisi');
+        }
+
+        // Block account
+        $data = [
+            'status' => '0', // Blocked
+            'blocked_reason' => $reason,
+            'blocked_date' => date('Y-m-d H:i:s'),
+            'blocked_by' => $this->ionAuth->user()->row()->id,
+            'tgl_ubah' => date('Y-m-d H:i:s')
+        ];
+
+        if ($this->pelangganModel->update($id, $data)) {
+            // Also deactivate user account if exists
+            if ($pelanggan->id_user) {
+                $ionAuth = new \IonAuth\Libraries\IonAuth();
+                $ionAuth->deactivate($pelanggan->id_user);
+            }
+
+            return redirect()->to('master/pelanggan')->with('success', 'Account berhasil diblokir');
+        } else {
+            return redirect()->to('master/pelanggan')->with('error', 'Gagal memblokir account');
+        }
+    }
+
+    /**
+     * Show add member form
+     */
+    public function addMember()
+    {
+        $data = [
+            'title' => 'Tambah Member Baru',
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'kode' => $this->pelangganModel->generateKode(),
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/pelanggan') . '">Pelanggan</a></li>
+                <li class="breadcrumb-item active">Tambah Member</li>
+            '
+        ];
+
+        return $this->view($this->theme->getThemePath() . '/master/pelanggan/add_member', $data);
+    }
+
+    /**
+     * Store new member
+     */
+    public function storeMember()
+    {
+        $rules = [
+            'nama' => 'required|min_length[3]|max_length[100]',
+            'no_telp' => 'permit_empty|max_length[20]',
+            'email' => 'permit_empty|valid_email|max_length[100]',
+            'alamat' => 'permit_empty|max_length[255]',
+            'username' => 'required|min_length[3]|max_length[50]|is_unique[tbl_ion_users.username]',
+            'password' => 'required|min_length[6]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('errors', $this->validator->getErrors());
+        }
+
+        $nama = $this->request->getPost('nama');
+        $noTelp = $this->request->getPost('no_telp');
+        $email = $this->request->getPost('email');
+        $alamat = $this->request->getPost('alamat');
+        $username = $this->request->getPost('username');
+        $password = $this->request->getPost('password');
+
+        // Create user account first
+        $ionAuth = new \IonAuth\Libraries\IonAuth();
+        $groupId = 3; // Member group ID
+
+        $userId = $ionAuth->register($username, $password, $email, [
+            'first_name' => $nama,
+            'last_name' => ''
+        ], [$groupId]);
+
+        if (!$userId) {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('error', 'Gagal membuat user account: ' . implode(', ', $ionAuth->errors()));
+        }
+
+        // Create member record
+        $memberData = [
+            'kode' => $this->pelangganModel->generateKode(),
+            'nama' => $nama,
+            'no_telp' => $noTelp,
+            'email' => $email,
+            'alamat' => $alamat,
+            'tipe' => '1', // Member type
+            'status' => '1', // Active
+            'id_user' => $userId,
+            'tgl_masuk' => date('Y-m-d H:i:s'),
+            'status_hps' => '0'
+        ];
+
+        if ($this->pelangganModel->insert($memberData)) {
+            return redirect()->to('master/pelanggan')
+                           ->with('success', 'Member baru berhasil ditambahkan');
+        } else {
+            // Rollback user creation if member creation fails
+            $ionAuth->deleteUser($userId);
+            return redirect()->back()
+                           ->withInput()
+                           ->with('error', 'Gagal menambahkan member');
+        }
     }
 
     /**

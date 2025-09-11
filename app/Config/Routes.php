@@ -196,6 +196,18 @@ $routes->get('dashboard', 'Dashboard::index', [
     'as' => 'dashboard.index',
 ]);
 
+$routes->get('dashboard/enhanced-features', 'Dashboard::enhancedFeatures', [
+    'namespace' => 'App\Controllers',
+    'filter' => 'auth',
+    'as' => 'dashboard.enhanced_features',
+]);
+
+$routes->get('dashboard/system-overview', 'Dashboard::systemOverview', [
+    'namespace' => 'App\Controllers',
+    'filter' => 'auth',
+    'as' => 'dashboard.system_overview',
+]);
+
 
 
 /*****
@@ -354,6 +366,11 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/delete/(:num)', 'Supplier::delete/$1');
     $routes->get('supplier/detail/(:num)', 'Supplier::detail/$1');
     $routes->get('supplier/trash', 'Supplier::trash');
+    
+    // Item Settings for Supplier
+    $routes->get('supplier/items/(:num)', 'Supplier::items/$1');
+    $routes->get('supplier/items/(:num)/add', 'Supplier::addItem/$1');
+    $routes->post('supplier/items/(:num)/store', 'Supplier::storeItem/$1');
 });
 
 // Pelanggan & Customer Group Routes
@@ -484,9 +501,11 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
     $routes->get('opname/input/(:num)', 'Opname::input/$1');
     $routes->match(['get', 'post'], 'opname/process/(:num)', 'Opname::proses/$1');
     $routes->get('opname/delete/(:num)', 'Opname::delete/$1');
-    $routes->get('opname/get-stock-outlet', 'Opname::getStockOutletAjax');
+    $routes->get('opname/get-stock-outlet', 'Opname::getStockOutlet');
     $routes->match(['get', 'post'], 'opname/add-item', 'Opname::addItem');
     $routes->post('opname/delete-item', 'Opname::deleteItem');
+    $routes->post('opname/update-item-stok', 'Opname::updateItemStok');
+    $routes->post('opname/update-item-keterangan', 'Opname::updateItemKeterangan');
     $routes->get('opname/get-table-data/(:num)', 'Opname::getTableData/$1');
 
     // Penerimaan / Receiving
@@ -639,6 +658,37 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
     $routes->get('outlet', 'OutletReport::index');
     $routes->get('outlet/detail/(:num)', 'OutletReport::detail/$1');
     $routes->get('outlet/export_excel', 'OutletReport::export_excel');
+
+    // Sales Turnover Report Routes
+    $routes->get('sales-turnover', 'SalesTurnoverReport::index');
+    $routes->get('sales-turnover/export', 'SalesTurnoverReport::export');
+
+    // Product Sales Report Routes
+    $routes->get('product-sales', 'ProductSalesReport::index');
+    $routes->get('product-sales/export', 'ProductSalesReport::export');
+
+    // Order Report Routes
+    $routes->get('order', 'OrderReport::index');
+    $routes->get('order/detail/(:num)', 'OrderReport::detail/$1');
+    $routes->get('order/export', 'OrderReport::export');
+
+    // All-in-One Turnover Report Routes
+    $routes->get('all-in-one-turnover', 'AllInOneTurnoverReport::index');
+    $routes->get('all-in-one-turnover/export', 'AllInOneTurnoverReport::export');
+
+    // Profit Loss Report Routes
+    $routes->get('profit-loss', 'ProfitLossReport::index');
+    $routes->get('profit-loss/export', 'ProfitLossReport::export');
+
+    // Best Selling Report Routes
+    $routes->get('best-selling', 'BestSellingReport::index');
+    $routes->get('best-selling/export', 'BestSellingReport::export');
+
+    // Cut-off Report Routes
+    $routes->get('cutoff', 'CutOffReport::index');
+    $routes->get('cutoff/debug', 'CutOffReport::debug');
+    $routes->get('cutoff/export', 'CutOffReport::export');
+    $routes->get('cutoff/detail/(:num)', 'CutOffReport::detail/$1');
 });
 
 $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function ($routes) {

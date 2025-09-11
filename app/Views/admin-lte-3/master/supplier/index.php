@@ -90,15 +90,19 @@
                                 <td class="text-center">
                                     <div class="btn-group">
                                         <a href="<?= base_url("master/supplier/detail/{$supplier->id}") ?>"
-                                            class="btn btn-info btn-sm rounded-0">
+                                            class="btn btn-info btn-sm rounded-0" title="Detail">
                                             <i class="fas fa-eye"></i>
                                         </a>
+                                        <a href="<?= base_url("master/supplier/items/{$supplier->id}") ?>"
+                                            class="btn btn-success btn-sm rounded-0" title="Item Settings">
+                                            <i class="fas fa-cog"></i>
+                                        </a>
                                         <a href="<?= base_url("master/supplier/edit/{$supplier->id}") ?>"
-                                            class="btn btn-warning btn-sm rounded-0">
+                                            class="btn btn-warning btn-sm rounded-0" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a href="<?= base_url("master/supplier/delete/{$supplier->id}") ?>"
-                                            class="btn btn-danger btn-sm rounded-0"
+                                            class="btn btn-danger btn-sm rounded-0" title="Delete"
                                             onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
                                             <i class="fas fa-trash"></i>
                                         </a>

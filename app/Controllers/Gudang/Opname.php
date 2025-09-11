@@ -293,13 +293,28 @@ class Opname extends BaseController
     public function input($id)
     {
         $opname     = $this->utilSOModel->find($id);
-        $opn_det    = $this->utilSODetModel->where('id_so', $id)->findAll();
+        $gudang     = $this->gudangModel->where('id', $opname->id_gudang)->first();
+        
+        // Get opname detail items with complete information
+        $opn_det = $this->utilSODetModel->select('
+                tbl_util_so_det.*,
+                tbl_m_item.kode,
+                tbl_m_item.item,
+                tbl_m_satuan.SatuanBesar as satuan,
+                tbl_m_item_stok.jml as current_stock
+            ')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_util_so_det.id_item')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+            ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_util_so_det.id_item AND tbl_m_item_stok.id_gudang = ' . $opname->id_gudang, 'left')
+            ->where('tbl_util_so_det.id_so', $id)
+            ->findAll();
 
         $data = [
             'title'       => 'Input Item Opname ',
             'Pengaturan'  => $this->pengaturan,
             'user'        => $this->ionAuth->user()->row(),
             'opname'      => $opname,
+            'gudang'      => $gudang,
             'items'       => $opn_det,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
@@ -308,8 +323,21 @@ class Opname extends BaseController
             '
         ];
 
+        // Get all active items for dropdown
         $itemModel = new \App\Models\ItemModel();
-        $dropdownItems = $itemModel->getItemStocksWithRelations(1000); // or any large number to get all
+        $dropdownItems = $itemModel->select('
+                tbl_m_item.id,
+                tbl_m_item.kode,
+                tbl_m_item.item,
+                tbl_m_item.barcode,
+                tbl_m_satuan.SatuanBesar as satuan
+            ')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+            ->where('tbl_m_item.status', '1')
+            ->where('tbl_m_item.status_hps', '0')
+            ->orderBy('tbl_m_item.item', 'ASC')
+            ->findAll();
+        
         $data['dropdownItems'] = $dropdownItems;
 
         return view($this->theme->getThemePath() . '/gudang/opname/input', $data);
@@ -374,13 +402,24 @@ class Opname extends BaseController
             if (!$item_row) {
                 continue; // Skip if item not found
             }
+
+            // Get current stock from tbl_m_item_stok for this warehouse
+            $currentStock = 0;
+            $stockData = $this->itemStokModel
+                ->where('id_item', $row['id_item'])
+                ->where('id_gudang', $opname->id_gudang)
+                ->first();
+            
+            if ($stockData) {
+                $currentStock = (float) $stockData->jml;
+            }
             
             $data = [
                 'id_so'      => $id,
                 'id_item'    => $row['id_item'],
                 'id_satuan'  => $item_row->id_satuan,
                 'item'       => $item_row->item,
-                'jml_sys'    => $row['stok_sistem'],
+                'jml_sys'    => $currentStock, // Use actual stock from tbl_m_item_stok
                 'jml_so'     => $row['stok_fisik'],
                 'keterangan' => $row['keterangan'] ?? null,
                 'satuan'     => $row['satuan'] ?? null,
@@ -638,5 +677,97 @@ class Opname extends BaseController
         // Get opname details from UtilSODetModel
         $utilSODetModel = new \App\Models\UtilSODetModel();
         return $utilSODetModel->where('id_so', $opnameId)->findAll();
+    }
+
+    /**
+     * Get stock for outlet/warehouse
+     */
+    public function getStockOutlet()
+    {
+        // Disable CSRF for this specific endpoint
+        $this->response->setHeader('Access-Control-Allow-Origin', '*');
+        
+        try {
+            $itemId = $this->request->getGet('item_id');
+            $outletId = $this->request->getGet('outlet_id');
+
+            // Basic validation
+            if (!$itemId) {
+                return $this->response->setJSON([
+                    'id' => null,
+                    'jml' => 0,
+                    'satuan' => '',
+                    'debug' => 'No item_id provided'
+                ]);
+            }
+
+            // Test database connection first
+            $db = \Config\Database::connect();
+            
+            // Get item details with satuan using raw query to avoid model issues
+            $itemQuery = $db->query("
+                SELECT 
+                    i.id,
+                    i.item,
+                    i.kode,
+                    i.id_satuan,
+                    s.SatuanBesar as satuan
+                FROM tbl_m_item i
+                LEFT JOIN tbl_m_satuan s ON s.id = i.id_satuan
+                WHERE i.id = ? AND i.status = '1' AND i.status_hps = '0'
+            ", [$itemId]);
+            
+            $item = $itemQuery->getRow();
+
+            if (!$item) {
+                return $this->response->setJSON([
+                    'id' => null,
+                    'jml' => 0,
+                    'satuan' => '',
+                    'debug' => 'Item not found with id: ' . $itemId
+                ]);
+            }
+
+            // Get stock from item stock table using raw query
+            $stock = 0;
+            if ($outletId) {
+                $stockQuery = $db->query("
+                    SELECT jml 
+                    FROM tbl_m_item_stok 
+                    WHERE id_item = ? AND id_gudang = ?
+                ", [$itemId, $outletId]);
+                
+                $stockData = $stockQuery->getRow();
+                if ($stockData) {
+                    $stock = (float) $stockData->jml;
+                }
+            }
+
+            $result = [
+                'id' => (int) $itemId,
+                'jml' => $stock,
+                'satuan' => $item->satuan ?? '',
+                'item_name' => $item->item ?? '',
+                'item_code' => $item->kode ?? '',
+                'debug' => 'Success - Stock: ' . $stock . ', Satuan: ' . ($item->satuan ?? 'none'),
+                'query_info' => [
+                    'item_found' => !empty($item),
+                    'outlet_id' => $outletId,
+                    'stock_query_executed' => !empty($outletId)
+                ]
+            ];
+
+            return $this->response->setJSON($result);
+
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'id' => null,
+                'jml' => 0,
+                'satuan' => '',
+                'error' => $e->getMessage(),
+                'debug' => 'Exception occurred: ' . $e->getFile() . ':' . $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 } 

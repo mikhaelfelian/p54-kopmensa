@@ -23,6 +23,7 @@ class Auth extends BaseController
     {
         $identity = $this->request->getPost('user');
         $password = $this->request->getPost('pass');
+        $storeId = $this->request->getPost('store_id'); // New store selection
 
         $ionAuth = new \IonAuth\Libraries\IonAuth();
         if (!$ionAuth->login($identity, $password)) {
@@ -47,6 +48,21 @@ class Auth extends BaseController
         }
 
         $user = $ionAuth->user()->row();
+        
+        // Validate store selection if provided
+        $selectedStore = null;
+        if ($storeId) {
+            $gudangModel = new \App\Models\GudangModel();
+            $selectedStore = $gudangModel->where('id', $storeId)
+                                        ->where('status', '1')
+                                        ->first();
+            if (!$selectedStore) {
+                return $this->respond([
+                    'success' => false,
+                    'message' => 'Invalid store selection'
+                ], 400);
+            }
+        }
 
         // Get user groups to determine 'tipe'
         $groups = $ionAuth->getUsersGroups($user->id)->getResult();
@@ -72,7 +88,9 @@ class Auth extends BaseController
                 'email'      => $user->email,
                 'tipe'       => $tipe,
                 'profile'    => $profileUrl,
-                'id'         => $user->id
+                'id'         => $user->id,
+                'store_id'   => $selectedStore ? $selectedStore->id : null,
+                'store_name' => $selectedStore ? $selectedStore->nama : null
             ]
         ];
 
@@ -573,5 +591,32 @@ class Auth extends BaseController
                 'message' => 'Gagal mereset PIN'
             ], 500);
         }
+    }
+
+    /**
+     * Get available stores for member selection
+     * GET /api/anggota/stores
+     */
+    public function getStores()
+    {
+        $gudangModel = new \App\Models\GudangModel();
+        
+        $stores = $gudangModel->select('id, nama, alamat, no_telp')
+                             ->where('status', '1')
+                             ->orderBy('nama', 'ASC')
+                             ->findAll();
+        
+        if (empty($stores)) {
+            return $this->respond([
+                'success' => false,
+                'message' => 'Tidak ada store yang tersedia'
+            ], 404);
+        }
+        
+        return $this->respond([
+            'success' => true,
+            'data' => $stores,
+            'message' => 'Store berhasil diambil'
+        ]);
     }
 } 

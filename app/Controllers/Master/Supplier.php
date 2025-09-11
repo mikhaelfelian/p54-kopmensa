@@ -14,18 +14,30 @@ namespace App\Controllers\Master;
 use App\Controllers\BaseController;
 use App\Models\SupplierModel;
 use App\Models\PengaturanModel;
+use App\Models\ItemModel;
+use App\Models\KategoriModel;
+use App\Models\MerkModel;
+use App\Models\SatuanModel;
 
 class Supplier extends BaseController
 {
     protected $supplierModel;
     protected $validation;
     protected $pengaturan;
+    protected $itemModel;
+    protected $kategoriModel;
+    protected $merkModel;
+    protected $satuanModel;
 
     public function __construct()
     {
         $this->supplierModel = new SupplierModel();
         $this->pengaturan = new PengaturanModel();
         $this->validation = \Config\Services::validation();
+        $this->itemModel = new ItemModel();
+        $this->kategoriModel = new KategoriModel();
+        $this->merkModel = new MerkModel();
+        $this->satuanModel = new SatuanModel();
     }
 
     public function index()
@@ -335,5 +347,206 @@ class Supplier extends BaseController
         ];
 
         return $this->view($this->theme->getThemePath() . '/master/supplier/trash', $data);
+    }
+
+    /**
+     * Display and manage items for a supplier
+     */
+    public function items($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('master/supplier')
+                           ->with('error', 'ID supplier tidak ditemukan');
+        }
+
+        $supplier = $this->supplierModel->find($id);
+        if (!$supplier) {
+            return redirect()->to('master/supplier')
+                           ->with('error', 'Data supplier tidak ditemukan');
+        }
+
+        // Get items associated with this supplier
+        $keyword = $this->request->getVar('keyword') ?? '';
+        $kategori = $this->request->getVar('kategori');
+        $merk = $this->request->getVar('merk');
+        $perPage = $this->request->getVar('per_page') ?? 20;
+
+        // Build query for items
+        $itemsQuery = $this->itemModel->select('
+                tbl_m_item.*,
+                tbl_m_kategori.kategori as kategori_nama,
+                tbl_m_merk.merk as merk_nama,
+                tbl_m_satuan.SatuanBesar as satuan_nama
+            ')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+            ->where('tbl_m_item.status_hps', '0');
+
+        // Filter by supplier
+        $itemsQuery->where('tbl_m_item.id_supplier', $id);
+
+        // Apply filters
+        if ($keyword) {
+            $itemsQuery->groupStart()
+                ->like('tbl_m_item.item', $keyword)
+                ->orLike('tbl_m_item.kode', $keyword)
+                ->orLike('tbl_m_item.barcode', $keyword)
+                ->groupEnd();
+        }
+
+        if ($kategori) {
+            $itemsQuery->where('tbl_m_item.id_kategori', $kategori);
+        }
+
+        if ($merk) {
+            $itemsQuery->where('tbl_m_item.id_merk', $merk);
+        }
+
+        $items = $itemsQuery->paginate($perPage, 'items');
+
+        // Get filter options
+        $kategoriList = $this->kategoriModel->where('status', '1')->findAll();
+        $merkList = $this->merkModel->where('status', '1')->findAll();
+
+        $data = [
+            'title' => 'Item Settings - ' . $supplier->nama,
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'supplier' => $supplier,
+            'items' => $items,
+            'pager' => $this->itemModel->pager,
+            'keyword' => $keyword,
+            'kategori' => $kategori,
+            'merk' => $merk,
+            'perPage' => $perPage,
+            'kategoriList' => $kategoriList,
+            'merkList' => $merkList,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/supplier') . '">Supplier</a></li>
+                <li class="breadcrumb-item active">Item Settings</li>
+            '
+        ];
+
+        return $this->view($this->theme->getThemePath() . '/master/supplier/items', $data);
+    }
+
+    /**
+     * Add new item for supplier
+     */
+    public function addItem($supplierId = null)
+    {
+        if (!$supplierId) {
+            return redirect()->to('master/supplier')
+                           ->with('error', 'ID supplier tidak ditemukan');
+        }
+
+        $supplier = $this->supplierModel->find($supplierId);
+        if (!$supplier) {
+            return redirect()->to('master/supplier')
+                           ->with('error', 'Data supplier tidak ditemukan');
+        }
+
+        // Get filter options
+        $kategoriList = $this->kategoriModel->where('status', '1')->findAll();
+        $merkList = $this->merkModel->where('status', '1')->findAll();
+        $satuanList = $this->satuanModel->findAll();
+
+        $data = [
+            'title' => 'Tambah Item - ' . $supplier->nama,
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'supplier' => $supplier,
+            'validation' => $this->validation,
+            'kategoriList' => $kategoriList,
+            'merkList' => $merkList,
+            'satuanList' => $satuanList,
+            'kode' => $this->itemModel->generateKode(),
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/supplier') . '">Supplier</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/supplier/items/' . $supplierId) . '">Item Settings</a></li>
+                <li class="breadcrumb-item active">Tambah Item</li>
+            '
+        ];
+
+        return $this->view($this->theme->getThemePath() . '/master/supplier/add_item', $data);
+    }
+
+    /**
+     * Store new item for supplier
+     */
+    public function storeItem($supplierId = null)
+    {
+        if (!$supplierId) {
+            return redirect()->to('master/supplier')
+                           ->with('error', 'ID supplier tidak ditemukan');
+        }
+
+        $supplier = $this->supplierModel->find($supplierId);
+        if (!$supplier) {
+            return redirect()->to('master/supplier')
+                           ->with('error', 'Data supplier tidak ditemukan');
+        }
+
+        // Validation rules
+        $rules = [
+            'item' => 'required|max_length[255]',
+            'id_kategori' => 'required|integer',
+            'id_merk' => 'required|integer',
+            'id_satuan' => 'required|integer',
+            'harga_beli' => 'required|numeric|greater_than_equal_to[0]',
+            'harga_jual' => 'required|numeric|greater_than_equal_to[0]',
+            'min_stok' => 'required|integer|greater_than_equal_to[0]',
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('errors', $this->validator->getErrors());
+        }
+
+        try {
+            // Check for duplicate item name
+            $existingItem = $this->itemModel->where('item', $this->request->getPost('item'))
+                                          ->where('status_hps', '0')
+                                          ->first();
+            
+            if ($existingItem) {
+                return redirect()->back()
+                               ->withInput()
+                               ->with('error', 'Item dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.');
+            }
+
+            $data = [
+                'kode' => $this->itemModel->generateKode(),
+                'item' => $this->request->getPost('item'),
+                'barcode' => $this->request->getPost('barcode'),
+                'id_kategori' => $this->request->getPost('id_kategori'),
+                'id_merk' => $this->request->getPost('id_merk'),
+                'id_satuan' => $this->request->getPost('id_satuan'),
+                'id_supplier' => $supplierId,
+                'harga_beli' => $this->request->getPost('harga_beli'),
+                'harga_jual' => $this->request->getPost('harga_jual'),
+                'min_stok' => $this->request->getPost('min_stok'),
+                'keterangan' => $this->request->getPost('keterangan'),
+                'status' => '1',
+                'status_hps' => '0'
+            ];
+
+            if (!$this->itemModel->insert($data)) {
+                throw new \RuntimeException('Gagal menyimpan data item');
+            }
+
+            return redirect()->to(base_url('master/supplier/items/' . $supplierId))
+                           ->with('success', 'Item berhasil ditambahkan ke supplier');
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::storeItem] ' . $e->getMessage());
+            return redirect()->back()
+                           ->withInput()
+                           ->with('error', 'Gagal menyimpan data item: ' . $e->getMessage());
+        }
     }
 } 

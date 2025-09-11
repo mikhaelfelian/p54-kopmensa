@@ -45,8 +45,13 @@ class Inventori extends BaseController
 
     public function index()
     {
-        $currentPage = $this->request->getVar('page_items') ?? 1;
-        $perPage = 10;
+        $curr_page = $this->request->getVar('page_items') ?? 1;
+        $per_page = $this->request->getVar('per_page') ?? 100; // Show more items by default
+        
+        // Handle "All Items" option
+        if ($per_page == -1) {
+            $per_page = 999999; // Large number to get all items
+        }
         $keyword = $this->request->getVar('keyword') ?? '';
         $kat = $this->request->getVar('kategori');
         $merk = $this->request->getVar('merk');
@@ -86,16 +91,15 @@ class Inventori extends BaseController
             
             // Manual pagination for database builder
             $totalRows = $builder->countAllResults(false); // false keeps the query for reuse
-            $offset = ($currentPage - 1) * $perPage;
+            $offset = ($curr_page - 1) * $per_page;
             
-            $items = $builder->limit($perPage, $offset)->get()->getResult();
+            $items = $builder->limit($per_page, $offset)->get()->getResult();
             
-            // Create pager manually
+            // Create pager like in Item.php
             $pager = \Config\Services::pager();
-            $pager->setPath('gudang/stok'); // Set the base path
-            $pager->store('items', $currentPage, $perPage, $totalRows);
+            $pager->store('items', $curr_page, $per_page, $totalRows, 0);
         } else {
-            // Use original ItemModel filtering for all warehouses
+            // Follow Item.php pattern exactly
             $this->itemModel->where('tbl_m_item.status_hps', '0');
             $this->itemModel->where('tbl_m_item.status_stok', '1'); // Only stockable items
 
@@ -132,7 +136,8 @@ class Inventori extends BaseController
                 $this->itemModel->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
             }
 
-            $items = $this->itemModel->getItemStocksWithRelations($perPage, $keyword);
+            // Follow Item.php pattern exactly - pass parameters like Item.php does
+            $items = $this->itemModel->getItemStocksWithRelations($per_page, $keyword, $curr_page, $kat, $stok, null);
             $pager = $this->itemModel->pager;
         }
 
@@ -142,8 +147,8 @@ class Inventori extends BaseController
             'user'        => $this->ionAuth->user()->row(),
             'items'       => $items,
             'pager'       => $pager,
-            'currentPage' => $currentPage,
-            'perPage'     => $perPage,
+            'currentPage' => $curr_page,
+            'perPage'     => $per_page,
             'keyword'     => $keyword,
             'kat'         => $kat,
             'merk'        => $merk,
@@ -170,24 +175,24 @@ class Inventori extends BaseController
 
     public function export_to_excel()
     {
-        // Get filter parameters
-        $keyword = $this->request->getVar('keyword') ?? '';
-        $kat = $this->request->getVar('kategori');
-        $merk = $this->request->getVar('merk');
-        $stok = $this->request->getVar('stok');
-        $outlet_filter = $this->request->getVar('outlet_filter') ?? '';
-        
+        // Get filter parameters (formatted for clarity)
+        $keyword             = $this->request->getVar('keyword') ?? '';
+        $kat                 = $this->request->getVar('kategori');
+        $merk                = $this->request->getVar('merk');
+        $stok                = $this->request->getVar('stok');
+        $outlet_filter       = $this->request->getVar('outlet_filter') ?? '';
+
         // Min stock filter
-        $min_stok_operator = $this->request->getVar('min_stok_operator') ?? '';
-        $min_stok_value = $this->request->getVar('min_stok_value') ?? '';
-        
+        $min_stok_operator   = $this->request->getVar('min_stok_operator') ?? '';
+        $min_stok_value      = $this->request->getVar('min_stok_value') ?? '';
+
         // Harga Beli filter
         $harga_beli_operator = $this->request->getVar('harga_beli_operator') ?? '';
-        $harga_beli_value = $this->request->getVar('harga_beli_value') ?? '';
-        
+        $harga_beli_value    = $this->request->getVar('harga_beli_value') ?? '';
+
         // Harga Jual filter
         $harga_jual_operator = $this->request->getVar('harga_jual_operator') ?? '';
-        $harga_jual_value = $this->request->getVar('harga_jual_value') ?? '';
+        $harga_jual_value    = $this->request->getVar('harga_jual_value') ?? '';
 
         // Prepare filters array
         $filters = [

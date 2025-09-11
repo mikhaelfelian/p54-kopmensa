@@ -49,7 +49,7 @@ class PurchaseReport extends BaseController
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
-            ->where('tbl_trans_beli.status_hps', '0');
+            ->where('tbl_trans_beli.deleted_at IS NULL');
 
         // Apply filters
         if ($startDate && $endDate) {
@@ -83,7 +83,7 @@ class PurchaseReport extends BaseController
         }
 
         // Get filter options
-        $supplierList = $this->supplierModel->where('status_hps', '0')->findAll();
+        $supplierList = $this->supplierModel->where('deleted_at IS NULL')->findAll();
 
         $data = [
             'title' => 'Laporan Pembelian',
@@ -131,7 +131,7 @@ class PurchaseReport extends BaseController
                 tbl_trans_beli_det.*,
                 tbl_m_item.item as item_nama,
                 tbl_m_item.kode as item_kode,
-                tbl_m_satuan.satuanBesar as satuan_nama
+                tbl_m_satuan.SatuanBesar as satuan_nama
             ')
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_det.id_item', 'left')
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_beli_det.id_satuan', 'left')
@@ -169,7 +169,7 @@ class PurchaseReport extends BaseController
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
-            ->where('tbl_trans_beli.status_hps', '0');
+            ->where('tbl_trans_beli.deleted_at IS NULL');
 
         // Apply filters
         if ($startDate && $endDate) {

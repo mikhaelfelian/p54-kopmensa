@@ -21,12 +21,12 @@
                 <!-- Filter Form -->
                 <form method="GET" class="mb-3">
                     <div class="row">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label>Tanggal Mulai</label>
                             <input type="date" name="start_date" class="form-control form-control-sm"
                                 value="<?= $startDate ?>">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label>Tanggal Akhir</label>
                             <input type="date" name="end_date" class="form-control form-control-sm"
                                 value="<?= $endDate ?>">
@@ -43,7 +43,7 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label>Gudang</label>
+                            <label>Warehouse / Store</label>
                             <select name="id_gudang" class="form-control form-control-sm">
                                 <option value="">Semua Gudang</option>
                                 <?php foreach ($gudangList as $gudang): ?>
@@ -54,15 +54,33 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label>&nbsp;</label>
-                            <div>
-                                <button type="submit" class="btn btn-info btn-sm">
-                                    <i class="fas fa-search"></i> Filter
-                                </button>
-                                <a href="<?= base_url('gudang/input_stok') ?>" class="btn btn-secondary btn-sm">
-                                    <i class="fas fa-redo"></i> Reset
-                                </a>
-                            </div>
+                            <label>User Account</label>
+                            <select name="id_user" class="form-control form-control-sm">
+                                <option value="">Semua User</option>
+                                <?php foreach ($userList as $user): ?>
+                                    <option value="<?= $user->id ?>" <?= $idUser == $user->id ? 'selected' : '' ?>>
+                                        <?= $user->first_name ?: $user->username ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Status</label>
+                            <select name="status" class="form-control form-control-sm">
+                                <option value="">Semua Status</option>
+                                <option value="1" <?= $status == '1' ? 'selected' : '' ?>>Aktif</option>
+                                <option value="0" <?= $status == '0' ? 'selected' : '' ?>>Non-Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-info btn-sm">
+                                <i class="fas fa-search"></i> Filter
+                            </button>
+                            <a href="<?= base_url('gudang/input_stok') ?>" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-redo"></i> Reset
+                            </a>
                         </div>
                     </div>
                 </form>
@@ -72,14 +90,15 @@
                     <table class="table table-bordered table-striped table-sm">
                         <thead>
                             <tr class="bg-primary">
-                                <th width="5%">No</th>
+                                <th width="3%">No</th>
                                 <th>No. Terima</th>
                                 <th>Tanggal</th>
                                 <th>Supplier</th>
-                                <th>Gudang</th>
-                                <th>Penerima</th>
+                                <th>Warehouse / Store</th>
+                                <th>User Account</th>
+                                <th>Last Modified</th>
                                 <th>Keterangan</th>
-                                <th width="15%">Aksi</th>
+                                <th width="12%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -91,7 +110,19 @@
                                         <td><?= date('d/m/Y H:i', strtotime($inputStok->tgl_terima)) ?></td>
                                         <td><?= $inputStok->supplier_nama ?? '-' ?></td>
                                         <td><?= $inputStok->gudang_nama ?? '-' ?></td>
-                                        <td><?= $inputStok->penerima_nama ?? '-' ?></td>
+                                        <td>
+                                            <strong><?= $inputStok->penerima_nama ?? '-' ?></strong>
+                                            <?php if (!empty($inputStok->penerima_username)): ?>
+                                                <br><small class="text-muted">@<?= $inputStok->penerima_username ?></small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($inputStok->modified_date)): ?>
+                                                <?= date('d/m/Y H:i', strtotime($inputStok->modified_date)) ?>
+                                            <?php else: ?>
+                                                <?= date('d/m/Y H:i', strtotime($inputStok->created_date)) ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?= $inputStok->keterangan ?: '-' ?></td>
                                         <td>
                                             <div class="btn-group btn-group-sm">
@@ -114,7 +145,7 @@
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="8" class="text-center">Tidak ada data input stok</td>
+                                    <td colspan="9" class="text-center">Tidak ada data input stok</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

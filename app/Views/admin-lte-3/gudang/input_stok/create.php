@@ -38,9 +38,9 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="form-group">
-                                            <label>Outlet <span class="text-danger">*</span></label>
+                                            <label>Warehouse / Store <span class="text-danger">*</span></label>
                                             <select name="id_gudang" class="form-control rounded-0" required>
-                                                <option value="">Pilih Outlet</option>
+                                                <option value="">Pilih Warehouse / Store</option>
                                                 <?php foreach ($gudangList as $gudang): ?>
                                                     <option value="<?= $gudang->id ?>" <?= old('id_gudang') == $gudang->id ? 'selected' : '' ?>>
                                                         <?= $gudang->nama ?>

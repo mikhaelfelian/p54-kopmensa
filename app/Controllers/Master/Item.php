@@ -211,6 +211,30 @@ class Item extends BaseController
         }
         
         try {
+            // Check for duplicate item name
+            $existingByName = $this->itemModel->where('item', $item)
+                                             ->where('status_hps', '0')
+                                             ->first();
+            
+            if ($existingByName) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('warning', 'Item dengan nama "' . $item . '" sudah ada! Silakan gunakan nama yang berbeda atau edit item yang sudah ada.');
+            }
+            
+            // Check for duplicate barcode if provided
+            if (!empty($barcode)) {
+                $existingByBarcode = $this->itemModel->where('barcode', $barcode)
+                                                   ->where('status_hps', '0')
+                                                   ->first();
+                
+                if ($existingByBarcode) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('warning', 'Item dengan barcode "' . $barcode . '" sudah ada! Barcode harus unik.');
+                }
+            }
+
             $data = [
                 'id_supplier' => $id_supplier,
                 'kode'        => $this->itemModel->generateKode($id_kategori, $tipe),

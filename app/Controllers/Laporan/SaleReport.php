@@ -137,7 +137,7 @@ class SaleReport extends BaseController
                 tbl_trans_jual_det.*,
                 tbl_m_item.item as item_nama,
                 tbl_m_item.kode as item_kode,
-                tbl_m_satuan.satuanBesar as satuan_nama
+                tbl_m_satuan.SatuanBesar as satuan_nama
             ')
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_jual_det.id_item', 'left')
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_jual_det.id_satuan', 'left')

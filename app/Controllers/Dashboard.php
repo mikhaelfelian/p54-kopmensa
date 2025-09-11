@@ -292,4 +292,42 @@ class Dashboard extends BaseController
         
         return $result->total ?? 0;
     }
+
+    /**
+     * Enhanced Features Dashboard
+     * Shows all 21 implemented features from the original request
+     */
+    public function enhancedFeatures()
+    {
+        $data = [
+            'title' => 'Enhanced POS System Features',
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item active">Enhanced Features</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/dashboard/enhanced_menu', $data);
+    }
+
+    /**
+     * System Overview Dashboard
+     * Comprehensive overview of all implemented features
+     */
+    public function systemOverview()
+    {
+        $data = [
+            'title' => 'System Overview - All Features',
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item active">System Overview</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/dashboard/system_overview', $data);
+    }
 } 

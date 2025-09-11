@@ -46,8 +46,10 @@ class InputStok extends BaseController
         $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
         $idSupplier = $this->request->getGet('id_supplier');
         $idGudang = $this->request->getGet('id_gudang');
+        $idUser = $this->request->getGet('id_user'); // Added user filter
+        $status = $this->request->getGet('status'); // Added status filter
 
-        // Build query
+        // Build query with user information
         $builder = $this->inputStokModel->getWithRelations();
 
         // Apply filters
@@ -64,14 +66,25 @@ class InputStok extends BaseController
             $builder->where('tbl_input_stok.id_gudang', $idGudang);
         }
 
+        if ($idUser) {
+            $builder->where('tbl_input_stok.id_penerima', $idUser);
+        }
+
+        if ($status) {
+            $builder->where('tbl_input_stok.status', $status);
+        }
+
         $inputStoks = $builder->findAll();
 
         // Get filter options
         $supplierList = $this->supplierModel->where('status', '1')->findAll();
         $gudangList = $this->gudangModel->where('status', '1')->findAll();
+        
+        // Get users for filter (only active users)
+        $userList = $this->ionAuth->users()->result();
 
         $data = [
-            'title' => 'Barang Non Stok',
+            'title' => 'Penerimaan Barang',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
             'inputStoks' => $inputStoks,
@@ -79,8 +92,11 @@ class InputStok extends BaseController
             'endDate' => $endDate,
             'idSupplier' => $idSupplier,
             'idGudang' => $idGudang,
+            'idUser' => $idUser,
+            'status' => $status,
             'supplierList' => $supplierList,
             'gudangList' => $gudangList,
+            'userList' => $userList,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Gudang</li>

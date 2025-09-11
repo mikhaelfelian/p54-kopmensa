@@ -714,12 +714,19 @@
                     <!-- Reports -->
                     <li class="nav-header">LAPORAN</li>
                     <?php
-                    // Integrate isMenuActive with all Laporan menu routes
+                    // Integrate isMenuActive with all Laporan menu routes (Enhanced with new reports)
                     $laporanMenus = [
                         'laporan/sale',
                         'laporan/purchase',
                         'laporan/stock',
-                        'laporan/outlet'
+                        'laporan/outlet',
+                        'laporan/sales-turnover',
+                        'laporan/product-sales',
+                        'laporan/order',
+                        'laporan/all-in-one-turnover',
+                        'laporan/profit-loss',
+                        'laporan/best-selling',
+                        'laporan/cutoff'
                     ];
                     $isLaporanActive = isMenuActive($laporanMenus);
                     ?>
@@ -732,6 +739,7 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
+                            <!-- Laporan Standar -->
                             <li class="nav-item">
                                 <a href="<?= base_url('laporan/sale') ?>"
                                     class="nav-link <?= isMenuActive('laporan/sale') ? 'active' : '' ?>">
@@ -764,13 +772,90 @@
                                     <p>Laporan Outlet</p>
                                 </a>
                             </li>
+                            
+                            <!-- Pemisah -->
+                            <li class="nav-item">
+                                <div class="nav-link" style="color: #6c757d; font-size: 0.8rem; font-weight: bold; padding-top: 10px;">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-star nav-icon"></i>
+                                    <span>LAPORAN LANJUTAN</span>
+                                </div>
+                            </li>
+                            
+                            <!-- Laporan Lanjutan -->
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/sales-turnover') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/sales-turnover') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-chart-line nav-icon"></i>
+                                    <p>Omzet Penjualan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/product-sales') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/product-sales') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-box nav-icon"></i>
+                                    <p>Penjualan Produk</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/order') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/order') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-file-invoice nav-icon"></i>
+                                    <p>Laporan Pesanan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/all-in-one-turnover') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/all-in-one-turnover') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-chart-pie nav-icon"></i>
+                                    <p>Omzet All-in-One</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/profit-loss') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/profit-loss') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-calculator nav-icon"></i>
+                                    <p>Laba & Rugi</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/best-selling') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/best-selling') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-trophy nav-icon"></i>
+                                    <p>Produk Terlaris</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/cutoff') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/cutoff') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-cut nav-icon"></i>
+                                    <p>Laporan Cut-off</p>
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
                     <!-- Settings -->
                     <li class="nav-header">PENGATURAN</li>
-                    <li class="nav-item has-treeview <?= isMenuActive('pengaturan') ? 'menu-open' : '' ?>">
-                        <a href="#" class="nav-link <?= isMenuActive('pengaturan') ? 'active' : '' ?>">
+                    <?php
+                    // Enhanced settings menu with cut-off
+                    $pengaturanMenus = [
+                        'pengaturan/app',
+                        'pengaturan/api-tokens', 
+                        'pengaturan/printer',
+                        'master/cutoff'
+                    ];
+                    $isPengaturanActive = isMenuActive($pengaturanMenus);
+                    ?>
+                    <li class="nav-item has-treeview <?= $isPengaturanActive ? 'menu-open' : '' ?>">
+                        <a href="#" class="nav-link <?= $isPengaturanActive ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-cog"></i>
                             <p>
                                 Pengaturan
@@ -802,7 +887,31 @@
                                     <p>Printer</p>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('master/cutoff') ?>"
+                                    class="nav-link <?= isMenuActive('master/cutoff') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-cut nav-icon"></i>
+                                    <p>Cut-off Management</p>
+                                </a>
+                            </li>
                         </ul>
+                    </li>
+                    
+                    <!-- Enhanced Features Dashboard -->
+                    <li class="nav-item">
+                        <a href="<?= base_url('dashboard/system-overview') ?>"
+                            class="nav-link <?= isMenuActive('dashboard/system-overview') ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-rocket"></i>
+                            <p style="color: #28a745; font-weight: bold;">System Overview</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('dashboard/enhanced-features') ?>"
+                            class="nav-link <?= isMenuActive('dashboard/enhanced-features') ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-star"></i>
+                            <p style="color: #17a2b8; font-weight: bold;">Enhanced Features</p>
+                        </a>
                     </li>
                 </ul>
             </nav>
