@@ -86,15 +86,15 @@
                                             <?= $label ?>
                                         </span>
                                     </td>
-                                    <td><?= $row->id_gd_asal ?? '-' ?></td>
-                                    <td><?= $row->id_gd_tujuan ?? '-' ?></td>
+                                    <td><?= $row->gudang_asal_name ?? '-' ?></td>
+                                    <td><?= $row->gudang_tujuan_name ?? '-' ?></td>
                                     <td>
                                         <?php if (!empty($row->tgl_masuk) && $row->tgl_masuk != '0000-00-00'): ?>
-                                            <strong>Masuk:</strong> <?= date('d/m/Y', strtotime($row->tgl_masuk)) ?>
+                                            <?= date('d/m/Y', strtotime($row->tgl_masuk)) ?>
                                         <?php endif; ?>
                                         <?php if (!empty($row->tgl_keluar) && $row->tgl_keluar != '0000-00-00'): ?>
                                             <?= br() ?>
-                                            <strong>Keluar:</strong> <?= date('d/m/Y', strtotime($row->tgl_keluar)) ?>
+                                            <?= date('d/m/Y', strtotime($row->tgl_keluar)) ?>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -141,6 +141,7 @@
                                                 class="btn btn-info btn-sm rounded-0">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+                                            <?php if ($row->status_nota == '0'): ?>
                                             <a href="<?= base_url("gudang/transfer/edit/{$row->id}") ?>"
                                                 class="btn btn-warning btn-sm rounded-0">
                                                 <i class="fas fa-edit"></i>
@@ -151,6 +152,7 @@
                                                 title="Input Item">
                                                 <i class="fas fa-plus"></i>
                                             </a>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
