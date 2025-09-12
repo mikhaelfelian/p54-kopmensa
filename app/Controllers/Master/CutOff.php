@@ -53,10 +53,10 @@ class CutOff extends BaseController
         $builder = $this->cutOffModel->select('
                 tbl_cut_off.*,
                 tbl_m_gudang.nama as gudang_nama,
-                users.first_name as user_name
+                tbl_ion_users.first_name as user_name
             ')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_cut_off.id_gudang', 'left')
-            ->join('users', 'users.id = tbl_cut_off.id_user', 'left');
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_cut_off.id_user', 'left');
 
         // Apply filters
         if ($startDate && $endDate) {
@@ -188,10 +188,10 @@ class CutOff extends BaseController
         $cutOff = $this->cutOffModel->select('
                 tbl_cut_off.*,
                 tbl_m_gudang.nama as gudang_nama,
-                users.first_name as user_name
+                tbl_ion_users.first_name as user_name
             ')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_cut_off.id_gudang', 'left')
-            ->join('users', 'users.id = tbl_cut_off.id_user', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_cut_off.id_user', 'left')
             ->find($id);
 
         if (!$cutOff) {

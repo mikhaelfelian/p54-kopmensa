@@ -29,25 +29,25 @@ class InputStok extends BaseController
     public function __construct()
     {
         parent::__construct();
-        $this->inputStokModel = new InputStokModel();
-        $this->inputStokDetModel = new InputStokDetModel();
-        $this->supplierModel = new SupplierModel();
-        $this->gudangModel = new GudangModel();
-        $this->karyawanModel = new KaryawanModel();
-        $this->itemModel = new ItemModel();
-        $this->satuanModel = new SatuanModel();
-        $this->itemStokModel = new ItemStokModel();
-        $this->itemHistModel = new ItemHistModel();
+        $this->inputStokModel     = new InputStokModel();
+        $this->inputStokDetModel  = new InputStokDetModel();
+        $this->supplierModel      = new SupplierModel();
+        $this->gudangModel        = new GudangModel();
+        $this->karyawanModel      = new KaryawanModel();
+        $this->itemModel          = new ItemModel();
+        $this->satuanModel        = new SatuanModel();
+        $this->itemStokModel      = new ItemStokModel();
+        $this->itemHistModel      = new ItemHistModel();
     }
 
     public function index()
     {
-        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
-        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
-        $idSupplier = $this->request->getGet('id_supplier');
-        $idGudang = $this->request->getGet('id_gudang');
-        $idUser = $this->request->getGet('id_user'); // Added user filter
-        $status = $this->request->getGet('status'); // Added status filter
+        $startDate   = $this->request->getGet('start_date') ?? date('Y-m-01');
+        $endDate     = $this->request->getGet('end_date') ?? date('Y-m-t');
+        $idSupplier  = $this->request->getGet('id_supplier');
+        $idGudang    = $this->request->getGet('id_gudang');
+        $idUser      = $this->request->getGet('id_user'); // Added user filter
+        $status      = $this->request->getGet('status');   // Added status filter
 
         // Build query with user information
         $builder = $this->inputStokModel->getWithRelations();
@@ -55,49 +55,47 @@ class InputStok extends BaseController
         // Apply filters
         if ($startDate && $endDate) {
             $builder->where('tbl_input_stok.tgl_terima >=', $startDate . ' 00:00:00')
-                   ->where('tbl_input_stok.tgl_terima <=', $endDate . ' 23:59:59');
+                    ->where('tbl_input_stok.tgl_terima <=', $endDate . ' 23:59:59');
         }
 
-        if ($idSupplier) {
-            $builder->where('tbl_input_stok.id_supplier', $idSupplier);
-        }
-
-        if ($idGudang) {
-            $builder->where('tbl_input_stok.id_gudang', $idGudang);
-        }
-
-        if ($idUser) {
-            $builder->where('tbl_input_stok.id_penerima', $idUser);
-        }
-
-        if ($status) {
-            $builder->where('tbl_input_stok.status', $status);
-        }
+        // Uncomment below to enable additional filters
+        // if ($idSupplier) {
+        //     $builder->where('tbl_input_stok.id_supplier', $idSupplier);
+        // }
+        // if ($idGudang) {
+        //     $builder->where('tbl_input_stok.id_gudang', $idGudang);
+        // }
+        // if ($idUser) {
+        //     $builder->where('tbl_input_stok.id_penerima', $idUser);
+        // }
+        // if ($status) {
+        //     $builder->where('tbl_input_stok.status', $status);
+        // }
 
         $inputStoks = $builder->findAll();
 
         // Get filter options
         $supplierList = $this->supplierModel->where('status', '1')->findAll();
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
-        
+        $gudangList   = $this->gudangModel->where('status', '1')->findAll();
+
         // Get users for filter (only active users)
         $userList = $this->ionAuth->users()->result();
 
         $data = [
-            'title' => 'Penerimaan Barang',
-            'Pengaturan' => $this->pengaturan,
-            'user' => $this->ionAuth->user()->row(),
-            'inputStoks' => $inputStoks,
-            'startDate' => $startDate,
-            'endDate' => $endDate,
-            'idSupplier' => $idSupplier,
-            'idGudang' => $idGudang,
-            'idUser' => $idUser,
-            'status' => $status,
+            'title'        => 'Penerimaan Barang',
+            'Pengaturan'   => $this->pengaturan,
+            'user'         => $this->ionAuth->user()->row(),
+            'inputStoks'   => $inputStoks,
+            'startDate'    => $startDate,
+            'endDate'      => $endDate,
+            'idSupplier'   => $idSupplier,
+            'idGudang'     => $idGudang,
+            'idUser'       => $idUser,
+            'status'       => $status,
             'supplierList' => $supplierList,
-            'gudangList' => $gudangList,
-            'userList' => $userList,
-            'breadcrumbs' => '
+            'gudangList'   => $gudangList,
+            'userList'     => $userList,
+            'breadcrumbs'  => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Gudang</li>
                 <li class="breadcrumb-item active">Input Stok</li>
@@ -109,20 +107,30 @@ class InputStok extends BaseController
 
     public function create()
     {
-        $supplierList = $this->supplierModel->where('status', '1')->findAll();
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
-        $itemList = $this->itemModel->where('status_hps', '0')->findAll();
-        $satuanList = $this->satuanModel->findAll();
+        $supplierList = $this->supplierModel
+            ->where('status', '1')
+            ->findAll();
+
+        $gudangList = $this->gudangModel
+            ->where('status', '1')
+            ->findAll();
+
+        $itemList = $this->itemModel
+            ->where('status_hps', '0')
+            ->findAll();
+
+        $satuanList = $this->satuanModel
+            ->findAll();
 
         $data = [
-            'title' => 'Tambah Input Stok',
-            'Pengaturan' => $this->pengaturan,
-            'user' => $this->ionAuth->user()->row(),
+            'title'        => 'Tambah Input Stok',
+            'Pengaturan'   => $this->pengaturan,
+            'user'         => $this->ionAuth->user()->row(),
             'supplierList' => $supplierList,
-            'gudangList' => $gudangList,
-            'itemList' => $itemList,
-            'satuanList' => $satuanList,
-            'breadcrumbs' => '
+            'gudangList'   => $gudangList,
+            'itemList'     => $itemList,
+            'satuanList'   => $satuanList,
+            'breadcrumbs'  => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Gudang</li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/input_stok') . '">Input Stok</a></li>
@@ -172,19 +180,19 @@ class InputStok extends BaseController
         try {
             // Generate number automatically
             $noTerima = $this->inputStokModel->generateNoTerima();
-            
+
             // Insert header
             $headerData = [
-                'no_terima' => $noTerima,
-                'tgl_terima' => $this->request->getPost('tgl_terima'),
+                'no_terima'   => $noTerima,
+                'tgl_terima'  => $this->request->getPost('tgl_terima'),
                 'id_supplier' => $this->request->getPost('id_supplier'),
-                'id_gudang' => $this->request->getPost('id_gudang'),
+                'id_gudang'   => $this->request->getPost('id_gudang'),
                 'id_penerima' => $this->ionAuth->user()->row()->id, // Auto-set to current user
-                'keterangan' => $this->request->getPost('keterangan'),
-                'status' => '1',
-                'status_hps' => '0',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'keterangan'  => $this->request->getPost('keterangan'),
+                'status'      => '1',
+                'status_hps'  => '0',
+                'created_at'  => date('Y-m-d H:i:s'),
+                'updated_at'  => date('Y-m-d H:i:s'),
             ];
 
             $inputStokId = $this->inputStokModel->insert($headerData);
@@ -198,12 +206,12 @@ class InputStok extends BaseController
                 // Insert detail
                 $detailData = [
                     'id_input_stok' => $inputStokId,
-                    'id_item' => $item['id_item'],
-                    'id_satuan' => $item['id_satuan'],
-                    'jml' => $item['jml'],
-                    'keterangan' => $item['keterangan'] ?? '',
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'id_item'       => $item['id_item'],
+                    'id_satuan'     => $item['id_satuan'],
+                    'jml'           => $item['jml'],
+                    'keterangan'    => $item['keterangan'] ?? '',
+                    'created_at'    => date('Y-m-d H:i:s'),
+                    'updated_at'    => date('Y-m-d H:i:s'),
                 ];
 
                 $this->inputStokDetModel->insert($detailData);
@@ -218,30 +226,30 @@ class InputStok extends BaseController
                     // Update existing stock
                     $newQuantity = $existingStock->jml + $item['jml'];
                     $this->itemStokModel->update($existingStock->id, [
-                        'jml' => $newQuantity,
-                        'updated_at' => date('Y-m-d H:i:s')
+                        'jml'        => $newQuantity,
+                        'updated_at' => date('Y-m-d H:i:s'),
                     ]);
                 } else {
                     // Create new stock record
                     $this->itemStokModel->insert([
-                        'id_item' => $item['id_item'],
-                        'id_gudang' => $this->request->getPost('id_gudang'),
-                        'jml' => $item['jml'],
-                        'status' => '1',
+                        'id_item'    => $item['id_item'],
+                        'id_gudang'  => $this->request->getPost('id_gudang'),
+                        'jml'        => $item['jml'],
+                        'status'     => '1',
                         'created_at' => date('Y-m-d H:i:s'),
-                        'updated_at' => date('Y-m-d H:i:s')
+                        'updated_at' => date('Y-m-d H:i:s'),
                     ]);
                 }
 
                 // Log to item history
                 $this->itemHistModel->insert([
-                    'id_item' => $item['id_item'],
-                    'id_gudang' => $this->request->getPost('id_gudang'),
-                    'jml_masuk' => $item['jml'],
-                    'jml_keluar' => 0,
-                    'keterangan' => 'Input Stok - ' . $noTerima,
-                    'created_at' => date('Y-m-d H:i:s'),
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'id_item'     => $item['id_item'],
+                    'id_gudang'   => $this->request->getPost('id_gudang'),
+                    'jml_masuk'   => $item['jml'],
+                    'jml_keluar'  => 0,
+                    'keterangan'  => 'Input Stok - ' . $noTerima,
+                    'created_at'  => date('Y-m-d H:i:s'),
+                    'updated_at'  => date('Y-m-d H:i:s'),
                 ]);
             }
 
@@ -252,7 +260,6 @@ class InputStok extends BaseController
             }
 
             return redirect()->to('gudang/input_stok')->with('success', 'Input stok berhasil disimpan');
-
         } catch (\Exception $e) {
             $db->transRollback();
             return redirect()->back()->withInput()->with('error', $e->getMessage());

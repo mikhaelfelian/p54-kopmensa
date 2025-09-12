@@ -108,15 +108,15 @@ class InputStokModel extends Model
                 tbl_input_stok.*,
                 tbl_m_supplier.nama as supplier_nama,
                 tbl_m_gudang.nama as gudang_nama,
-                COALESCE(tbl_m_karyawan.nama, users.first_name, users.username) as penerima_nama,
-                users.username as penerima_username,
+                COALESCE(tbl_m_karyawan.nama, tbl_ion_users.first_name, tbl_ion_users.username) as penerima_nama,
+                tbl_ion_users.username as penerima_username,
                 tbl_input_stok.created_at as created_date,
                 tbl_input_stok.updated_at as modified_date
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_input_stok.id_supplier', 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_input_stok.id_gudang', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_input_stok.id_penerima', 'left')
-            ->join('users', 'users.id = tbl_input_stok.id_penerima', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_input_stok.id_penerima', 'left')
             ->where('tbl_input_stok.status_hps', '0');
 
         if ($id) {
