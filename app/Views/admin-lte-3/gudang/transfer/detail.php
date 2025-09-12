@@ -154,7 +154,7 @@
                     </div>
                     <div class="mb-2">
                         <div class="text-muted small">Dibuat Oleh</div>
-                        <div class="font-weight-bold"><?= $transfer->user_name ?? 'Unknown User' ?></div>
+                        <div class="font-weight-bold"><?= $user->first_name ?? 'Unknown User' ?></div>
                     </div>
                     <div class="mb-2">
                         <div class="text-muted small">Keterangan</div>

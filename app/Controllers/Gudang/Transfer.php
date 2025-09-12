@@ -228,7 +228,7 @@ class Transfer extends BaseController
         $data = [
             'title'       => 'Detail Transfer',
             'Pengaturan'  => $this->pengaturan,
-            'user'        => $this->ionAuth->user()->row(),
+            'user'        => $this->ionAuth->user($mutasi->id_user)->row(),
             'transfer'    => $transfer,
             'details'     => $transferDetails,
             'mutasi'      => $mutasi,
