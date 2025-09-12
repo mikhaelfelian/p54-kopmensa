@@ -333,28 +333,35 @@ class Transfer extends BaseController
             ->where('tbl_m_item_stok.jml >', 0)
             ->findAll();
 
-        // Get gudang names
+        // Get gudang names safely (avoid error if property not exist)
         $gudangAsal = $this->gudangModel->find($transfer->id_gd_asal);
         $gudangTujuan = $this->gudangModel->find($transfer->id_gd_tujuan);
-        
-        // Safely get gudang names
-        $transfer->gudang_asal_name = 'N/A';
-        $transfer->gudang_tujuan_name = 'N/A';
-        
+
+        // Try both 'gudang' and 'nama' property for compatibility
+        $transfer->gudang_asal_name = '';
         if ($gudangAsal) {
-            if (is_object($gudangAsal) && isset($gudangAsal->gudang)) {
+            if (isset($gudangAsal->gudang) && $gudangAsal->gudang) {
                 $transfer->gudang_asal_name = $gudangAsal->gudang;
-            } elseif (is_array($gudangAsal) && isset($gudangAsal['gudang'])) {
-                $transfer->gudang_asal_name = $gudangAsal['gudang'];
+            } elseif (isset($gudangAsal->nama) && $gudangAsal->nama) {
+                $transfer->gudang_asal_name = $gudangAsal->nama;
+            } else {
+                $transfer->gudang_asal_name = 'N/A';
             }
+        } else {
+            $transfer->gudang_asal_name = 'N/A';
         }
-        
+
+        $transfer->gudang_tujuan_name = '';
         if ($gudangTujuan) {
-            if (is_object($gudangTujuan) && isset($gudangTujuan->gudang)) {
+            if (isset($gudangTujuan->gudang) && $gudangTujuan->gudang) {
                 $transfer->gudang_tujuan_name = $gudangTujuan->gudang;
-            } elseif (is_array($gudangTujuan) && isset($gudangTujuan['gudang'])) {
-                $transfer->gudang_tujuan_name = $gudangTujuan['gudang'];
+            } elseif (isset($gudangTujuan->nama) && $gudangTujuan->nama) {
+                $transfer->gudang_tujuan_name = $gudangTujuan->nama;
+            } else {
+                $transfer->gudang_tujuan_name = 'N/A';
             }
+        } else {
+            $transfer->gudang_tujuan_name = 'N/A';
         }
 
         $data = [
@@ -363,6 +370,7 @@ class Transfer extends BaseController
             'user'        => $this->ionAuth->user()->row(),
             'transfer'    => $transfer,
             'items'       => $items,
+            'gudang'      => $transfer->gudang_asal_name,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/transfer') . '">Transfer</a></li>

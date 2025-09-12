@@ -49,19 +49,10 @@
                                 <td width="120"><strong>Tipe</strong></td>
                                 <td>: 
                                     <?php
-                                    $tipeLabels = [
-                                        '1' => 'Pindah Gudang',
-                                        '2' => 'Stok Masuk',
-                                        '3' => 'Stok Keluar'
-                                    ];
-                                    $tipeColors = [
-                                        '1' => 'info',
-                                        '2' => 'success',
-                                        '3' => 'warning'
-                                    ];
+                                    $tipeMutasi = tipeMutasi($transfer->tipe);
                                     ?>
-                                    <span class="badge badge-<?= $tipeColors[$transfer->tipe] ?? 'secondary' ?>">
-                                        <?= $tipeLabels[$transfer->tipe] ?? 'Unknown' ?>
+                                    <span class="badge badge-<?= $tipeMutasi['badge'] ?? 'secondary' ?>">
+                                        <?= $tipeMutasi['label'] ?? 'Unknown' ?>
                                     </span>
                                 </td>
                             </tr>
