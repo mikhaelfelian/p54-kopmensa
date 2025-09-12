@@ -84,18 +84,18 @@ class ProfitLossReport extends BaseController
 
         // 3. OPERATING EXPENSES (from Petty Cash)
         $expensesBuilder = $this->pettyModel->select('
-                SUM(CASE WHEN tipe = "keluar" THEN nominal ELSE 0 END) as total_expenses,
-                SUM(CASE WHEN tipe = "masuk" THEN nominal ELSE 0 END) as other_income
+                SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_expenses,
+                SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as other_income
             ')
-            ->where('status', '1');
+            ->where('status', 'posted');
 
         if ($startDate && $endDate) {
-            $expensesBuilder->where('DATE(tgl_masuk) >=', $startDate)
-                           ->where('DATE(tgl_masuk) <=', $endDate);
+            $expensesBuilder->where('DATE(created_at) >=', $startDate)
+                           ->where('DATE(created_at) <=', $endDate);
         }
 
         if ($idGudang) {
-            $expensesBuilder->where('id_gudang', $idGudang);
+            $expensesBuilder->where('outlet_id', $idGudang);
         }
 
         $expenses = $expensesBuilder->first();
