@@ -66,9 +66,11 @@ class ShiftModel extends Model
     /**
      * Get active shift for a specific outlet
      */
-    public function getActiveShift($outlet_id)
+    public function getActiveShift($outlet_id, $user_open_id)
     {
         return $this->where('outlet_id', $outlet_id)
+                    ->where('user_open_id', $user_open_id)
+                    ->where('user_close_id', 0)
                     ->where('status', 'open')
                     ->first();
     }
