@@ -77,6 +77,7 @@ class Transaksi extends BaseController
     public function getTransaction($id_pelanggan = null)
     {
         $mTransJual = $this->mTransJual;
+        $mTransJualPlat = $this->mTransJualPlat;
         
         // If no id_pelanggan provided, get it from request
         if ($id_pelanggan === null) {
@@ -131,6 +132,9 @@ class Transaksi extends BaseController
                         'status'         => (int)$detail->status
                     ];
                 }
+
+                // Get platform data for this transaction using mTransJualPlat
+                $platformData = $mTransJualPlat->where('id_penjualan', $transaction->id)->findAll();
                 
                 $formattedTransactions[] = [
                     'id'             => (int)$transaction->id,
@@ -170,7 +174,8 @@ class Transaksi extends BaseController
                     'status_ppn'     => $transaction->status_ppn,
                     'status_bayar'   => $transaction->status_bayar,
                     'status_retur'   => $transaction->status_retur,
-                    'details'        => $formattedDetails
+                    'details'        => $formattedDetails,
+                    'platform'       => $platformData
                 ];
             }
             
