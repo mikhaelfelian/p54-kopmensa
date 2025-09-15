@@ -84,12 +84,6 @@ class Satuan extends BaseController
     {
         // Validation rules
         $rules = [
-            'csrf_test_name' => [
-                'rules' => 'required',
-                'errors' => [
-                    'required' => 'CSRF token tidak valid'
-                ]
-            ],
             'satuanKecil' => [
                 'rules' => 'required|max_length[50]',
                 'errors' => [
