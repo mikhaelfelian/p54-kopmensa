@@ -230,9 +230,10 @@ class Auth extends BaseController
     public function logout()
     {
         $this->ionAuth->logout();
-        session()->setFlashdata('toastr', ['type' => 'success', 'message' => 'Anda berhasil keluar dari aplikasi.']);
-        // Remove kasir outlet session if exists
-        session()->remove('kasir_outlet');
+        // Destroy all session data
+        session()->destroy();
+        // Set flashdata after destroying session (using tempdata as workaround)
+        session()->setTempdata('toastr', ['type' => 'success', 'message' => 'Anda berhasil keluar dari aplikasi.'], 5);
         return redirect()->to('/auth/login');
     }
 
