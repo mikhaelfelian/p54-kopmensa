@@ -13,6 +13,56 @@
             "name": "anggota",
             "item": [
               {
+                "name": "Login",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/anggota/login",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "anggota", "login"]
+                  },
+                  "body": {
+                    "mode": "urlencoded",
+                    "urlencoded": [
+                      { "key": "user", "value": "<your_username_or_email>", "description": "Username atau email anggota" },
+                      { "key": "pass", "value": "<your_password>", "description": "Password anggota" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/anggota/login", "host": ["{{baseUrl}}"], "path": ["api", "anggota", "login"] },
+                      "body": { "mode": "urlencoded", "urlencoded": [ { "key": "user", "value": "<your_username_or_email>" }, { "key": "pass", "value": "<your_password>" } ] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Login berhasil\",\n  \"data\": {\n    \"user_id\": 123,\n    \"token\": \"<jwt_token>\",\n    \"user_info\": {\"first_name\": \"John\", \"username\": \"john_doe\", \"email\": \"john@example.com\", \"tipe\": \"1\"}\n  }\n}"
+                  },
+                  {
+                    "name": "Error - Invalid Credentials",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/anggota/login", "host": ["{{baseUrl}}"], "path": ["api", "anggota", "login"] }
+                    },
+                    "status": "Unauthorized",
+                    "code": 401,
+                    "body": "{\n  \"status\": 401,\n  \"error\": \"Username/email atau password salah\"\n}"
+                  }
+                ]
+              },
+              {
                 "name": "Profile",
                 "request": {
                   "method": "GET",
@@ -1469,7 +1519,7 @@
   }
 ],
 "variable": [
-  { "key": "baseUrl", "value": "https://dev.kopmensa/" },
+  { "key": "baseUrl", "value": "https://dev.kopmensa.com/" },
   { "key": "jwt_token", "value": "" }
 ]
 }

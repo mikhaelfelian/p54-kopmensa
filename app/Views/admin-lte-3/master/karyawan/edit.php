@@ -270,16 +270,6 @@
                                 'value' => old('alamat_domisili', $karyawan->alamat_domisili)
                             ]) ?>
                         </div>
-                        <!-- Upload Foto -->
-                        <div class="form-group">
-                            <label>Foto Karyawan</label>
-                            <input type="file" name="file_foto" class="form-control-file">
-                            <?php if ($validation->hasError('file_foto')): ?>
-                                <div class="invalid-feedback d-block">
-                                    <?= $validation->getError('file_foto') ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
                         <!-- Status -->
                         <div class="form-group">
                             <label>Status</label>
