@@ -23,7 +23,7 @@ class MerkModel extends Model
     // Validation
     protected $validationRules = [
         'kode'       => 'permit_empty|max_length[160]',
-        'merk'       => 'permit_empty|max_length[160]',
+        'merk'       => 'required|max_length[160]',
         'keterangan' => 'permit_empty',
         'status'     => 'permit_empty|in_list[0,1]',
     ];

@@ -27,15 +27,16 @@ class Merk extends BaseController
 
     public function index()
     {
-        $currentPage = $this->request->getVar('page_merk') ?? 1;
-        $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
+        $curr_page  = $this->request->getVar('page_merk') ?? 1;
+        $per_page   = 10;
+        $query      = $this->request->getVar('keyword') ?? '';
 
-        if ($keyword) {
+        // Apply search filter if keyword exists
+        if ($query) {
             $this->merkModel->groupStart()
-                ->like('merk', $keyword)
-                ->orLike('kode', $keyword)
-                ->orLike('keterangan', $keyword)
+                ->like('merk', $query)
+                ->orLike('kode', $query)
+                ->orLike('keterangan', $query)
                 ->groupEnd();
         }
 
@@ -43,11 +44,11 @@ class Merk extends BaseController
             'title'         => 'Data Merk',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'merk'          => $this->merkModel->paginate($perPage, 'merk'),
+            'merk'          => $this->merkModel->paginate($per_page, 'merk'),
             'pager'         => $this->merkModel->pager,
-            'currentPage'   => $currentPage,
-            'perPage'       => $perPage,
-            'keyword'       => $keyword,
+            'currentPage'   => $curr_page,
+            'perPage'       => $per_page,
+            'keyword'       => $query,
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -80,7 +81,7 @@ class Merk extends BaseController
     {
         $merk   = $this->request->getPost('merk');
         $ket    = $this->request->getPost('keterangan');
-        $status = $this->request->getPost('status');
+        $status = $this->request->getPost('status') ?? '1'; // Default to active if not provided
 
         // Validation rules
         $rules = [
@@ -89,6 +90,12 @@ class Merk extends BaseController
                 'errors' => [
                     'required' => 'Merk harus diisi',
                     'max_length' => 'Merk maksimal 160 karakter'
+                ]
+            ],
+            'status' => [
+                'rules' => 'in_list[0,1]',
+                'errors' => [
+                    'in_list' => 'Status harus 0 atau 1'
                 ]
             ],
             env('security.tokenName', 'csrf_test_name') => [
@@ -112,17 +119,29 @@ class Merk extends BaseController
             'kode'       => $kode,
             'merk'       => $merk,
             'keterangan' => $ket,
-            'status'     => $status
+            'status'     => $status,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
         ];
 
-        if ($this->merkModel->insert($data)) {
+        try {
+            if ($this->merkModel->insert($data)) {
+                return redirect()->to(base_url('master/merk'))
+                    ->with('success', 'Data merk berhasil ditambahkan');
+            } else {
+                // Get the last error from the model
+                $errors = $this->merkModel->errors();
+                $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Gagal menambahkan data merk';
+                
+                return redirect()->to(base_url('master/merk'))
+                    ->with('error', $errorMessage)
+                    ->withInput();
+            }
+        } catch (\Exception $e) {
             return redirect()->to(base_url('master/merk'))
-                ->with('success', 'Data merk berhasil ditambahkan');
+                ->with('error', 'Error: ' . $e->getMessage())
+                ->withInput();
         }
-
-        return redirect()->to(base_url('master/merk'))
-            ->with('error', 'Gagal menambahkan data merk')
-            ->withInput();
     }
 
     public function edit($id)

@@ -27,15 +27,16 @@ class Kategori extends BaseController
 
     public function index()
     {
-        $currentPage = $this->request->getVar('page_kategori') ?? 1;
-        $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
+        $curr_page  = $this->request->getVar('page_kategori') ?? 1;
+        $per_page   = 10;
+        $query      = $this->request->getVar('keyword') ?? '';
 
-        if ($keyword) {
+        // Apply search filter if keyword exists
+        if ($query) {
             $this->kategoriModel->groupStart()
-                ->like('kategori', $keyword)
-                ->orLike('kode', $keyword)
-                ->orLike('keterangan', $keyword)
+                ->like('kategori', $query)
+                ->orLike('kode', $query)
+                ->orLike('keterangan', $query)
                 ->groupEnd();
         }
 
@@ -43,11 +44,11 @@ class Kategori extends BaseController
             'title'         => 'Data Kategori',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'kategori'      => $this->kategoriModel->paginate($perPage, 'kategori'),
+            'kategori'      => $this->kategoriModel->paginate($per_page, 'kategori'),
             'pager'         => $this->kategoriModel->pager,
-            'currentPage'   => $currentPage,
-            'perPage'       => $perPage,
-            'keyword'       => $keyword,
+            'currentPage'   => $curr_page,
+            'perPage'       => $per_page,
+            'keyword'       => $query,
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>

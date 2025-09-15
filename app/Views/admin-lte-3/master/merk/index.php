@@ -2,26 +2,12 @@
 
 <?php
 /**
- * Required variables from controller:
- * - $merk: array of merk data
- * - $total: total count of records
- * - $currentPage: current page number
- * - $perPage: items per page
- * - $pager: pagination object
- * - $search: search keyword (optional)
- * - $status: status filter (optional)
- * - $per_page: items per page setting (optional)
+ * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
+ * Date: 2025-01-12
+ * Github : github.com/mikhaelfelian
+ * description : View for displaying merk/brand data
+ * This file represents the Merk Index View.
  */
-
-// Set default values for required variables to prevent undefined variable errors
-$merk = $merk ?? [];
-$total = $total ?? 0;
-$currentPage = $currentPage ?? 1;
-$perPage = $perPage ?? 10;
-$pager = $pager ?? null;
-$search = $search ?? '';
-$status = $status ?? '';
-$per_page = $per_page ?? '10';
 ?>
 
 <?= $this->section('content') ?>
@@ -56,97 +42,6 @@ $per_page = $per_page ?? '10';
             </div>
             <!-- /.card-header -->
             <div class="card-body table-responsive">
-                <!-- Filter Section -->
-                <div class="card mb-3">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-filter"></i> Filter Data
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <?= form_open('', ['method' => 'get', 'id' => 'filterForm']) ?>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <?= form_label('Cari Kode/Merk:', 'search') ?>
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text">
-                                                    <i class="fas fa-search"></i>
-                                                </span>
-                                            </div>
-                                            <?= form_input([
-                                                'type' => 'text',
-                                                'class' => 'form-control',
-                                                'id' => 'search',
-                                                'name' => 'search',
-                                                'value' => $search ?? '',
-                                                'placeholder' => 'Masukkan kode atau nama merk...',
-                                                'data-toggle' => 'tooltip',
-                                                'title' => 'Tekan Ctrl+F untuk fokus cepat, Escape untuk hapus'
-                                            ]) ?>
-                                        </div>
-                                        <small class="form-text text-muted">
-                                            <i class="fas fa-info-circle"></i> 
-                                            Pencarian otomatis setelah 0.5 detik berhenti mengetik. <strong>Fokus pada kolom Merk</strong>
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <?= form_label('Status:', 'status') ?>
-                                        <?= form_dropdown('status', [
-                                            '' => 'Semua Status',
-                                            '1' => 'Aktif',
-                                            '0' => 'Tidak Aktif'
-                                        ], $status ?? '', [
-                                            'class' => 'form-control',
-                                            'id' => 'status'
-                                        ]) ?>
-                                        <small class="form-text text-muted">
-                                            <i class="fas fa-info-circle"></i> 
-                                            Filter berdasarkan status aktif/tidak aktif
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <?= form_label('Data per Halaman:', 'per_page') ?>
-                                        <?= form_dropdown('per_page', [
-                                            '10' => '10',
-                                            '25' => '25',
-                                            '50' => '50',
-                                            '100' => '100'
-                                        ], $per_page ?? '10', [
-                                            'class' => 'form-control',
-                                            'id' => 'per_page'
-                                        ]) ?>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="form-group">
-                                        <label>&nbsp;</label>
-                                        <div class="d-flex">
-                                            <button type="submit" class="btn btn-primary btn-block">
-                                                <i class="fas fa-search"></i> Filter
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row mt-2">
-                                <div class="col-md-12">
-                                    <a href="<?= base_url('master/merk') ?>" class="btn btn-secondary btn-sm">
-                                        <i class="fas fa-refresh"></i> Reset Filter
-                                    </a>
-                                    <span class="text-muted ml-2">
-                                        Total: <strong><?= $total ?></strong> data
-                                    </span>
-                                </div>
-                            </div>
-                        <?= form_close() ?>
-                    </div>
-                </div>
 
                 <table class="table table-striped">
                     <thead>
@@ -195,20 +90,14 @@ $per_page = $per_page ?? '10';
                     </tbody>
                 </table>
 
-                <!-- Pagination -->
-                <?php if (isset($pager) && $pager): ?>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <div>
-                            <small class="text-muted">
-                                Menampilkan <?= (($currentPage - 1) * $perPage) + 1 ?> - 
-                                <?= min($currentPage * $perPage, $total) ?> dari <?= $total ?> data
-                            </small>
-                        </div>
-                        <div>
-                            <?= $pager->links() ?>
-                        </div>
+                </div>
+            <?php if ($pager): ?>
+                <div class="card-footer clearfix">
+                    <div class="float-right">
+                        <?= $pager->links('merk', 'adminlte_pagination') ?>
                     </div>
-                <?php endif ?>
+                </div>
+            <?php endif ?>
             </div>
             <!-- /.card-body -->
         </div>
@@ -218,82 +107,5 @@ $per_page = $per_page ?? '10';
 </div>
 <!-- /.row -->
 
-<!-- JavaScript for Enhanced Filtering -->
-<script>
-$(document).ready(function() {
-    // Auto-submit form when per_page changes
-    $('#per_page').change(function() {
-        $('#filterForm').submit();
-    });
-
-    // Auto-submit form when status changes
-    $('#status').change(function() {
-        $('#filterForm').submit();
-    });
-
-    // Debounced search input
-    let searchTimeout;
-    $('#search').on('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(function() {
-            $('#filterForm').submit();
-        }, 500); // Wait 500ms after user stops typing
-    });
-
-    // Highlight search terms in table - focus only on Merk column
-    function highlightSearchTerms() {
-        const searchTerm = $('#search').val().toLowerCase();
-        if (searchTerm.length > 0) {
-            $('tbody tr').each(function() {
-                const row = $(this);
-                // Only check the Merk column (3rd column, index 2)
-                const merkCell = row.find('td:eq(2)'); // Merk column
-                const merkText = merkCell.text().toLowerCase();
-                if (merkText.includes(searchTerm)) {
-                    row.addClass('table-warning');
-                } else {
-                    row.removeClass('table-warning');
-                }
-            });
-        } else {
-            $('tbody tr').removeClass('table-warning');
-        }
-    }
-
-    // Apply highlighting on page load
-    highlightSearchTerms();
-
-    // Show loading state during filter
-    $('#filterForm').on('submit', function() {
-        const submitBtn = $(this).find('button[type="submit"]');
-        const originalText = submitBtn.html();
-        submitBtn.html('<i class="fas fa-spinner fa-spin"></i> Loading...');
-        submitBtn.prop('disabled', true);
-        
-        // Re-enable button after a short delay (in case of errors)
-        setTimeout(function() {
-            submitBtn.html(originalText);
-            submitBtn.prop('disabled', false);
-        }, 3000);
-    });
-
-    // Keyboard shortcuts
-    $(document).keydown(function(e) {
-        // Ctrl/Cmd + F to focus search
-        if ((e.ctrlKey || e.metaKey) && e.keyCode === 70) {
-            e.preventDefault();
-            $('#search').focus();
-        }
-        
-        // Escape to clear search
-        if (e.keyCode === 27) {
-            $('#search').val('').trigger('input');
-        }
-    });
-
-    // Tooltip for filter help
-    $('[data-toggle="tooltip"]').tooltip();
-});
-</script>
 
 <?= $this->endSection() ?> 
