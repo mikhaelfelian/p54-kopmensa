@@ -87,11 +87,22 @@ class TransJual extends BaseController
     /**
      * Check if there's an active shift for the current outlet
      */
+    /**
+     * Check if there's an active shift for the current outlet,
+     * and ensure user_open_id and user_close_id are not 0 (should be valid user IDs).
+     */
     private function checkActiveShift()
     {
         // Skip shift check for superadmin or if shift checking is disabled
         if (session()->get('group_id') == 1) {
             return true;
+        }
+
+        // Get current user ID
+        $user_id = session()->get('user_id');
+        if (!$user_id) {
+            // User not logged in or session expired
+            return false;
         }
 
         // Try different session variable names that might be used
@@ -100,25 +111,30 @@ class TransJual extends BaseController
         // If no outlet is set, try to get from user's default warehouse/outlet
         if (!$outlet_id) {
             // For now, allow access without strict outlet check
-            // You can uncomment the lines below if you want to enforce outlet selection
-            // session()->setFlashdata('error', 'Outlet tidak terpilih');
-            // return false;
-            
-            // Allow access for now - this can be made configurable later
             return true;
         }
 
         // Check for active shift
         $activeShift = $this->shiftModel->getActiveShift($outlet_id);
         if (!$activeShift) {
-            // For now, allow access without strict shift check
-            // You can uncomment the lines below if you want to enforce shift checking
-            // session()->setFlashdata('error', 'Tidak ada shift aktif. Silakan buka shift terlebih dahulu sebelum melakukan transaksi.');
-            // return false;
-            
-            // Log for debugging but allow access
-            log_message('info', 'No active shift found for outlet_id: ' . $outlet_id . ', but allowing access');
-            return true;
+            // No active shift found
+            return false;
+        }
+
+        // Check if user_open_id or user_close_id is 0 (invalid)
+        // user_close_id can be null, but if set to 0, it's invalid
+        if (
+            (isset($activeShift['user_open_id']) && $activeShift['user_open_id'] == 0) ||
+            (isset($activeShift['user_close_id']) && $activeShift['user_close_id'] === 0)
+        ) {
+            // Invalid shift: user_open_id or user_close_id is 0
+            return false;
+        }
+
+        // Check if the current user is the one who opened the shift
+        if (isset($activeShift['user_open_id']) && $activeShift['user_open_id'] != $user_id) {
+            // The active shift was not opened by this user
+            return false;
         }
 
         // Store active shift info in session for easy access
