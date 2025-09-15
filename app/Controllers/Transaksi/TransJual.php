@@ -612,7 +612,7 @@ class TransJual extends BaseController
     {
         // Check shift status first
         if (!$this->checkActiveShift()) {
-            return redirect()->to('transaksi/shift/open');
+            return redirect()->to(base_url('transaksi/shift/open'));
         }
 
         // Get related data for dropdowns
