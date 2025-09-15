@@ -31,38 +31,28 @@ class Satuan extends BaseController
 
     public function index()
     {
-        $currentPage = $this->request->getVar('page_satuan') ?? 1;
-        $perPage = 10;
+        $curr_page  = $this->request->getVar('page_satuan') ?? 1;
+        $per_page   = 10;
+        $query      = $this->request->getVar('keyword') ?? '';
 
-        // Start with the model query
-        $query = $this->satuanModel;
-
-        // Filter by search term
-        $search = $this->request->getVar('search');
-        if ($search) {
-            $query->groupStart()
-                ->like('satuanKecil', $search)
-                ->orLike('satuanBesar', $search)
+        // Apply search filter if keyword exists
+        if ($query) {
+            $this->satuanModel->groupStart()
+                ->like('satuanKecil', $query)
+                ->orLike('satuanBesar', $query)
                 ->groupEnd();
         }
 
-        // Filter by status
-        $selectedStatus = $this->request->getVar('status');
-        if ($selectedStatus !== null && $selectedStatus !== '') {
-            $query->where('status', $selectedStatus);
-        }
-
         $data = [
-            'title'          => 'Data Satuan',
-            'Pengaturan'     => $this->pengaturan,
-            'user'           => $this->ionAuth->user()->row(),
-            'satuan'         => $query->paginate($perPage, 'satuan'),
-            'pager'          => $this->satuanModel->pager,
-            'currentPage'    => $currentPage,
-            'perPage'        => $perPage,
-            'search'         => $search,
-            'selectedStatus' => $selectedStatus,
-            'breadcrumbs'    => '
+            'title'         => 'Data Satuan',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'satuan'        => $this->satuanModel->paginate($per_page, 'satuan'),
+            'pager'         => $this->satuanModel->pager,
+            'currentPage'   => $curr_page,
+            'perPage'       => $per_page,
+            'keyword'       => $query,
+            'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item active">Satuan</li>

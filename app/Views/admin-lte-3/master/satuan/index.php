@@ -1,5 +1,15 @@
 <?= $this->extend(theme_path('main')) ?>
 
+<?php
+/**
+ * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
+ * Date: 2025-01-12
+ * Github : github.com/mikhaelfelian
+ * description : View for displaying satuan/unit data
+ * This file represents the Satuan Index View.
+ */
+?>
+
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
