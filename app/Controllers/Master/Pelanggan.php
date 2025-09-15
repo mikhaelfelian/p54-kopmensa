@@ -31,80 +31,37 @@ class Pelanggan extends BaseController
 
     public function index()
     {
-        $currentPage = $this->request->getVar('page_pelanggan') ?? 1;
-        $perPage = $this->pengaturan->pagination_limit ?? 10;
+        $curr_page  = $this->request->getVar('page_pelanggan') ?? 1;
+        $per_page   = 10;
+        $query      = $this->request->getVar('keyword') ?? '';
 
-        // Start with the model query
-        $query = $this->pelangganModel;
-
-        // Filter by name/code
-        $search = $this->request->getVar('search');
-        if ($search) {
-            $query->groupStart()
-                ->like('nama', $search)
-                ->orLike('kode', $search)
+        // Apply search filter if keyword exists
+        if ($query) {
+            $this->pelangganModel->groupStart()
+                ->like('nama', $query)
+                ->orLike('kode', $query)
+                ->orLike('no_telp', $query)
+                ->orLike('alamat', $query)
                 ->groupEnd();
         }
 
-        // Filter by type
-        $selectedTipe = $this->request->getVar('tipe');
-        if ($selectedTipe !== null && $selectedTipe !== '') {
-            $query->where('tipe', $selectedTipe);
-        }
-
-        // Filter by status_hps = '0' (not deleted)
-        $query->where('status_hps', '0');
-
-        // Get total records for pagination
-        $total = $query->countAllResults(false);
-        
-        // Get pelanggan data
-        $pelanggans = $query->paginate($perPage, 'pelanggan');
-        
-        // Calculate monthly purchases for each member
-        $currentMonth = date('Y-m');
-        foreach ($pelanggans as &$pelanggan) {
-            $monthlyPurchase = $this->transJualModel->select('
-                    COUNT(id) as total_transactions,
-                    COALESCE(SUM(jml_total), 0) as total_amount
-                ')
-                ->where('id_pelanggan', $pelanggan->id)
-                ->where('DATE_FORMAT(tgl_masuk, "%Y-%m")', $currentMonth)
-                ->where('status_nota', '1')
-                ->where('status_hps', '0')
-                ->first();
-                
-            $pelanggan->monthly_transactions = $monthlyPurchase->total_transactions ?? 0;
-            $pelanggan->monthly_amount = $monthlyPurchase->total_amount ?? 0;
-        }
-
         $data = [
-            'title'          => 'Data Pelanggan / Anggota',
-            'Pengaturan'     => $this->pengaturan,
-            'user'           => $this->ionAuth->user()->row(),
-            'pelanggans'     => $pelanggans,
-            'pager'          => $this->pelangganModel->pager,
-            'currentPage'    => $currentPage,
-            'perPage'        => $perPage,
-            'total'          => $total,
-            'search'         => $search,
-            'selectedTipe'   => $selectedTipe,
-            'selectedStatus' => null,  // Set to null since we're not using status filter
-            'getTipeLabel'   => function($tipe) {
-                return $this->pelangganModel->getTipeLabel($tipe);
-            },
-            'getStatusLabel' => function($status) {
-                return $this->pelangganModel->getStatusLabel($status);
-            },
-            'breadcrumbs'    => '
+            'title'         => 'Data Pelanggan',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'pelanggan'     => $this->pelangganModel->paginate($per_page, 'pelanggan'),
+            'pager'         => $this->pelangganModel->pager,
+            'currentPage'   => $curr_page,
+            'perPage'       => $per_page,
+            'keyword'       => $query,
+            'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item active">Pelanggan</li>
-            ',
-            'trashCount'     => $this->pelangganModel->where('status_hps', '1')->countAllResults()
+            '
         ];
 
-        return $this->view($this->theme->getThemePath() . '/master/pelanggan/index', $data);
+        return view($this->theme->getThemePath() . '/master/pelanggan/index', $data);
     }
 
     /**
