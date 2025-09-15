@@ -80,6 +80,10 @@
                                     </td>
                                     <td>
                                         <div class="btn-group">
+                                            <a href="<?= base_url("master/pelanggan/view/$row->id") ?>"
+                                                class="btn btn-info btn-sm rounded-0">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
                                             <a href="<?= base_url("master/pelanggan/edit/$row->id") ?>"
                                                 class="btn btn-warning btn-sm rounded-0">
                                                 <i class="fas fa-edit"></i>

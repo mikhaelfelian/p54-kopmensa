@@ -18,6 +18,11 @@ use App\Models\ItemModel;
 use App\Models\KategoriModel;
 use App\Models\MerkModel;
 use App\Models\SatuanModel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class Supplier extends BaseController
 {
@@ -28,6 +33,7 @@ class Supplier extends BaseController
     protected $kategoriModel;
     protected $merkModel;
     protected $satuanModel;
+    protected $ionAuth;
 
     public function __construct()
     {
@@ -38,6 +44,7 @@ class Supplier extends BaseController
         $this->kategoriModel = new KategoriModel();
         $this->merkModel = new MerkModel();
         $this->satuanModel = new SatuanModel();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
     public function index()
@@ -547,6 +554,175 @@ class Supplier extends BaseController
             return redirect()->back()
                            ->withInput()
                            ->with('error', 'Gagal menyimpan data item: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Export supplier data to Excel
+     */
+    public function export()
+    {
+        try {
+            // Get the same data as index method with filters
+            $query = $this->supplierModel;
+            
+            // Only show non-deleted suppliers (active records)
+            $query->where('status_hps', '0');
+
+            // Apply same filters as index
+            $search = $this->request->getVar('search');
+            if ($search) {
+                $query->groupStart()
+                    ->like('nama', $search)
+                    ->orLike('kode', $search)
+                    ->orLike('npwp', $search)
+                    ->groupEnd();
+            }
+
+            $selectedTipe = $this->request->getVar('tipe');
+            if ($selectedTipe !== null && $selectedTipe !== '') {
+                $query->where('tipe', $selectedTipe);
+            }
+
+            // Get all data (no pagination for export)
+            $suppliers = $query->findAll();
+
+            // Create new spreadsheet
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Set document properties
+            $spreadsheet->getProperties()
+                ->setCreator('Kopmensa System')
+                ->setLastModifiedBy('Kopmensa System')
+                ->setTitle('Data Supplier')
+                ->setSubject('Export Data Supplier')
+                ->setDescription('Data Supplier exported from Kopmensa System');
+
+            // Set column headers
+            $headers = [
+                'A1' => 'No',
+                'B1' => 'Kode',
+                'C1' => 'Nama',
+                'D1' => 'NPWP',
+                'E1' => 'Alamat',
+                'F1' => 'RT/RW',
+                'G1' => 'Kelurahan',
+                'H1' => 'Kecamatan',
+                'I1' => 'Kota',
+                'J1' => 'No. Telepon',
+                'K1' => 'No. HP',
+                'L1' => 'Tipe',
+                'M1' => 'Status',
+                'N1' => 'Tanggal Dibuat'
+            ];
+
+            foreach ($headers as $cell => $value) {
+                $sheet->setCellValue($cell, $value);
+            }
+
+            // Style the header row
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF']
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4472C4']
+                ],
+                'alignment' => [
+                    'horizontal' => Alignment::HORIZONTAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN
+                    ]
+                ]
+            ];
+
+            $sheet->getStyle('A1:N1')->applyFromArray($headerStyle);
+
+            // Set column widths
+            $sheet->getColumnDimension('A')->setWidth(5);
+            $sheet->getColumnDimension('B')->setWidth(12);
+            $sheet->getColumnDimension('C')->setWidth(25);
+            $sheet->getColumnDimension('D')->setWidth(20);
+            $sheet->getColumnDimension('E')->setWidth(30);
+            $sheet->getColumnDimension('F')->setWidth(10);
+            $sheet->getColumnDimension('G')->setWidth(15);
+            $sheet->getColumnDimension('H')->setWidth(15);
+            $sheet->getColumnDimension('I')->setWidth(15);
+            $sheet->getColumnDimension('J')->setWidth(15);
+            $sheet->getColumnDimension('K')->setWidth(15);
+            $sheet->getColumnDimension('L')->setWidth(12);
+            $sheet->getColumnDimension('M')->setWidth(12);
+            $sheet->getColumnDimension('N')->setWidth(18);
+
+            // Fill data
+            $row = 2;
+            $no = 1;
+            foreach ($suppliers as $supplier) {
+                $sheet->setCellValue('A' . $row, $no++);
+                $sheet->setCellValue('B' . $row, $supplier->kode);
+                $sheet->setCellValue('C' . $row, $supplier->nama);
+                $sheet->setCellValue('D' . $row, $supplier->npwp);
+                $sheet->setCellValue('E' . $row, $supplier->alamat);
+                $sheet->setCellValue('F' . $row, $supplier->rt . '/' . $supplier->rw);
+                $sheet->setCellValue('G' . $row, $supplier->kelurahan);
+                $sheet->setCellValue('H' . $row, $supplier->kecamatan);
+                $sheet->setCellValue('I' . $row, $supplier->kota);
+                $sheet->setCellValue('J' . $row, $supplier->no_tlp);
+                $sheet->setCellValue('K' . $row, $supplier->no_hp);
+                $sheet->setCellValue('L' . $row, $this->supplierModel->getTipeLabel($supplier->tipe));
+                $sheet->setCellValue('M' . $row, $this->supplierModel->getStatusLabel($supplier->status));
+                $sheet->setCellValue('N' . $row, date('d/m/Y H:i', strtotime($supplier->created_at ?? '')));
+                $row++;
+            }
+
+            // Style data rows
+            $dataRange = 'A2:N' . ($row - 1);
+            $dataStyle = [
+                'alignment' => [
+                    'vertical' => Alignment::VERTICAL_TOP
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN
+                    ]
+                ]
+            ];
+
+            if ($row > 2) {
+                $sheet->getStyle($dataRange)->applyFromArray($dataStyle);
+                
+                // Center align specific columns
+                $sheet->getStyle('A2:A' . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->getStyle('L2:M' . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            }
+
+            // Generate filename
+            $filename = 'Data_Supplier_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+            // Set headers for download
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+            header('Cache-Control: max-age=1');
+            header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+            header('Cache-Control: cache, must-revalidate');
+            header('Pragma: public');
+
+            // Create writer and output
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+            exit;
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::export] ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal mengexport data: ' . $e->getMessage());
         }
     }
 } 

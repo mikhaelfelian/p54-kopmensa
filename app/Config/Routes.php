@@ -366,6 +366,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/delete/(:num)', 'Supplier::delete/$1');
     $routes->get('supplier/detail/(:num)', 'Supplier::detail/$1');
     $routes->get('supplier/trash', 'Supplier::trash');
+    $routes->get('supplier/export', 'Supplier::export');
     
     // Item Settings for Supplier
     $routes->get('supplier/items/(:num)', 'Supplier::items/$1');
