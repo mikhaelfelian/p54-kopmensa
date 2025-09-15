@@ -64,15 +64,50 @@ class ShiftModel extends Model
     protected $afterDelete    = [];
 
     /**
-     * Get active shift for a specific outlet
+     * Get active shift for a specific outlet and user
      */
-    public function getActiveShift($outlet_id, $user_open_id)
+    public function getActiveShift($outlet_id, $user_open_id = null)
     {
-        return $this->where('outlet_id', $outlet_id)
-                    ->where('user_open_id', $user_open_id)
-                    ->where('user_close_id', 0)
-                    ->where('status', 'open')
-                    ->first();
+        $builder = $this->where('outlet_id', $outlet_id)
+                        ->where('status', 'open');
+        
+        if ($user_open_id !== null) {
+            $builder->where('user_open_id', $user_open_id)
+                   ->where('user_close_id', null);
+        }
+        
+        return $builder->first();
+    }
+
+    /**
+     * Check if user already has a shift today (to prevent duplicates)
+     */
+    public function hasShiftToday($user_id, $outlet_id = null)
+    {
+        $builder = $this->where('user_open_id', $user_id)
+                        ->where('user_close_id', null)
+                        ->where('DATE(start_at)', date('Y-m-d'));
+        
+        if ($outlet_id !== null) {
+            $builder->where('outlet_id', $outlet_id);
+        }
+        
+        return $builder->countAllResults() > 0;
+    }
+
+    /**
+     * Get user's shift for today
+     */
+    public function getTodayShift($user_id, $outlet_id = null)
+    {
+        $builder = $this->where('user_open_id', $user_id)
+                        ->where('DATE(start_at)', date('Y-m-d'));
+        
+        if ($outlet_id !== null) {
+            $builder->where('outlet_id', $outlet_id);
+        }
+        
+        return $builder->first();
     }
 
     /**
@@ -226,5 +261,124 @@ class ShiftModel extends Model
     public function getSummary($outlet_id = null, $date = null)
     {
         return $this->getShiftSummary($outlet_id, $date);
+    }
+
+    /**
+     * Validate if user can open a new shift
+     */
+    public function canOpenShift($user_id, $outlet_id)
+    {
+        // Check if user already has a shift today
+        if ($this->hasShiftToday($user_id, $outlet_id)) {
+            return [
+                'can_open' => false,
+                'message' => 'Anda sudah memiliki shift hari ini. Satu user hanya dapat membuka satu shift per hari.'
+            ];
+        }
+
+        // Check if there's already an open shift for this outlet by any user
+        $existingShift = $this->getActiveShift($outlet_id);
+        if ($existingShift) {
+            return [
+                'can_open' => false,
+                'message' => 'Sudah ada shift aktif di outlet ini. Tutup shift yang ada terlebih dahulu.'
+            ];
+        }
+
+        return [
+            'can_open' => true,
+            'message' => 'Dapat membuka shift baru.'
+        ];
+    }
+
+    /**
+     * Open a new shift with validation
+     */
+    public function openShift($data)
+    {
+        // Validate if user can open shift
+        $validation = $this->canOpenShift($data['user_open_id'], $data['outlet_id']);
+        if (!$validation['can_open']) {
+            return [
+                'success' => false,
+                'message' => $validation['message']
+            ];
+        }
+
+        // Generate shift code if not provided
+        if (empty($data['shift_code'])) {
+            $data['shift_code'] = $this->generateShiftCode($data['outlet_id']);
+        }
+
+        // Set default values
+        $data['status'] = 'open';
+        $data['start_at'] = date('Y-m-d H:i:s');
+        $data['user_close_id'] = null;
+        $data['end_at'] = null;
+
+        try {
+            $this->insert($data);
+            return [
+                'success' => true,
+                'message' => 'Shift berhasil dibuka.',
+                'shift_id' => $this->getInsertID()
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Gagal membuka shift: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Override insert method to prevent duplicate shifts per user per day
+     */
+    public function insert($data = null, bool $returnID = true)
+    {
+        // If user_open_id is provided, check for duplicate shifts
+        if (isset($data['user_open_id']) && !empty($data['user_open_id'])) {
+            $user_id = $data['user_open_id'];
+            $outlet_id = $data['outlet_id'] ?? null;
+            
+            // Check if user already has a shift today
+            if ($this->hasShiftToday($user_id, $outlet_id)) {
+                throw new \Exception('User sudah memiliki shift hari ini. Satu user hanya dapat membuka satu shift per hari.');
+            }
+            
+            // Check if there's already an open shift for this outlet
+            if ($outlet_id) {
+                $existingShift = $this->getActiveShift($outlet_id);
+                if ($existingShift) {
+                    throw new \Exception('Sudah ada shift aktif di outlet ini. Tutup shift yang ada terlebih dahulu.');
+                }
+            }
+        }
+        
+        return parent::insert($data, $returnID);
+    }
+
+    /**
+     * Generate unique shift code
+     */
+    public function generateShiftCode($outlet_id)
+    {
+        $date = date('Ymd');
+        $prefix = 'SH' . $outlet_id . $date;
+        
+        // Find the last shift code for today
+        $lastShift = $this->like('shift_code', $prefix, 'after')
+                         ->where('DATE(start_at)', date('Y-m-d'))
+                         ->orderBy('shift_code', 'DESC')
+                         ->first();
+
+        if ($lastShift) {
+            $lastNumber = (int)substr($lastShift['shift_code'], -3);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
     }
 }

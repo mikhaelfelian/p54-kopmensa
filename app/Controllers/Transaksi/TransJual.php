@@ -88,60 +88,35 @@ class TransJual extends BaseController
      * Check if there's an active shift for the current outlet
      */
     /**
-     * Check if there's an active shift for the current outlet,
-     * and ensure user_open_id and user_close_id are not 0 (should be valid user IDs).
+     * Check if there's an active shift by querying the database table
      */
     private function checkActiveShift()
     {
-        // Skip shift check for superadmin or if shift checking is disabled
+        // Skip shift check for superadmin
         if (session()->get('group_id') == 1) {
             return true;
         }
 
-        // Get current user ID
-        $user_id = session()->get('user_id');
-        if (!$user_id) {
-            // User not logged in or session expired
+        // Get outlet_id from session
+        $outlet_id  = session()->get('kasir_outlet');
+        $user_id    = $this->ionAuth->user()->row()->id;
+
+        // Use ShiftModel's getActiveShift method (see file_context_0)
+        $activeShift = $this->shiftModel->getActiveShift(2, $user_id);
+
+        if (empty($activeShift)) {
+            // No active shift found, redirect to shift open page
+            session()->setFlashdata('error', 'Tidak ada shift aktif. Silakan buka shift terlebih dahulu.');
             return false;
         }
 
-        // Try different session variable names that might be used
-        $outlet_id = session()->get('kasir_outlet') ?: session()->get('outlet_id') ?: session()->get('id_gudang');
-        
-        // If no outlet is set, try to get from user's default warehouse/outlet
-        if (!$outlet_id) {
-            // For now, allow access without strict outlet check
-            return true;
-        }
+        // Set shift data in session for later use
+        session()->set([
+            'active_shift_id'   => $activeShift['id'],
+            'active_shift_code' => $activeShift['shift_code'],
+            'kasir_shift'       => $activeShift['shift_code']
+        ]);
 
-        // Check for active shift
-        $activeShift = $this->shiftModel->getActiveShift($outlet_id);
-        if (!$activeShift) {
-            // No active shift found
-            return false;
-        }
-
-        // Check if user_open_id or user_close_id is 0 (invalid)
-        // user_close_id can be null, but if set to 0, it's invalid
-        if (
-            (isset($activeShift['user_open_id']) && $activeShift['user_open_id'] == 0) ||
-            (isset($activeShift['user_close_id']) && $activeShift['user_close_id'] === 0)
-        ) {
-            // Invalid shift: user_open_id or user_close_id is 0
-            return false;
-        }
-
-        // Check if the current user is the one who opened the shift
-        if (isset($activeShift['user_open_id']) && $activeShift['user_open_id'] != $user_id) {
-            // The active shift was not opened by this user
-            return false;
-        }
-
-        // Store active shift info in session for easy access
-        session()->set('active_shift_id', $activeShift['id']);
-        session()->set('active_shift_code', $activeShift['shift_code']);
-        session()->set('kasir_shift', $activeShift['id']); // Also set the kasir_shift variable used elsewhere
-        
         return true;
     }
 

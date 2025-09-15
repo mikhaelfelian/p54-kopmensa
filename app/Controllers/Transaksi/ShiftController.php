@@ -105,6 +105,7 @@ class ShiftController extends BaseController
                 // Set session kasir_shift with last insert id before redirect
                 $lastInsertId = $this->shiftModel->getInsertID();
                 session()->set('kasir_shift', $lastInsertId);
+                session()->set('kasir_outlet', $outlet_id);
 
                 if (session()->has('kasir_outlet')) {
                     session()->setFlashdata('success', 'Shift berhasil dibuka');
