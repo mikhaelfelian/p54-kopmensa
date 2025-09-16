@@ -251,7 +251,7 @@
             return;
         }
 
-        var outletId = $('#outlet_id').val();
+        var gudangId = <?= $opname->id_gudang ?>;
         
         // Get satuan from option data first
         var selectedOption = $('#new_item_select option:selected');
@@ -261,7 +261,7 @@
         // Show loading indicator
         $('#new_item_stok_sistem').val('Loading...');
 
-        console.log('Loading stock for item:', itemId, 'outlet:', outletId); // Debug
+        console.log('Loading stock for item:', itemId, 'gudang:', gudangId); // Debug
 
         // Get stock from server
         $.ajax({
@@ -269,7 +269,7 @@
             type: 'GET',
             data: {
                 item_id: itemId,
-                outlet_id: outletId
+                gudang_id: gudangId
             },
             dataType: 'json'
         })
