@@ -284,15 +284,23 @@ class ReturBeli extends BaseController
 
         // Get items data and validate
         $items = $this->request->getPost('items');
+        log_message('debug', 'Raw items data: ' . print_r($items, true));
+        
         if (is_string($items)) {
             $items = json_decode($items, true);
+            log_message('debug', 'Decoded items data: ' . print_r($items, true));
         }
+
+        // Also try to get all POST data to see what's being submitted
+        $allPostData = $this->request->getPost();
+        log_message('debug', 'All POST data: ' . print_r($allPostData, true));
 
         // Validate items data
         if (empty($items) || !is_array($items)) {
+            log_message('error', 'Items validation failed - items is empty or not array');
             return redirect()->back()
                             ->withInput()
-                            ->with('error', 'Data barang retur harus diisi');
+                            ->with('error', 'Data barang retur harus diisi. Debug: ' . (empty($items) ? 'Items is empty' : 'Items is not array: ' . gettype($items)));
         }
 
         // Check if at least one valid item exists
@@ -420,7 +428,7 @@ class ReturBeli extends BaseController
                             'sp'                => '0'
                         ];
 
-                        $this->itemHistModel->save($returDetailData);
+                        // Don't save here, collect data for batch insert later
                     }
                 }
             }
