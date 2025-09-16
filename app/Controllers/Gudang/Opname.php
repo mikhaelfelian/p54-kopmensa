@@ -60,7 +60,15 @@ class Opname extends BaseController
         $builder = $this->utilSOModel;
         
         if ($tgl) {
-            $builder = $builder->where('DATE(created_at)', $tgl);
+            // Ensure proper date format for database query
+            try {
+                $dateObj = new \DateTime($tgl);
+                $formattedDate = $dateObj->format('Y-m-d');
+                $builder = $builder->where('DATE(created_at)', $formattedDate);
+            } catch (\Exception $e) {
+                // If date is invalid, ignore the filter
+                log_message('error', 'Invalid date format in opname filter: ' . $tgl);
+            }
         }
         
         if ($ket) {
