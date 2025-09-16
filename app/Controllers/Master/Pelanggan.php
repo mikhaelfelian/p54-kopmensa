@@ -177,10 +177,10 @@ class Pelanggan extends BaseController
                            ->with('errors', $this->validator->getErrors());
         }
 
-        $nama = $this->request->getPost('nama');
-        $noTelp = $this->request->getPost('no_telp');
-        $email = $this->request->getPost('email');
-        $alamat = $this->request->getPost('alamat');
+        $nama     = $this->request->getPost('nama');
+        $noTelp   = $this->request->getPost('no_telp');
+        $email    = $this->request->getPost('email');
+        $alamat   = $this->request->getPost('alamat');
         $username = $this->request->getPost('username');
         $password = $this->request->getPost('password');
 
@@ -201,16 +201,16 @@ class Pelanggan extends BaseController
 
         // Create member record
         $memberData = [
-            'kode' => $this->pelangganModel->generateKode(),
-            'nama' => $nama,
-            'no_telp' => $noTelp,
-            'email' => $email,
-            'alamat' => $alamat,
-            'tipe' => '1', // Member type
-            'status' => '1', // Active
-            'id_user' => $userId,
-            'tgl_masuk' => date('Y-m-d H:i:s'),
-            'status_hps' => '0'
+            'kode'        => $this->pelangganModel->generateKode(),
+            'nama'        => $nama,
+            'no_telp'     => $noTelp,
+            'email'       => $email,
+            'alamat'      => $alamat,
+            'tipe'        => '1', // Member type
+            'status'      => '1', // Active
+            'id_user'     => $userId,
+            'tgl_masuk'   => date('Y-m-d H:i:s'),
+            'status_hps'  => '0'
         ];
 
         if ($this->pelangganModel->insert($memberData)) {
