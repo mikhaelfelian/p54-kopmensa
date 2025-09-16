@@ -128,7 +128,6 @@ class ShiftModel extends Model
                 DATE(s.start_at) as tanggal,
                 g.nama as outlet_name,
                 g.kode as outlet_code,
-                g.alamat as outlet_alamat,
                 CONCAT(u_open.first_name, " ", u_open.last_name) as kasir_name,
                 u_open.first_name as user_open_name,
                 u_open.last_name as user_open_lastname,
