@@ -20,15 +20,25 @@
                         <label for="id_beli">No. Pembelian</label>
                         <select name="id_beli" id="id_beli" class="form-control select2 rounded-0">
                             <option value="">Pilih Transaksi Pembelian</option>
-                            <?php foreach ($sql_beli as $purchase): ?>
-                                <option value="<?= $purchase->id ?>" 
-                                    data-supplier="<?= $purchase->id_supplier ?>"
-                                    data-no-nota="<?= esc($purchase->no_nota) ?>"
-                                    <?= old('id_beli') == $purchase->id ? 'selected' : '' ?>>
-                                    <?= esc($purchase->no_nota) . ' - ' . esc($purchase->supplier_nama) ?>
-                                </option>
-                            <?php endforeach; ?>
+                            <?php if (!empty($sql_beli)): ?>
+                                <?php foreach ($sql_beli as $purchase): ?>
+                                    <option value="<?= $purchase->id ?>" 
+                                        data-supplier="<?= $purchase->id_supplier ?>"
+                                        data-no-nota="<?= esc($purchase->no_nota) ?>"
+                                        <?= old('id_beli') == $purchase->id ? 'selected' : '' ?>>
+                                        <?= esc($purchase->no_nota) . ' - ' . esc($purchase->supplier_nama ?? 'Unknown Supplier') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <option value="" disabled>Tidak ada transaksi pembelian yang dapat diretur</option>
+                            <?php endif; ?>
                         </select>
+                        <?php if (empty($sql_beli)): ?>
+                            <div class="alert alert-info mt-2">
+                                <i class="fas fa-info-circle"></i> 
+                                Belum ada transaksi pembelian yang dapat diretur. Silakan buat transaksi pembelian terlebih dahulu.
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="row">
