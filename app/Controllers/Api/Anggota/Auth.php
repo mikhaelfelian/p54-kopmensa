@@ -88,9 +88,7 @@ class Auth extends BaseController
                 'email'      => $user->email,
                 'tipe'       => $tipe,
                 'profile'    => $profileUrl,
-                'id'         => $user->id,
-                'store_id'   => $selectedStore ? $selectedStore->id : null,
-                'store_name' => $selectedStore ? $selectedStore->nama : null
+                'id'         => $user->id
             ]
         ];
 
