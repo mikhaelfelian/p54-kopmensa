@@ -48,11 +48,13 @@ class Opname extends BaseController
     {
         $currentPage = $this->request->getVar('page_opname') ?? 1;
         $perPage = 10;
-        $keyword = $this->request->getVar('keyword');
-        $tgl = $this->request->getVar('tgl');
-        $ket = $this->request->getVar('ket');
-        $tipe = $this->request->getVar('tipe');
-        $status = $this->request->getVar('status');
+        
+        // Get filter parameters from request
+        $keyword = $this->request->getGet('keyword');
+        $tgl = $this->request->getGet('tgl');
+        $ket = $this->request->getGet('ket');
+        $tipe = $this->request->getGet('tipe');
+        $status = $this->request->getGet('status');
 
         // Build query with filters
         $builder = $this->utilSOModel;
