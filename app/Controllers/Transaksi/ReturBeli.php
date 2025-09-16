@@ -495,14 +495,53 @@ class ReturBeli extends BaseController
 
         // Get related data
         $suppliers = $this->supplierModel->where('status', '1')->findAll();
+        
+        // Get purchase transactions - include the current return's purchase transaction
         $purchaseTransactions = $this->transBeliModel
-            ->select('tbl_trans_beli.*, tbl_m_supplier.nama as supplier_nama')
+            ->select('tbl_trans_beli.id, tbl_trans_beli.no_nota, tbl_trans_beli.id_supplier, tbl_trans_beli.status_retur, tbl_trans_beli.status_nota, tbl_trans_beli.created_at, tbl_m_supplier.nama as supplier_nama')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
-            ->where('tbl_trans_beli.status_retur', '0')
-            ->orWhere('tbl_trans_beli.id', $retur->id_beli)
-            ->where('tbl_trans_beli.status_nota', '1')
+            ->groupStart()
+                ->groupStart()
+                    ->where('tbl_trans_beli.status_retur', '0')
+                    ->orWhereIn('tbl_trans_beli.status_retur', ['', null])
+                ->groupEnd()
+                ->orWhere('tbl_trans_beli.id', $retur->id_beli) // Always include current return's purchase
+            ->groupEnd()
             ->orderBy('tbl_trans_beli.created_at', 'DESC')
             ->findAll();
+
+        // If no results with strict conditions, try with more relaxed conditions (same as create method)
+        if (empty($purchaseTransactions)) {
+            log_message('info', 'No purchase transactions found for edit with strict conditions, trying relaxed query...');
+            $purchaseTransactions = $this->transBeliModel
+                ->select('tbl_trans_beli.id, tbl_trans_beli.no_nota, tbl_trans_beli.id_supplier, tbl_trans_beli.status_retur, tbl_trans_beli.status_nota, tbl_trans_beli.created_at, tbl_m_supplier.nama as supplier_nama')
+                ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
+                ->orderBy('tbl_trans_beli.created_at', 'DESC')
+                ->findAll();
+        }
+
+        // If still no results, check if there are any purchase records at all (same as create method)
+        if (empty($purchaseTransactions)) {
+            log_message('warning', 'No purchase transactions found for edit. Trying without join...');
+            
+            $simpleQuery = $this->transBeliModel
+                ->select('id, no_nota, id_supplier, status_retur, status_nota, created_at')
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+            
+            if (!empty($simpleQuery)) {
+                log_message('info', 'Found ' . count($simpleQuery) . ' purchase records without join for edit. Issue might be with supplier join.');
+                // Add supplier names manually
+                $supplierModel = new SupplierModel();
+                foreach ($simpleQuery as $transaction) {
+                    $supplier = $supplierModel->find($transaction->id_supplier);
+                    $transaction->supplier_nama = $supplier ? $supplier->nama : 'Unknown Supplier';
+                }
+                $purchaseTransactions = $simpleQuery;
+            }
+        }
+
+        log_message('info', 'Final purchase transactions count for edit: ' . count($purchaseTransactions));
 
         $data = [
             'title'       => 'Edit Retur Pembelian',
