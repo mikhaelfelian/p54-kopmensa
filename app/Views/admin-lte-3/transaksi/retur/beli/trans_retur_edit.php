@@ -336,6 +336,10 @@ $(document).ready(function() {
          theme: 'bootstrap4',
          width: '100%'
      });
+
+    // Debug: Log initial values
+    console.log('Initial id_beli value:', $('#id_beli').val());
+    console.log('Initial id_supplier value:', $('#id_supplier').val());
      
      // Initialize autonumber for existing price fields
      $('.autonumber').autoNumeric('init', {
@@ -411,10 +415,42 @@ $(document).ready(function() {
          // Form validation
      $('#form-retur-edit').on('submit', function(e) {
         
-        // Validate required fields
-        if (!$('#id_beli').val()) {
+        // Validate required fields - Multiple validation approaches for reliability
+        const idBeliValue = $('#id_beli').val();
+        const idBeliSelected = $('#id_beli option:selected').val();
+        const idBeliData = $('#id_beli').select2('data');
+        
+        // Debug logs (remove these after testing)
+        console.log('=== Purchase Transaction Validation ===');
+        console.log('id_beli value:', idBeliValue);
+        console.log('id_beli selected option value:', idBeliSelected);
+        console.log('id_beli select2 data:', idBeliData);
+        console.log('id_beli element exists:', $('#id_beli').length);
+        
+        // More comprehensive validation
+        let hasValidPurchase = false;
+        
+        // Method 1: Check direct value
+        if (idBeliValue && idBeliValue !== '' && idBeliValue !== '0' && idBeliValue !== null) {
+            hasValidPurchase = true;
+        }
+        
+        // Method 2: Check selected option value
+        if (!hasValidPurchase && idBeliSelected && idBeliSelected !== '' && idBeliSelected !== '0' && idBeliSelected !== null) {
+            hasValidPurchase = true;
+        }
+        
+        // Method 3: Check select2 data
+        if (!hasValidPurchase && idBeliData && idBeliData.length > 0 && idBeliData[0].id && idBeliData[0].id !== '' && idBeliData[0].id !== '0') {
+            hasValidPurchase = true;
+        }
+        
+        console.log('Final validation result:', hasValidPurchase);
+        
+        if (!hasValidPurchase) {
             e.preventDefault();
             toastr.error('Transaksi pembelian harus dipilih');
+            $('#id_beli').select2('open');
             return false;
         }
         
