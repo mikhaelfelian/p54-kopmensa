@@ -69,14 +69,51 @@ class ReturBeli extends BaseController
         // Get active suppliers from tbl_m_supplier
         $suppliers = $this->supplierModel->where('status', '1')->findAll();
         
-        // Get purchase transactions that haven't been returned (status_retur = '0')
+        // Get purchase transactions that can be returned
+        // First try to get transactions that haven't been fully returned
         $purchaseTransactions = $this->transBeliModel
-            ->select('tbl_trans_beli.*, tbl_m_supplier.nama as supplier_nama')
+            ->select('tbl_trans_beli.id, tbl_trans_beli.no_nota, tbl_trans_beli.id_supplier, tbl_trans_beli.status_retur, tbl_trans_beli.status_nota, tbl_trans_beli.created_at, tbl_m_supplier.nama as supplier_nama')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
-            ->where('tbl_trans_beli.status_retur', '0')
-            ->where('tbl_trans_beli.status_nota', '1') // Only completed purchases
+            ->groupStart()
+                ->where('tbl_trans_beli.status_retur', '0')
+                ->orWhereIn('tbl_trans_beli.status_retur', ['', null])
+            ->groupEnd()
             ->orderBy('tbl_trans_beli.created_at', 'DESC')
             ->findAll();
+
+        // If no results with strict conditions, try with more relaxed conditions
+        if (empty($purchaseTransactions)) {
+            log_message('info', 'No purchase transactions found with strict conditions, trying relaxed query...');
+            $purchaseTransactions = $this->transBeliModel
+                ->select('tbl_trans_beli.id, tbl_trans_beli.no_nota, tbl_trans_beli.id_supplier, tbl_trans_beli.status_retur, tbl_trans_beli.status_nota, tbl_trans_beli.created_at, tbl_m_supplier.nama as supplier_nama')
+                ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
+                ->orderBy('tbl_trans_beli.created_at', 'DESC')
+                ->findAll();
+        }
+
+        // If still no results, check if there are any purchase records at all
+        if (empty($purchaseTransactions)) {
+            log_message('warning', 'No purchase transactions found in database. Please check if there are any purchase records.');
+            
+            // Try to get any records without join to see if the issue is with the join
+            $simpleQuery = $this->transBeliModel
+                ->select('id, no_nota, id_supplier, status_retur, status_nota, created_at')
+                ->orderBy('created_at', 'DESC')
+                ->findAll();
+            
+            if (!empty($simpleQuery)) {
+                log_message('info', 'Found ' . count($simpleQuery) . ' purchase records without join. Issue might be with supplier join.');
+                // Add supplier names manually
+                $supplierModel = new SupplierModel();
+                foreach ($simpleQuery as $transaction) {
+                    $supplier = $supplierModel->find($transaction->id_supplier);
+                    $transaction->supplier_nama = $supplier ? $supplier->nama : 'Unknown Supplier';
+                }
+                $purchaseTransactions = $simpleQuery;
+            }
+        }
+
+        log_message('info', 'Final purchase transactions count: ' . count($purchaseTransactions));
 
         $data = [
             'title'      => 'Buat Retur Pembelian',
