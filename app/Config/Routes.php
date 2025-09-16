@@ -95,6 +95,16 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->post('retur-jual/search-items', 'ReturJual::searchItems');
         $routes->get('retur-jual/test', 'ReturJual::testEndpoint');
 
+        // Anggota (Member) endpoints
+        $routes->get('anggota', 'Anggota::getMembers');
+        $routes->get('anggota/profile', 'Anggota::profile');
+        $routes->get('anggota/(:num)', 'Anggota::getMember/$1');
+        $routes->get('anggota/search', 'Anggota::searchMembers');
+        $routes->get('anggota/(:num)/transactions', 'Anggota::getMemberTransactions/$1');
+        $routes->post('anggota/validate', 'Anggota::validateMember');
+        $routes->get('anggota/stats', 'Anggota::getMemberStats');
+        $routes->get('anggota/test', 'Anggota::testEndpoint');
+
         // Dashboard endpoints
         $routes->get('dashboard', 'Dashboard::index');
         $routes->get('dashboard/basic-metrics', 'Dashboard::basicMetrics');
