@@ -14,22 +14,6 @@
         </div>
     </div>
     <div class="card-body">
-            <?php if (session()->getFlashdata('success')): ?>
-                <div class="alert alert-success alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <h5><i class="icon fas fa-check"></i> Berhasil!</h5>
-                    <?= session()->getFlashdata('success') ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if (session()->getFlashdata('error')): ?>
-                <div class="alert alert-danger alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                    <h5><i class="icon fas fa-ban"></i> Error!</h5>
-                    <?= session()->getFlashdata('error') ?>
-                </div>
-            <?php endif; ?>
-
             <div class="row">
                 <div class="col-md-8">
                     <!-- Shift Information Card -->

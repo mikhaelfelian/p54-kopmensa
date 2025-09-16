@@ -313,22 +313,27 @@ class Transaksi extends BaseController
             }
 
             // Insert cart details
+            // If converting from draft, delete existing details first
+            if ($draftId && !$isDraft) {
+                $mTransJualDet->where('id_penjualan', $draftId)->delete();
+            }
+            
             foreach ($input['cart'] as $item) {
                 $detailData = [
                     'id_penjualan'   => $transactionId,
                     'id_item'        => $item['id_item'],
-                    'id_satuan'      => $item['id_satuan'],
-                    'id_kategori'    => $item['id_kategori'],
-                    'id_merk'        => $item['id_merk'],
-                    'no_nota'        => $item['no_nota'],
-                    'kode'           => $item['kode'],
+                    'id_satuan'      => $item['id_satuan'] ?? null,
+                    'id_kategori'    => $item['id_kategori'] ?? null,
+                    'id_merk'        => $item['id_merk'] ?? null,
+                    'no_nota'        => $noNota,
+                    'kode'           => $item['kode'] ?? null,
                     'produk'         => $item['produk'],
-                    'satuan'         => $item['satuan'],
+                    'satuan'         => $item['satuan'] ?? null,
                     'keterangan'     => isset($item['keterangan']) ? $item['keterangan'] : null,
                     'harga'          => $item['harga'],
                     'harga_beli'     => isset($item['harga_beli']) ? $item['harga_beli'] : 0,
                     'jml'            => $item['jml'],
-                    'jml_satuan'     => $item['jml_satuan'],
+                    'jml_satuan'     => $item['jml_satuan'] ?? 1,
                     'disk1'          => isset($item['disk1']) ? $item['disk1'] : 0,
                     'disk2'          => isset($item['disk2']) ? $item['disk2'] : 0,
                     'disk3'          => isset($item['disk3']) ? $item['disk3'] : 0,
@@ -338,15 +343,25 @@ class Transaksi extends BaseController
                     'status'         => isset($item['status']) ? $item['status'] : 1
                 ];
                 $mTransJualDet->insert($detailData);
+
+                // Update stock (decrease stock) - only for completed transactions, not drafts
+                if (!$isDraft) {
+                    $this->updateStock($item['id_item'], $input['id_gudang'], $item['jml'], 'decrease');
+                }
             }
 
-            // Insert platform payments if any
-            if (!empty($input['platform']) && is_array($input['platform'])) {
+            // Insert platform payments if any - only for completed transactions, not drafts
+            if (!$isDraft && !empty($input['platform']) && is_array($input['platform'])) {
+                // If converting from draft, delete existing platform payments first
+                if ($draftId) {
+                    $mTransJualPlat->where('id_penjualan', $draftId)->delete();
+                }
+                
                 foreach ($input['platform'] as $plat) {
                     $platData = [
                         'id_penjualan' => $transactionId,
                         'id_platform'  => $plat['id_platform'],
-                        'no_nota'      => $plat['no_nota'],
+                        'no_nota'      => $noNota,
                         'platform'     => $plat['platform'],
                         'keterangan'   => isset($plat['keterangan']) ? $plat['keterangan'] : null,
                         'nominal'      => $plat['nominal']
@@ -388,10 +403,13 @@ class Transaksi extends BaseController
             }
 
             return $this->respond([
+                'success'         => true,
+                'message'         => $isDraft ? 'Draft berhasil disimpan' : 'Transaksi berhasil diproses',
                 'transaction_id'  => $transactionId,
-                'no_nota'         => $input['no_nota'],
-                'total'           => $input['jml_gtotal'],
-                'change'          => isset($input['jml_kembali']) ? $input['jml_kembali'] : 0
+                'no_nota'         => $noNota,
+                'total'           => $input['jml_gtotal'] ?? 0,
+                'change'          => isset($input['jml_kembali']) ? $input['jml_kembali'] : 0,
+                'is_draft'        => $isDraft
             ]);
         } catch (\Exception $e) {
             if (isset($db) && $db->transStatus() !== false) {
@@ -637,6 +655,215 @@ class Transaksi extends BaseController
 
         } catch (\Exception $e) {
             return $this->failServerError('Failed to get voucher: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Generate transaction number
+     * 
+     * @return string
+     */
+    private function generateNotaNumber()
+    {
+        $prefix = 'INV';
+        $date = date('Ymd');
+        $lastTransaction = $this->mTransJual->where('DATE(created_at)', date('Y-m-d'))
+                                           ->orderBy('id', 'DESC')
+                                           ->first();
+
+        if ($lastTransaction) {
+            $lastNumber = (int) substr($lastTransaction->no_nota, -4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get list of draft transactions for current user
+     * 
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function getDrafts()
+    {
+        // Get user_id from request or session
+        $userId = $this->request->getGet('user_id');
+        
+        if (!$userId) {
+            return $this->failValidationErrors('User ID is required');
+        }
+
+        try {
+            // Get draft transactions (status = 0)
+            $drafts = $this->mTransJual
+                ->select('tbl_trans_jual.*, tbl_m_gudang.nama as gudang_name')
+                ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
+                ->where('tbl_trans_jual.status', '0') // Draft status
+                ->where('tbl_trans_jual.id_user', $userId) // Only current user's drafts
+                ->orderBy('tbl_trans_jual.created_at', 'DESC')
+                ->findAll();
+
+            return $this->respond([
+                'success' => true,
+                'message' => 'Draft transactions retrieved successfully',
+                'total'   => count($drafts),
+                'drafts'  => $drafts
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->failServerError('Failed to retrieve drafts: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get specific draft transaction with details
+     * 
+     * @param int $draftId
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function getDraft($draftId)
+    {
+        // Get user_id from request
+        $userId = $this->request->getGet('user_id');
+        
+        if (!$userId) {
+            return $this->failValidationErrors('User ID is required');
+        }
+
+        try {
+            // Get draft transaction
+            $draft = $this->mTransJual->find($draftId);
+            if (!$draft) {
+                return $this->failNotFound('Draft not found');
+            }
+
+            // Check if it's a draft
+            if ($draft->status != '0') {
+                return $this->failValidationErrors('This transaction is not a draft');
+            }
+
+            // Check if user owns this draft
+            if ($draft->id_user != $userId) {
+                return $this->failForbidden('You do not have access to this draft');
+            }
+
+            // Get transaction details with category and brand names
+            $items = $this->mTransJualDet
+                ->select('tbl_trans_jual_det.*, tbl_m_kategori.kategori as nama_kategori, tbl_m_merk.merk as nama_merk')
+                ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_trans_jual_det.id_kategori', 'left')
+                ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_trans_jual_det.id_merk', 'left')
+                ->where('tbl_trans_jual_det.id_penjualan', $draftId)
+                ->findAll();
+
+            // Format items for cart
+            $cartItems = [];
+            foreach ($items as $item) {
+                $cartItems[] = [
+                    'id_item'    => $item->id_item,
+                    'produk'     => $item->produk,
+                    'kode'       => $item->kode,
+                    'jml'        => $item->jml,
+                    'harga'      => $item->harga,
+                    'subtotal'   => $item->subtotal,
+                    'harga_beli' => $item->harga_beli,
+                    'satuan'     => $item->satuan,
+                    'kategori'   => $item->nama_kategori ?: '',
+                    'merk'       => $item->nama_merk ?: ''
+                ];
+            }
+
+            // Get customer info
+            $customer = null;
+            if ($draft->id_pelanggan) {
+                $customer = $this->mPelanggan->find($draft->id_pelanggan);
+            }
+
+            $draftData = [
+                'id'             => $draft->id,
+                'no_nota'        => $draft->no_nota,
+                'id_pelanggan'   => $draft->id_pelanggan,
+                'customer_name'  => $customer ? $customer->nama : null,
+                'id_gudang'      => $draft->id_gudang,
+                'cart'           => $cartItems,
+                'jml_total'      => $draft->jml_total,
+                'jml_subtotal'   => $draft->jml_subtotal,
+                'jml_diskon'     => $draft->jml_diskon,
+                'jml_gtotal'     => $draft->jml_gtotal,
+                'voucher_code'   => $draft->voucher_code,
+                'voucher_discount' => $draft->voucher_discount,
+                'created_at'     => $draft->created_at
+            ];
+
+            return $this->respond([
+                'success' => true,
+                'message' => 'Draft retrieved successfully',
+                'draft'   => $draftData
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->failServerError('Failed to retrieve draft: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete draft transaction
+     * 
+     * @param int $draftId
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function deleteDraft($draftId)
+    {
+        // Get user_id from request
+        $userId = $this->request->getPost('user_id') ?? $this->request->getGet('user_id');
+        
+        if (!$userId) {
+            return $this->failValidationErrors('User ID is required');
+        }
+
+        try {
+            // Get draft transaction
+            $draft = $this->mTransJual->find($draftId);
+            if (!$draft) {
+                return $this->failNotFound('Draft not found');
+            }
+
+            // Check if it's a draft
+            if ($draft->status != '0') {
+                return $this->failValidationErrors('This transaction is not a draft');
+            }
+
+            // Check if user owns this draft
+            if ($draft->id_user != $userId) {
+                return $this->failForbidden('You do not have access to this draft');
+            }
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            // Delete transaction details first
+            $this->mTransJualDet->where('id_penjualan', $draftId)->delete();
+
+            // Delete platform payments if any
+            $this->mTransJualPlat->where('id_penjualan', $draftId)->delete();
+
+            // Delete main transaction
+            $this->mTransJual->delete($draftId);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                throw new \Exception('Database transaction failed');
+            }
+
+            return $this->respond([
+                'success' => true,
+                'message' => 'Draft deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->failServerError('Failed to delete draft: ' . $e->getMessage());
         }
     }
 }

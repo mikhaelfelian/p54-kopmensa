@@ -75,6 +75,12 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->post('transaksi/validate-voucher', 'Transaksi::validateVoucher');
         $routes->post('transaksi/validate/customer', 'Transaksi::validateCustomer');
         $routes->post('transaksi/validate-customer', 'Transaksi::validateCustomer');
+        
+        // Draft transaction endpoints
+        $routes->get('transaksi/drafts', 'Transaksi::getDrafts');
+        $routes->get('transaksi/draft/(:num)', 'Transaksi::getDraft/$1');
+        $routes->delete('transaksi/draft/(:num)', 'Transaksi::deleteDraft/$1');
+        $routes->post('transaksi/draft/(:num)', 'Transaksi::deleteDraft/$1'); // Alternative for DELETE
 
         // Sales Return (Retur Jual) endpoints
         $routes->get('retur-jual', 'ReturJual::getReturns');

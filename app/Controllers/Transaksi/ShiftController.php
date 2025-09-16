@@ -212,17 +212,37 @@ class ShiftController extends BaseController
             return redirect()->to('/transaksi/shift');
         }
 
-        // Get petty cash entries
-        $pettyEntries = $this->pettyModel->getPettyCashWithDetails(['shift_id' => $shift_id]);
+        // Get transaction statistics
+        $transactionStats = $this->shiftModel->getShiftTransactionStats($shift_id);
         
-        // Get sales entries
-        $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
+        // Get recent transactions
+        $recentTransactions = $this->shiftModel->getShiftRecentTransactions($shift_id, 10);
+        
+        // Get petty cash entries (if method exists)
+        $pettyEntries = [];
+        if (method_exists($this->pettyModel, 'getPettyCashWithDetails')) {
+            $pettyEntries = $this->pettyModel->getPettyCashWithDetails(['shift_id' => $shift_id]);
+        }
+        
+        // Get sales entries (if method exists)
+        $salesEntries = [];
+        if (method_exists($this->transJualModel, 'getSalesByShift')) {
+            $salesEntries = $this->transJualModel->getSalesByShift($shift_id);
+        }
 
         $data = array_merge($this->data, [
-            'title'         => 'Detail Shift',
-            'shift'         => $shift,
-            'pettyEntries'  => $pettyEntries,
-            'salesEntries'  => $salesEntries,
+            'title'              => 'Detail Shift',
+            'shift'              => $shift,
+            'transactionCount'   => $transactionStats['transaction_count'] ?? 0,
+            'totalSales'         => $transactionStats['total_sales'] ?? 0,
+            'totalPayment'       => $transactionStats['total_payment'] ?? 0,
+            'cashTransactions'   => $transactionStats['cash'] ?? 0,
+            'cardTransactions'   => $transactionStats['card'] ?? 0,
+            'qrisTransactions'   => $transactionStats['qris'] ?? 0,
+            'otherTransactions'  => $transactionStats['other'] ?? 0,
+            'recentTransactions' => $recentTransactions,
+            'pettyEntries'       => $pettyEntries,
+            'salesEntries'       => $salesEntries,
         ]);
         
         return view('admin-lte-3/shift/view', $data);

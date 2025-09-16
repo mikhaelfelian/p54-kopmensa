@@ -651,7 +651,7 @@
                     },
                     "status": "OK",
                     "code": 200,
-                    "body": "{\n  \"success\": true,\n  \"message\": \"Transactions retrieved successfully\",\n  \"total\": 2,\n  \"id_pelanggan\": 123,\n  \"transactions\": [\n    {\"id\": 1, \"id_user\": 5, \"id_sales\": 2, \"id_pelanggan\": 123, \"id_gudang\": 1, \"no_nota\": \"TRX-20250801-0001\", \"created_at\": \"2025-08-01 10:00:00\", \"updated_at\": \"2025-08-01 10:05:00\", \"deleted_at\": null, \"tgl_bayar\": \"2025-08-01\", \"tgl_masuk\": \"2025-08-01\", \"tgl_keluar\": null, \"jml_total\": 100000, \"jml_biaya\": 0, \"jml_ongkir\": 0, \"jml_retur\": 0, \"diskon\": 0, \"jml_diskon\": 0, \"jml_subtotal\": 100000, \"ppn\": 0, \"jml_ppn\": 0, \"jml_gtotal\": 100000, \"jml_bayar\": 100000, \"jml_kembali\": 0, \"jml_kurang\": 0, \"disk1\": 0, \"jml_disk1\": 0, \"disk2\": 0, \"jml_disk2\": 0, \"disk3\": 0, \"jml_disk3\": 0, \"metode_bayar\": \"cash\", \"status\": \"selesai\", \"status_nota\": \"lunas\", \"status_ppn\": \"tidak\", \"status_bayar\": \"lunas\", \"status_retur\": \"tidak\"},\n    {\"id\": 2, \"id_user\": 5, \"id_sales\": 2, \"id_pelanggan\": 123, \"id_gudang\": 1, \"no_nota\": \"TRX-20250802-0002\", \"created_at\": \"2025-08-02 11:00:00\", \"updated_at\": \"2025-08-02 11:05:00\", \"deleted_at\": null, \"tgl_bayar\": \"2025-08-02\", \"tgl_masuk\": \"2025-08-02\", \"tgl_keluar\": null, \"jml_total\": 200000, \"jml_biaya\": 0, \"jml_ongkir\": 0, \"jml_retur\": 0, \"diskon\": 0, \"jml_diskon\": 0, \"jml_subtotal\": 200000, \"ppn\": 0, \"jml_ppn\": 0, \"jml_gtotal\": 200000, \"jml_bayar\": 200000, \"jml_kembali\": 0, \"jml_kurang\": 0, \"disk1\": 0, \"jml_disk1\": 0, \"disk2\": 0, \"jml_disk2\": 0, \"disk3\": 0, \"jml_disk3\": 0, \"metode_bayar\": \"transfer\", \"status\": \"selesai\", \"status_nota\": \"lunas\", \"status_ppn\": \"tidak\", \"status_bayar\": \"lunas\", \"status_retur\": \"tidak\"}\n  ]\n}"
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Transactions retrieved successfully\",\n  \"total\": 2,\n  \"id_pelanggan\": 123,\n  \"transactions\": [\n    {\n      \"id\": 1,\n      \"id_user\": 5,\n      \"id_sales\": 2,\n      \"id_pelanggan\": 123,\n      \"id_gudang\": 1,\n      \"pelanggan\": \"Umum\",\n      \"no_nota\": \"TRX-20250801-0001\",\n      \"created_at\": \"2025-08-01 10:00:00\",\n      \"updated_at\": \"2025-08-01 10:05:00\",\n      \"deleted_at\": null,\n      \"tgl_bayar\": \"2025-08-01\",\n      \"tgl_masuk\": \"2025-08-01\",\n      \"tgl_keluar\": null,\n      \"jml_total\": 100000,\n      \"jml_biaya\": 0,\n      \"jml_ongkir\": 0,\n      \"jml_retur\": 0,\n      \"diskon\": 0,\n      \"jml_diskon\": 0,\n      \"jml_subtotal\": 100000,\n      \"ppn\": 0,\n      \"jml_ppn\": 0,\n      \"jml_gtotal\": 100000,\n      \"jml_bayar\": 100000,\n      \"jml_kembali\": 0,\n      \"jml_kurang\": 0,\n      \"disk1\": 0,\n      \"jml_disk1\": 0,\n      \"disk2\": 0,\n      \"jml_disk2\": 0,\n      \"disk3\": 0,\n      \"jml_disk3\": 0,\n      \"metode_bayar\": \"cash\",\n      \"status\": \"selesai\",\n      \"status_nota\": \"lunas\",\n      \"status_ppn\": \"tidak\",\n      \"status_bayar\": \"lunas\",\n      \"status_retur\": \"tidak\",\n      \"details\": [],\n      \"platform\": [],\n      \"follow\": false\n    },\n    {\n      \"id\": 2,\n      \"id_user\": 5,\n      \"id_sales\": 2,\n      \"id_pelanggan\": 123,\n      \"id_gudang\": 1,\n      \"pelanggan\": \"Umum\",\n      \"no_nota\": \"TRX-20250802-0002\",\n      \"created_at\": \"2025-08-02 11:00:00\",\n      \"updated_at\": \"2025-08-02 11:05:00\",\n      \"deleted_at\": null,\n      \"tgl_bayar\": \"2025-08-02\",\n      \"tgl_masuk\": \"2025-08-02\",\n      \"tgl_keluar\": null,\n      \"jml_total\": 200000,\n      \"jml_biaya\": 0,\n      \"jml_ongkir\": 0,\n      \"jml_retur\": 0,\n      \"diskon\": 0,\n      \"jml_diskon\": 0,\n      \"jml_subtotal\": 200000,\n      \"ppn\": 0,\n      \"jml_ppn\": 0,\n      \"jml_gtotal\": 200000,\n      \"jml_bayar\": 200000,\n      \"jml_kembali\": 0,\n      \"jml_kurang\": 0,\n      \"disk1\": 0,\n      \"jml_disk1\": 0,\n      \"disk2\": 0,\n      \"jml_disk2\": 0,\n      \"disk3\": 0,\n      \"jml_disk3\": 0,\n      \"metode_bayar\": \"transfer\",\n      \"status\": \"selesai\",\n      \"status_nota\": \"lunas\",\n      \"status_ppn\": \"tidak\",\n      \"status_bayar\": \"lunas\",\n      \"status_retur\": \"tidak\",\n      \"details\": [],\n      \"platform\": [],\n      \"follow\": false\n    }\n  ]\n}"
                   }
                 ]
               },
@@ -880,6 +880,471 @@
                     "status": "OK",
                     "code": 200,
                     "body": "{\n  \"valid\": false,\n  \"message\": \"Customer diblokir\"\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Buat Draft Transaksi",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/json" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/store",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "store"]
+                  },
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"id_user\": 1,\n  \"id_gudang\": 1,\n  \"is_draft\": true,\n  \"cart\": [\n    {\n      \"id_item\": 1,\n      \"id_satuan\": 1,\n      \"id_kategori\": 14,\n      \"id_merk\": 1,\n      \"kode\": \"ITEM-001\",\n      \"produk\": \"Kopi Hitam\",\n      \"satuan\": \"PCS\",\n      \"harga\": 50000,\n      \"harga_beli\": 40000,\n      \"jml\": 2,\n      \"jml_satuan\": 2,\n      \"subtotal\": 100000\n    }\n  ],\n  \"jml_total\": 100000,\n  \"jml_subtotal\": 90090,\n  \"jml_gtotal\": 100000,\n  \"voucher_code\": null,\n  \"voucher_discount\": 0\n}",
+                    "description": "JSON payload for creating a draft transaction"
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Draft Created",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/json" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/store", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "store"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Draft berhasil disimpan\",\n  \"transaction_id\": 456,\n  \"no_nota\": \"INV20250118001\",\n  \"total\": 100000,\n  \"change\": 0,\n  \"is_draft\": true\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Convert Draft ke Transaksi",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/json" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/store",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "store"]
+                  },
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"draft_id\": 456,\n  \"is_draft\": false,\n  \"id_user\": 1,\n  \"id_sales\": 2,\n  \"id_pelanggan\": 123,\n  \"id_gudang\": 1,\n  \"id_shift\": 1,\n  \"no_nota\": \"INV20250118001\",\n  \"tgl_masuk\": \"2025-01-18 10:00:00\",\n  \"tgl_bayar\": \"2025-01-18 10:00:00\",\n  \"jml_total\": 100000,\n  \"jml_subtotal\": 90090,\n  \"jml_gtotal\": 100000,\n  \"jml_bayar\": 100000,\n  \"jml_kembali\": 0,\n  \"cart\": [\n    {\n      \"id_item\": 1,\n      \"id_satuan\": 1,\n      \"id_kategori\": 14,\n      \"id_merk\": 1,\n      \"kode\": \"ITEM-001\",\n      \"produk\": \"Kopi Hitam\",\n      \"satuan\": \"PCS\",\n      \"harga\": 50000,\n      \"harga_beli\": 40000,\n      \"jml\": 2,\n      \"jml_satuan\": 2,\n      \"subtotal\": 100000\n    }\n  ],\n  \"platform\": [\n    {\n      \"id_platform\": 1,\n      \"platform\": \"cash\",\n      \"keterangan\": \"Pembayaran tunai\",\n      \"nominal\": 100000\n    }\n  ]\n}",
+                    "description": "JSON payload for converting draft to completed transaction"
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Draft Converted",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/json" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/store", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "store"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Transaksi berhasil diproses\",\n  \"transaction_id\": 456,\n  \"no_nota\": \"INV20250118001\",\n  \"total\": 100000,\n  \"change\": 0,\n  \"is_draft\": false\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Get Draft List",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/drafts?user_id=1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "drafts"],
+                    "query": [
+                      { "key": "user_id", "value": "1", "description": "User ID to get drafts for" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/drafts?user_id=1", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "drafts"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Draft transactions retrieved successfully\",\n  \"total\": 2,\n  \"drafts\": [\n    {\n      \"id\": 456,\n      \"no_nota\": \"INV20250118001\",\n      \"jml_gtotal\": 100000,\n      \"created_at\": \"2025-01-18 09:30:00\",\n      \"gudang_name\": \"Gudang Utama\"\n    },\n    {\n      \"id\": 457,\n      \"no_nota\": \"INV20250118002\",\n      \"jml_gtotal\": 75000,\n      \"created_at\": \"2025-01-18 10:15:00\",\n      \"gudang_name\": \"Gudang Utama\"\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Get Draft Detail",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/draft/456?user_id=1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "draft", "456"],
+                    "query": [
+                      { "key": "user_id", "value": "1", "description": "User ID for validation" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/draft/456?user_id=1", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "draft", "456"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Draft retrieved successfully\",\n  \"draft\": {\n    \"id\": 456,\n    \"no_nota\": \"INV20250118001\",\n    \"id_pelanggan\": null,\n    \"customer_name\": null,\n    \"id_gudang\": 1,\n    \"cart\": [\n      {\n        \"id_item\": 1,\n        \"produk\": \"Kopi Hitam\",\n        \"kode\": \"ITEM-001\",\n        \"jml\": 2,\n        \"harga\": 50000,\n        \"subtotal\": 100000,\n        \"satuan\": \"PCS\",\n        \"kategori\": \"Minuman\",\n        \"merk\": \"Local\"\n      }\n    ],\n    \"jml_total\": 100000,\n    \"jml_gtotal\": 100000,\n    \"voucher_code\": null,\n    \"created_at\": \"2025-01-18 09:30:00\"\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Delete Draft",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/transaksi/draft/456?user_id=1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "transaksi", "draft", "456"],
+                    "query": [
+                      { "key": "user_id", "value": "1", "description": "User ID for validation" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "DELETE",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/transaksi/draft/456?user_id=1", "host": ["{{baseUrl}}"], "path": ["api", "pos", "transaksi", "draft", "456"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Draft deleted successfully\"\n}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "retur-jual",
+            "item": [
+              {
+                "name": "Get Returns",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual?id_pelanggan=123",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual"],
+                    "query": [
+                      { "key": "id_pelanggan", "value": "123", "description": "Customer ID to filter returns (optional)" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual?id_pelanggan=123", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Returns retrieved successfully\",\n  \"total\": 1,\n  \"returns\": [\n    {\n      \"id\": 1,\n      \"no_retur\": \"RTJ-20250118-0001\",\n      \"id_penjualan\": 123,\n      \"customer_nama\": \"John Doe\",\n      \"original_nota\": \"INV20250118001\",\n      \"tgl_masuk\": \"2025-01-18\",\n      \"status\": 1,\n      \"status_retur\": 1,\n      \"details\": [\n        {\n          \"id\": 1,\n          \"id_item\": 1,\n          \"kode\": \"ITEM-001\",\n          \"item\": \"Kopi Hitam\",\n          \"jml\": 1,\n          \"harga\": 50000,\n          \"subtotal\": 50000\n        }\n      ]\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Get Return Detail",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/detail/1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "detail", "1"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/detail/1", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "detail", "1"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Return details retrieved successfully\",\n  \"retur\": {\n    \"id\": 1,\n    \"no_retur\": \"RTJ-20250118-0001\",\n    \"id_penjualan\": 123,\n    \"customer_nama\": \"John Doe\",\n    \"original_nota\": \"INV20250118001\",\n    \"tgl_masuk\": \"2025-01-18\",\n    \"keterangan\": \"Barang rusak\",\n    \"status\": 1,\n    \"status_retur\": 1,\n    \"status_terima\": 1,\n    \"details\": [\n      {\n        \"id\": 1,\n        \"id_item\": 1,\n        \"kode\": \"ITEM-001\",\n        \"item\": \"Kopi Hitam\",\n        \"jml\": 1,\n        \"satuan\": \"PCS\",\n        \"harga\": 50000,\n        \"subtotal\": 50000,\n        \"status_item\": 1\n      }\n    ]\n  }\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Get Sales for Return",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/sales-for-return?id_pelanggan=123",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "sales-for-return"],
+                    "query": [
+                      { "key": "id_pelanggan", "value": "123", "description": "Customer ID to filter sales (optional)" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/sales-for-return?id_pelanggan=123", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "sales-for-return"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Sales transactions retrieved successfully\",\n  \"total\": 2,\n  \"sales\": [\n    {\n      \"id\": 123,\n      \"no_nota\": \"INV20250118001\",\n      \"id_pelanggan\": 123,\n      \"customer_nama\": \"John Doe\",\n      \"tgl_masuk\": \"2025-01-18 10:00:00\",\n      \"jml_gtotal\": 100000,\n      \"status\": 1,\n      \"status_retur\": 0\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Get Sales Items",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/sales-items/123",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "sales-items", "123"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/sales-items/123", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "sales-items", "123"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Sales items retrieved successfully\",\n  \"total\": 2,\n  \"items\": [\n    {\n      \"id\": 1,\n      \"id_penjualan\": 123,\n      \"id_item\": 1,\n      \"kode\": \"ITEM-001\",\n      \"produk\": \"Kopi Hitam\",\n      \"satuan\": \"PCS\",\n      \"harga\": 50000,\n      \"jml\": 2,\n      \"subtotal\": 100000\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Create Sales Return (Refund)",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/json" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/store",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "store"]
+                  },
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"id_penjualan\": 123,\n  \"id_user\": 1,\n  \"id_gudang\": 1,\n  \"retur_type\": \"refund\",\n  \"tgl_retur\": \"2025-01-18\",\n  \"keterangan\": \"Barang rusak, minta refund\",\n  \"retur_items\": [\n    {\n      \"id_item\": 1,\n      \"id_satuan\": 1,\n      \"kode\": \"ITEM-001\",\n      \"produk\": \"Kopi Hitam\",\n      \"satuan\": \"PCS\",\n      \"qty\": 1,\n      \"harga\": 50000,\n      \"subtotal\": 50000\n    }\n  ]\n}",
+                    "description": "JSON payload for creating a sales return (refund)"
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Refund Created",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/json" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/store", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "store"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Retur penjualan (Refund) berhasil disimpan\",\n  \"retur_id\": 1,\n  \"no_retur\": \"RTJ-20250118-0001\",\n  \"retur_type\": \"refund\"\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Create Sales Return (Exchange)",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/json" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/store",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "store"]
+                  },
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"id_penjualan\": 123,\n  \"id_user\": 1,\n  \"id_gudang\": 1,\n  \"retur_type\": \"exchange\",\n  \"tgl_retur\": \"2025-01-18\",\n  \"keterangan\": \"Tukar barang dengan yang lain\",\n  \"retur_items\": [\n    {\n      \"id_item\": 1,\n      \"id_satuan\": 1,\n      \"kode\": \"ITEM-001\",\n      \"produk\": \"Kopi Hitam\",\n      \"satuan\": \"PCS\",\n      \"qty\": 1,\n      \"harga\": 50000,\n      \"subtotal\": 50000\n    }\n  ],\n  \"exchange_items\": [\n    {\n      \"id_item\": 2,\n      \"id_satuan\": 1,\n      \"kode\": \"ITEM-002\",\n      \"produk\": \"Kopi Susu\",\n      \"satuan\": \"PCS\",\n      \"qty\": 1,\n      \"harga\": 55000,\n      \"subtotal\": 55000\n    }\n  ]\n}",
+                    "description": "JSON payload for creating a sales return (exchange)"
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Exchange Created",
+                    "originalRequest": {
+                      "method": "POST",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/json" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/store", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "store"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Retur penjualan (Tukar Barang) berhasil disimpan\",\n  \"retur_id\": 2,\n  \"no_retur\": \"RTJ-20250118-0002\",\n  \"retur_type\": \"exchange\"\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Update Return Status",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                    { "key": "Content-Type", "value": "application/json" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/status/1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "status", "1"]
+                  },
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"status\": \"1\",\n  \"keterangan\": \"Return approved by manager\"\n}",
+                    "description": "JSON payload for updating return status (0=draft, 1=approved, 2=rejected)"
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success - Status Updated",
+                    "originalRequest": {
+                      "method": "PUT",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                        { "key": "Content-Type", "value": "application/json" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/status/1", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "status", "1"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Return status updated to Approved\",\n  \"retur_id\": 1,\n  \"status\": \"1\"\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Search Items for Exchange",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/search-items?search=kopi&id_gudang=1",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "search-items"],
+                    "query": [
+                      { "key": "search", "value": "kopi", "description": "Search keyword for item name, code, or barcode" },
+                      { "key": "id_gudang", "value": "1", "description": "Warehouse ID to filter items" }
+                    ]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/search-items?search=kopi&id_gudang=1", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "search-items"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"Items retrieved successfully\",\n  \"total\": 2,\n  \"items\": [\n    {\n      \"id\": 1,\n      \"kode\": \"ITEM-001\",\n      \"item\": \"Kopi Hitam\",\n      \"barcode\": \"1234567890\",\n      \"harga_jual\": 50000,\n      \"harga_beli\": 40000,\n      \"stok\": 25,\n      \"kategori\": \"Minuman\",\n      \"merk\": \"Local\",\n      \"satuan\": \"PCS\",\n      \"status\": 1\n    },\n    {\n      \"id\": 2,\n      \"kode\": \"ITEM-002\",\n      \"item\": \"Kopi Susu\",\n      \"barcode\": \"1234567891\",\n      \"harga_jual\": 55000,\n      \"harga_beli\": 45000,\n      \"stok\": 15,\n      \"kategori\": \"Minuman\",\n      \"merk\": \"Local\",\n      \"satuan\": \"PCS\",\n      \"status\": 1\n    }\n  ]\n}"
+                  }
+                ]
+              },
+              {
+                "name": "Test ReturJual API",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                  ],
+                  "url": {
+                    "raw": "{{baseUrl}}/api/pos/retur-jual/test",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "pos", "retur-jual", "test"]
+                  }
+                },
+                "response": [
+                  {
+                    "name": "Success",
+                    "originalRequest": {
+                      "method": "GET",
+                      "header": [
+                        { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+                      ],
+                      "url": { "raw": "{{baseUrl}}/api/pos/retur-jual/test", "host": ["{{baseUrl}}"], "path": ["api", "pos", "retur-jual", "test"] }
+                    },
+                    "status": "OK",
+                    "code": 200,
+                    "body": "{\n  \"success\": true,\n  \"message\": \"ReturJual API Test endpoint working!\",\n  \"method\": \"GET\",\n  \"uri\": \"/api/pos/retur-jual/test\",\n  \"timestamp\": \"2025-01-18 10:30:00\",\n  \"user\": \"Not authenticated\"\n}"
                   }
                 ]
               }

@@ -118,12 +118,25 @@ class ShiftModel extends Model
         $builder = $this->db->table('tbl_m_shift s')
             ->select('
                 s.*,
+                s.shift_code,
+                s.status,
+                s.start_at as jam_buka,
+                s.end_at as jam_tutup,
+                s.open_float as saldo_awal,
+                s.counted_cash as saldo_akhir,
+                s.notes,
+                DATE(s.start_at) as tanggal,
                 g.nama as outlet_name,
                 g.kode as outlet_code,
+                g.alamat as outlet_alamat,
+                CONCAT(u_open.first_name, " ", u_open.last_name) as kasir_name,
                 u_open.first_name as user_open_name,
                 u_open.last_name as user_open_lastname,
+                u_open.email as user_open_email,
+                CONCAT(u_close.first_name, " ", u_close.last_name) as user_close_name_full,
                 u_close.first_name as user_close_name,
                 u_close.last_name as user_close_lastname,
+                CONCAT(u_approve.first_name, " ", u_approve.last_name) as user_approve_name_full,
                 u_approve.first_name as user_approve_name,
                 u_approve.last_name as user_approve_lastname
             ')
@@ -134,6 +147,88 @@ class ShiftModel extends Model
             ->where('s.id', $shift_id);
 
         return $builder->get()->getRowArray();
+    }
+
+    /**
+     * Get transaction statistics for a shift
+     */
+    public function getShiftTransactionStats($shift_id)
+    {
+        $db = \Config\Database::connect();
+        
+        // Get transaction count and totals
+        $transactionStats = $db->table('tbl_trans_jual')
+            ->select('
+                COUNT(*) as transaction_count,
+                COALESCE(SUM(jml_gtotal), 0) as total_sales,
+                COALESCE(SUM(jml_bayar), 0) as total_payment
+            ')
+            ->where('shift_id', $shift_id)
+            ->where('status !=', '0') // Exclude draft transactions
+            ->get()
+            ->getRowArray();
+        
+        // Get payment method breakdown
+        $paymentStats = $db->table('tbl_trans_jual_plat p')
+            ->select('
+                p.platform,
+                COUNT(*) as count
+            ')
+            ->join('tbl_trans_jual t', 't.id = p.id_penjualan', 'inner')
+            ->where('t.shift_id', $shift_id)
+            ->where('t.status !=', '0')
+            ->groupBy('p.platform')
+            ->get()
+            ->getResultArray();
+        
+        // Format payment method counts
+        $paymentMethodCounts = [
+            'cash' => 0,
+            'card' => 0,
+            'qris' => 0,
+            'other' => 0
+        ];
+        
+        foreach ($paymentStats as $stat) {
+            $platform = strtolower($stat['platform'] ?? '');
+            if (in_array($platform, ['tunai', 'cash'])) {
+                $paymentMethodCounts['cash'] += $stat['count'];
+            } elseif (in_array($platform, ['kartu', 'card', 'debit', 'credit'])) {
+                $paymentMethodCounts['card'] += $stat['count'];
+            } elseif (in_array($platform, ['qris', 'qr'])) {
+                $paymentMethodCounts['qris'] += $stat['count'];
+            } else {
+                $paymentMethodCounts['other'] += $stat['count'];
+            }
+        }
+        
+        return array_merge($transactionStats, $paymentMethodCounts);
+    }
+
+    /**
+     * Get recent transactions for a shift
+     */
+    public function getShiftRecentTransactions($shift_id, $limit = 10)
+    {
+        $db = \Config\Database::connect();
+        
+        return $db->table('tbl_trans_jual t')
+            ->select('
+                t.id,
+                t.no_nota as no_transaksi,
+                t.jml_gtotal as total,
+                t.created_at,
+                t.status,
+                GROUP_CONCAT(p.platform SEPARATOR ", ") as metode_pembayaran
+            ')
+            ->join('tbl_trans_jual_plat p', 'p.id_penjualan = t.id', 'left')
+            ->where('t.shift_id', $shift_id)
+            ->where('t.status !=', '0') // Exclude draft transactions
+            ->groupBy('t.id')
+            ->orderBy('t.created_at', 'DESC')
+            ->limit($limit)
+            ->get()
+            ->getResult();
     }
 
     /**

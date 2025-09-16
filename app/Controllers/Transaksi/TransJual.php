@@ -102,7 +102,7 @@ class TransJual extends BaseController
         $user_id    = $this->ionAuth->user()->row()->id;
 
         // Use ShiftModel's getActiveShift method (see file_context_0)
-        $activeShift = $this->shiftModel->getActiveShift(2, $user_id);
+        $activeShift = $this->shiftModel->getActiveShift($outlet_id, $user_id);
 
         if (empty($activeShift)) {
             // No active shift found, redirect to shift open page

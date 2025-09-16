@@ -66,28 +66,18 @@ $(document).ready(function() {
     // Initialize autonumber for currency input with 5.000 format
     $('#open_float').autoNumeric('init', {
         aSep: '.',
-        aDec: ','
+        aDec: ',',
+        mDec: '0'
     });
 
     // Handle form submission to convert autonumber format to decimal
     $('#openShiftForm').on('submit', function(e) {
-        console.log('Form submitted');
-        
         var openFloatInput = $('#open_float');
         var rawValue = openFloatInput.autoNumeric('get');
-        
-        console.log('Raw value from autonumber:', rawValue);
-        
         // Convert the formatted value to a decimal number for database
         var decimalValue = parseFloat(rawValue.replace(/\./g, '').replace(',', '.'));
-        
-        console.log('Converted decimal value:', decimalValue);
-        
         // Update the input value before submission
         openFloatInput.val(decimalValue);
-        
-        console.log('Final input value:', openFloatInput.val());
-        
         // Let the form submit with the converted value
         return true;
     });
