@@ -1979,6 +1979,147 @@
             }
           }
         ]
+      },
+      {
+        "name": "anggota",
+        "item": [
+          {
+            "name": "Get Member Profile",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota/profile?user_id=1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota", "profile"],
+                "query": [
+                  { "key": "user_id", "value": "1", "description": "User ID for member profile" }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Member List",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota?page=1&per_page=10&search=john",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota"],
+                "query": [
+                  { "key": "page", "value": "1", "description": "Page number for pagination" },
+                  { "key": "per_page", "value": "10", "description": "Items per page" },
+                  { "key": "search", "value": "john", "description": "Search keyword (optional)" }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Member Detail",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota/1",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota", "1"]
+              }
+            }
+          },
+          {
+            "name": "Search Members",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota/search?q=john&limit=5",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota", "search"],
+                "query": [
+                  { "key": "q", "value": "john", "description": "Search query" },
+                  { "key": "limit", "value": "5", "description": "Maximum results to return" }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Member Transactions",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota/1/transactions?page=1&per_page=10",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota", "1", "transactions"],
+                "query": [
+                  { "key": "page", "value": "1", "description": "Page number for pagination" },
+                  { "key": "per_page", "value": "10", "description": "Items per page" }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Validate Member",
+            "request": {
+              "method": "POST",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" },
+                { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota/validate",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota", "validate"]
+              },
+              "body": {
+                "mode": "urlencoded",
+                "urlencoded": [
+                  { "key": "username", "value": "johndoe", "description": "Member username" },
+                  { "key": "password", "value": "password123", "description": "Member password" }
+                ]
+              }
+            }
+          },
+          {
+            "name": "Get Member Statistics",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota/stats",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota", "stats"]
+              }
+            }
+          },
+          {
+            "name": "Test Anggota API",
+            "request": {
+              "method": "GET",
+              "header": [
+                { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+              ],
+              "url": {
+                "raw": "{{baseUrl}}/api/pos/anggota/test",
+                "host": ["{{baseUrl}}"],
+                "path": ["api", "pos", "anggota", "test"]
+              }
+            }
+          }
+        ]
       }
     ]
   }
