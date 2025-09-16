@@ -11,6 +11,8 @@ class CutOffReport extends BaseController
     protected $transBeliModel;
     protected $shiftModel;
     protected $db;
+    protected $ionAuth;
+    protected $pengaturan;
 
     public function __construct()
     {
@@ -18,6 +20,8 @@ class CutOffReport extends BaseController
         $this->transBeliModel = new \App\Models\TransBeliModel();
         $this->shiftModel = new \App\Models\ShiftModel();
         $this->db = \Config\Database::connect();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
+        $this->pengaturan = new \App\Models\PengaturanModel();
     }
 
     public function index()
@@ -31,40 +35,48 @@ class CutOffReport extends BaseController
             $testQuery = $this->db->table('v_trans_jual_cutoff')->limit(1)->get();
             $columns = array_keys((array)$testQuery->getRow());
             
+            // Determine which date field to use
+            $dateField = 'created_at'; // default
+            if (in_array('tgl_masuk', $columns)) {
+                $dateField = 'tgl_masuk';
+            } elseif (in_array('created_at', $columns)) {
+                $dateField = 'created_at';
+            } elseif (in_array('tgl_bayar', $columns)) {
+                $dateField = 'tgl_bayar';
+            }
+            
+            // Determine which ID field to use
+            $idField = 'id'; // default
+            if (in_array('id', $columns)) {
+                $idField = 'id';
+            } elseif (in_array('id_trans_jual', $columns)) {
+                $idField = 'id_trans_jual';
+            } elseif (in_array('trans_id', $columns)) {
+                $idField = 'trans_id';
+            }
+            
             // Get cut-off data from your existing view
             $builder = $this->db->table('v_trans_jual_cutoff');
             $builder->select('*');
             
-            // Try different possible date column names
-            if (in_array('tgl_masuk', $columns)) {
-                $builder->where('DATE(tgl_masuk) >=', $startDate)
-                       ->where('DATE(tgl_masuk) <=', $endDate);
-            } elseif (in_array('created_at', $columns)) {
-                $builder->where('DATE(created_at) >=', $startDate)
-                       ->where('DATE(created_at) <=', $endDate);
-            } elseif (in_array('tgl_bayar', $columns)) {
-                $builder->where('DATE(tgl_bayar) >=', $startDate)
-                       ->where('DATE(tgl_bayar) <=', $endDate);
-            }
+            // Apply date filter
+            $builder->where("DATE($dateField) >=", $startDate)
+                   ->where("DATE($dateField) <=", $endDate);
 
             if ($outlet && in_array('id_gudang', $columns)) {
                 $builder->where('id_gudang', $outlet);
             }
 
-            // Try different possible ordering columns
-            if (in_array('tgl_masuk', $columns)) {
-                $builder->orderBy('tgl_masuk', 'DESC');
-            } elseif (in_array('created_at', $columns)) {
-                $builder->orderBy('created_at', 'DESC');
-            } else {
-                $builder->orderBy('id', 'DESC');
-            }
+            // Apply ordering
+            $builder->orderBy($dateField, 'DESC');
 
             $cutoffs = $builder->get()->getResult();
             
         } catch (\Exception $e) {
             // If there's an error, show debug info
             $cutoffs = [];
+            $dateField = 'created_at'; // fallback
+            $idField = 'id'; // fallback
             session()->setFlashdata('debug_info', 'Error: ' . $e->getMessage());
         }
 
@@ -88,6 +100,8 @@ class CutOffReport extends BaseController
             'cutoffs' => $cutoffs,
             'summary' => $summary,
             'outlets' => $outlets,
+            'dateField' => $dateField,
+            'idField' => $idField,
             'filters' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
@@ -100,7 +114,7 @@ class CutOffReport extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/cutoff_report', $data);
+        return view(get_active_theme() . '/laporan/cutoff_report', $data);
     }
 
     public function export()
@@ -109,17 +123,34 @@ class CutOffReport extends BaseController
         $endDate = $this->request->getGet('end_date') ?: date('Y-m-d');
         $outlet = $this->request->getGet('outlet');
 
+        // Determine which date field to use (same logic as index)
+        try {
+            $testQuery = $this->db->table('v_trans_jual_cutoff')->limit(1)->get();
+            $columns = array_keys((array)$testQuery->getRow());
+            
+            $dateField = 'created_at'; // default
+            if (in_array('tgl_masuk', $columns)) {
+                $dateField = 'tgl_masuk';
+            } elseif (in_array('created_at', $columns)) {
+                $dateField = 'created_at';
+            } elseif (in_array('tgl_bayar', $columns)) {
+                $dateField = 'tgl_bayar';
+            }
+        } catch (\Exception $e) {
+            $dateField = 'created_at'; // fallback
+        }
+
         // Get cut-off data for export from your existing view
         $builder = $this->db->table('v_trans_jual_cutoff');
         $builder->select('*')
-            ->where('DATE(tgl_masuk) >=', $startDate)
-            ->where('DATE(tgl_masuk) <=', $endDate);
+            ->where("DATE($dateField) >=", $startDate)
+            ->where("DATE($dateField) <=", $endDate);
 
         if ($outlet) {
             $builder->where('id_gudang', $outlet);
         }
 
-        $cutoffs = $builder->orderBy('tgl_masuk', 'DESC')
+        $cutoffs = $builder->orderBy($dateField, 'DESC')
                           ->get()
                           ->getResult();
 
@@ -147,7 +178,7 @@ class CutOffReport extends BaseController
         // CSV data
         foreach ($cutoffs as $cutoff) {
             fputcsv($output, [
-                tgl_indo2($cutoff->tgl_masuk),
+                tgl_indo2($cutoff->{$dateField}),
                 $cutoff->no_nota ?? 'N/A',
                 $cutoff->gudang ?? 'N/A',
                 $cutoff->first_name ?? 'N/A',
@@ -165,8 +196,36 @@ class CutOffReport extends BaseController
 
     public function detail($id)
     {
+        // Determine which date field and ID field to use (same logic as index)
+        try {
+            $testQuery = $this->db->table('v_trans_jual_cutoff')->limit(1)->get();
+            $columns = array_keys((array)$testQuery->getRow());
+            
+            $dateField = 'created_at'; // default
+            if (in_array('tgl_masuk', $columns)) {
+                $dateField = 'tgl_masuk';
+            } elseif (in_array('created_at', $columns)) {
+                $dateField = 'created_at';
+            } elseif (in_array('tgl_bayar', $columns)) {
+                $dateField = 'tgl_bayar';
+            }
+            
+            // Determine which ID field to use
+            $idField = 'id'; // default
+            if (in_array('id', $columns)) {
+                $idField = 'id';
+            } elseif (in_array('id_trans_jual', $columns)) {
+                $idField = 'id_trans_jual';
+            } elseif (in_array('trans_id', $columns)) {
+                $idField = 'trans_id';
+            }
+        } catch (\Exception $e) {
+            $dateField = 'created_at'; // fallback
+            $idField = 'id'; // fallback
+        }
+
         $cutoff = $this->db->table('v_trans_jual_cutoff')
-                          ->where('id', $id)
+                          ->where($idField, $id)
                           ->get()
                           ->getRow();
 
@@ -175,7 +234,7 @@ class CutOffReport extends BaseController
         }
 
         // Get transactions for this date and outlet
-        $cutoffDate = $cutoff->tgl_masuk;
+        $cutoffDate = $cutoff->{$dateField};
         $outletId = $cutoff->id_gudang;
 
         // Sales transactions
@@ -217,7 +276,7 @@ class CutOffReport extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/cutoff_detail', $data);
+        return view(get_active_theme() . '/laporan/cutoff_detail', $data);
     }
 
     /**
