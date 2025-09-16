@@ -92,7 +92,7 @@ class Transaksi extends BaseController
 
         try {
             // Get pelanggan name from tbl_m_pelanggan
-            $pelanggan = $mPelanggan->find($id_pelanggan);
+            $pelanggan = $mPelanggan->where('id_user', $id_pelanggan)->first();
             $nama_pelanggan = $pelanggan ? $pelanggan->nama : null;
 
             // Get transactions from tbl_trans_jual where id_pelanggan matches
