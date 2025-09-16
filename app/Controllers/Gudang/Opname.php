@@ -26,7 +26,10 @@ class Opname extends BaseController
     protected $itemModel;
     protected $itemStokModel;
     protected $itemHistModel;
-    protected $utilSODetModel; // <-- ADD THIS LINE
+    protected $utilSODetModel;
+    protected $ionAuth;
+    protected $pengaturan;
+    protected $theme;
 
     public function __construct()
     {
@@ -37,7 +40,10 @@ class Opname extends BaseController
         $this->itemModel = new ItemModel();
         $this->itemStokModel = new ItemStokModel();
         $this->itemHistModel = new ItemHistModel();
-        $this->utilSODetModel = new \App\Models\UtilSODetModel(); // <-- ADD THIS LINE
+        $this->utilSODetModel = new \App\Models\UtilSODetModel();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
+        $this->pengaturan = new \App\Models\PengaturanModel();
+        $this->theme = new \App\Libraries\Theme();
     }
 
     public function index()
@@ -47,6 +53,8 @@ class Opname extends BaseController
         $keyword = $this->request->getVar('keyword');
         $tgl = $this->request->getVar('tgl');
         $ket = $this->request->getVar('ket');
+        $tipe = $this->request->getVar('tipe');
+        $status = $this->request->getVar('status');
 
         // Build query with filters
         $builder = $this->utilSOModel;
@@ -57,6 +65,18 @@ class Opname extends BaseController
         
         if ($ket) {
             $builder = $builder->like('keterangan', $ket);
+        }
+        
+        if ($tipe) {
+            if ($tipe == 'Gudang') {
+                $builder = $builder->where('tipe', '1');
+            } elseif ($tipe == 'Outlet') {
+                $builder = $builder->where('tipe', '2');
+            }
+        }
+        
+        if ($status !== null && $status !== '') {
+            $builder = $builder->where('status', $status);
         }
 
         $opnameData = $builder->paginate($perPage, 'opname');
@@ -113,6 +133,8 @@ class Opname extends BaseController
             'keyword'     => $keyword,
             'tgl'         => $tgl,
             'ket'         => $ket,
+            'tipe'        => $tipe,
+            'status'      => $status,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Gudang</li>
