@@ -608,6 +608,96 @@ class Opname extends BaseController
         }
     }
 
+    public function updateItemStok()
+    {
+        try {
+            $itemId = $this->request->getPost('item_id');
+            $idSo = $this->request->getPost('id_so');
+            $stokFisik = $this->request->getPost('stok_fisik');
+
+            if (!$itemId || !$idSo) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Data tidak lengkap.'
+                ]);
+            }
+
+            // Find the opname detail item
+            $item = $this->utilSODetModel
+                ->where('id_so', $idSo)
+                ->where('id_item', $itemId)
+                ->first();
+
+            if (!$item) {
+                return $this->response->setStatusCode(404)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Item tidak ditemukan dalam opname.'
+                ]);
+            }
+
+            // Update the stock
+            $updateData = ['jml_so' => $stokFisik];
+            $this->utilSODetModel->update($item->id, $updateData);
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Stok fisik berhasil diupdate.',
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function updateItemKeterangan()
+    {
+        try {
+            $itemId = $this->request->getPost('item_id');
+            $idSo = $this->request->getPost('id_so');
+            $keterangan = $this->request->getPost('keterangan');
+
+            if (!$itemId || !$idSo) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Data tidak lengkap.'
+                ]);
+            }
+
+            // Find the opname detail item
+            $item = $this->utilSODetModel
+                ->where('id_so', $idSo)
+                ->where('id_item', $itemId)
+                ->first();
+
+            if (!$item) {
+                return $this->response->setStatusCode(404)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Item tidak ditemukan dalam opname.'
+                ]);
+            }
+
+            // Update the keterangan
+            $updateData = ['keterangan' => $keterangan];
+            $this->utilSODetModel->update($item->id, $updateData);
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Keterangan berhasil diupdate.',
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->response->setStatusCode(500)->setJSON([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
+    }
+
     public function delete($id)
     {
         $opname = $this->utilSOModel->find($id);
