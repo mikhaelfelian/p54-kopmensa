@@ -82,11 +82,11 @@
                             </div>
                             <div class="card-body">
                                 <div class="list-group">
-                                    <a href="<?= base_url('master/pelanggan') ?>" class="list-group-item list-group-item-action">
+                                    <a href="<?= base_url('master/customer') ?>" class="list-group-item list-group-item-action">
                                         <i class="fas fa-users"></i> Enhanced Member Management
                                         <small class="text-muted d-block">Monthly purchases tracking</small>
                                     </a>
-                                    <a href="<?= base_url('master/pelanggan/add-member') ?>" class="list-group-item list-group-item-action">
+                                    <a href="<?= base_url('master/customer/create') ?>" class="list-group-item list-group-item-action">
                                         <i class="fas fa-user-plus"></i> Add New Member
                                     </a>
                                     <div class="list-group-item">

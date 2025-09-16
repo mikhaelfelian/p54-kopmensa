@@ -26,12 +26,12 @@
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="<?= base_url('master/pelanggan') ?>" class="btn btn-block btn-outline-info">
+                        <a href="<?= base_url('master/customer') ?>" class="btn btn-block btn-outline-info">
                             <i class="fas fa-users"></i><br>Member Management
                         </a>
                     </div>
                     <div class="col-md-3">
-                        <a href="<?= base_url('master/cutoff') ?>" class="btn btn-block btn-outline-warning">
+                        <a href="<?= base_url('laporan/cutoff') ?>" class="btn btn-block btn-outline-warning">
                             <i class="fas fa-cut"></i><br>Cut-off System
                         </a>
                     </div>

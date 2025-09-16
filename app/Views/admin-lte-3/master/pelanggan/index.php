@@ -16,7 +16,7 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-6">
-                        <a href="<?= base_url('master/pelanggan/create') ?>" class="btn btn-sm btn-primary rounded-0">
+                        <a href="<?= base_url('master/customer/create') ?>" class="btn btn-sm btn-primary rounded-0">
                             <i class="fas fa-plus"></i> Tambah Data
                         </a>
                     </div>
