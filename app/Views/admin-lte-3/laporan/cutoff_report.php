@@ -133,7 +133,7 @@
                                 <?php $no = 1; foreach ($cutoffs as $cutoff): ?>
                                     <tr>
                                         <td><?= $no++ ?></td>
-                                        <td><?= tgl_indo2($cutoff->tgl_masuk) ?></td>
+                                        <td><?= tgl_indo2($cutoff->{$dateField}) ?></td>
                                         <td><?= esc($cutoff->gudang ?? 'N/A') ?></td>
                                         <td><?= esc($cutoff->first_name ?? 'N/A') ?></td>
                                         <td class="text-right">Rp <?= number_format($cutoff->jml_gtotal ?? 0, 2) ?></td>
@@ -145,7 +145,7 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <a href="<?= base_url('laporan/cutoff/detail/' . $cutoff->id) ?>" 
+                                            <a href="<?= base_url('laporan/cutoff/detail/' . $cutoff->{$idField}) ?>" 
                                                class="btn btn-info btn-sm" title="View Detail">
                                                 <i class="fas fa-eye"></i>
                                             </a>
