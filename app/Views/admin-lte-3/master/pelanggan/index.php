@@ -24,10 +24,10 @@
                         <?= form_open('', ['method' => 'get', 'class' => 'float-right']) ?>
                         <div class="input-group input-group-sm">
                             <?= form_input([
-                                'name' => 'keyword',
-                                'class' => 'form-control rounded-0',
-                                'value' => $keyword ?? '',
-                                'placeholder' => 'Cari...'
+                                'name'        => 'keyword',
+                                'class'       => 'form-control rounded-0',
+                                'value'       => $keyword ?? '',
+                                'placeholder' => 'Cari...',
                             ]) ?>
                             <div class="input-group-append">
                                 <button class="btn btn-sm btn-primary rounded-0" type="submit">

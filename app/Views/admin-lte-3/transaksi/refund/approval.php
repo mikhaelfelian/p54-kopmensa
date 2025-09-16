@@ -218,13 +218,24 @@ helper('form');
 </div>
 <?= $this->endSection() ?>
 
-<?= $this->section('scripts') ?>
+<?= $this->section('js') ?>
 <script>
 $(document).ready(function() {
+    console.log('Refund approval page loaded');
+    
+    // Check if jQuery is loaded
+    if (typeof jQuery === 'undefined') {
+        console.error('jQuery is not loaded!');
+        return;
+    }
+    
     // Approve refund request
-    $('.approve-btn').on('click', function() {
+    $('.approve-btn').on('click', function(e) {
+        e.preventDefault();
         const id = $(this).data('id');
         const nota = $(this).data('nota');
+        
+        console.log('Approve button clicked for ID:', id, 'Nota:', nota);
         
         if (confirm(`Anda yakin ingin menyetujui permintaan refund untuk nota ${nota}?`)) {
             window.location.href = `<?= base_url('transaksi/refund/approve') ?>/${id}`;
@@ -232,9 +243,12 @@ $(document).ready(function() {
     });
 
     // Reject refund request
-    $('.reject-btn').on('click', function() {
+    $('.reject-btn').on('click', function(e) {
+        e.preventDefault();
         const id = $(this).data('id');
         const nota = $(this).data('nota');
+        
+        console.log('Reject button clicked for ID:', id, 'Nota:', nota);
         
         $('#reject-nota').text(nota);
         $('#reject-form').attr('action', `<?= base_url('transaksi/refund/reject') ?>/${id}`);

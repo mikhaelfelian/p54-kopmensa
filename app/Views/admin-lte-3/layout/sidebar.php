@@ -147,6 +147,16 @@
                                     </li>
                                 </ul>
                             </li>
+
+                            <!-- Refund Requests Menu -->
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/refund') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/refund') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-money-bill-wave nav-icon"></i>
+                                    <p>Permintaan Refund</p>
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
@@ -453,7 +463,7 @@
                         'transaksi/retur/jual/refund',
                         'transaksi/retur/jual/exchange'
                     ];
-                    $isReturJualActive = isMenuActive($returJualMenus);                    
+                    $isReturJualActive = isMenuActive($returJualMenus);
                     // Check if shift management is active
                     $isShiftActive = isMenuActive(['transaksi/shift', 'transaksi/petty', 'transaksi/petty-category']);
                     ?>
@@ -656,7 +666,7 @@
                         'gudang/stok',
                         'gudang/opname'
                     ];
-                    
+
                     $isGudangActive = isMenuActive($gudangMenus);
                     ?>
                     <li class="nav-item has-treeview <?= $isGudangActive ? 'menu-open' : '' ?>">
@@ -772,16 +782,17 @@
                                     <p>Laporan Outlet</p>
                                 </a>
                             </li>
-                            
+
                             <!-- Pemisah -->
                             <li class="nav-item">
-                                <div class="nav-link" style="color: #6c757d; font-size: 0.8rem; font-weight: bold; padding-top: 10px;">
+                                <div class="nav-link"
+                                    style="color: #6c757d; font-size: 0.8rem; font-weight: bold; padding-top: 10px;">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-star nav-icon"></i>
                                     <span>LAPORAN LANJUTAN</span>
                                 </div>
                             </li>
-                            
+
                             <!-- Laporan Lanjutan -->
                             <li class="nav-item">
                                 <a href="<?= base_url('laporan/sales-turnover') ?>"
@@ -848,7 +859,7 @@
                     // Enhanced settings menu with cut-off
                     $pengaturanMenus = [
                         'pengaturan/app',
-                        'pengaturan/api-tokens', 
+                        'pengaturan/api-tokens',
                         'pengaturan/printer',
                         'master/cutoff'
                     ];
@@ -897,7 +908,7 @@
                             </li>
                         </ul>
                     </li>
-                    
+
                     <!-- Enhanced Features Dashboard -->
                     <li class="nav-item">
                         <a href="<?= base_url('dashboard/system-overview') ?>"

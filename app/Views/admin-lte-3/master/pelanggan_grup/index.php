@@ -111,8 +111,12 @@
             <?= form_close() ?>
         </div>
     </div>
-    <div class="card-footer">
-        <?= $pager->links('adminlte_pagination') ?>
-    </div>
+    <?php if ($pager): ?>
+        <div class="card-footer clearfix">
+            <div class="float-right">
+                <?= $pager->links('customer-group', 'adminlte_pagination') ?>
+            </div>
+        </div>
+    <?php endif ?>
 </div>
 <?= $this->endSection() ?>

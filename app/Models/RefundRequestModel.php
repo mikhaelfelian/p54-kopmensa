@@ -136,7 +136,7 @@ class RefundRequestModel extends Model
             tbl_ion_users.username as cashier_name
         ')
         ->join('tbl_trans_jual', 'tbl_trans_jual.id = tbl_refund_requests.id_transaction', 'left')
-        ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_refund_requests.id_pelanggan', 'left')
+        ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
         ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_refund_requests.id_user', 'left')
         ->where('tbl_refund_requests.id', $id)
         ->first();
