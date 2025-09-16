@@ -29,7 +29,6 @@ class Opname extends BaseController
     protected $utilSODetModel;
     protected $ionAuth;
     protected $pengaturan;
-    protected $theme;
 
     public function __construct()
     {
@@ -43,7 +42,6 @@ class Opname extends BaseController
         $this->utilSODetModel = new \App\Models\UtilSODetModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
         $this->pengaturan = new \App\Models\PengaturanModel();
-        $this->theme = new \App\Libraries\Theme();
     }
 
     public function index()
@@ -142,7 +140,7 @@ class Opname extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/gudang/opname/index', $data);
+        return view(get_active_theme() . '/gudang/opname/index', $data);
     }
 
     public function create()
@@ -160,7 +158,7 @@ class Opname extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/gudang/opname/create', $data);
+        return view(get_active_theme() . '/gudang/opname/create', $data);
     }
 
     public function store()
@@ -249,7 +247,7 @@ class Opname extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/gudang/opname/detail', $data);
+        return view(get_active_theme() . '/gudang/opname/detail', $data);
     }
 
     public function edit($id)
@@ -278,7 +276,7 @@ class Opname extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/gudang/opname/edit', $data);
+        return view(get_active_theme() . '/gudang/opname/edit', $data);
     }
 
     public function update($id)
@@ -362,7 +360,7 @@ class Opname extends BaseController
         
         $data['dropdownItems'] = $dropdownItems;
 
-        return view($this->theme->getThemePath() . '/gudang/opname/input', $data);
+        return view(get_active_theme() . '/gudang/opname/input', $data);
     }
 
     public function addItem()
@@ -711,7 +709,7 @@ class Opname extends BaseController
         
         try {
             $itemId = $this->request->getGet('item_id');
-            $outletId = $this->request->getGet('outlet_id');
+            $gudangId = $this->request->getGet('gudang_id') ?: $this->request->getGet('outlet_id'); // Support both parameter names
 
             // Basic validation
             if (!$itemId) {
@@ -723,23 +721,28 @@ class Opname extends BaseController
                 ]);
             }
 
-            // Test database connection first
-            $db = \Config\Database::connect();
-            
-            // Get item details with satuan using raw query to avoid model issues
-            $itemQuery = $db->query("
-                SELECT 
-                    i.id,
-                    i.item,
-                    i.kode,
-                    i.id_satuan,
-                    s.SatuanBesar as satuan
-                FROM tbl_m_item i
-                LEFT JOIN tbl_m_satuan s ON s.id = i.id_satuan
-                WHERE i.id = ? AND i.status = '1' AND i.status_hps = '0'
-            ", [$itemId]);
-            
-            $item = $itemQuery->getRow();
+            if (!$gudangId) {
+                return $this->response->setJSON([
+                    'id' => (int) $itemId,
+                    'jml' => 0,
+                    'satuan' => '',
+                    'debug' => 'No gudang_id provided'
+                ]);
+            }
+
+            // Get item details with satuan
+            $item = $this->itemModel->select('
+                    tbl_m_item.id,
+                    tbl_m_item.item,
+                    tbl_m_item.kode,
+                    tbl_m_item.id_satuan,
+                    tbl_m_satuan.SatuanBesar as satuan
+                ')
+                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
+                ->where('tbl_m_item.id', $itemId)
+                ->where('tbl_m_item.status', '1')
+                ->where('tbl_m_item.status_hps', '0')
+                ->first();
 
             if (!$item) {
                 return $this->response->setJSON([
@@ -750,20 +753,13 @@ class Opname extends BaseController
                 ]);
             }
 
-            // Get stock from item stock table using raw query
-            $stock = 0;
-            if ($outletId) {
-                $stockQuery = $db->query("
-                    SELECT jml 
-                    FROM tbl_m_item_stok 
-                    WHERE id_item = ? AND id_gudang = ?
-                ", [$itemId, $outletId]);
-                
-                $stockData = $stockQuery->getRow();
-                if ($stockData) {
-                    $stock = (float) $stockData->jml;
-                }
-            }
+            // Get stock from tbl_m_item_stok where id_item and id_gudang match
+            $stockData = $this->itemStokModel
+                ->where('id_item', $itemId)
+                ->where('id_gudang', $gudangId)
+                ->first();
+            
+            $stock = $stockData ? (float) $stockData->jml : 0;
 
             $result = [
                 'id' => (int) $itemId,
@@ -771,11 +767,11 @@ class Opname extends BaseController
                 'satuan' => $item->satuan ?? '',
                 'item_name' => $item->item ?? '',
                 'item_code' => $item->kode ?? '',
-                'debug' => 'Success - Stock: ' . $stock . ', Satuan: ' . ($item->satuan ?? 'none'),
+                'debug' => 'Success - Stock: ' . $stock . ', Satuan: ' . ($item->satuan ?? 'none') . ', Gudang ID: ' . $gudangId,
                 'query_info' => [
                     'item_found' => !empty($item),
-                    'outlet_id' => $outletId,
-                    'stock_query_executed' => !empty($outletId)
+                    'gudang_id' => $gudangId,
+                    'stock_found' => !empty($stockData)
                 ]
             ];
 
@@ -787,8 +783,7 @@ class Opname extends BaseController
                 'jml' => 0,
                 'satuan' => '',
                 'error' => $e->getMessage(),
-                'debug' => 'Exception occurred: ' . $e->getFile() . ':' . $e->getLine(),
-                'trace' => $e->getTraceAsString()
+                'debug' => 'Exception occurred: ' . $e->getFile() . ':' . $e->getLine()
             ]);
         }
     }
