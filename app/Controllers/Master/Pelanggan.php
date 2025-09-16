@@ -186,7 +186,7 @@ class Pelanggan extends BaseController
 
         // Create user account first
         $ionAuth = new \IonAuth\Libraries\IonAuth();
-        $groupId = 3; // Member group ID
+        $groupId = 7; // Member group ID
 
         $userId = $ionAuth->register($username, $password, $email, [
             'first_name' => $nama,
@@ -349,7 +349,7 @@ class Pelanggan extends BaseController
                 'tipe'       => $tipe // tipe 2 = pelanggan/anggota
             ];
             // Group pelanggan/anggota, misal group id 3 (ubah sesuai kebutuhan)
-            $group = 3;
+            $group = 7;
             $user_id = $this->ionAuth->register($username, $password, $email, $additional_data, [$group]);
             if (!$user_id) {
                 log_message('error', '[Pelanggan::store] Gagal membuat user ion_auth: ' . implode(', ', $this->ionAuth->errors_array()));
