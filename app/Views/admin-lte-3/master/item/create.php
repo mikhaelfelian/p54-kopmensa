@@ -106,19 +106,28 @@
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label class="control-label">Stok Minimum</label>
                                 <?= form_input(['type' => 'number', 'name' => 'jml_min', 'id' => 'jml_min', 'class' => 'form-control rounded-0', 'placeholder' => 'Stok minimum ...', 'value' => old('jml_min')]) ?>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label class="control-label">Tipe</label>
                                 <select name="tipe" class="form-control rounded-0">
                                     <option value="1" <?= old('tipe') == '1' ? 'selected' : '' ?>>Item</option>
                                     <option value="2" <?= old('tipe') == '2' ? 'selected' : '' ?>>Jasa</option>
                                     <option value="3" <?= old('tipe') == '3' ? 'selected' : '' ?>>Paket</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label">Status PPN</label>
+                                <select name="status_ppn" class="form-control rounded-0">
+                                    <option value="0" <?= old('status_ppn') == '0' ? 'selected' : '' ?>>Tidak Kena PPN</option>
+                                    <option value="1" <?= old('status_ppn') == '1' ? 'selected' : '' ?>>Kena PPN</option>
                                 </select>
                             </div>
                         </div>

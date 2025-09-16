@@ -37,6 +37,7 @@ class ItemModel extends Model
         'status',
         'status_stok',
         'status_hps',
+        'status_ppn',
         'sp'
     ];
 

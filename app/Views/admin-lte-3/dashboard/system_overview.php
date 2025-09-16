@@ -6,45 +6,45 @@
         <div class="card">
             <div class="card-header bg-gradient-success">
                 <h3 class="card-title">
-                    <i class="fas fa-rocket mr-2"></i>Enhanced POS System - Complete Feature Overview
+                    <i class="fas fa-rocket mr-2"></i>Sistem POS Enhanced - Ikhtisar Fitur Lengkap
                 </h3>
                 <div class="card-tools">
-                    <span class="badge badge-light badge-lg">All 21 Features Ready!</span>
+                    <span class="badge badge-light badge-lg">Semua 21 Fitur Siap!</span>
                 </div>
             </div>
             <div class="card-body">
-                <!-- Quick Access Buttons -->
+                <!-- Tombol Akses Cepat -->
                 <div class="row mb-4">
                     <div class="col-md-3">
                         <a href="<?= base_url('gudang/input_stok') ?>" class="btn btn-block btn-outline-primary">
-                            <i class="fas fa-warehouse"></i><br>Enhanced Warehouse
+                            <i class="fas fa-warehouse"></i><br>Gudang Enhanced
                         </a>
                     </div>
                     <div class="col-md-3">
                         <a href="<?= base_url('laporan/sales-turnover') ?>" class="btn btn-block btn-outline-success">
-                            <i class="fas fa-chart-line"></i><br>Advanced Reports
+                            <i class="fas fa-chart-line"></i><br>Laporan Lanjutan
                         </a>
                     </div>
                     <div class="col-md-3">
                         <a href="<?= base_url('master/customer') ?>" class="btn btn-block btn-outline-info">
-                            <i class="fas fa-users"></i><br>Member Management
+                            <i class="fas fa-users"></i><br>Manajemen Member
                         </a>
                     </div>
                     <div class="col-md-3">
                         <a href="<?= base_url('laporan/cutoff') ?>" class="btn btn-block btn-outline-warning">
-                            <i class="fas fa-cut"></i><br>Cut-off System
+                            <i class="fas fa-cut"></i><br>Sistem Cut-off
                         </a>
                     </div>
                 </div>
 
-                <!-- Feature Categories -->
+                <!-- Kategori Fitur -->
                 <div class="row">
-                    <!-- Warehouse & Inventory -->
+                    <!-- Gudang & Inventaris -->
                     <div class="col-md-6">
                         <div class="card card-outline card-primary">
                             <div class="card-header">
                                 <h3 class="card-title">
-                                    <i class="fas fa-warehouse mr-2"></i>Warehouse & Inventory
+                                    <i class="fas fa-warehouse mr-2"></i>Gudang & Inventaris
                                 </h3>
                             </div>
                             <div class="card-body">
@@ -52,32 +52,32 @@
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-filter text-primary mr-2"></i>
-                                            <strong>Enhanced Receiving Warehouse</strong>
-                                            <br><small class="text-muted">Filters & user account tracking</small>
+                                            <strong>Penerimaan Gudang Enhanced</strong>
+                                            <br><small class="text-muted">Filter & pelacakan akun pengguna</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-boxes text-primary mr-2"></i>
-                                            <strong>Direct Inventory Display</strong>
-                                            <br><small class="text-muted">Show all items upfront with pagination</small>
+                                            <strong>Tampilan Inventaris Langsung</strong>
+                                            <br><small class="text-muted">Tampilkan semua barang langsung dengan paginasi</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-store text-primary mr-2"></i>
-                                            <strong>Warehouse/Store Labeling</strong>
-                                            <br><small class="text-muted">Updated terminology throughout system</small>
+                                            <strong>Label Gudang/Toko</strong>
+                                            <br><small class="text-muted">Terminologi diperbarui di seluruh sistem</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-clipboard-check text-primary mr-2"></i>
-                                            <strong>Fixed Opname System</strong>
-                                            <br><small class="text-muted">Multiple product input support</small>
+                                            <strong>Sistem Opname Diperbaiki</strong>
+                                            <br><small class="text-muted">Dukungan input multi produk</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
@@ -86,36 +86,36 @@
                         </div>
                     </div>
 
-                    <!-- Reports -->
+                    <!-- Laporan -->
                     <div class="col-md-6">
                         <div class="card card-outline card-success">
                             <div class="card-header">
                                 <h3 class="card-title">
-                                    <i class="fas fa-chart-bar mr-2"></i>Advanced Reports (7 New)
+                                    <i class="fas fa-chart-bar mr-2"></i>Laporan Lanjutan (7 Baru)
                                 </h3>
                             </div>
                             <div class="card-body">
                                 <div class="list-group list-group-flush">
                                     <a href="<?= base_url('laporan/sales-turnover') ?>" class="list-group-item list-group-item-action">
-                                        <i class="fas fa-chart-line text-success mr-2"></i>Sales Turnover Report
+                                        <i class="fas fa-chart-line text-success mr-2"></i>Laporan Omzet Penjualan
                                     </a>
                                     <a href="<?= base_url('laporan/product-sales') ?>" class="list-group-item list-group-item-action">
-                                        <i class="fas fa-box text-success mr-2"></i>Product Sales Report
+                                        <i class="fas fa-box text-success mr-2"></i>Laporan Penjualan Produk
                                     </a>
                                     <a href="<?= base_url('laporan/order') ?>" class="list-group-item list-group-item-action">
-                                        <i class="fas fa-file-invoice text-success mr-2"></i>Order Report (Invoice-based)
+                                        <i class="fas fa-file-invoice text-success mr-2"></i>Laporan Pesanan (Berdasarkan Faktur)
                                     </a>
                                     <a href="<?= base_url('laporan/all-in-one-turnover') ?>" class="list-group-item list-group-item-action">
-                                        <i class="fas fa-chart-pie text-success mr-2"></i>All-in-One Turnover
+                                        <i class="fas fa-chart-pie text-success mr-2"></i>Omzet All-in-One
                                     </a>
                                     <a href="<?= base_url('laporan/profit-loss') ?>" class="list-group-item list-group-item-action">
-                                        <i class="fas fa-calculator text-success mr-2"></i>Profit & Loss Report
+                                        <i class="fas fa-calculator text-success mr-2"></i>Laporan Laba Rugi
                                     </a>
                                     <a href="<?= base_url('laporan/best-selling') ?>" class="list-group-item list-group-item-action">
-                                        <i class="fas fa-trophy text-success mr-2"></i>Best-Selling Products
+                                        <i class="fas fa-trophy text-success mr-2"></i>Produk Terlaris
                                     </a>
                                     <a href="<?= base_url('laporan/cutoff') ?>" class="list-group-item list-group-item-action">
-                                        <i class="fas fa-cut text-success mr-2"></i>Cut-off Report
+                                        <i class="fas fa-cut text-success mr-2"></i>Laporan Cut-off
                                     </a>
                                 </div>
                             </div>
@@ -124,12 +124,12 @@
                 </div>
 
                 <div class="row mt-3">
-                    <!-- Member Management -->
+                    <!-- Manajemen Member -->
                     <div class="col-md-6">
                         <div class="card card-outline card-info">
                             <div class="card-header">
                                 <h3 class="card-title">
-                                    <i class="fas fa-users mr-2"></i>Member Management
+                                    <i class="fas fa-users mr-2"></i>Manajemen Member
                                 </h3>
                             </div>
                             <div class="card-body">
@@ -137,32 +137,32 @@
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-store text-info mr-2"></i>
-                                            <strong>Store Selection on Login</strong>
-                                            <br><small class="text-muted">Members can select store via API</small>
+                                            <strong>Pilihan Toko Saat Login</strong>
+                                            <br><small class="text-muted">Member dapat memilih toko via API</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-chart-line text-info mr-2"></i>
-                                            <strong>Monthly Purchase Tracking</strong>
-                                            <br><small class="text-muted">Display total monthly purchases</small>
+                                            <strong>Pelacakan Pembelian Bulanan</strong>
+                                            <br><small class="text-muted">Tampilkan total pembelian bulanan</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-user-cog text-info mr-2"></i>
-                                            <strong>Account Management</strong>
-                                            <br><small class="text-muted">Reset, add, block with notes</small>
+                                            <strong>Manajemen Akun</strong>
+                                            <br><small class="text-muted">Reset, tambah, blokir dengan catatan</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-calendar text-info mr-2"></i>
-                                            <strong>Account Creation Date Range</strong>
-                                            <br><small class="text-muted">Show date range in members app</small>
+                                            <strong>Rentang Tanggal Pembuatan Akun</strong>
+                                            <br><small class="text-muted">Tampilkan rentang tanggal di aplikasi member</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
@@ -171,12 +171,12 @@
                         </div>
                     </div>
 
-                    <!-- System Enhancements -->
+                    <!-- Peningkatan Sistem -->
                     <div class="col-md-6">
                         <div class="card card-outline card-warning">
                             <div class="card-header">
                                 <h3 class="card-title">
-                                    <i class="fas fa-cogs mr-2"></i>System Enhancements
+                                    <i class="fas fa-cogs mr-2"></i>Peningkatan Sistem
                                 </h3>
                             </div>
                             <div class="card-body">
@@ -184,32 +184,32 @@
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-cut text-warning mr-2"></i>
-                                            <strong>Cut-off Functionality</strong>
-                                            <br><small class="text-muted">Daily financial cut-off with reports</small>
+                                            <strong>Fitur Cut-off</strong>
+                                            <br><small class="text-muted">Cut-off keuangan harian dengan laporan</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-receipt text-warning mr-2"></i>
-                                            <strong>Enhanced Receipt Printing</strong>
-                                            <br><small class="text-muted">Payment method display on receipts</small>
+                                            <strong>Pencetakan Struk Ditingkatkan</strong>
+                                            <br><small class="text-muted">Tampilan metode pembayaran di struk</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-shield-alt text-warning mr-2"></i>
-                                            <strong>User Access Rights</strong>
-                                            <br><small class="text-muted">Comprehensive permission management</small>
+                                            <strong>Hak Akses Pengguna</strong>
+                                            <br><small class="text-muted">Manajemen hak akses menyeluruh</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
                                     <div class="list-group-item d-flex justify-content-between align-items-center">
                                         <div>
                                             <i class="fas fa-exclamation-triangle text-warning mr-2"></i>
-                                            <strong>Duplicate Item Prevention</strong>
-                                            <br><small class="text-muted">Warning messages for duplicates</small>
+                                            <strong>Pencegahan Duplikasi Barang</strong>
+                                            <br><small class="text-muted">Pesan peringatan untuk duplikasi</small>
                                         </div>
                                         <span class="badge badge-success">✓</span>
                                     </div>
@@ -219,13 +219,13 @@
                     </div>
                 </div>
 
-                <!-- Additional Features -->
+                <!-- Fitur Tambahan -->
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="card card-outline card-secondary">
                             <div class="card-header">
                                 <h3 class="card-title">
-                                    <i class="fas fa-plus mr-2"></i>Additional Features
+                                    <i class="fas fa-plus mr-2"></i>Fitur Tambahan
                                 </h3>
                             </div>
                             <div class="card-body">
@@ -234,8 +234,8 @@
                                         <div class="list-group-item d-flex justify-content-between align-items-center border-0">
                                             <div>
                                                 <i class="fas fa-truck text-secondary mr-2"></i>
-                                                <strong>Supplier Item Settings</strong>
-                                                <br><small class="text-muted">Manage items per supplier</small>
+                                                <strong>Pengaturan Barang Supplier</strong>
+                                                <br><small class="text-muted">Kelola barang per supplier</small>
                                             </div>
                                             <span class="badge badge-success">✓</span>
                                         </div>
@@ -244,8 +244,8 @@
                                         <div class="list-group-item d-flex justify-content-between align-items-center border-0">
                                             <div>
                                                 <i class="fas fa-database text-secondary mr-2"></i>
-                                                <strong>Database Optimization</strong>
-                                                <br><small class="text-muted">Fixed column references & queries</small>
+                                                <strong>Optimasi Database</strong>
+                                                <br><small class="text-muted">Perbaikan referensi kolom & query</small>
                                             </div>
                                             <span class="badge badge-success">✓</span>
                                         </div>
@@ -254,8 +254,8 @@
                                         <div class="list-group-item d-flex justify-content-between align-items-center border-0">
                                             <div>
                                                 <i class="fas fa-star text-secondary mr-2"></i>
-                                                <strong>Complete Menu Integration</strong>
-                                                <br><small class="text-muted">All features in navigation</small>
+                                                <strong>Integrasi Menu Lengkap</strong>
+                                                <br><small class="text-muted">Semua fitur di navigasi</small>
                                             </div>
                                             <span class="badge badge-success">✓</span>
                                         </div>
@@ -266,21 +266,21 @@
                     </div>
                 </div>
 
-                <!-- System Status -->
+                <!-- Status Sistem -->
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="alert alert-success">
-                            <h4><i class="icon fas fa-check"></i> System Status: All Features Operational!</h4>
-                            <p class="mb-2"><strong>Total Features Implemented:</strong> 21/21 (100%)</p>
+                            <h4><i class="icon fas fa-check"></i> Status Sistem: Semua Fitur Berjalan!</h4>
+                            <p class="mb-2"><strong>Total Fitur Terimplementasi:</strong> 21/21 (100%)</p>
                             <div class="progress mb-3">
                                 <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
                                      role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                                    100% Complete
+                                    100% Selesai
                                 </div>
                             </div>
                             <p class="mb-0">
-                                <strong>Your Enhanced POS System is ready for production use!</strong><br>
-                                All requested features have been implemented, tested, and integrated into the main navigation menu.
+                                <strong>Sistem POS Enhanced Anda siap digunakan produksi!</strong><br>
+                                Semua fitur yang diminta telah diimplementasikan, diuji, dan terintegrasi ke menu navigasi utama.
                             </p>
                         </div>
                     </div>

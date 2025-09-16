@@ -114,13 +114,13 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label class="control-label">Stok Minimum</label>
                             <?= form_input(['type' => 'number', 'name' => 'jml_min', 'value' => old('jml_min', $item->jml_min ?? ''), 'id' => 'jml_min', 'class' => 'form-control rounded-0', 'placeholder' => 'Stok minimum ...']) ?>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label class="control-label">Tipe</label>
                             <select name="tipe" class="form-control rounded-0">
@@ -133,7 +133,16 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label">Status PPN</label>
+                            <select name="status_ppn" class="form-control rounded-0">
+                                <option value="0" <?= old('status_ppn', $item->status_ppn ?? '0') == '0' ? 'selected' : '' ?>>Tidak Kena PPN</option>
+                                <option value="1" <?= old('status_ppn', $item->status_ppn ?? '0') == '1' ? 'selected' : '' ?>>Kena PPN</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="form-group">
                             <label class="control-label">Satuan</label>
                             <select name="satuan" class="form-control rounded-0">

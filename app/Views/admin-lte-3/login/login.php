@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -71,6 +70,7 @@
                     <?= form_input([
                         'type'          => 'password',
                         'name'          => 'pass', 
+                        'id'            => 'password',
                         'class'         => 'form-control rounded-0',
                         'placeholder'   => 'Kata Sandi ...',
                         'required'      => true
@@ -78,6 +78,9 @@
                     <div class="input-group-append">
                         <div class="input-group-text">
                             <span class="fas fa-lock"></span>
+                        </div>
+                        <div class="input-group-text" id="toggle-password" style="cursor: pointer;">
+                            <span class="fas fa-eye" id="eye-icon"></span>
                         </div>
                     </div>
                 </div>
@@ -137,6 +140,27 @@
         echo toast_show($toastr['message'], $toastr['type'], 'Login');
         ?>
     <?php endif ?>
+
+    <!-- Password toggle script -->
+    <script>
+    $(document).ready(function() {
+        // Password toggle functionality
+        $('#toggle-password').on('click', function() {
+            const passwordField = $('#password');
+            const eyeIcon = $('#eye-icon');
+            
+            if (passwordField.attr('type') === 'password') {
+                // Show password
+                passwordField.attr('type', 'text');
+                eyeIcon.removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                // Hide password
+                passwordField.attr('type', 'password');
+                eyeIcon.removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+    });
+    </script>
 
     <!-- Add reCAPTCHA script -->
     <script>

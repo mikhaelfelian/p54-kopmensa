@@ -123,6 +123,13 @@ class CreateTblMItem extends Migration
                 'default'    => '0',
                 'comment'    => 'Status soft delete',
             ],
+            'status_ppn' => [
+                'type'       => 'ENUM',
+                'constraint' => ['0', '1'],
+                'null'       => true,
+                'default'    => '0',
+                'comment'    => 'Status PPN (0=tidak, 1=kena PPN)',
+            ],
             'status_stok' => [
                 'type'       => 'ENUM',
                 'constraint' => ['0', '1'],
