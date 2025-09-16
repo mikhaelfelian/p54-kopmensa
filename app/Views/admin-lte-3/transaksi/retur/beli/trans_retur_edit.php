@@ -35,15 +35,25 @@ helper('form');
                                 <label for="id_beli">No. Pembelian *</label>
                                 <select name="id_beli" id="id_beli" class="form-control select2 rounded-0">
                                     <option value="">Pilih Transaksi Pembelian</option>
-                                    <?php foreach ($sql_beli as $purchase): ?>
-                                        <option value="<?= $purchase->id ?>" 
-                                            data-supplier="<?= $purchase->id_supplier ?>"
-                                            data-no-nota="<?= esc($purchase->no_nota) ?>"
-                                            <?= $retur->id_beli == $purchase->id ? 'selected' : '' ?>>
-                                            <?= esc($purchase->no_nota) . ' - ' . esc($purchase->supplier_nama) ?>
-                                        </option>
-                                    <?php endforeach; ?>
+                                    <?php if (!empty($sql_beli)): ?>
+                                        <?php foreach ($sql_beli as $purchase): ?>
+                                            <option value="<?= $purchase->id ?>" 
+                                                data-supplier="<?= $purchase->id_supplier ?>"
+                                                data-no-nota="<?= esc($purchase->no_nota) ?>"
+                                                <?= $retur->id_beli == $purchase->id ? 'selected' : '' ?>>
+                                                <?= esc($purchase->no_nota) . ' - ' . esc($purchase->supplier_nama ?? 'Unknown Supplier') ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="" disabled>Tidak ada transaksi pembelian yang tersedia</option>
+                                    <?php endif; ?>
                                 </select>
+                                <?php if (empty($sql_beli)): ?>
+                                    <div class="alert alert-warning mt-2">
+                                        <i class="fas fa-exclamation-triangle"></i> 
+                                        Tidak ada transaksi pembelian yang tersedia. Data mungkin sudah dihapus atau terjadi masalah pada database.
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
