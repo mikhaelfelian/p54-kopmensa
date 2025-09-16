@@ -26,7 +26,7 @@
                 <!-- Filter Section -->
                 <div class="row mb-3">
                     <div class="col-md-12">
-                        <?= form_open(base_url('gudang/opname'), ['autocomplete' => 'off']) ?>
+                        <?= form_open(base_url('gudang/opname'), ['method' => 'get', 'autocomplete' => 'off']) ?>
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
