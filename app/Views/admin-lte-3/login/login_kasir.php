@@ -20,25 +20,25 @@
     <!-- Add reCAPTCHA v3 -->
     <script src="https://www.google.com/recaptcha/api.js?render=<?= config('Recaptcha')->siteKey ?>"></script>
     <style>
-    /* Style for loading indicator */
-    .loading {
-        position: relative;
-        pointer-events: none;
-    }
-    .loading:after {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255,255,255,0.8) url('<?= base_url('public/assets/img/loading.gif') ?>') center no-repeat;
-        z-index: 2;
-    }
-    /* Style for reCAPTCHA badge */
-    .grecaptcha-badge {
-        bottom: 60px !important;
-    }
+        /* Style for loading indicator */
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+        .loading:after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8) url('<?= base_url('public/assets/img/loading.gif') ?>') center no-repeat;
+            z-index: 2;
+        }
+        /* Style for reCAPTCHA badge */
+        .grecaptcha-badge {
+            bottom: 60px !important;
+        }
     </style>
 </head>
 <body class="hold-transition login-page">

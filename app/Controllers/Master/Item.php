@@ -191,6 +191,7 @@ class Item extends BaseController
         $tipe       = $this->request->getVar('tipe') ?? '1';
         $status     = $this->request->getVar('status') ?? '1';
         $status_stok = $this->request->getVar('status_stok') ?? '0';
+        $status_ppn = $this->request->getVar('status_ppn') ?? '0';
         $id_user    = $this->ionAuth->user()->row()->id ?? 0;
         $foto       = $this->request->getVar('foto') ?? null;
 
@@ -258,7 +259,8 @@ class Item extends BaseController
                 'status'      => $status,
                 'status_stok' => $status_stok,
                 'id_user'     => $id_user,
-                'foto'        => null
+                'foto'        => null,
+                'status_ppn'  => $status_ppn
             ];
 
             $this->db->transStart();
@@ -445,6 +447,7 @@ class Item extends BaseController
         $tipe           = $this->request->getVar('tipe') ?? '1';
         $status         = $this->request->getVar('status') ?? '1';
         $status_stok    = $this->request->getVar('status_stok') ?? '0';
+        $status_ppn     = $this->request->getVar('status_ppn') ?? '0';
 
         // Validation rules
         $rules = [
@@ -484,7 +487,8 @@ class Item extends BaseController
                 'harga_jual'  => format_angka_db($harga_jual),
                 'tipe'        => $tipe,
                 'status'      => $status,
-                'status_stok' => $status_stok,
+                'status_stok' => $status_stok,  
+                'status_ppn'  => $status_ppn
             ];
 
             if (!$this->itemModel->update($id, $data)) {

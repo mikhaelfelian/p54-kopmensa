@@ -62,6 +62,22 @@ if (!function_exists('isStockable')) {
     }
 }
 
+if (!function_exists('isPPN')) {
+    /**
+     * Check if item is stockable and return badge
+     * 
+     * @param mixed $value Value to check
+     * @return string HTML badge element
+     */
+    function isPPN($value = '1'): string
+    {
+        if ($value) {
+            return br() . '<span class="badge badge-success">Include PPN</span>';
+        }
+        return ''; // Return empty string when not PPN
+    }
+}
+
 if (!function_exists('jns_klm')) {
     /**
      * Get gender description based on the provided code

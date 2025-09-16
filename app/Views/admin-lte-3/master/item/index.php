@@ -255,9 +255,10 @@
                                         <?php endif; ?>
                                         <?= br() ?>
                                         <small><i><?= $row->barcode ?></i></small>
+                                        <?php echo br() ?>
                                     <?php $statusInfo = isItemActive($row->status); ?>
-                                    <?= br() ?>
                                     <span class="badge badge-<?= $statusInfo['badge'] ?>"><?= $statusInfo['label'] ?></span>
+                                    <?php echo isPPN($row->status_ppn); ?>
                                     </td>
                                     <td><?= $row->supplier_nama ?? '-' ?></td>
                                     <td class="text-right"><?= format_angka($row->harga_beli) ?></td>
