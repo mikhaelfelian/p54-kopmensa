@@ -253,12 +253,14 @@
                                             <?= br() ?>
                                             <small><i>(<?= strtolower($row->deskripsi) ?>)</i></small>
                                         <?php endif; ?>
-                                        <?= br() ?>
-                                        <small><i><?= $row->barcode ?></i></small>
+                                        <?php if (!empty($row->barcode)): ?>
+                                            <?= br() ?>
+                                            <small><i><?= $row->barcode ?></i></small>
+                                        <?php endif; ?>
                                         <?php echo br() ?>
-                                    <?php $statusInfo = isItemActive($row->status); ?>
-                                    <span class="badge badge-<?= $statusInfo['badge'] ?>"><?= $statusInfo['label'] ?></span>
-                                    <?php echo isPPN($row->status_ppn); ?>
+                                        <?php $statusInfo = isItemActive($row->status); ?>
+                                        <span class="badge badge-<?= $statusInfo['badge'] ?>"><?= $statusInfo['label'] ?></span>
+                                        <?php echo isPPN($row->status_ppn); ?>
                                     </td>
                                     <td><?= $row->supplier_nama ?? '-' ?></td>
                                     <td class="text-right"><?= format_angka($row->harga_beli) ?></td>

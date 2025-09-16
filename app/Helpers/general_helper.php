@@ -72,7 +72,7 @@ if (!function_exists('isPPN')) {
     function isPPN($value = '1'): string
     {
         if ($value) {
-            return br() . '<span class="badge badge-success">Include PPN</span>';
+            return nbs() . '<span class="badge badge-success">Include PPN</span>';
         }
         return ''; // Return empty string when not PPN
     }
