@@ -76,6 +76,19 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->post('transaksi/validate/customer', 'Transaksi::validateCustomer');
         $routes->post('transaksi/validate-customer', 'Transaksi::validateCustomer');
 
+        // Sales Return (Retur Jual) endpoints
+        $routes->get('retur-jual', 'ReturJual::getReturns');
+        $routes->get('retur-jual/(:num)', 'ReturJual::getReturns/$1');
+        $routes->get('retur-jual/detail/(:num)', 'ReturJual::show/$1');
+        $routes->post('retur-jual/store', 'ReturJual::store');
+        $routes->put('retur-jual/status/(:num)', 'ReturJual::updateStatus/$1');
+        $routes->post('retur-jual/status/(:num)', 'ReturJual::updateStatus/$1');
+        $routes->get('retur-jual/sales-for-return', 'ReturJual::getSalesForReturn');
+        $routes->get('retur-jual/sales-items/(:num)', 'ReturJual::getSalesItems/$1');
+        $routes->get('retur-jual/search-items', 'ReturJual::searchItems');
+        $routes->post('retur-jual/search-items', 'ReturJual::searchItems');
+        $routes->get('retur-jual/test', 'ReturJual::testEndpoint');
+
         // Dashboard endpoints
         $routes->get('dashboard', 'Dashboard::index');
         $routes->get('dashboard/basic-metrics', 'Dashboard::basicMetrics');

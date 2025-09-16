@@ -526,6 +526,50 @@ helper('form');
                     <!-- Payment methods will be added here -->
                 </div>
                 
+                <!-- Cash Options Section -->
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="mb-3">Uang Tunai Options</h6>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-outline-primary btn-sm w-100" id="uangPas">
+                                <i class="fas fa-hand-holding-usd"></i> Uang Pas (Sesuai Total)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4 mb-2">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100 cash-option" data-amount="1000">
+                                Rp 1.000
+                            </button>
+                        </div>
+                        <div class="col-4 mb-2">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100 cash-option" data-amount="10000">
+                                Rp 10.000
+                            </button>
+                        </div>
+                        <div class="col-4 mb-2">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100 cash-option" data-amount="20000">
+                                Rp 20.000
+                            </button>
+                        </div>
+                        <div class="col-4 mb-2">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100 cash-option" data-amount="50000">
+                                Rp 50.000
+                            </button>
+                        </div>
+                        <div class="col-4 mb-2">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100 cash-option" data-amount="100000">
+                                Rp 100.000
+                            </button>
+                        </div>
+                        <div class="col-4 mb-2">
+                            <button type="button" class="btn btn-outline-success btn-sm w-100 cash-option" data-amount="500000">
+                                Rp 500.000
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Voucher Summary -->
                 <div id="voucherSummary" style="display: none;" class="mt-3 pt-3 border-top">
                     <h6 class="mb-2">Potongan Voucher</h6>
@@ -1560,7 +1604,77 @@ helper('form');
             });
         });
 
+        // Cash options buttons event handler
+        $(document).on('click', '.cash-option', function() {
+            const amount = parseFloat($(this).data('amount')) || 0;
+            setCashAmount(amount, $(this));
+        });
+        
+        // Add "Uang Pas" (exact amount) button functionality
+        $(document).on('click', '#uangPas', function() {
+            const grandTotal = parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0;
+            if (grandTotal > 0) {
+                setCashAmount(grandTotal, $(this));
+            } else {
+                toastr.warning('Total transaksi belum ada');
+            }
+        });
+
     });
+
+    // Helper function to set cash amount in payment methods
+    function setCashAmount(amount, buttonElement) {
+        if (amount <= 0) {
+            toastr.warning('Jumlah tidak valid');
+            return;
+        }
+        
+        // Find the first cash payment method (platform_id = 1)
+        let cashPaymentRow = null;
+        $('.payment-method-row').each(function() {
+            const platformId = $(this).find('.payment-platform').val();
+            if (platformId === '1') { // Cash platform
+                cashPaymentRow = $(this);
+                return false; // Break loop
+            }
+        });
+        
+        // If no cash payment method exists, add one
+        if (!cashPaymentRow) {
+            addPaymentMethod();
+            // Get the newly added payment method row
+            cashPaymentRow = $('.payment-method-row').last();
+            cashPaymentRow.find('.payment-platform').val('1'); // Set to cash
+        }
+        
+        // Set the amount in the cash payment row
+        if (cashPaymentRow) {
+            cashPaymentRow.find('.payment-amount').val(amount);
+            
+            // Recalculate totals
+            calculatePaymentTotals();
+            
+            // Show success message
+            toastr.success(`Jumlah tunai Rp ${numberFormat(amount)} telah diset`);
+            
+            // Highlight the button briefly if provided
+            if (buttonElement) {
+                if (buttonElement.hasClass('btn-outline-success')) {
+                    buttonElement.removeClass('btn-outline-success').addClass('btn-success');
+                    setTimeout(() => {
+                        buttonElement.removeClass('btn-success').addClass('btn-outline-success');
+                    }, 1000);
+                } else if (buttonElement.hasClass('btn-outline-primary')) {
+                    buttonElement.removeClass('btn-outline-primary').addClass('btn-primary');
+                    setTimeout(() => {
+                        buttonElement.removeClass('btn-primary').addClass('btn-outline-primary');
+                    }, 1000);
+                }
+            }
+        } else {
+            toastr.error('Gagal menambahkan pembayaran tunai');
+        }
+    }
 
     // Payment Methods Functions
     function addPaymentMethod() {

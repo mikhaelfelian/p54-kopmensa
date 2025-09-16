@@ -208,35 +208,44 @@ class Transaksi extends BaseController
      * Store new transaction from mobile android using JSON method
      * 
      * Accepts JSON payload from mobile app, processes transaction, and returns JSON response.
-     */
-    /**
-     * Store new transaction from mobile/android using JSON method
-     * Accepts JSON payload as described in the prompt, processes transaction, and returns JSON response.
+     * Supports both draft and completed transactions based on 'is_draft' parameter.
      */
     public function store()
     {
         $input = $this->request->getJSON(true);
 
-        // Check if shift is open before allowing transaction
-        if (!$this->isShiftOpen($input['id_gudang'], $input['id_user'])) {
+        // Get draft parameters
+        $isDraft = isset($input['is_draft']) ? (bool)$input['is_draft'] : false;
+        $draftId = $input['draft_id'] ?? null;
+
+        // Check if shift is open before allowing transaction (skip for drafts)
+        if (!$isDraft && !$this->isShiftOpen($input['id_gudang'], $input['id_user'])) {
             return $this->failValidationErrors('Shift tidak terbuka. Silakan buka shift terlebih dahulu.');
         }
 
-        // Validate required fields
+        // Validate required fields (more lenient for drafts)
         if (
             empty($input['id_user']) ||
-            empty($input['id_sales']) ||
-            empty($input['id_pelanggan']) ||
             empty($input['id_gudang']) ||
-            empty($input['no_nota']) ||
-            empty($input['tgl_masuk']) ||
-            empty($input['jml_total']) ||
-            empty($input['jml_gtotal']) ||
             empty($input['cart']) ||
             !is_array($input['cart']) ||
             count($input['cart']) === 0
         ) {
             return $this->failValidationErrors('Data transaksi utama atau cart tidak lengkap');
+        }
+
+        // Additional validation for completed transactions (not drafts)
+        if (!$isDraft) {
+            if (
+                empty($input['id_sales']) ||
+                empty($input['id_pelanggan']) ||
+                empty($input['no_nota']) ||
+                empty($input['tgl_masuk']) ||
+                empty($input['jml_total']) ||
+                empty($input['jml_gtotal'])
+            ) {
+                return $this->failValidationErrors('Data transaksi tidak lengkap untuk transaksi final');
+            }
         }
 
         try {
@@ -248,34 +257,60 @@ class Transaksi extends BaseController
             $mTransJualPlat = $this->mTransJualPlat;
             $mItemHist      = $this->mItemHist;
 
+            // Generate nota number if not provided or if creating draft
+            $noNota = $input['no_nota'] ?? $this->generateNotaNumber();
+            
+            // If converting from draft, use existing draft data
+            if ($draftId && !$isDraft) {
+                // Get existing draft
+                $existingDraft = $mTransJual->find($draftId);
+                if (!$existingDraft || $existingDraft->status != '0') {
+                    throw new \Exception('Draft tidak ditemukan atau sudah diproses');
+                }
+                $noNota = $existingDraft->no_nota; // Use existing nota number
+            }
+
             // Insert main transaction
             $mainData = [
                 'id_user'        => $input['id_user'],
-                'id_sales'       => $input['id_sales'],
-                'id_pelanggan'   => $input['id_pelanggan'],
+                'id_sales'       => $input['id_sales'] ?? null,
+                'id_pelanggan'   => $input['id_pelanggan'] ?? null,
                 'id_gudang'      => $input['id_gudang'],
-                'id_shift'       => $input['id_shift'],
-                'no_nota'        => $input['no_nota'],
-                'tgl_masuk'      => $input['tgl_masuk'],
-                'tgl_bayar'      => isset($input['tgl_bayar']) ? $input['tgl_bayar'] : null,
-                'jml_total'      => $input['jml_total'],
+                'id_shift'       => $input['id_shift'] ?? null,
+                'no_nota'        => $noNota,
+                'tgl_masuk'      => $input['tgl_masuk'] ?? date('Y-m-d H:i:s'),
+                'tgl_bayar'      => $isDraft ? null : (isset($input['tgl_bayar']) ? $input['tgl_bayar'] : date('Y-m-d H:i:s')),
+                'jml_total'      => $input['jml_total'] ?? 0,
                 'jml_subtotal'   => isset($input['jml_subtotal']) ? $input['jml_subtotal'] : 0,
                 'diskon'         => isset($input['diskon']) ? $input['diskon'] : 0,
                 'jml_diskon'     => isset($input['jml_diskon']) ? $input['jml_diskon'] : 0,
                 'ppn'            => isset($input['ppn']) ? $input['ppn'] : 0,
                 'jml_ppn'        => isset($input['jml_ppn']) ? $input['jml_ppn'] : 0,
-                'jml_gtotal'     => $input['jml_gtotal'],
-                'jml_bayar'      => isset($input['jml_bayar']) ? $input['jml_bayar'] : 0,
-                'jml_kembali'    => isset($input['jml_kembali']) ? $input['jml_kembali'] : 0,
-                'metode_bayar'   => isset($input['metode_bayar']) ? $input['metode_bayar'] : 'multiple',
-                'status'         => isset($input['status']) ? $input['status'] : '1',
-                'status_nota'    => isset($input['status_nota']) ? $input['status_nota'] : '1',
-                'status_bayar'   => isset($input['status_bayar']) ? $input['status_bayar'] : '1',
+                'jml_gtotal'     => $input['jml_gtotal'] ?? 0,
+                'jml_bayar'      => $isDraft ? 0 : (isset($input['jml_bayar']) ? $input['jml_bayar'] : 0),
+                'jml_kembali'    => $isDraft ? 0 : (isset($input['jml_kembali']) ? $input['jml_kembali'] : 0),
+                'metode_bayar'   => $isDraft ? 'draft' : (isset($input['metode_bayar']) ? $input['metode_bayar'] : 'multiple'),
+                'status'         => $isDraft ? '0' : (isset($input['status']) ? $input['status'] : '1'),
+                'status_nota'    => $isDraft ? '0' : (isset($input['status_nota']) ? $input['status_nota'] : '1'),
+                'status_bayar'   => $isDraft ? '0' : (isset($input['status_bayar']) ? $input['status_bayar'] : '1'),
                 'status_ppn'     => isset($input['status_ppn']) ? $input['status_ppn'] : '1',
+                'voucher_code'   => $input['voucher_code'] ?? null,
+                'voucher_discount' => $input['voucher_discount'] ?? 0,
+                'voucher_id'     => $input['voucher_id'] ?? null,
+                'voucher_type'   => $input['voucher_type'] ?? null,
+                'voucher_discount_amount' => $input['voucher_discount_amount'] ?? 0
             ];
 
-            $mTransJual->insert($mainData);
-            $transactionId = $mTransJual->getInsertID();
+            // Insert or update main transaction
+            if ($draftId && !$isDraft) {
+                // Update existing draft to completed transaction
+                $mTransJual->update($draftId, $mainData);
+                $transactionId = $draftId;
+            } else {
+                // Insert new transaction
+                $mTransJual->insert($mainData);
+                $transactionId = $mTransJual->getInsertID();
+            }
 
             // Insert cart details
             foreach ($input['cart'] as $item) {
