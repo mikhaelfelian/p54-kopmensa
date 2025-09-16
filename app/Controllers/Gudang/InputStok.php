@@ -148,12 +148,12 @@ class InputStok extends BaseController
         
         $rules = [
             'tgl_terima'         => 'required|valid_date',
-            'id_supplier'        => 'required|integer',
-            'id_gudang'          => 'required|integer',
-            'items'              => 'required',
-            'items.*.id_item'    => 'required|integer',
-            'items.*.id_satuan'  => 'required|integer',
-            'items.*.jml'        => 'required|numeric|greater_than[0]',
+            // 'id_supplier'        => 'required|integer',
+            // 'id_gudang'          => 'required|integer',
+            // 'items'              => 'required',
+            // 'items.*.id_item'    => 'required|integer',
+            // 'items.*.id_satuan'  => 'required|integer',
+            // 'items.*.jml'        => 'required|numeric|greater_than[0]',
         ];
 
         if (!$this->validate($rules)) {
@@ -181,28 +181,40 @@ class InputStok extends BaseController
             // Generate number automatically
             $noTerima = $this->inputStokModel->generateNoTerima();
 
+            // Get current user and find corresponding karyawan
+            $currentUser = $this->ionAuth->user()->row();
+            $karyawanModel = new \App\Models\KaryawanModel();
+            $karyawan = $karyawanModel->where('id_user', $currentUser->id)->first();
+            
+            // If no karyawan found, use default or create one
+            $id_penerima = $karyawan ? $karyawan->id : 1; // Default to karyawan ID 1
+            
             // Insert header
             $headerData = [
                 'no_terima'   => $noTerima,
                 'tgl_terima'  => $this->request->getPost('tgl_terima'),
-                'id_supplier' => $this->request->getPost('id_supplier'),
-                'id_gudang'   => $this->request->getPost('id_gudang'),
-                'id_penerima' => $this->ionAuth->user()->row()->id, // Auto-set to current user
+                'id_supplier' => $this->request->getPost('id_supplier') ?: 1, // Default to 1 if empty
+                'id_gudang'   => $this->request->getPost('id_gudang') ?: 1, // Default to 1 if empty
+                'id_penerima' => $id_penerima, // Use karyawan ID, not user ID
                 'keterangan'  => $this->request->getPost('keterangan'),
                 'status'      => '1',
                 'status_hps'  => '0',
-                'created_at'  => date('Y-m-d H:i:s'),
-                'updated_at'  => date('Y-m-d H:i:s'),
             ];
+
+            log_message('info', 'Attempting to insert header data: ' . json_encode($headerData));
 
             $inputStokId = $this->inputStokModel->insert($headerData);
 
             if (!$inputStokId) {
-                throw new \Exception('Gagal menyimpan data input stok');
+                $errors = $this->inputStokModel->errors();
+                log_message('error', 'InputStokModel insert failed with errors: ' . json_encode($errors));
+                throw new \Exception('Gagal menyimpan data input stok: ' . json_encode($errors));
             }
 
+            log_message('info', 'Header inserted successfully with ID: ' . $inputStokId);
+
             // Insert details and update stock
-            foreach ($items as $item) {
+            foreach ($items as $index => $item) {
                 // Insert detail
                 $detailData = [
                     'id_input_stok' => $inputStokId,
@@ -210,16 +222,21 @@ class InputStok extends BaseController
                     'id_satuan'     => $item['id_satuan'],
                     'jml'           => $item['jml'],
                     'keterangan'    => $item['keterangan'] ?? '',
-                    'created_at'    => date('Y-m-d H:i:s'),
-                    'updated_at'    => date('Y-m-d H:i:s'),
                 ];
 
-                $this->inputStokDetModel->insert($detailData);
+                $detailId = $this->inputStokDetModel->insert($detailData);
+                
+                if (!$detailId) {
+                    $detailErrors = $this->inputStokDetModel->errors();
+                    log_message('error', 'InputStokDetModel insert failed for item ' . $index . ': ' . json_encode($detailErrors));
+                    throw new \Exception('Gagal menyimpan detail item ke-' . ($index + 1) . ': ' . json_encode($detailErrors));
+                }
 
                 // Update stock in tbl_m_item_stok
+                $gudangId = $headerData['id_gudang']; // Use the same gudang ID as header
                 $existingStock = $this->itemStokModel
                     ->where('id_item', $item['id_item'])
-                    ->where('id_gudang', $this->request->getPost('id_gudang'))
+                    ->where('id_gudang', $gudangId)
                     ->first();
 
                 if ($existingStock) {
@@ -233,23 +250,19 @@ class InputStok extends BaseController
                     // Create new stock record
                     $this->itemStokModel->insert([
                         'id_item'    => $item['id_item'],
-                        'id_gudang'  => $this->request->getPost('id_gudang'),
+                        'id_gudang'  => $gudangId,
                         'jml'        => $item['jml'],
                         'status'     => '1',
-                        'created_at' => date('Y-m-d H:i:s'),
-                        'updated_at' => date('Y-m-d H:i:s'),
                     ]);
                 }
 
                 // Log to item history
                 $this->itemHistModel->insert([
                     'id_item'     => $item['id_item'],
-                    'id_gudang'   => $this->request->getPost('id_gudang'),
+                    'id_gudang'   => $gudangId,
                     'jml_masuk'   => $item['jml'],
                     'jml_keluar'  => 0,
                     'keterangan'  => 'Input Stok - ' . $noTerima,
-                    'created_at'  => date('Y-m-d H:i:s'),
-                    'updated_at'  => date('Y-m-d H:i:s'),
                 ]);
             }
 

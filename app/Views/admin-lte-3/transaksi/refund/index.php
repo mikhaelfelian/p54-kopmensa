@@ -19,7 +19,7 @@ helper('form');
                 </h3>
                 <div class="card-tools">
                     <a href="<?= base_url('transaksi/refund/create') ?>" class="btn btn-primary btn-sm rounded-0">
-                        <i class="fas fa-plus"></i> Buat Permintaan Refund
+                        <i class="fas fa-plus"></i> Refund
                     </a>
                 </div>
             </div>

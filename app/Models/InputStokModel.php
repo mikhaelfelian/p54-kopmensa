@@ -36,8 +36,8 @@ class InputStokModel extends Model
     protected $validationRules = [
         'no_terima'    => 'required|max_length[50]',
         'tgl_terima'   => 'required|valid_date',
-        'id_supplier'  => 'required|integer',
-        'id_gudang'    => 'required|integer',
+        'id_supplier'  => 'permit_empty|integer',
+        'id_gudang'    => 'permit_empty|integer',
         'id_penerima'  => 'required|integer',
     ];
 
