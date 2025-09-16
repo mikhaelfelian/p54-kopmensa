@@ -32,7 +32,7 @@
                                 <div class="form-group">
                                     <label>Tanggal Opname</label>
                                     <?= form_input([
-                                        'id' => 'tgl',
+                                        'id' => '',
                                         'name' => 'tgl',
                                         'class' => 'form-control rounded-0',
                                         'placeholder' => 'Pilih tanggal...',
