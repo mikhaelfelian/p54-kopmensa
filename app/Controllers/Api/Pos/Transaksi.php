@@ -78,30 +78,35 @@ class Transaksi extends BaseController
     {
         $mTransJual = $this->mTransJual;
         $mTransJualPlat = $this->mTransJualPlat;
-        
+        $mPelanggan = $this->mPelanggan;
+
         // If no id_pelanggan provided, get it from request
         if ($id_pelanggan === null) {
             $id_pelanggan = $this->request->getGet('id_pelanggan');
         }
-        
+
         // Validate id_pelanggan parameter
         if (!$id_pelanggan) {
             return $this->failValidationErrors('Parameter id_pelanggan is required');
         }
-        
+
         try {
+            // Get pelanggan name from tbl_m_pelanggan
+            $pelanggan = $mPelanggan->find($id_pelanggan);
+            $nama_pelanggan = $pelanggan ? $pelanggan->nama : null;
+
             // Get transactions from tbl_trans_jual where id_pelanggan matches
             $transactions = $mTransJual->where('id_pelanggan', $id_pelanggan)->findAll();
-            
+
             // Use property for TransJualDetModel
             $mTransJualDet = $this->mTransJualDet;
-            
+
             // Format the response data
             $formattedTransactions = [];
             foreach ($transactions as $transaction) {
                 // Get transaction details from tbl_trans_jual_det where id_penjualan matches
                 $details = $mTransJualDet->where('id_penjualan', $transaction->id)->findAll();
-                
+
                 // Format transaction details
                 $formattedDetails = [];
                 foreach ($details as $detail) {
@@ -135,13 +140,14 @@ class Transaksi extends BaseController
 
                 // Get platform data for this transaction using mTransJualPlat
                 $platformData = $mTransJualPlat->where('id_penjualan', $transaction->id)->findAll();
-                
+
                 $formattedTransactions[] = [
                     'id'             => (int)$transaction->id,
                     'id_user'        => (int)$transaction->id_user,
                     'id_sales'       => (int)$transaction->id_sales,
                     'id_pelanggan'   => (int)$transaction->id_pelanggan,
                     'id_gudang'      => (int)$transaction->id_gudang,
+                    'pelanggan'      => $nama_pelanggan ?? 'Umum',
                     'no_nota'        => $transaction->no_nota,
                     'created_at'     => $transaction->created_at,
                     'updated_at'     => $transaction->updated_at,
@@ -178,17 +184,16 @@ class Transaksi extends BaseController
                     'platform'       => $platformData
                 ];
             }
-            
+
             $data = [
                 'success'      => true,
                 'message'      => 'Transactions retrieved successfully',
                 'total'        => count($formattedTransactions),
-                'id_pelanggan' => (int) $id_pelanggan,
                 'transactions' => $formattedTransactions,
             ];
-            
+
             return $this->respond($data);
-            
+
         } catch (\Exception $e) {
             return $this->failServerError('Failed to retrieve transactions: ' . $e->getMessage());
         }
