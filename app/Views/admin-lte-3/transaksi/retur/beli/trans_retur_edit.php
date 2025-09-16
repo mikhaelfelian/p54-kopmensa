@@ -491,6 +491,45 @@ $(document).ready(function() {
              return false;
          }
         
+        // Collect items data before submission
+        let items = [];
+        $('#items-tbody tr').each(function() {
+            const row = $(this);
+            const id_item = row.find('.product-id').val();
+            const qty = row.find('.product-qty').val();
+            const harga = row.find('.product-price').autoNumeric('get');
+            const kode = row.find('.product-code').val();
+            const produk = row.find('.product-name').val();
+            const satuan = row.find('.product-satuan').val() || 'PCS';
+            const discount = row.find('.product-discount').val() || 0;
+            
+            if (id_item && qty && parseFloat(qty) > 0) {
+                items.push({
+                    id_item: id_item,
+                    qty: parseFloat(qty),
+                    harga: parseFloat(harga) || 0,
+                    kode: kode || '',
+                    produk: produk || '',
+                    satuan: satuan,
+                    discount: parseFloat(discount) || 0
+                });
+            }
+        });
+        
+        console.log('Collected items:', items);
+        
+        if (items.length === 0) {
+            e.preventDefault();
+            toastr.error('Minimal satu produk dengan quantity valid harus ditambahkan');
+            return false;
+        }
+        
+        // Add items data to form as JSON
+        if ($('input[name="items"]').length === 0) {
+            $(this).append('<input type="hidden" name="items" value="">');
+        }
+        $('input[name="items"]').val(JSON.stringify(items));
+        
         toastr.success('Memproses update retur...');
         return true;
     });
