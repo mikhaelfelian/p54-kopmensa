@@ -914,14 +914,14 @@
                         <a href="<?= base_url('dashboard/system-overview') ?>"
                             class="nav-link <?= isMenuActive('dashboard/system-overview') ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-rocket"></i>
-                            <p style="color: #28a745; font-weight: bold;">System Overview</p>
+                            <p>Ikhtisar Sistem</p>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="<?= base_url('dashboard/enhanced-features') ?>"
                             class="nav-link <?= isMenuActive('dashboard/enhanced-features') ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-star"></i>
-                            <p style="color: #17a2b8; font-weight: bold;">Enhanced Features</p>
+                            <p>Fitur Unggulan</p>
                         </a>
                     </li>
                 </ul>
