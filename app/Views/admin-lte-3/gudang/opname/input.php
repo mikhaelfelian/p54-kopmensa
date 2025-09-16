@@ -189,7 +189,7 @@
                             <i class="fas fa-times mr-1"></i> Batal
                         </button>
                         <?php if (!empty($items)): ?>
-                            <button type="submit" class="btn btn-success rounded-0" id="btn-process-opname">
+                            <button type="button" class="btn btn-success rounded-0" id="btn-process-opname" onclick="processOpname()">
                                 <i class="fas fa-check mr-1"></i> Proses Opname
                             </button>
                         <?php endif ?>
