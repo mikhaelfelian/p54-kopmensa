@@ -173,7 +173,7 @@ class Opname extends BaseController
 
         $data = [
             'id_user'    => $id_user,
-            'id_gudang'  => ($tipe === '1') ? $id_gudang : 0,
+            'id_gudang'  => ($tipe === '1') ? $id_gudang : $id_outlet,
             'id_outlet'  => ($tipe === '2') ? $id_outlet : 0,
             'tgl_masuk'  => tgl_indo_sys($tgl_masuk),
             'keterangan' => $keterangan,

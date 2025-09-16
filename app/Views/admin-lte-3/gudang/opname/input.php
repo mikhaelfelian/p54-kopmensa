@@ -141,7 +141,7 @@
                                             <td><?= esc($item->satuan ?? '-') ?></td>
                                             <td class="text-right">
                                                 <input type="text" class="form-control form-control-sm text-right rounded-0"
-                                                    value="<?= number_format((float)($item->current_stock ?? $item->jml_sys ?? 0), 2) ?>" readonly>
+                                                    value="<?= number_format((float)($item->current_stock ?? $item->jml_sys ?? 0), 0) ?>" readonly>
                                             </td>
                                             <td>
                                                 <input type="number" min="0" step="any"
@@ -277,7 +277,7 @@
             console.log('Stock response:', response); // Debug
             
             if (response && response.jml !== undefined) {
-                $('#new_item_stok_sistem').val(parseFloat(response.jml).toFixed(2));
+                $('#new_item_stok_sistem').val(Math.round(parseFloat(response.jml)));
                 
                 // Update satuan if provided from server
                 if (response.satuan) {
@@ -286,20 +286,20 @@
                 
                 // Auto-fill stok fisik with system stock as default
                 if (!$('#new_item_stok_fisik').val()) {
-                    $('#new_item_stok_fisik').val(parseFloat(response.jml).toFixed(2));
+                    $('#new_item_stok_fisik').val(Math.round(parseFloat(response.jml)));
                 }
                 
                 console.log('Stock loaded successfully:', response.jml); // Debug
             } else {
-                $('#new_item_stok_sistem').val('0.00');
-                $('#new_item_stok_fisik').val('0.00');
+                $('#new_item_stok_sistem').val('0');
+                $('#new_item_stok_fisik').val('0');
                 console.log('No stock data in response'); // Debug
             }
         })
         .fail(function(xhr, status, error) {
             console.error('Failed to load stock:', error, xhr.responseText); // Debug
-            $('#new_item_stok_sistem').val('0.00');
-            $('#new_item_stok_fisik').val('0.00');
+            $('#new_item_stok_sistem').val('0');
+            $('#new_item_stok_fisik').val('0');
             toastr.warning('Gagal memuat stok item: ' + error);
         });
     }
