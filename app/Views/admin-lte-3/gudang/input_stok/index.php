@@ -11,7 +11,7 @@
                     </div>
                     <div class="col-md-6 text-right">
                         <a href="<?= base_url('gudang/input_stok/create') ?>" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus"></i> Tambah Input Stok
+                            <i class="fas fa-plus"></i> Input Stok
                         </a>
                     </div>
                 </div>
