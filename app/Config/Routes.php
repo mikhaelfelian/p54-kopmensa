@@ -417,6 +417,14 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('customer/restore/(:num)', 'Pelanggan::restore/$1');
     $routes->get('customer/delete_permanent/(:num)', 'Pelanggan::delete_permanent/$1');
 
+    // User Management routes for customers
+    $routes->post('customer/reset_password', 'Pelanggan::reset_password');
+    $routes->post('customer/generate_username', 'Pelanggan::generate_username');
+    $routes->post('customer/toggle_block', 'Pelanggan::toggle_block');
+    $routes->get('customer/get_user_info/(:num)', 'Pelanggan::get_user_info/$1');
+    $routes->get('customer/get_user_logs/(:num)', 'Pelanggan::get_user_logs/$1');
+    $routes->get('customer/get_purchase_history/(:num)', 'Pelanggan::get_purchase_history/$1');
+
     // Customer Group (Grup Pelanggan) routes
     $routes->get('customer-group', 'PelangganGrup::index');
     $routes->get('customer-group/create', 'PelangganGrup::create');

@@ -689,4 +689,206 @@ class Pelanggan extends BaseController
                            ->with('error', 'Gagal menghapus permanen data pelanggan');
         }
     }
+
+    /**
+     * Get user information for user management modal
+     */
+    public function get_user_info($user_id = null)
+    {
+        if (!$user_id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'User ID required']);
+        }
+
+        try {
+            $user = $this->ionAuth->user($user_id)->row();
+            if (!$user) {
+                return $this->response->setJSON(['success' => false, 'message' => 'User not found']);
+            }
+
+            $data = [
+                'success' => true,
+                'data' => [
+                    'username' => $user->username,
+                    'email' => $user->email,
+                    'active' => $user->active == 1,
+                    'last_login' => $user->last_login ? date('Y-m-d H:i:s', $user->last_login) : 'Never'
+                ]
+            ];
+
+            return $this->response->setJSON($data);
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::get_user_info] ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error retrieving user info']);
+        }
+    }
+
+    /**
+     * Reset user password
+     */
+    public function reset_password()
+    {
+        $user_id = $this->request->getPost('user_id');
+        
+        if (!$user_id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'User ID required']);
+        }
+
+        try {
+            // Generate new password
+            $new_password = random_string('alnum', 8);
+            
+            // Update password
+            if ($this->ionAuth->update($user_id, ['password' => $new_password])) {
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'new_password' => $new_password,
+                    'message' => 'Password reset successfully'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'Failed to reset password: ' . implode(', ', $this->ionAuth->errors_array())
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::reset_password] ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error resetting password']);
+        }
+    }
+
+    /**
+     * Generate new username
+     */
+    public function generate_username()
+    {
+        $user_id = $this->request->getPost('user_id');
+        
+        if (!$user_id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'User ID required']);
+        }
+
+        try {
+            // Generate new username based on first name + random number
+            $user = $this->ionAuth->user($user_id)->row();
+            $first_name = $user->first_name;
+            $new_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $first_name)) . rand(100, 999);
+            
+            // Ensure username is unique
+            $counter = 1;
+            $original_username = $new_username;
+            while ($this->ionAuth->where('username', $new_username)->users()->row()) {
+                $new_username = $original_username . $counter;
+                $counter++;
+            }
+            
+            // Update username
+            if ($this->ionAuth->update($user_id, ['username' => $new_username])) {
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'new_username' => $new_username,
+                    'message' => 'Username generated successfully'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'Failed to generate username: ' . implode(', ', $this->ionAuth->errors_array())
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::generate_username] ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error generating username']);
+        }
+    }
+
+    /**
+     * Toggle user block status
+     */
+    public function toggle_block()
+    {
+        $user_id = $this->request->getPost('user_id');
+        $action = $this->request->getPost('action');
+        
+        if (!$user_id || !in_array($action, ['block', 'unblock'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid parameters']);
+        }
+
+        try {
+            $active = ($action === 'unblock') ? 1 : 0;
+            
+            if ($this->ionAuth->update($user_id, ['active' => $active])) {
+                return $this->response->setJSON([
+                    'success' => true, 
+                    'message' => 'Account ' . $action . 'ed successfully'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false, 
+                    'message' => 'Failed to ' . $action . ' account: ' . implode(', ', $this->ionAuth->errors_array())
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::toggle_block] ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error updating account status']);
+        }
+    }
+
+    /**
+     * Get user activity logs
+     */
+    public function get_user_logs($user_id = null)
+    {
+        if (!$user_id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'User ID required']);
+        }
+
+        try {
+            // This would require a user_logs table or similar
+            // For now, return empty array - you can implement this based on your logging system
+            $data = [
+                'success' => true,
+                'data' => []
+            ];
+
+            return $this->response->setJSON($data);
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::get_user_logs] ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error retrieving logs']);
+        }
+    }
+
+    /**
+     * Get customer purchase history
+     */
+    public function get_purchase_history($customer_id = null)
+    {
+        if (!$customer_id) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Customer ID required']);
+        }
+
+        try {
+            // Get purchase history from tbl_trans_jual
+            $purchases = $this->transJualModel->where('id_pelanggan', $customer_id)
+                                      ->orderBy('created_at', 'DESC')
+                                      ->limit(20)
+                                      ->findAll();
+
+            $data = [];
+            foreach ($purchases as $purchase) {
+                $data[] = [
+                    'tanggal' => date('Y-m-d H:i', strtotime($purchase->created_at)),
+                    'no_invoice' => $purchase->no_invoice ?? 'N/A',
+                    'total' => number_format($purchase->total ?? 0, 0, ',', '.'),
+                    'status' => 'Completed'
+                ];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::get_purchase_history] ' . $e->getMessage());
+            return $this->response->setJSON(['success' => false, 'message' => 'Error retrieving purchase history']);
+        }
+    }
 } 

@@ -10,7 +10,7 @@
         "name": "api",
         "item": [
           {
-            "name": "anggota",
+            "name": "anggota-user",
             "item": [
               {
                 "name": "Login",
@@ -1981,7 +1981,7 @@
         ]
       },
       {
-        "name": "anggota",
+        "name": "anggota-master",
         "item": [
           {
             "name": "Get Member Profile",

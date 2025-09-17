@@ -119,4 +119,229 @@
     <!-- /.col -->
 </div>
 <!-- /.row -->
+
+<!-- User Management Modal -->
+<div class="modal fade" id="userManagementModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Management - <span id="customerName"></span></h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title">Account Actions</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label>Reset Password</label>
+                                    <button type="button" class="btn btn-warning btn-sm btn-block" id="resetPasswordBtn">
+                                        <i class="fas fa-key"></i> Reset Password
+                                    </button>
+                                </div>
+                                <div class="form-group">
+                                    <label>Generate New Username</label>
+                                    <button type="button" class="btn btn-primary btn-sm btn-block" id="generateUsernameBtn">
+                                        <i class="fas fa-user-edit"></i> Generate Username
+                                    </button>
+                                </div>
+                                <div class="form-group">
+                                    <label>Block/Unblock Account</label>
+                                    <button type="button" class="btn btn-danger btn-sm btn-block" id="toggleBlockBtn">
+                                        <i class="fas fa-ban"></i> <span id="blockBtnText">Block Account</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title">Account Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Username:</strong> <span id="currentUsername">-</span></p>
+                                <p><strong>Email:</strong> <span id="currentEmail">-</span></p>
+                                <p><strong>Account Status:</strong> <span id="accountStatus" class="badge badge-success">Active</span></p>
+                                <p><strong>Last Login:</strong> <span id="lastLogin">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- User Logs Section -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title">User Activity Logs</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="userLogs">
+                                    <div class="text-center">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading logs...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Purchase History Section -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title">Purchase History</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="purchaseHistory">
+                                    <div class="text-center">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading purchase history...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    let currentCustomerId = 0;
+    let currentUserId = 0;
+    
+    $('#userManagementModal').on('show.bs.modal', function (event) {
+        const button = $(event.relatedTarget);
+        currentCustomerId = button.data('customer-id');
+        currentUserId = button.data('user-id');
+        const customerName = button.data('customer-name');
+        
+        $('#customerName').text(customerName);
+        
+        // Load user information
+        loadUserInfo(currentUserId);
+        
+        // Load user logs
+        loadUserLogs(currentUserId);
+        
+        // Load purchase history
+        loadPurchaseHistory(currentCustomerId);
+    });
+    
+    // Reset password
+    $('#resetPasswordBtn').click(function() {
+        if (confirm('Are you sure you want to reset the password?')) {
+            $.post('<?= base_url("master/customer/reset_password") ?>', {
+                user_id: currentUserId
+            }, function(response) {
+                if (response.success) {
+                    alert('Password reset successfully. New password: ' + response.new_password);
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            }, 'json');
+        }
+    });
+    
+    // Generate new username
+    $('#generateUsernameBtn').click(function() {
+        if (confirm('Are you sure you want to generate a new username?')) {
+            $.post('<?= base_url("master/customer/generate_username") ?>', {
+                user_id: currentUserId
+            }, function(response) {
+                if (response.success) {
+                    $('#currentUsername').text(response.new_username);
+                    alert('New username generated: ' + response.new_username);
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            }, 'json');
+        }
+    });
+    
+    // Toggle block status
+    $('#toggleBlockBtn').click(function() {
+        const isBlocked = $(this).data('blocked') || false;
+        const action = isBlocked ? 'unblock' : 'block';
+        const message = `Are you sure you want to ${action} this account?`;
+        
+        if (confirm(message)) {
+            $.post('<?= base_url("master/customer/toggle_block") ?>', {
+                user_id: currentUserId,
+                action: action
+            }, function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            }, 'json');
+        }
+    });
+    
+    function loadUserInfo(userId) {
+        $.get('<?= base_url("master/customer/get_user_info") ?>/' + userId, function(response) {
+            if (response.success) {
+                $('#currentUsername').text(response.data.username);
+                $('#currentEmail').text(response.data.email);
+                $('#lastLogin').text(response.data.last_login);
+                
+                const statusBadge = response.data.active ? 'badge-success' : 'badge-danger';
+                const statusText = response.data.active ? 'Active' : 'Blocked';
+                $('#accountStatus').removeClass('badge-success badge-danger').addClass(statusBadge).text(statusText);
+                
+                $('#toggleBlockBtn').data('blocked', !response.data.active);
+                $('#blockBtnText').text(response.data.active ? 'Block Account' : 'Unblock Account');
+            }
+        }, 'json');
+    }
+    
+    function loadUserLogs(userId) {
+        $.get('<?= base_url("master/customer/get_user_logs") ?>/' + userId, function(response) {
+            let logsHtml = '';
+            if (response.success && response.data.length > 0) {
+                logsHtml = '<div class="table-responsive"><table class="table table-sm table-striped">';
+                logsHtml += '<thead><tr><th>Date</th><th>Action</th><th>IP Address</th></tr></thead><tbody>';
+                response.data.forEach(function(log) {
+                    logsHtml += `<tr><td>${log.created_at}</td><td>${log.action}</td><td>${log.ip_address}</td></tr>`;
+                });
+                logsHtml += '</tbody></table></div>';
+            } else {
+                logsHtml = '<p class="text-muted">No activity logs found.</p>';
+            }
+            $('#userLogs').html(logsHtml);
+        }, 'json');
+    }
+    
+    function loadPurchaseHistory(customerId) {
+        $.get('<?= base_url("master/customer/get_purchase_history") ?>/' + customerId, function(response) {
+            let historyHtml = '';
+            if (response.success && response.data.length > 0) {
+                historyHtml = '<div class="table-responsive"><table class="table table-sm table-striped">';
+                historyHtml += '<thead><tr><th>Date</th><th>Invoice</th><th>Total</th><th>Status</th></tr></thead><tbody>';
+                response.data.forEach(function(history) {
+                    historyHtml += `<tr><td>${history.tanggal}</td><td>${history.no_invoice}</td><td>${history.total}</td><td><span class="badge badge-success">${history.status}</span></td></tr>`;
+                });
+                historyHtml += '</tbody></table></div>';
+            } else {
+                historyHtml = '<p class="text-muted">No purchase history found.</p>';
+            }
+            $('#purchaseHistory').html(historyHtml);
+        }, 'json');
+    }
+});
+</script>
+
 <?= $this->endSection() ?>

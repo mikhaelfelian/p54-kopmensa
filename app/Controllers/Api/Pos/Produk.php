@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use App\Models\ItemModel;
 use App\Models\ItemHargaModel;
 use App\Models\ItemVarianModel;
+use App\Models\SupplierModel;
 use CodeIgniter\API\ResponseTrait;
 
 /**
@@ -21,6 +22,7 @@ class Produk extends BaseController
     protected $mItem;
     protected $mItemHarga;
     protected $mItemVarian;
+    protected $mSupplier;
     protected $selectPrices;
     protected $perPage;
     protected $keyword;
@@ -38,6 +40,7 @@ class Produk extends BaseController
         $this->mItem        = new ItemModel();
         $this->mItemHarga   = new ItemHargaModel();
         $this->mItemVarian = new ItemVarianModel();
+        $this->mSupplier    = new SupplierModel();
         $this->selectPrices = 'id, nama, jml_min, CAST(harga AS FLOAT) AS harga';
     }
     public function getAll()
@@ -56,23 +59,29 @@ class Produk extends BaseController
         // Transform the data to match the desired format
         $formattedItems = [];
         foreach ($items as $item) {
+            $supp = null;
+            if (isset($item->id_supplier) && $item->id_supplier) {
+                $supp = $this->mSupplier->find($item->id_supplier);
+            }
             $formattedItems[] = [
-                'id'         => (int) $item->id,
-                'id_kategori'=> (int) $item->id_kategori,
-                'id_merk'    => (int) $item->id_merk,
-                'created_at' => $item->created_at,
-                'updated_at' => $item->updated_at,
-                'merk'       => $item->merk,
-                'kategori'   => $item->kategori,
-                'kode'       => $item->kode,
-                'barcode'    => $item->barcode,
-                'item'       => $item->item,
-                'deskripsi'  => $item->deskripsi,
-                'jml_min'    => (int) $item->jml_min,
-                'harga_jual' => (float) $item->harga_jual,
-                'harga_beli' => (float) $item->harga_beli,
-                'foto'       => $item->foto ? base_url($item->foto) : null,
-                'options'    => [
+                'id'          => (int) $item->id,
+                'id_kategori' => (int) $item->id_kategori,
+                'id_merk'     => (int) $item->id_merk,
+                'id_supplier' => isset($item->id_supplier) ? (int) $item->id_supplier : null,
+                'supplier'    => $supp ? $supp->nama : null,
+                'created_at'  => $item->created_at,
+                'updated_at'  => $item->updated_at,
+                'merk'        => $item->merk,
+                'kategori'    => $item->kategori,
+                'kode'        => $item->kode,
+                'barcode'     => $item->barcode,
+                'item'        => $item->item,
+                'deskripsi'   => $item->deskripsi,
+                'jml_min'     => (int) $item->jml_min,
+                'harga_jual'  => (float) $item->harga_jual,
+                'harga_beli'  => (float) $item->harga_beli,
+                'foto'        => $item->foto ? base_url($item->foto) : null,
+                'options'     => [
                     'harga'  => $this->mItemHarga->getPricesByItemId($item->id, $this->selectPrices),
                     'varian' => $this->mItemVarian->getVariantsWithPrice($item->id),
                 ],
@@ -105,27 +114,34 @@ class Produk extends BaseController
             return $this->failNotFound('Produk dengan ID ' . $id . ' tidak ditemukan.');
         }
 
+        $supp = null;
+        if (isset($item->id_supplier) && $item->id_supplier) {
+            $supp = $this->mSupplier->find($item->id_supplier);
+        }
+
         // Format the response to match the documentation
         $data = [
-            'id'         => (int) $item->id,
-            'id_kategori'=> (int) $item->id_kategori,
-            'id_merk'    => (int) $item->id_merk,
-            'created_at' => $item->created_at,
-            'updated_at' => $item->updated_at,
-            'merk'       => $item->merk,
-            'kategori'   => $item->kategori,
-            'kode'       => $item->kode,
-            'barcode'    => $item->barcode,
-            'item'       => $item->item,
-            'deskripsi'  => $item->deskripsi,
-            'jml_min'    => (int) $item->jml_min,
-            'harga_jual' => (float) $item->harga_jual,
-            'harga_beli' => (float) $item->harga_beli,
-            'foto'       => $item->foto ? base_url($item->foto) : null,
-                            'options'    => [
-                    'harga'  => $this->mItemHarga->getPricesByItemId($item->id, $this->selectPrices),
-                    'varian' => $this->mItemVarian->getVariantsWithPrice($item->id),
-                ],
+            'id'          => (int) $item->id,
+            'id_kategori' => (int) $item->id_kategori,
+            'id_merk'     => (int) $item->id_merk,
+            'id_supplier' => isset($item->id_supplier) ? (int) $item->id_supplier : null,
+            'supplier'    => $supp ? $supp->nama : null,
+            'created_at'  => $item->created_at,
+            'updated_at'  => $item->updated_at,
+            'merk'        => $item->merk,
+            'kategori'    => $item->kategori,
+            'kode'        => $item->kode,
+            'barcode'     => $item->barcode,
+            'item'        => $item->item,
+            'deskripsi'   => $item->deskripsi,
+            'jml_min'     => (int) $item->jml_min,
+            'harga_jual'  => (float) $item->harga_jual,
+            'harga_beli'  => (float) $item->harga_beli,
+            'foto'        => $item->foto ? base_url($item->foto) : null,
+            'options'     => [
+                'harga'  => $this->mItemHarga->getPricesByItemId($item->id, $this->selectPrices),
+                'varian' => $this->mItemVarian->getVariantsWithPrice($item->id),
+            ],
         ];
 
         return $this->respond($data);
@@ -178,10 +194,16 @@ class Produk extends BaseController
         // Format the data as in getAll
         $formattedItems = [];
         foreach ($items as $item) {
+            $supp = null;
+            if (isset($item->id_supplier) && $item->id_supplier) {
+                $supp = $this->mSupplier->find($item->id_supplier);
+            }
             $formattedItems[] = [
                 'id'         => (int) $item->id,
                 'id_kategori'=> (int) $item->id_kategori,
                 'id_merk'    => (int) $item->id_merk,
+                'id_supplier'=> isset($item->id_supplier) ? (int) $item->id_supplier : null,
+                'supplier'   => $supp ? $supp->nama : null,
                 'created_at' => $item->created_at,
                 'updated_at' => $item->updated_at,
                 'merk'       => $item->merk,
