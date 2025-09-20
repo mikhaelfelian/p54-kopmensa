@@ -111,4 +111,7 @@ phpunit
 # Visual Studio Code
 .vscode/
 
+# HTaccess
+.htaccess
+
 /public/file
