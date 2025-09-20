@@ -632,23 +632,23 @@ class Transaksi extends BaseController
             }
 
             // Check if voucher is valid and available
-            $isValid = $mVoucher->isVoucherValid($voucher->kode_voucher ?? $voucher->id);
+            $isValid = $mVoucher->isVoucherValid($voucher->kode ?? $voucher->id);
             
             $voucherData = [
                 'id' => $voucher->id,
-                'kode_voucher' => $voucher->kode_voucher ?? $voucher->kode,
-                'nama_voucher' => $voucher->nama_voucher ?? $voucher->nama,
-                'jenis_voucher' => $voucher->jenis_voucher ?? $voucher->jenis,
-                'nominal' => (float) ($voucher->nominal ?? 0),
-                'min_pembelian' => (float) ($voucher->min_pembelian ?? 0),
-                'max_diskon' => (float) ($voucher->max_diskon ?? 0),
-                'kuota' => (int) ($voucher->kuota ?? 0),
-                'kuota_terpakai' => (int) ($voucher->kuota_terpakai ?? 0),
-                'tgl_mulai' => $voucher->tgl_mulai ?? $voucher->tanggal_mulai,
-                'tgl_berakhir' => $voucher->tgl_berakhir ?? $voucher->tanggal_berakhir,
-                'status' => $voucher->status ?? '1',
+                'kode_voucher' => $voucher->kode,
+                'nama_voucher' => $voucher->keterangan ?? 'Voucher',
+                'jenis_voucher' => $voucher->jenis_voucher,
+                'nominal' => (float) $voucher->nominal,
+                'min_pembelian' => 0, // Not available in current schema
+                'max_diskon' => (float) $voucher->jml_max,
+                'kuota' => (int) $voucher->jml,
+                'kuota_terpakai' => (int) $voucher->jml_keluar,
+                'tgl_mulai' => $voucher->tgl_masuk,
+                'tgl_berakhir' => $voucher->tgl_keluar,
+                'status' => $voucher->status,
                 'is_valid' => $isValid,
-                'sisa_kuota' => max(0, ($voucher->kuota ?? 0) - ($voucher->kuota_terpakai ?? 0))
+                'sisa_kuota' => max(0, $voucher->jml - $voucher->jml_keluar)
             ];
 
             return $this->respond($voucherData);
@@ -680,8 +680,8 @@ class Transaksi extends BaseController
             // Apply search filter
             if (!empty($search)) {
                 $builder->groupStart()
-                        ->like('kode_voucher', $search)
-                        ->orLike('nama_voucher', $search)
+                        ->like('kode', $search)
+                        ->orLike('keterangan', $search)
                         ->groupEnd();
             }
             
@@ -703,23 +703,23 @@ class Transaksi extends BaseController
             // Format vouchers data
             $formattedVouchers = [];
             foreach ($vouchers as $voucher) {
-                $isValid = $mVoucher->isVoucherValid($voucher->kode_voucher ?? $voucher->id);
+                $isValid = $mVoucher->isVoucherValid($voucher->kode ?? $voucher->id);
                 
                 $formattedVouchers[] = [
                     'id' => $voucher->id,
-                    'kode_voucher' => $voucher->kode_voucher ?? $voucher->kode,
-                    'nama_voucher' => $voucher->nama_voucher ?? $voucher->nama,
-                    'jenis_voucher' => $voucher->jenis_voucher ?? $voucher->jenis,
-                    'nominal' => (float) ($voucher->nominal ?? 0),
-                    'min_pembelian' => (float) ($voucher->min_pembelian ?? 0),
-                    'max_diskon' => (float) ($voucher->max_diskon ?? 0),
-                    'kuota' => (int) ($voucher->kuota ?? 0),
-                    'kuota_terpakai' => (int) ($voucher->kuota_terpakai ?? 0),
-                    'tgl_mulai' => $voucher->tgl_mulai ?? $voucher->tanggal_mulai,
-                    'tgl_berakhir' => $voucher->tgl_berakhir ?? $voucher->tanggal_berakhir,
-                    'status' => $voucher->status ?? '1',
+                    'kode_voucher' => $voucher->kode,
+                    'nama_voucher' => $voucher->keterangan ?? 'Voucher',
+                    'jenis_voucher' => $voucher->jenis_voucher,
+                    'nominal' => (float) $voucher->nominal,
+                    'min_pembelian' => 0, // Not available in current schema
+                    'max_diskon' => (float) $voucher->jml_max,
+                    'kuota' => (int) $voucher->jml,
+                    'kuota_terpakai' => (int) $voucher->jml_keluar,
+                    'tgl_mulai' => $voucher->tgl_masuk,
+                    'tgl_berakhir' => $voucher->tgl_keluar,
+                    'status' => $voucher->status,
                     'is_valid' => $isValid,
-                    'sisa_kuota' => max(0, ($voucher->kuota ?? 0) - ($voucher->kuota_terpakai ?? 0)),
+                    'sisa_kuota' => max(0, $voucher->jml - $voucher->jml_keluar),
                     'created_at' => $voucher->created_at ?? null,
                     'updated_at' => $voucher->updated_at ?? null
                 ];
