@@ -75,6 +75,8 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->post('transaksi/validate-voucher', 'Transaksi::validateVoucher');
         $routes->post('transaksi/validate/customer', 'Transaksi::validateCustomer');
         $routes->post('transaksi/validate-customer', 'Transaksi::validateCustomer');
+        $routes->get('transaksi/vouchers', 'Transaksi::getAllVouchers');
+        $routes->get('transaksi/voucher', 'Transaksi::getVoucher');
         
         // Draft transaction endpoints
         $routes->get('transaksi/drafts', 'Transaksi::getDrafts');
