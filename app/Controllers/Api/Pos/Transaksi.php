@@ -659,6 +659,96 @@ class Transaksi extends BaseController
     }
 
     /**
+     * Get all vouchers with pagination and filtering
+     * 
+     * @return \CodeIgniter\HTTP\Response
+     */
+    public function getAllVouchers()
+    {
+        try {
+            $mVoucher = $this->mVoucher;
+            
+            // Get pagination parameters
+            $page = (int) ($this->request->getGet('page') ?? 1);
+            $perPage = (int) ($this->request->getGet('per_page') ?? 10);
+            $search = $this->request->getGet('search') ?? '';
+            $status = $this->request->getGet('status') ?? '';
+            
+            // Build query
+            $builder = $mVoucher->builder();
+            
+            // Apply search filter
+            if (!empty($search)) {
+                $builder->groupStart()
+                        ->like('kode_voucher', $search)
+                        ->orLike('nama_voucher', $search)
+                        ->groupEnd();
+            }
+            
+            // Apply status filter
+            if ($status !== '') {
+                $builder->where('status', $status);
+            }
+            
+            // Get total count
+            $totalVouchers = $builder->countAllResults(false);
+            
+            // Apply pagination
+            $offset = ($page - 1) * $perPage;
+            $vouchers = $builder->orderBy('created_at', 'DESC')
+                               ->limit($perPage, $offset)
+                               ->get()
+                               ->getResult();
+            
+            // Format vouchers data
+            $formattedVouchers = [];
+            foreach ($vouchers as $voucher) {
+                $isValid = $mVoucher->isVoucherValid($voucher->kode_voucher ?? $voucher->id);
+                
+                $formattedVouchers[] = [
+                    'id' => $voucher->id,
+                    'kode_voucher' => $voucher->kode_voucher ?? $voucher->kode,
+                    'nama_voucher' => $voucher->nama_voucher ?? $voucher->nama,
+                    'jenis_voucher' => $voucher->jenis_voucher ?? $voucher->jenis,
+                    'nominal' => (float) ($voucher->nominal ?? 0),
+                    'min_pembelian' => (float) ($voucher->min_pembelian ?? 0),
+                    'max_diskon' => (float) ($voucher->max_diskon ?? 0),
+                    'kuota' => (int) ($voucher->kuota ?? 0),
+                    'kuota_terpakai' => (int) ($voucher->kuota_terpakai ?? 0),
+                    'tgl_mulai' => $voucher->tgl_mulai ?? $voucher->tanggal_mulai,
+                    'tgl_berakhir' => $voucher->tgl_berakhir ?? $voucher->tanggal_berakhir,
+                    'status' => $voucher->status ?? '1',
+                    'is_valid' => $isValid,
+                    'sisa_kuota' => max(0, ($voucher->kuota ?? 0) - ($voucher->kuota_terpakai ?? 0)),
+                    'created_at' => $voucher->created_at ?? null,
+                    'updated_at' => $voucher->updated_at ?? null
+                ];
+            }
+            
+            $totalPages = ceil($totalVouchers / $perPage);
+            
+            return $this->respond([
+                'success' => true,
+                'message' => 'Vouchers retrieved successfully',
+                'data' => [
+                    'vouchers' => $formattedVouchers,
+                    'pagination' => [
+                        'current_page' => $page,
+                        'per_page' => $perPage,
+                        'total' => $totalVouchers,
+                        'total_pages' => $totalPages,
+                        'has_next' => $page < $totalPages,
+                        'has_prev' => $page > 1
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->failServerError('Failed to get vouchers: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Generate transaction number
      * 
      * @return string
