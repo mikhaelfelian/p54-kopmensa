@@ -76,10 +76,20 @@ class InputStok extends BaseController
 
         // Get filter options
         $supplierList = $this->supplierModel->where('status', '1')->findAll();
-        $gudangList   = $this->gudangModel->where('status', '1')->findAll();
+        $gudangList   = $this->gudangModel->where('status', '1')->where('status_otl', '0')->findAll();
 
         // Get users for filter (only active users)
-        $userList = $this->ionAuth->users()->result();
+        // Get all users except root (id=1)
+        // Adding where('tipe', '1')
+        $userList = array_filter(
+            $this->ionAuth
+                ->where('tipe', '1')
+                ->users()
+                ->result(),
+            function($user) {
+                return isset($user->id) && $user->id != 1;
+            }
+        );
 
         $data = [
             'title'        => 'Penerimaan Barang',
