@@ -17,9 +17,6 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col-md-6">
-                        <a href="<?= base_url('gudang/stok/create') ?>" class="btn btn-sm btn-primary rounded-0">
-                            <i class="fas fa-plus"></i> Tambah Data
-                        </a>
                         <a href="<?= base_url('gudang/stok/export_excel') . '?' . http_build_query($_GET) ?>" class="btn btn-sm btn-success rounded-0">
                             <i class="fas fa-file-excel"></i> Export Excel
                         </a>
