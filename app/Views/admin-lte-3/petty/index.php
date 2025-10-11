@@ -7,9 +7,6 @@
             <i class="fas fa-money-bill-wave"></i> Data Kas
         </h3>
         <div class="card-tools">
-            <a href="<?= base_url('transaksi') ?>" class="btn btn-secondary btn-sm">
-                <i class="fas fa-arrow-left"></i> Kembali
-            </a>
         </div>
     </div>
     <div class="card-body">
@@ -24,9 +21,6 @@
                 </a>
                 <a href="<?= base_url('transaksi/petty/summary') ?>" class="btn btn-success">
                     <i class="fas fa-chart-bar mr-2"></i>Ringkasan
-                </a>
-                <a href="<?= base_url('transaksi/petty/export') ?>" class="btn btn-warning">
-                    <i class="fas fa-download mr-2"></i>Export
                 </a>
             </div>
         </div>
