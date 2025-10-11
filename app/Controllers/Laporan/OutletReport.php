@@ -270,7 +270,7 @@ class OutletReport extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/outlet/index', $data);
+        return $this->view($this->theme->getThemePath() . '/laporan/outlet/index', $data);
     }
 
     public function detail($id)
