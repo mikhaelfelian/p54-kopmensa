@@ -262,6 +262,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('gudang/trash', 'Gudang::trash');
     $routes->get('gudang/restore/(:num)', 'Gudang::restore/$1');
     $routes->get('gudang/delete_permanent/(:num)', 'Gudang::delete_permanent/$1');
+    $routes->get('gudang/import', 'Gudang::importForm');
+    $routes->post('gudang/import', 'Gudang::importCsv');
+    $routes->get('gudang/template', 'Gudang::downloadTemplate');
 });
 
 // Satuan routes
@@ -272,6 +275,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('satuan/edit/(:num)', 'Satuan::edit/$1');
     $routes->post('satuan/update/(:num)', 'Satuan::update/$1');
     $routes->get('satuan/delete/(:num)', 'Satuan::delete/$1');
+    $routes->get('satuan/import', 'Satuan::importForm');
+    $routes->post('satuan/import', 'Satuan::importCsv');
+    $routes->get('satuan/template', 'Satuan::downloadTemplate');
 });
 
 // Kategori routes
@@ -282,6 +288,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('kategori/edit/(:num)', 'Kategori::edit/$1');
     $routes->post('kategori/update/(:num)', 'Kategori::update/$1');
     $routes->get('kategori/delete/(:num)', 'Kategori::delete/$1');
+    $routes->get('kategori/import', 'Kategori::importForm');
+    $routes->post('kategori/import', 'Kategori::importCsv');
+    $routes->get('kategori/template', 'Kategori::downloadTemplate');
 });
 
 // Varian routes
@@ -292,6 +301,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('varian/edit/(:num)', 'Varian::edit/$1');
     $routes->post('varian/update/(:num)', 'Varian::update/$1');
     $routes->get('varian/delete/(:num)', 'Varian::delete/$1');
+    $routes->get('varian/import', 'Varian::importForm');
+    $routes->post('varian/import', 'Varian::importCsv');
+    $routes->get('varian/template', 'Varian::downloadTemplate');
 });
 
 // Voucher routes
@@ -313,6 +325,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('merk/edit/(:num)', 'Merk::edit/$1');
     $routes->post('merk/update/(:num)', 'Merk::update/$1');
     $routes->get('merk/delete/(:num)', 'Merk::delete/$1');
+    $routes->get('merk/import', 'Merk::importForm');
+    $routes->post('merk/import', 'Merk::importCsv');
+    $routes->get('merk/template', 'Merk::downloadTemplate');
 });
 
 
@@ -325,6 +340,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('karyawan/update/(:num)', 'Karyawan::update/$1');
     $routes->get('karyawan/delete/(:num)', 'Karyawan::delete/$1');
     $routes->get('karyawan/detail/(:num)', 'Karyawan::detail/$1');
+    $routes->get('karyawan/import', 'Karyawan::importForm');
+    $routes->post('karyawan/import', 'Karyawan::importCsv');
+    $routes->get('karyawan/template', 'Karyawan::downloadTemplate');
 });
 
 /*****
@@ -398,6 +416,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/detail/(:num)', 'Supplier::detail/$1');
     $routes->get('supplier/trash', 'Supplier::trash');
     $routes->get('supplier/export', 'Supplier::export');
+    $routes->get('supplier/import', 'Supplier::importForm');
+    $routes->post('supplier/import', 'Supplier::importCsv');
+    $routes->get('supplier/template', 'Supplier::downloadTemplate');
     
     // Item Settings for Supplier
     $routes->get('supplier/items/(:num)', 'Supplier::items/$1');
@@ -426,6 +447,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('customer/get_user_info/(:num)', 'Pelanggan::get_user_info/$1');
     $routes->get('customer/get_user_logs/(:num)', 'Pelanggan::get_user_logs/$1');
     $routes->get('customer/get_purchase_history/(:num)', 'Pelanggan::get_purchase_history/$1');
+    $routes->get('customer/import', 'Pelanggan::importForm');
+    $routes->post('customer/import', 'Pelanggan::importCsv');
+    $routes->get('customer/template', 'Pelanggan::downloadTemplate');
 
     // Customer Group (Grup Pelanggan) routes
     $routes->get('customer-group', 'PelangganGrup::index');
@@ -436,6 +460,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('customer-group/delete/(:num)', 'PelangganGrup::delete/$1');
     $routes->get('customer-group/detail/(:num)', 'PelangganGrup::detail/$1');
     $routes->get('customer-group/trash', 'PelangganGrup::trash');
+    $routes->get('customer-group/import', 'PelangganGrup::importForm');
+    $routes->post('customer-group/import', 'PelangganGrup::importCsv');
+    $routes->get('customer-group/template', 'PelangganGrup::downloadTemplate');
     $routes->get('customer-group/restore/(:num)', 'PelangganGrup::restore/$1');
     $routes->get('customer-group/delete_permanent/(:num)', 'PelangganGrup::delete_permanent/$1');
     $routes->get('customer-group/add-member/(:num)', 'PelangganGrup::add_member/$1');
@@ -471,6 +498,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('outlet/trash', 'Outlet::trash');
     $routes->get('outlet/restore/(:num)', 'Outlet::restore/$1');
     $routes->get('outlet/delete_permanent/(:num)', 'Outlet::delete_permanent/$1');
+    $routes->get('outlet/import', 'Outlet::importForm');
+    $routes->post('outlet/import', 'Outlet::importCsv');
+    $routes->get('outlet/template', 'Outlet::downloadTemplate');
 });
 
 // Items routes
@@ -494,6 +524,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('item/store_variant/(:num)', 'Item::store_variant/$1');
     $routes->get('item/get_variants/(:num)', 'Item::get_variants/$1');
     $routes->post('item/delete_variant/(:num)', 'Item::delete_variant/$1');
+    $routes->get('item/import', 'Item::importForm');
+    $routes->post('item/import', 'Item::importCsv');
+    $routes->get('item/template', 'Item::downloadTemplate');
 });
 
 // Add route for TransJual get_variants (for cashier)
