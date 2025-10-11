@@ -532,6 +532,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 // Add route for TransJual get_variants (for cashier)
 $routes->get('transaksi/transjual/get_variants/(:num)', 'Transaksi\\TransJual::get_variants/$1');
 
+// Add route for sales reports
+$routes->get('transaksi/jual/reports', 'Laporan\\SaleReport::index');
+
 // User Module Routes
 $routes->group('users/modules', ['namespace' => 'App\Controllers\Pengaturan', 'filter' => 'auth'], function ($routes) {
     $routes->get('/', 'Modules::index');
