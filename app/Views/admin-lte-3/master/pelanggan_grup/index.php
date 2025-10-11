@@ -17,6 +17,12 @@
                 <a href="<?= base_url('master/customer-group/create') ?>" class="btn btn-sm btn-primary rounded-0">
                     <i class="fas fa-plus"></i> Tambah Grup
                 </a>
+                <a href="<?= base_url('master/customer-group/import') ?>" class="btn btn-sm btn-success rounded-0">
+                    <i class="fas fa-file-import"></i> IMPORT
+                </a>
+                <a href="<?= base_url('master/customer-group/template') ?>" class="btn btn-sm btn-info rounded-0">
+                    <i class="fas fa-download"></i> Template
+                </a>
                 <a href="<?= base_url('master/customer-group/trash') ?>" class="btn btn-sm btn-danger rounded-0">
                     <i class="fas fa-trash"></i> Sampah (<?= $trashCount ?>)
                 </a>
