@@ -99,7 +99,14 @@ class PettyModel extends Model
         }
 
         if (!empty($filters['shift_id'])) {
-            $builder->where('tbl_pos_petty_cash.shift_id', $filters['shift_id']);
+            // Check if table and shift_id column exist before using it
+            if ($this->isTableReady()) {
+                try {
+                    $builder->where('tbl_pos_petty_cash.shift_id', $filters['shift_id']);
+                } catch (\Exception $e) {
+                    log_message('error', 'PettyModel: Database error in getPettyCashWithDetails shift_id filter: ' . $e->getMessage());
+                }
+            }
         }
 
         if (!empty($filters['user_id'])) {
@@ -346,20 +353,63 @@ class PettyModel extends Model
     }
 
     /**
+     * Check if petty cash table is properly set up
+     */
+    public function isTableReady()
+    {
+        try {
+            $tableExists = $this->db->tableExists($this->table);
+            $fieldExists = $this->db->fieldExists('shift_id', $this->table);
+            
+            log_message('debug', 'PettyModel: Table exists: ' . ($tableExists ? 'yes' : 'no'));
+            log_message('debug', 'PettyModel: shift_id field exists: ' . ($fieldExists ? 'yes' : 'no'));
+            
+            return $tableExists && $fieldExists;
+        } catch (\Exception $e) {
+            log_message('error', 'PettyModel: Error checking table readiness: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Get petty cash summary by shift
      */
     public function getPettyCashSummaryByShift($shiftId)
     {
-        $result = $this->select('
-            SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as total_in,
-            SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_out,
-            COUNT(CASE WHEN direction = "IN" THEN 1 END) as count_in,
-            COUNT(CASE WHEN direction = "OUT" THEN 1 END) as count_out
-        ')
-        ->where('shift_id', $shiftId)
-        ->where('status', 'posted')
-        ->get()
-        ->getRow();
+        // Check if table and shift_id column exist
+        if (!$this->isTableReady()) {
+            log_message('debug', 'PettyModel: Table not ready, returning empty summary');
+            // Return empty summary if table/column doesn't exist
+            return [
+                'total_in' => 0,
+                'total_out' => 0,
+                'count_in' => 0,
+                'count_out' => 0
+            ];
+        }
+        
+        log_message('debug', 'PettyModel: Getting summary for shift_id: ' . $shiftId);
+        
+        try {
+            $result = $this->select('
+                SUM(CASE WHEN direction = "IN" THEN amount ELSE 0 END) as total_in,
+                SUM(CASE WHEN direction = "OUT" THEN amount ELSE 0 END) as total_out,
+                COUNT(CASE WHEN direction = "IN" THEN 1 END) as count_in,
+                COUNT(CASE WHEN direction = "OUT" THEN 1 END) as count_out
+            ')
+            ->where('shift_id', $shiftId)
+            ->where('status', 'posted')
+            ->get()
+            ->getRow();
+        } catch (\Exception $e) {
+            log_message('error', 'PettyModel: Database error in getPettyCashSummaryByShift: ' . $e->getMessage());
+            return [
+                'total_in' => 0,
+                'total_out' => 0,
+                'count_in' => 0,
+                'count_out' => 0
+            ];
+        }
 
         return [
             'total_in' => $result->total_in ?? 0,
