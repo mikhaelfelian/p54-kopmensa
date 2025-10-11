@@ -106,7 +106,7 @@ class PurchaseReport extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/purchase/index', $data);
+        return $this->view($this->theme->getThemePath() . '/laporan/purchase/index', $data);
     }
 
     public function detail($id)
@@ -151,7 +151,7 @@ class PurchaseReport extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/purchase/detail', $data);
+        return $this->view($this->theme->getThemePath() . '/laporan/purchase/detail', $data);
     }
 
     public function export_excel()
