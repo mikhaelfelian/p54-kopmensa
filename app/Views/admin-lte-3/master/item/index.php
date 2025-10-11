@@ -23,6 +23,12 @@
                         <a href="<?= base_url('master/item/create') ?>" class="btn btn-sm btn-primary rounded-0">
                             <i class="fas fa-plus"></i> Tambah Data
                         </a>
+                        <a href="<?= base_url('master/item/import') ?>" class="btn btn-sm btn-success rounded-0">
+                            <i class="fas fa-file-import"></i> IMPORT
+                        </a>
+                        <a href="<?= base_url('master/item/template') ?>" class="btn btn-sm btn-info rounded-0">
+                            <i class="fas fa-download"></i> Template
+                        </a>
                         <?php if ($trashCount > 0): ?>
                             <a href="<?= base_url('master/item/trash') ?>" class="btn btn-sm btn-danger rounded-0">
                                 <i class="fas fa-trash"></i> Arsip (<?= $trashCount ?>)
