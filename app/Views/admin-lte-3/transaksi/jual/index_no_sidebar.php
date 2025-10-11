@@ -131,14 +131,28 @@
                                             <?php
                                             $cashierName = 'Unknown';
                                             if (isset($row->user_id) && $row->user_id) {
-                                                foreach ($cashiers as $cashier) {
-                                                    if ($cashier->id == $row->user_id) {
-                                                        $cashierName = esc($cashier->first_name . ' ' . $cashier->last_name);
-                                                        break;
+                                                if (isset($cashiers) && is_array($cashiers)) {
+                                                    foreach ($cashiers as $cashier) {
+                                                        if ($cashier->id == $row->user_id) {
+                                                            $firstName = $cashier->first_name ?? '';
+                                                            $lastName = $cashier->last_name ?? '';
+                                                            $cashierName = trim($firstName . ' ' . $lastName);
+                                                            if (empty($cashierName)) {
+                                                                $cashierName = $cashier->username ?? 'User';
+                                                            }
+                                                            break;
+                                                        }
                                                     }
                                                 }
+                                                
+                                                // If still unknown and we have user_id, show user ID
+                                                if ($cashierName === 'Unknown') {
+                                                    $cashierName = 'User ID: ' . $row->user_id;
+                                                }
+                                            } else {
+                                                $cashierName = 'System';
                                             }
-                                            echo $cashierName;
+                                            echo esc($cashierName);
                                             ?>
                                         </td>
                                         <td class="text-right">
