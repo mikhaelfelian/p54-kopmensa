@@ -16,18 +16,7 @@
                 </div>
             </div>
             <div class="card-body">
-                <?php if (session()->getFlashdata('debug_info')): ?>
-                    <div class="alert alert-info">
-                        <strong>Debug Info:</strong> <?= session()->getFlashdata('debug_info') ?>
-                    </div>
-                <?php endif; ?>
                 
-                <?php if (!empty($cutoffs) && count($cutoffs) > 0): ?>
-                    <div class="alert alert-success">
-                        <strong>Available Columns in v_trans_jual_cutoff:</strong><br>
-                        <?= implode(', ', array_keys((array)$cutoffs[0])) ?>
-                    </div>
-                <?php endif; ?>
                 
                 <!-- Filters -->
                 <div class="row mb-3">
@@ -145,7 +134,10 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
-                                            <a href="<?= base_url('laporan/cutoff/detail/' . $cutoff->{$idField}) ?>" 
+                                            <?php 
+                                            $cutoffId = $cutoff->{$idField} ?? $cutoff->id ?? $cutoff->id_trans_jual ?? $cutoff->trans_id ?? 0;
+                                            ?>
+                                            <a href="<?= base_url('laporan/cutoff/detail/' . $cutoffId) ?>" 
                                                class="btn btn-info btn-sm" title="View Detail">
                                                 <i class="fas fa-eye"></i>
                                             </a>
