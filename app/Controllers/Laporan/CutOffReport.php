@@ -91,7 +91,7 @@ class CutOffReport extends BaseController
 
         // Get outlets for filter
         $gudangModel = new \App\Models\GudangModel();
-        $outlets = $gudangModel->where('status', '1')->where('status_hps', '0')->findAll();
+        $outlets = $gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
 
         $data = [
             'title' => 'Cut-off Report',
