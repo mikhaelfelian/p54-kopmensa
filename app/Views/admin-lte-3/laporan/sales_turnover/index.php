@@ -40,7 +40,7 @@
                                value="<?= $endDate ?>">
                     </div>
                     <div class="form-group mr-3">
-                        <label class="mr-2">Warehouse / Store:</label>
+                        <label class="mr-2">Store:</label>
                         <select name="id_gudang" class="form-control form-control-sm">
                             <option value="">Semua Gudang</option>
                             <?php foreach ($gudangList as $gudang): ?>
