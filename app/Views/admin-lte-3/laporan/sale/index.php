@@ -52,9 +52,14 @@
                             <label>Pelanggan</label>
                             <select name="id_pelanggan" class="form-control form-control-sm">
                                 <option value="">Semua Pelanggan</option>
-                                <?php foreach ($pelangganList as $pelanggan): ?>
+                                <?php
+                                // Read user list from Ion Auth where tipe = '2'
+                                $ionAuth = new \IonAuth\Libraries\IonAuth();
+                                $pelangganUsers = $ionAuth->where('tipe', '2')->users()->result();
+                                foreach ($pelangganUsers as $pelanggan):
+                                ?>
                                     <option value="<?= $pelanggan->id ?>" <?= $idPelanggan == $pelanggan->id ? 'selected' : '' ?>>
-                                        <?= $pelanggan->nama ?>
+                                        <?= isset($pelanggan->nama) ? $pelanggan->nama : (isset($pelanggan->first_name) ? $pelanggan->first_name : 'Pelanggan ' . $pelanggan->id) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
