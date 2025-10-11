@@ -98,7 +98,7 @@ class StockReport extends BaseController
             'sortOrder' => $sortOrder
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/stock/index', $data);
+        return $this->view($this->theme->getThemePath() . '/laporan/stock/index', $data);
     }
     
     /**
@@ -162,7 +162,7 @@ class StockReport extends BaseController
             'selectedGudang' => $gudangId
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/stock/detail', $data);
+        return $this->view($this->theme->getThemePath() . '/laporan/stock/detail', $data);
     }
 
     /**
