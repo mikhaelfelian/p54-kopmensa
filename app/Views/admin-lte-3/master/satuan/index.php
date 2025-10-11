@@ -20,6 +20,12 @@
                         <a href="<?= base_url('master/satuan/create') ?>" class="btn btn-sm btn-primary rounded-0">
                             <i class="fas fa-plus"></i> Tambah Data
                         </a>
+                        <a href="<?= base_url('master/satuan/import') ?>" class="btn btn-sm btn-success rounded-0">
+                            <i class="fas fa-file-import"></i> IMPORT
+                        </a>
+                        <a href="<?= base_url('master/satuan/template') ?>" class="btn btn-sm btn-info rounded-0">
+                            <i class="fas fa-download"></i> Template
+                        </a>
                     </div>
                     <div class="col-md-6">
                         <?= form_open('', ['method' => 'get', 'class' => 'float-right']) ?>
