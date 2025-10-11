@@ -63,7 +63,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Metode Bayar</strong></td>
-                                <td>: <?= $sale->metode_bayar ?? '-' ?></td>
+                                <td>: <?= $sale->metode_bayar_formatted ?? '-' ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Status</strong></td>
