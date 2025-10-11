@@ -149,7 +149,7 @@ class ProfitLossReport extends BaseController
                                      ->findAll();
 
         // Get filter options
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
 
         $data = [
             'title' => 'Laporan Laba Rugi',
