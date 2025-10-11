@@ -195,6 +195,19 @@ class TransJual extends BaseController
                           ->where('status', '1')
                           ->findAll();
 
+        // Get cashiers (users from IonAuth)
+        $cashiers = [];
+        try {
+            $cashiers = $this->db->table('tbl_ion_users')
+                          ->select('id, first_name, last_name, username, email')
+                          ->where('active', '1')
+                          ->get()
+                          ->getResult();
+        } catch (\Exception $e) {
+            log_message('error', 'Error loading cashiers: ' . $e->getMessage());
+            $cashiers = [];
+        }
+
         $data = [
             'title'             => 'Kasir - Transaksi Penjualan',
             'Pengaturan'        => $this->pengaturan,
@@ -295,8 +308,7 @@ class TransJual extends BaseController
         // Get cashiers (users from IonAuth)
         $cashiers = [];
         try {
-            $db = \Config\Database::connect();
-            $cashiers = $db->table('tbl_ion_users')
+            $cashiers = $this->db->table('tbl_ion_users')
                           ->select('id, first_name, last_name, username, email')
                           ->where('active', '1')
                           ->get()
