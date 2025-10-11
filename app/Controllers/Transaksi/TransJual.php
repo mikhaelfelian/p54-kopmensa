@@ -44,6 +44,8 @@ class TransJual extends BaseController
     protected $kategoriModel;
     protected $shiftModel;
     protected $printerService;
+    protected $ionAuth;
+    protected $db;
 
 
     public function __construct()
@@ -63,6 +65,8 @@ class TransJual extends BaseController
         $this->kategoriModel       = new KategoriModel();
         $this->shiftModel          = new ShiftModel();
         $this->printerService      = new PrinterService();
+        $this->ionAuth             = new \IonAuth\Libraries\IonAuth();
+        $this->db                  = \Config\Database::connect();
     }
 
     /**
