@@ -23,6 +23,7 @@ class SaleReport extends BaseController
     protected $pelangganModel;
     protected $gudangModel;
     protected $karyawanModel;
+    protected $ionAuth;
 
     public function __construct()
     {
@@ -143,6 +144,34 @@ class SaleReport extends BaseController
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_jual_det.id_satuan', 'left')
             ->where('id_penjualan', $id)
             ->findAll();
+            
+        // Ensure proper fallbacks for item data
+        foreach ($items as $item) {
+            $item->satuan_nama = $item->satuan_nama ?? '-';
+            $item->item_nama = $item->item_nama ?? '-';
+            $item->item_kode = $item->item_kode ?? '-';
+        }
+
+        // Format payment method for display
+        $paymentMethodMap = [
+            '1' => 'Cash',
+            '2' => 'Transfer',
+            '3' => 'Kartu Kredit',
+            '4' => 'Kartu Debit',
+            'cash' => 'Cash',
+            'transfer' => 'Transfer',
+            'credit' => 'Kartu Kredit',
+            'debit' => 'Kartu Debit'
+        ];
+        
+        $sale->metode_bayar_formatted = $paymentMethodMap[$sale->metode_bayar] ?? $sale->metode_bayar ?? '-';
+        
+        // Ensure proper fallbacks for missing data
+        $sale->pelanggan_nama = $sale->pelanggan_nama ?? '-';
+        $sale->pelanggan_alamat = $sale->pelanggan_alamat ?? '-';
+        $sale->pelanggan_telepon = $sale->pelanggan_telepon ?? '-';
+        $sale->sales_nama = $sale->sales_nama ?? '-';
+        $sale->gudang_nama = $sale->gudang_nama ?? '-';
 
         $data = [
             'title' => 'Detail Penjualan - ' . $sale->no_nota,
