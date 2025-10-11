@@ -17,6 +17,12 @@
                 <a href="<?= base_url('master/karyawan/create') ?>" class="btn btn-sm btn-primary rounded-0">
                     <i class="fas fa-plus"></i> Tambah Data
                 </a>
+                <a href="<?= base_url('master/karyawan/import') ?>" class="btn btn-sm btn-success rounded-0">
+                    <i class="fas fa-file-import"></i> IMPORT
+                </a>
+                <a href="<?= base_url('master/karyawan/template') ?>" class="btn btn-sm btn-info rounded-0">
+                    <i class="fas fa-download"></i> Template
+                </a>
                 <a href="<?= base_url('master/karyawan/export') ?>?<?= $_SERVER['QUERY_STRING'] ?>"
                     class="btn btn-sm btn-success rounded-0">
                     <i class="fas fa-file-excel"></i> Export Excel
