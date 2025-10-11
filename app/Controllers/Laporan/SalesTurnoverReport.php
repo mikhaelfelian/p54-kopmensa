@@ -96,7 +96,7 @@ class SalesTurnoverReport extends BaseController
         }
 
         // Get filter options
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $salesList = $this->karyawanModel->where('status', '0')->findAll();
 
         $data = [
