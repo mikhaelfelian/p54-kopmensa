@@ -33,6 +33,7 @@ class SaleReport extends BaseController
         $this->pelangganModel = new PelangganModel();
         $this->gudangModel = new GudangModel();
         $this->karyawanModel = new KaryawanModel();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
     public function index()
