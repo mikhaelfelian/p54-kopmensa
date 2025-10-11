@@ -140,6 +140,7 @@
                                         </td>
                                         <td>
                                             <?php
+                                            // Find Pelanggan
                                             $customerName = 'Umum';
                                             if ($row->id_pelanggan) {
                                                 foreach ($customers as $customer) {
@@ -149,7 +150,17 @@
                                                     }
                                                 }
                                             }
-                                            echo esc($customerName);
+                                            echo '<div><strong>Pelanggan: </strong>' . esc($customerName) . '</div>';
+
+                                            // Show Petugas (user who made the transaction)
+                                            if (isset($row->user_name) && !empty($row->user_name)) {
+                                                echo '<div><strong>Petugas: </strong>' . esc($row->user_name) . '</div>';
+                                            } else {
+                                                // Fallback to current logged-in user as Petugas
+                                                if (isset($user) && isset($user->username)) {
+                                                    echo '<div><strong>Petugas: </strong>' . esc($user->username) . '</div>';
+                                                }
+                                            }
                                             ?>
                                         </td>
                                         <td class="text-right">
@@ -241,12 +252,16 @@
                         <i class="fas fa-chart-bar fa-lg mr-3"></i>
                         <span class="font-weight-bold" style="font-size:1.1rem;">Laporan</span>
                     </button>
-                    <button type="button"
-                        class="btn btn-warning btn-lg rounded-0 py-3 shadow-sm text-left d-flex align-items-center"
-                        onclick="viewReturns()">
-                        <i class="fas fa-undo fa-lg mr-3"></i>
-                        <span class="font-weight-bold" style="font-size:1.1rem;">Retur</span>
-                    </button>
+                    <a href="<?= base_url('transaksi/retur/jual/exchange') ?>"
+                        class="btn btn-warning btn-lg rounded-0 py-3 shadow-sm text-left d-flex align-items-center mb-2">
+                        <i class="fas fa-exchange-alt fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Retur Tukar</span>
+                    </a>
+                    <a href="<?= base_url('transaksi/refund') ?>"
+                        class="btn btn-danger btn-lg rounded-0 py-3 shadow-sm text-left d-flex align-items-center">
+                        <i class="fas fa-money-bill-wave fa-lg mr-3"></i>
+                        <span class="font-weight-bold" style="font-size:1.1rem;">Retur Refund</span>
+                    </a>
                 </div>
             </div>
         </div>
