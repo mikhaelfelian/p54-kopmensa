@@ -891,4 +891,142 @@ class Pelanggan extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Error retrieving purchase history']);
         }
     }
+
+    /**
+     * Show CSV import form
+     */
+    public function importForm()
+    {
+        $data = [
+            'title'         => 'Import Data Pelanggan',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'breadcrumbs'   => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/customer') . '">Pelanggan</a></li>
+                <li class="breadcrumb-item active">Import CSV</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/master/pelanggan/import', $data);
+    }
+
+    /**
+     * Process CSV import
+     */
+    public function importCsv()
+    {
+        $file = $this->request->getFile('csv_file');
+        
+        if (!$file || !$file->isValid()) {
+            return redirect()->back()
+                ->with('error', 'File CSV tidak valid');
+        }
+
+        // Validation rules
+        $rules = [
+            'csv_file' => [
+                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+                'errors' => [
+                    'uploaded' => 'File CSV harus diupload',
+                    'ext_in' => 'File harus berformat CSV',
+                    'max_size' => 'Ukuran file maksimal 2MB'
+                ]
+            ]
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
+        }
+
+        try {
+            $csvData = [];
+            $handle = fopen($file->getTempName(), 'r');
+            
+            // Skip header row
+            $header = fgetcsv($handle);
+            
+            while (($row = fgetcsv($handle)) !== false) {
+                if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    $csvData[] = [
+                        'nama' => trim($row[0]),
+                        'no_telp' => isset($row[1]) ? trim($row[1]) : '',
+                        'alamat' => isset($row[2]) ? trim($row[2]) : '',
+                        'email' => isset($row[3]) ? trim($row[3]) : '',
+                        'tanggal_lahir' => isset($row[4]) ? trim($row[4]) : null,
+                        'jenis_kelamin' => isset($row[5]) ? trim($row[5]) : '',
+                        'keterangan' => isset($row[6]) ? trim($row[6]) : '',
+                        'status' => isset($row[7]) ? trim($row[7]) : '1'
+                    ];
+                }
+            }
+            fclose($handle);
+
+            if (empty($csvData)) {
+                return redirect()->back()
+                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+            }
+
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+
+            foreach ($csvData as $index => $data) {
+                try {
+                    if ($this->pelangganModel->insert($data)) {
+                        $successCount++;
+                    } else {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->pelangganModel->errors());
+                    }
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                }
+            }
+
+            $message = "Import selesai. Berhasil: {$successCount}, Gagal: {$errorCount}";
+            if (!empty($errors)) {
+                $message .= "<br>Error details:<br>" . implode("<br>", array_slice($errors, 0, 10));
+                if (count($errors) > 10) {
+                    $message .= "<br>... dan " . (count($errors) - 10) . " error lainnya";
+                }
+            }
+
+            return redirect()->to(base_url('master/customer'))
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download CSV template
+     */
+    public function downloadTemplate()
+    {
+        $filename = 'template_pelanggan.csv';
+        $filepath = FCPATH . 'assets/templates/' . $filename;
+        
+        // Create template if not exists
+        if (!file_exists($filepath)) {
+            $templateDir = dirname($filepath);
+            if (!is_dir($templateDir)) {
+                mkdir($templateDir, 0777, true);
+            }
+            
+            $template = "Nama,No Telp,Alamat,Email,Tanggal Lahir,Jenis Kelamin,Keterangan,Status\n";
+            $template .= "John Doe,08123456789,Jl. Sudirman No. 1,john@email.com,1990-01-01,L,Pelanggan VIP,1\n";
+            $template .= "Jane Smith,08123456788,Jl. Thamrin No. 2,jane@email.com,1992-05-15,P,Pelanggan reguler,1\n";
+            
+            file_put_contents($filepath, $template);
+        }
+        
+        return $this->response->download($filepath, null);
+    }
 } 
