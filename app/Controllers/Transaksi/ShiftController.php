@@ -56,14 +56,15 @@ class ShiftController extends BaseController
         $user_id = $this->ionAuth->user()->row()->id;
         $existingShifts = [];
         
-        // Check if user has any open shifts
-        $openShifts = $this->shiftModel
+        // Check if user has any shifts for today
+        $today = date('Y-m-d');
+        $todayShifts = $this->shiftModel
             ->where('user_open_id', $user_id)
-            ->where('status', 'open')
+            ->where('DATE(start_at)', $today)
             ->findAll();
             
-        if (!empty($openShifts)) {
-            $existingShifts = $openShifts;
+        if (!empty($todayShifts)) {
+            $existingShifts = $todayShifts;
         }
         
         $data = array_merge($this->data, [
@@ -99,14 +100,24 @@ class ShiftController extends BaseController
             $user = $this->ionAuth->user()->row();
             $user_id = $user ? $user->id : null;
             
-            // Check if user already has an open shift for this outlet
-            $existingShift = $this->getUserOpenShift($user_id, $outlet_id);
+            // Check if user already has a shift for today at this outlet
+            $existingShift = $this->getUserShiftForToday($user_id, $outlet_id);
             
             if ($existingShift) {
-                // User already has an open shift - recreate session instead of creating duplicate
-                $this->recreateSessionForShift($existingShift);
-                session()->setFlashdata('success', 'Session berhasil dipulihkan untuk shift yang sudah terbuka: ' . $existingShift->shift_code);
-                return redirect()->to('/transaksi/jual/cashier');
+                // Check if the existing shift is open
+                $shift_status = is_array($existingShift) ? $existingShift['status'] : $existingShift->status;
+                
+                if ($shift_status === 'open') {
+                    // User already has an open shift - recreate session instead of creating duplicate
+                    $this->recreateSessionForShift($existingShift);
+                    $shift_code = is_array($existingShift) ? $existingShift['shift_code'] : $existingShift->shift_code;
+                    session()->setFlashdata('success', 'Session berhasil dipulihkan untuk shift yang sudah terbuka: ' . $shift_code);
+                    return redirect()->to('/transaksi/jual/cashier');
+                } else {
+                    // User already has a closed shift for today - prevent creating new one
+                    session()->setFlashdata('error', 'Anda sudah memiliki shift untuk outlet ini hari ini. Hanya satu shift per hari per outlet yang diizinkan.');
+                    return redirect()->back()->withInput();
+                }
             }
             
             // Generate shift code
@@ -312,13 +323,30 @@ class ShiftController extends BaseController
     }
 
     /**
+     * Check if user has any shift for the same day and outlet (regardless of status)
+     */
+    private function getUserShiftForToday($user_id, $outlet_id)
+    {
+        $today = date('Y-m-d');
+        return $this->shiftModel
+            ->where('user_open_id', $user_id)
+            ->where('outlet_id', $outlet_id)
+            ->where('DATE(start_at)', $today)
+            ->first();
+    }
+
+    /**
      * Recreate session for existing shift
      */
     private function recreateSessionForShift($shift)
     {
-        session()->set('kasir_shift', $shift->id);
-        session()->set('kasir_outlet', $shift->outlet_id);
-        session()->set('outlet_id', $shift->outlet_id);
+        // Handle both array and object formats
+        $shift_id = is_array($shift) ? $shift['id'] : $shift->id;
+        $outlet_id = is_array($shift) ? $shift['outlet_id'] : $shift->outlet_id;
+        
+        session()->set('kasir_shift', $shift_id);
+        session()->set('kasir_outlet', $outlet_id);
+        session()->set('outlet_id', $outlet_id);
         
         return true;
     }
@@ -348,7 +376,8 @@ class ShiftController extends BaseController
         
         // Check if shift belongs to current user
         $user_id = $this->ionAuth->user()->row()->id;
-        if ($shift->user_open_id !== $user_id) {
+        $shift_user_id = is_array($shift) ? $shift['user_open_id'] : $shift->user_open_id;
+        if ($shift_user_id !== $user_id) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Anda tidak memiliki akses ke shift ini'
@@ -357,11 +386,14 @@ class ShiftController extends BaseController
         
         $this->recreateSessionForShift($shift);
         
+        $shift_code = is_array($shift) ? $shift['shift_code'] : $shift->shift_code;
+        $shift_id = is_array($shift) ? $shift['id'] : $shift->id;
+        
         return $this->response->setJSON([
             'success' => true,
-            'message' => 'Session berhasil dipulihkan untuk shift: ' . $shift->shift_code,
-            'shift_id' => $shift->id,
-            'shift_code' => $shift->shift_code
+            'message' => 'Session berhasil dipulihkan untuk shift: ' . $shift_code,
+            'shift_id' => $shift_id,
+            'shift_code' => $shift_code
         ]);
     }
 
@@ -394,19 +426,33 @@ class ShiftController extends BaseController
 
         $user_id = $this->ionAuth->user()->row()->id;
         
-        // Check if user already has an open shift for this outlet
-        $existingShift = $this->getUserOpenShift($user_id, $outlet_id);
+        // Check if user already has a shift for today at this outlet
+        $existingShift = $this->getUserShiftForToday($user_id, $outlet_id);
         
         if ($existingShift) {
-            // User already has an open shift - recreate session instead of creating duplicate
-            $this->recreateSessionForShift($existingShift);
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Session berhasil dipulihkan untuk shift yang sudah terbuka: ' . $existingShift->shift_code,
-                'shift_id' => $existingShift->id,
-                'shift_code' => $existingShift->shift_code,
-                'recreated' => true
-            ]);
+            // Check if the existing shift is open
+            $shift_status = is_array($existingShift) ? $existingShift['status'] : $existingShift->status;
+            
+            if ($shift_status === 'open') {
+                // User already has an open shift - recreate session instead of creating duplicate
+                $this->recreateSessionForShift($existingShift);
+                $shift_code = is_array($existingShift) ? $existingShift['shift_code'] : $existingShift->shift_code;
+                $shift_id = is_array($existingShift) ? $existingShift['id'] : $existingShift->id;
+                
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Session berhasil dipulihkan untuk shift yang sudah terbuka: ' . $shift_code,
+                    'shift_id' => $shift_id,
+                    'shift_code' => $shift_code,
+                    'recreated' => true
+                ]);
+            } else {
+                // User already has a closed shift for today - prevent creating new one
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Anda sudah memiliki shift untuk outlet ini hari ini. Hanya satu shift per hari per outlet yang diizinkan.'
+                ]);
+            }
         }
 
         $data = [
