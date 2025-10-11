@@ -111,7 +111,7 @@ class ProductSalesReport extends BaseController
         }
 
         // Get filter options
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $kategoriList = $this->kategoriModel->where('status', '1')->findAll();
         $merkList = $this->merkModel->where('status', '1')->findAll();
 
