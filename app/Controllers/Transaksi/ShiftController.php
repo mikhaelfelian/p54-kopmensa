@@ -101,21 +101,27 @@ class ShiftController extends BaseController
                 'status'            => 'open'
             ];
 
-            if ($this->shiftModel->insert($data)) {
-                // Set session kasir_shift with last insert id before redirect
-                $lastInsertId = $this->shiftModel->getInsertID();
-                session()->set('kasir_shift', $lastInsertId);
-                session()->set('kasir_outlet', $outlet_id);
+            try {
+                if ($this->shiftModel->insert($data)) {
+                    // Set session kasir_shift with last insert id before redirect
+                    $lastInsertId = $this->shiftModel->getInsertID();
+                    session()->set('kasir_shift', $lastInsertId);
+                    session()->set('kasir_outlet', $outlet_id);
 
-                if (session()->has('kasir_outlet')) {
-                    session()->setFlashdata('success', 'Shift berhasil dibuka');
-                    return redirect()->to('/transaksi/jual/cashier');
+                    if (session()->has('kasir_outlet')) {
+                        session()->setFlashdata('success', 'Shift berhasil dibuka');
+                        return redirect()->to('/transaksi/jual/cashier');
+                    }
+                    return redirect()->to('/transaksi/shift');
+                } else {
+                    // Debug: Log any database errors
+                    $db_error = $this->shiftModel->db->error();
+                    session()->setFlashdata('error', 'Gagal membuka shift: ' . ($db_error['message'] ?? 'Unknown error'));
                 }
-                return redirect()->to('/transaksi/shift');
-            } else {
-                // Debug: Log any database errors
-                $db_error = $this->shiftModel->db->error();
-                session()->setFlashdata('error', 'Gagal membuka shift: ' . ($db_error['message'] ?? 'Unknown error'));
+            } catch (\Exception $e) {
+                // Catch the exception and show toastr message instead of exception page
+                session()->setFlashdata('error', $e->getMessage());
+                return redirect()->back()->withInput();
             }
         } else {
             // Debug: Log validation errors
@@ -309,17 +315,24 @@ class ShiftController extends BaseController
             'status' => 'open'
         ];
 
-        if ($this->shiftModel->insert($data)) {
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Shift berhasil dibuka',
-                'shift_id' => $this->shiftModel->insertID,
-                'shift_code' => $data['shift_code']
-            ]);
-        } else {
+        try {
+            if ($this->shiftModel->insert($data)) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Shift berhasil dibuka',
+                    'shift_id' => $this->shiftModel->insertID,
+                    'shift_code' => $data['shift_code']
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal membuka shift'
+                ]);
+            }
+        } catch (\Exception $e) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Gagal membuka shift'
+                'message' => $e->getMessage()
             ]);
         }
     }
