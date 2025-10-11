@@ -35,7 +35,16 @@
                             <tr>
                                 <td><?= $shift['shift_code'] ?></td>
                                 <td><?= $shift['outlet_name'] ?? 'Outlet ID: ' . $shift['outlet_id'] ?></td>
-                                <td><?= ($shift['user_open_name'] ?? 'User ID: ' . $shift['user_open_id']) . ' ' . ($shift['user_open_lastname'] ?? '') ?></td>
+                                <td>
+                                    <?php 
+                                    $userName = trim(($shift['user_open_name'] ?? '') . ' ' . ($shift['user_open_lastname'] ?? ''));
+                                    if (empty($userName) || $userName === 'Unknown') {
+                                        echo 'User ID: ' . ($shift['user_open_id'] ?? 'N/A');
+                                    } else {
+                                        echo $userName;
+                                    }
+                                    ?>
+                                </td>
                                 <td><?= tgl_indo8($shift['start_at']) ?></td>
                                 <td><?= $shift['end_at'] ? tgl_indo8($shift['end_at']) : '-' ?></td>
                                 <td>
@@ -73,10 +82,10 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="<?= base_url('transaksi/shift/view/' . $shift['id']) ?>" 
+                                        <!-- <a href="<?= base_url('transaksi/shift/view/' . $shift['id']) ?>" 
                                            class="btn btn-info btn-sm" title="View">
                                             <i class="fas fa-eye"></i>
-                                        </a>
+                                        </a> -->
                                         <?php if ($shift['status'] === 'open') : ?>
                                             <a href="<?= base_url('transaksi/shift/close/' . $shift['id']) ?>" 
                                                class="btn btn-warning btn-sm" title="Close Shift">
