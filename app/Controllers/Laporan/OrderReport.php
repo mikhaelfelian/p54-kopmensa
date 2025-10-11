@@ -107,7 +107,7 @@ class OrderReport extends BaseController
         $pendingOrders = count(array_filter($orders, function($order) { return $order->status_nota == '0'; }));
 
         // Get filter options
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $pelangganList = $this->pelangganModel->where('deleted_at IS NULL')->findAll();
 
         $data = [
