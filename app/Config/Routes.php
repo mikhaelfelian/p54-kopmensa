@@ -372,6 +372,7 @@ $routes->group('transaksi/shift', ['namespace' => 'App\Controllers\Transaksi', '
     // API routes for AJAX calls
     $routes->post('api/open', 'ShiftController::apiOpenShift');
     $routes->post('api/close', 'ShiftController::apiCloseShift');
+    $routes->post('api/recover', 'ShiftController::recoverSession');
 });
 
 // Petty Cash Routes under transaksi/
