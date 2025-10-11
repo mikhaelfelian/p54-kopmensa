@@ -41,7 +41,7 @@ class BestSellingReport extends BaseController
         $idGudang = $this->request->getGet('id_gudang');
         $idKategori = $this->request->getGet('id_kategori');
         $idMerk = $this->request->getGet('id_merk');
-        $limit = $this->request->getGet('limit') ?? 50;
+        $limit = (int)($this->request->getGet('limit') ?? 50);
 
         // Build query for best-selling products
         $builder = $this->transJualDetModel->select('
@@ -138,7 +138,7 @@ class BestSellingReport extends BaseController
         });
 
         // Get filter options
-        $gudangList = $this->gudangModel->where('status', '1')->findAll();
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $kategoriList = $this->kategoriModel->where('status', '1')->findAll();
         $merkList = $this->merkModel->where('status', '1')->findAll();
 
@@ -182,7 +182,7 @@ class BestSellingReport extends BaseController
         $idGudang = $this->request->getGet('id_gudang');
         $idKategori = $this->request->getGet('id_kategori');
         $idMerk = $this->request->getGet('id_merk');
-        $limit = $this->request->getGet('limit') ?? 50;
+        $limit = (int)($this->request->getGet('limit') ?? 50);
 
         $builder = $this->transJualDetModel->select('
                 tbl_m_item.kode,
