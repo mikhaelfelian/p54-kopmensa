@@ -316,4 +316,140 @@ class Outlet extends BaseController
     {
         return $this->outletModel->where('status_otl', '1')->where('status_hps', '1')->countAllResults();
     }
+
+    /**
+     * Show CSV import form
+     */
+    public function importForm()
+    {
+        $data = [
+            'title'         => 'Import Data Outlet',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'breadcrumbs'   => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/outlet') . '">Outlet</a></li>
+                <li class="breadcrumb-item active">Import CSV</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/master/outlet/import', $data);
+    }
+
+    /**
+     * Process CSV import
+     */
+    public function importCsv()
+    {
+        $file = $this->request->getFile('csv_file');
+        
+        if (!$file || !$file->isValid()) {
+            return redirect()->back()
+                ->with('error', 'File CSV tidak valid');
+        }
+
+        // Validation rules
+        $rules = [
+            'csv_file' => [
+                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+                'errors' => [
+                    'uploaded' => 'File CSV harus diupload',
+                    'ext_in' => 'File harus berformat CSV',
+                    'max_size' => 'Ukuran file maksimal 2MB'
+                ]
+            ]
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
+        }
+
+        try {
+            $csvData = [];
+            $handle = fopen($file->getTempName(), 'r');
+            
+            // Skip header row
+            $header = fgetcsv($handle);
+            
+            while (($row = fgetcsv($handle)) !== false) {
+                if (count($row) >= 2) { // At least nama, alamat
+                    $csvData[] = [
+                        'nama' => trim($row[0]),
+                        'alamat' => isset($row[1]) ? trim($row[1]) : '',
+                        'telepon' => isset($row[2]) ? trim($row[2]) : '',
+                        'keterangan' => isset($row[3]) ? trim($row[3]) : '',
+                        'status_otl' => isset($row[4]) ? trim($row[4]) : '1',
+                        'status_hps' => isset($row[5]) ? trim($row[5]) : '0'
+                    ];
+                }
+            }
+            fclose($handle);
+
+            if (empty($csvData)) {
+                return redirect()->back()
+                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+            }
+
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+
+            foreach ($csvData as $index => $data) {
+                try {
+                    if ($this->outletModel->insert($data)) {
+                        $successCount++;
+                    } else {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->outletModel->errors());
+                    }
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                }
+            }
+
+            $message = "Import selesai. Berhasil: {$successCount}, Gagal: {$errorCount}";
+            if (!empty($errors)) {
+                $message .= "<br>Error details:<br>" . implode("<br>", array_slice($errors, 0, 10));
+                if (count($errors) > 10) {
+                    $message .= "<br>... dan " . (count($errors) - 10) . " error lainnya";
+                }
+            }
+
+            return redirect()->to(base_url('master/outlet'))
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download CSV template
+     */
+    public function downloadTemplate()
+    {
+        $filename = 'template_outlet.csv';
+        $filepath = FCPATH . 'assets/templates/' . $filename;
+        
+        // Create template if not exists
+        if (!file_exists($filepath)) {
+            $templateDir = dirname($filepath);
+            if (!is_dir($templateDir)) {
+                mkdir($templateDir, 0777, true);
+            }
+            
+            $template = "Nama,Alamat,Telepon,Keterangan,Status Outlet,Status Hapus\n";
+            $template .= "Outlet Pusat,Jl. Sudirman No. 1,08123456789,Outlet utama,1,0\n";
+            $template .= "Outlet Cabang,Jl. Thamrin No. 2,08123456788,Outlet cabang,1,0\n";
+            
+            file_put_contents($filepath, $template);
+        }
+        
+        return $this->response->download($filepath, null);
+    }
 } 
