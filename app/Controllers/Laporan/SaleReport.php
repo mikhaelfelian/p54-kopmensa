@@ -110,7 +110,7 @@ class SaleReport extends BaseController
             ',
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/sale/index', $data);
+        return $this->view($this->theme->getThemePath() . '/laporan/sale/index', $data);
     }
 
     public function detail($id)
@@ -157,7 +157,7 @@ class SaleReport extends BaseController
             '
         ];
 
-        return view($this->theme->getThemePath() . '/laporan/sale/detail', $data);
+        return $this->view($this->theme->getThemePath() . '/laporan/sale/detail', $data);
     }
 
     public function export_excel()
