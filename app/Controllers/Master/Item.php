@@ -997,4 +997,171 @@ class Item extends BaseController
             ]);
         }
     }
+
+    /**
+     * Show CSV import form
+     */
+    public function importForm()
+    {
+        $data = [
+            'title'         => 'Import Data Item',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'kategori'      => $this->kategoriModel->findAll(),
+            'merk'          => $this->merkModel->findAll(),
+            'supplier'      => $this->supplierModel->findAll(),
+            'breadcrumbs'   => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/item') . '">Item</a></li>
+                <li class="breadcrumb-item active">Import CSV</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/master/item/import', $data);
+    }
+
+    /**
+     * Process CSV import
+     */
+    public function importCsv()
+    {
+        $file = $this->request->getFile('csv_file');
+        
+        if (!$file || !$file->isValid()) {
+            return redirect()->back()
+                ->with('error', 'File CSV tidak valid');
+        }
+
+        // Validation rules
+        $rules = [
+            'csv_file' => [
+                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+                'errors' => [
+                    'uploaded' => 'File CSV harus diupload',
+                    'ext_in' => 'File harus berformat CSV',
+                    'max_size' => 'Ukuran file maksimal 2MB'
+                ]
+            ]
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
+        }
+
+        try {
+            $csvData = [];
+            $handle = fopen($file->getTempName(), 'r');
+            
+            // Skip header row
+            $header = fgetcsv($handle);
+            
+            while (($row = fgetcsv($handle)) !== false) {
+                if (count($row) >= 3) { // At least item, kategori, merk
+                    $csvData[] = [
+                        'item' => trim($row[0]),
+                        'barcode' => isset($row[1]) ? trim($row[1]) : '',
+                        'deskripsi' => isset($row[2]) ? trim($row[3]) : '',
+                        'id_kategori' => isset($row[3]) ? (int)trim($row[3]) : 0,
+                        'id_merk' => isset($row[4]) ? (int)trim($row[4]) : 0,
+                        'id_supplier' => isset($row[5]) ? (int)trim($row[5]) : 0,
+                        'jml_min' => isset($row[6]) ? (int)trim($row[6]) : 0,
+                        'harga_beli' => isset($row[7]) ? format_angka_db(trim($row[7])) : 0,
+                        'harga_jual' => isset($row[8]) ? format_angka_db(trim($row[8])) : 0,
+                        'tipe' => isset($row[9]) ? trim($row[9]) : '1',
+                        'status' => isset($row[10]) ? trim($row[10]) : '1',
+                        'status_stok' => isset($row[11]) ? trim($row[11]) : '0',
+                        'status_ppn' => isset($row[12]) ? trim($row[12]) : '0'
+                    ];
+                }
+            }
+            fclose($handle);
+
+            if (empty($csvData)) {
+                return redirect()->back()
+                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+            }
+
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+
+            foreach ($csvData as $index => $data) {
+                try {
+                    // Generate kode
+                    $kode = $this->itemModel->generateKode($data['id_kategori'], $data['tipe']);
+                    
+                    $insertData = [
+                        'kode' => $kode,
+                        'barcode' => $data['barcode'],
+                        'item' => $data['item'],
+                        'deskripsi' => $data['deskripsi'],
+                        'id_kategori' => $data['id_kategori'],
+                        'id_merk' => $data['id_merk'],
+                        'id_supplier' => $data['id_supplier'],
+                        'jml_min' => $data['jml_min'],
+                        'harga_beli' => $data['harga_beli'],
+                        'harga_jual' => $data['harga_jual'],
+                        'tipe' => $data['tipe'],
+                        'status' => $data['status'],
+                        'status_stok' => $data['status_stok'],
+                        'status_ppn' => $data['status_ppn'],
+                        'id_user' => $this->ionAuth->user()->row()->id ?? 0
+                    ];
+
+                    if ($this->itemModel->insert($insertData)) {
+                        $successCount++;
+                    } else {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->itemModel->errors());
+                    }
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                }
+            }
+
+            $message = "Import selesai. Berhasil: {$successCount}, Gagal: {$errorCount}";
+            if (!empty($errors)) {
+                $message .= "<br>Error details:<br>" . implode("<br>", array_slice($errors, 0, 10));
+                if (count($errors) > 10) {
+                    $message .= "<br>... dan " . (count($errors) - 10) . " error lainnya";
+                }
+            }
+
+            return redirect()->to(base_url('master/item'))
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download CSV template
+     */
+    public function downloadTemplate()
+    {
+        $filename = 'template_item.csv';
+        $filepath = FCPATH . 'assets/templates/' . $filename;
+        
+        // Create template if not exists
+        if (!file_exists($filepath)) {
+            $templateDir = dirname($filepath);
+            if (!is_dir($templateDir)) {
+                mkdir($templateDir, 0777, true);
+            }
+            
+            $template = "Item,Barcode,Deskripsi,ID Kategori,ID Merk,ID Supplier,Jml Min,Harga Beli,Harga Jual,Tipe,Status,Status Stok,Status PPN\n";
+            $template .= "Laptop Asus,1234567890123,Laptop gaming Asus,1,1,1,5,10000000,12000000,1,1,1,0\n";
+            $template .= "Mouse Logitech,1234567890124,Mouse wireless Logitech,1,2,1,10,50000,75000,1,1,1,0\n";
+            
+            file_put_contents($filepath, $template);
+        }
+        
+        return $this->response->download($filepath, null);
+    }
 }
