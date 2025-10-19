@@ -114,4 +114,8 @@ phpunit
 # HTaccess
 .htaccess
 
+# Public
 /public/file
+
+# Cursor
+.cursor
