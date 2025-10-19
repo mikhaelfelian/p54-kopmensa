@@ -103,7 +103,7 @@
                             <th>Status</th>
                             <th width="150">Aksi</th>
                         </tr>
-                    </thead>
+                    </thead> 
                     <tbody>
                         <?php if (!empty($vouchers)): ?>
                             <?php foreach ($vouchers as $key => $voucher): ?>
