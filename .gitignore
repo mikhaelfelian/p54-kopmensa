@@ -109,13 +109,13 @@ phpunit
 .phpintel
 
 # Visual Studio Code
-.vscode/
-
-# HTaccess
-.htaccess
+.vscode
 
 # Public
 /public/file
 
 # Cursor
 .cursor
+
+# HTaccess
+.htaccess
