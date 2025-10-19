@@ -1,5 +1,6 @@
 RewriteEngine On
 RewriteBase /
+
 # 1) Kalau file/dir beneran ada, langsung serve
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
