@@ -23,15 +23,23 @@
                 <?php $psnGagal = session()->getFlashdata('psn_gagal'); ?>
 
                 <div class="form-group <?= (!empty($psnGagal['kode']) ? 'has-error' : '') ?>">
-                    <label class="control-label">Kode</label>
-                    <?= form_input([
-                        'id' => 'kode',
-                        'name' => 'kode',
-                        'class' => 'form-control rounded-0' . (!empty($psnGagal['kode']) ? ' is-invalid' : ''),
-                        'placeholder' => 'Isikan kode ...',
-                        'value' => $pelanggan->kode,
-                        'readonly' => 'true'
-                    ]) ?>
+                    <label class="control-label">Kode <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <?= form_input([
+                            'id' => 'kode',
+                            'name' => 'kode',
+                            'class' => 'form-control rounded-0' . (!empty($psnGagal['kode']) ? ' is-invalid' : ''),
+                            'placeholder' => 'CUS0001',
+                            'value' => $pelanggan->kode,
+                            'required' => true
+                        ]) ?>
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" id="generate_kode" title="Generate new code">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Auto-generated or enter custom code</small>
                 </div>
 
                 <div class="form-group <?= (!empty($psnGagal['nama']) ? 'has-error' : '') ?>">
@@ -146,7 +154,7 @@
                             'data-inputmask' => "'alias': 'numeric', 'groupSeparator': '.', 'radixPoint': ',', 'digits': 2, 'digitsOptional': false, 'prefix': '', 'placeholder': '0'"
                         ]) ?>
                     </div>
-                    <small class="form-text text-muted">Batas maksimal saldo yang dapat digunakan pelanggan (dalam Rupiah)</small>
+                    <small class="form-text text-muted">Batas maksimal saldo yang dapat digunakan pelanggan</small>
                 </div>
             </div>
             <div class="card-footer">
@@ -162,6 +170,104 @@
         </div>
         <?= form_close() ?>
     </div>
+    
+    <!-- User Account Management Panel -->
+    <div class="col-md-6">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-user-cog"></i> Manajemen Akun User</h3>
+            </div>
+            <div class="card-body">
+                <?php
+                // Get user data from controller-passed variable
+                $ionAuthUsername = '-';
+                $ionAuthEmail = '-';
+                $ionAuthActive = '0';
+                $ionAuthPhoto = null;
+                if (!empty($ionAuthUser)) {
+                    $ionAuthUsername = $ionAuthUser->username ?? '-';
+                    $ionAuthEmail = $ionAuthUser->email ?? '-';
+                    $ionAuthActive = $ionAuthUser->active ?? '0';
+                    $ionAuthPhoto = $ionAuthUser->profile ?? null;
+                }
+                ?>
+                
+                <!-- Profile Photo -->
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <?php if ($ionAuthPhoto && file_exists(FCPATH . $ionAuthPhoto)): ?>
+                            <img src="<?= base_url($ionAuthPhoto) ?>" 
+                                 class="img-circle elevation-2" 
+                                 alt="User Image" 
+                                 style="width: 120px; height: 120px; object-fit: cover;"
+                                 id="profilePreview">
+                        <?php else: ?>
+                            <div class="img-circle elevation-2 d-flex align-items-center justify-content-center bg-light" 
+                                 style="width: 120px; height: 120px; margin: 0 auto; border: 2px solid #dee2e6;">
+                                <i class="fas fa-user fa-3x text-muted"></i>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <button type="button" class="btn btn-info rounded-0" id="uploadPhotoBtn">
+                        <i class="fas fa-camera"></i> Upload Foto Profil
+                    </button>
+                    <input type="file" id="photoInput" accept="image/*" style="display: none;">
+                    <p class="text-muted small mt-2">Max 2MB (JPG, PNG, GIF)</p>
+                </div>
+
+                <hr>
+
+                <!-- Username -->
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Username</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control rounded-0" 
+                               value="<?= esc($ionAuthUsername) ?>" 
+                               id="usernameDisplay" readonly>
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-warning" id="editUsernameBtn" title="Edit Username">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="text" class="form-control rounded-0" 
+                           value="<?= esc($ionAuthEmail) ?>" readonly>
+                </div>
+
+                <!-- Account Status -->
+                <div class="form-group">
+                    <label><i class="fas fa-shield-alt"></i> Status Akun</label>
+                    <div>
+                        <span class="badge badge-<?= $ionAuthActive == '1' ? 'success' : 'danger' ?> p-2" id="accountStatusBadge">
+                            <i class="fas fa-<?= $ionAuthActive == '1' ? 'check-circle' : 'ban' ?>"></i>
+                            <?= $ionAuthActive == '1' ? 'Aktif' : 'Terblokir' ?>
+                        </span>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Action Buttons -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-block btn-warning rounded-0" id="resetPasswordBtn">
+                            <i class="fas fa-key"></i> Reset Password
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-block btn-<?= $ionAuthActive == '1' ? 'danger' : 'success' ?> rounded-0" id="toggleBlockBtn" data-user-id="<?= $pelanggan->id_user ?>" data-status="<?= $ionAuthActive ?>">
+                            <i class="fas fa-<?= $ionAuthActive == '1' ? 'ban' : 'check' ?>"></i> 
+                            <?= $ionAuthActive == '1' ? 'Blokir Akun' : 'Aktifkan Akun' ?>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     
     <!-- Contact Person Section - Show if customer type is Instansi/Swasta -->
     <div class="col-md-6" id="contactPersonSection" style="display: <?= $pelanggan->tipe > 1 ? 'block' : 'none' ?>;">
@@ -278,6 +384,198 @@ $(document).ready(function() {
     });
 
     $("input[id=limit]").autoNumeric({aSep: '.', aDec: ',', aPad: false});
+
+    // Customer code generation
+    const kodeInput = document.getElementById('kode');
+    const generateBtn = document.getElementById('generate_kode');
+    
+    function generateCustomerCode() {
+        const timestamp = Date.now().toString().slice(-4);
+        const paddedNumber = timestamp.padStart(4, '0');
+        return 'CUS' + paddedNumber;
+    }
+    
+    generateBtn.addEventListener('click', function() {
+        kodeInput.value = generateCustomerCode();
+        kodeInput.focus();
+        
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        }, 500);
+    });
+    
+    kodeInput.addEventListener('input', function() {
+        if (!this.value.trim()) {
+            this.value = generateCustomerCode();
+        }
+    });
+
+    // Reset Password functionality
+    $('#resetPasswordBtn').click(function() {
+        const newPassword = prompt('Masukkan password baru untuk pelanggan ini:');
+        if (newPassword && newPassword.length >= 6) {
+            if (confirm('Apakah anda yakin ingin mereset password pelanggan ini?')) {
+                $.ajax({
+                    url: '<?= base_url('master/customer/reset_password') ?>',
+                    type: 'POST',
+                    data: {
+                        id: <?= $pelanggan->id ?>,
+                        password: newPassword,
+                        <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Password berhasil direset');
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Terjadi kesalahan saat mereset password');
+                    }
+                });
+            }
+        } else if (newPassword !== null) {
+            alert('Password minimal 6 karakter');
+        }
+    });
+
+    // Toggle Block/Unblock User
+    $('#toggleBlockBtn').click(function() {
+        const userId = $(this).data('user-id');
+        const currentStatus = $(this).data('status');
+        const newStatus = currentStatus == '1' ? '0' : '1';
+        const action = newStatus == '1' ? 'mengaktifkan' : 'memblokir';
+        
+        if (confirm(`Apakah anda yakin ingin ${action} akun user ini?`)) {
+            $.ajax({
+                url: '<?= base_url('master/customer/toggle_block') ?>',
+                type: 'POST',
+                data: {
+                    id: <?= $pelanggan->id ?>,
+                    id_user: userId,
+                    status: newStatus,
+                    <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        alert(response.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Terjadi kesalahan saat mengubah status akun');
+                }
+            });
+        }
+    });
+
+    // Edit Username
+    $('#editUsernameBtn').click(function() {
+        const currentUsername = $('#usernameDisplay').val();
+        const newUsername = prompt('Masukkan username baru:', currentUsername);
+        
+        if (newUsername && newUsername.length >= 3 && newUsername !== currentUsername) {
+            if (confirm('Apakah anda yakin ingin mengubah username?')) {
+                $.ajax({
+                    url: '<?= base_url('master/customer/update_username') ?>',
+                    type: 'POST',
+                    data: {
+                        id: <?= $pelanggan->id ?>,
+                        id_user: <?= $pelanggan->id_user ?>,
+                        username: newUsername,
+                        <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('Username berhasil diubah');
+                            $('#usernameDisplay').val(newUsername);
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Terjadi kesalahan saat mengubah username');
+                    }
+                });
+            }
+        } else if (newUsername !== null && newUsername !== currentUsername) {
+            alert('Username minimal 3 karakter');
+        }
+    });
+
+    // Upload Profile Photo
+    $('#uploadPhotoBtn').click(function() {
+        $('#photoInput').click();
+    });
+
+    $('#photoInput').change(function() {
+        const file = this.files[0];
+        if (file) {
+            // Validate file type
+            if (!file.type.match('image.*')) {
+                alert('File harus berupa gambar');
+                return;
+            }
+            
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('Ukuran file maksimal 2MB');
+                return;
+            }
+            
+            // Preview image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Replace the default icon with actual image
+                if ($('#profilePreview').is('div')) {
+                    $('#profilePreview').replaceWith(`<img src="${e.target.result}" 
+                         class="img-circle elevation-2" 
+                         alt="User Image" 
+                         style="width: 120px; height: 120px; object-fit: cover;"
+                         id="profilePreview">`);
+                } else {
+                    $('#profilePreview').attr('src', e.target.result);
+                }
+            };
+            reader.readAsDataURL(file);
+            
+            // Upload image
+            const formData = new FormData();
+            formData.append('photo', file);
+            formData.append('id', <?= $pelanggan->id ?>);
+            formData.append('id_user', <?= $pelanggan->id_user ?>);
+            formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+            
+            $.ajax({
+                url: '<?= base_url('master/customer/upload_photo') ?>',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        alert('Foto profil berhasil diupload');
+                    } else {
+                        alert('Error: ' + response.message);
+                        // Restore original image if upload fails
+                        location.reload();
+                    }
+                },
+                error: function() {
+                    alert('Terjadi kesalahan saat mengupload foto');
+                    location.reload();
+                }
+            });
+        }
+    });
 });
 </script>
 

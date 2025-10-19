@@ -22,14 +22,24 @@
                     <div class="col-md-6">
                         <!-- Kode -->
                         <div class="form-group">
-                            <label>Kode</label>
-                            <?= form_input([
-                                'name' => 'kode',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'value' => $supplier->kode,
-                                'readonly' => true
-                            ]) ?>
+                            <label>Kode <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <?= form_input([
+                                    'name' => 'kode',
+                                    'type' => 'text',
+                                    'class' => 'form-control rounded-0',
+                                    'value' => $supplier->kode,
+                                    'required' => true,
+                                    'id' => 'supplier_kode',
+                                    'placeholder' => 'SUP0001'
+                                ]) ?>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-secondary" id="generate_kode" title="Generate new code">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Leave empty for auto-generation or enter custom code</small>
                         </div>
 
                         <!-- Nama -->
@@ -47,17 +57,6 @@
                             </div>
                         </div>
 
-                        <!-- NPWP -->
-                        <div class="form-group">
-                            <label>NPWP</label>
-                            <?= form_input([
-                                'name' => 'npwp',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Nomor NPWP...',
-                                'value' => old('npwp', $supplier->npwp)
-                            ]) ?>
-                        </div>
 
                         <!-- Alamat -->
                         <div class="form-group">
@@ -74,82 +73,8 @@
                             </div>
                         </div>
 
-                        <!-- RT/RW -->
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>RT</label>
-                                    <?= form_input([
-                                        'name' => 'rt',
-                                        'type' => 'text',
-                                        'class' => 'form-control rounded-0',
-                                        'placeholder' => 'RT',
-                                        'value' => old('rt', $supplier->rt)
-                                    ]) ?>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>RW</label>
-                                    <?= form_input([
-                                        'name' => 'rw',
-                                        'type' => 'text',
-                                        'class' => 'form-control rounded-0',
-                                        'placeholder' => 'RW',
-                                        'value' => old('rw', $supplier->rw)
-                                    ]) ?>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                     <div class="col-md-6">
-                        <!-- Kelurahan -->
-                        <div class="form-group">
-                            <label>Kelurahan</label>
-                            <?= form_input([
-                                'name' => 'kelurahan',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Kelurahan...',
-                                'value' => old('kelurahan', $supplier->kelurahan)
-                            ]) ?>
-                        </div>
-
-                        <!-- Kecamatan -->
-                        <div class="form-group">
-                            <label>Kecamatan</label>
-                            <?= form_input([
-                                'name' => 'kecamatan',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Kecamatan...',
-                                'value' => old('kecamatan', $supplier->kecamatan)
-                            ]) ?>
-                        </div>
-
-                        <!-- Kota -->
-                        <div class="form-group">
-                            <label>Kota</label>
-                            <?= form_input([
-                                'name' => 'kota',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Kota...',
-                                'value' => old('kota', $supplier->kota)
-                            ]) ?>
-                        </div>
-
-                        <!-- No Telepon -->
-                        <div class="form-group">
-                            <label>No. Telepon</label>
-                            <?= form_input([
-                                'name' => 'no_tlp',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Nomor telepon...',
-                                'value' => old('no_tlp', $supplier->no_tlp)
-                            ]) ?>
-                        </div>
 
                         <!-- No HP -->
                         <div class="form-group">
@@ -173,7 +98,7 @@
                                 'tipe',
                                 [
                                     '' => '- Pilih -',
-                                    '1' => 'Instansi',
+                                    '1' => 'Pabrikan',
                                     '2' => 'Personal'
                                 ],
                                 old('tipe', $supplier->tipe),
@@ -198,4 +123,47 @@
         <?= form_close() ?>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const kodeInput = document.getElementById('supplier_kode');
+    const generateBtn = document.getElementById('generate_kode');
+    
+    // Generate supplier code function
+    function generateSupplierCode() {
+        // Get the last supplier code from the database or start from 0001
+        // For now, we'll generate a sequential number based on timestamp
+        const timestamp = Date.now().toString().slice(-4); // Last 4 digits of timestamp
+        const paddedNumber = timestamp.padStart(4, '0'); // Ensure 4 digits with leading zeros
+        return 'SUP' + paddedNumber;
+    }
+    
+    // Auto-generate code on page load if field is empty
+    if (!kodeInput.value.trim()) {
+        kodeInput.value = generateSupplierCode();
+    }
+    
+    // Generate new code when button is clicked
+    generateBtn.addEventListener('click', function() {
+        kodeInput.value = generateSupplierCode();
+        kodeInput.focus();
+    });
+    
+    // Auto-generate when field is cleared
+    kodeInput.addEventListener('input', function() {
+        if (!this.value.trim()) {
+            this.value = generateSupplierCode();
+        }
+    });
+    
+    // Add visual feedback for generate button
+    generateBtn.addEventListener('click', function() {
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        }, 500);
+    });
+});
+</script>
+
 <?= $this->endSection() ?> 

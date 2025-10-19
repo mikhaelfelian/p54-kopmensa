@@ -62,17 +62,6 @@
                                 <?= $validation->getError('nama') ?>
                             </div>
                         </div>
-                        <!-- Nama Panggilan -->
-                        <div class="form-group">
-                            <label>Nama Panggilan</label>
-                            <?= form_input([
-                                'name' => 'nama_pgl',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Nama panggilan...',
-                                'value' => old('nama_pgl')
-                            ]) ?>
-                        </div>
                         <!-- Tempat & Tanggal Lahir -->
                         <div class="row">
                             <div class="col-md-4">
@@ -228,11 +217,58 @@
                             <select name="id_user_group" class="form-control rounded-0">
                                 <option value="">- Pilih -</option>
                                 <?php foreach ($jabatans as $jabatan): ?>
-                                    <option value="<?= $jabatan->id ?>" <?= old('id_user_group') == $jabatan->id ? 'selected' : '' ?>>
-                                        <?= $jabatan->description ?>
-                                    </option>
+                                    <?php if ($jabatan->id != 1 && $jabatan->id != 7): ?>
+                                        <option value="<?= $jabatan->id ?>" <?= old('id_user_group') == $jabatan->id ? 'selected' : '' ?>>
+                                            <?= $jabatan->description ?>
+                                        </option>
+                                    <?php endif; ?>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                        <!-- Username -->
+                        <div class="form-group">
+                            <label>Username</label>
+                            <div class="input-group">
+                                <?= form_input([
+                                    'name' => 'username',
+                                    'type' => 'text',
+                                    'class' => 'form-control rounded-0',
+                                    'placeholder' => 'Username untuk login...',
+                                    'value' => old('username')
+                                ]) ?>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-secondary" id="generateUsernameBtn">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Password Fields -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Password</label>
+                                    <?= form_input([
+                                        'name' => 'password',
+                                        'type' => 'password',
+                                        'class' => 'form-control rounded-0',
+                                        'placeholder' => 'Password baru...',
+                                        'value' => old('password')
+                                    ]) ?>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Konfirmasi Password</label>
+                                    <?= form_input([
+                                        'name' => 'password_confirm',
+                                        'type' => 'password',
+                                        'class' => 'form-control rounded-0',
+                                        'placeholder' => 'Konfirmasi password...',
+                                        'value' => old('password_confirm')
+                                    ]) ?>
+                                </div>
+                            </div>
                         </div>
                         <!-- No HP -->
                         <div class="form-group">
@@ -270,29 +306,6 @@
                                 'value' => old('alamat_domisili')
                             ]) ?>
                         </div>
-                        <!-- Upload Foto -->
-                        <div class="form-group">
-                            <label>Foto Karyawan</label>
-                            <input type="file" name="file_foto" class="form-control-file">
-                            <?php if ($validation->hasError('file_foto')): ?>
-                                <div class="invalid-feedback d-block">
-                                    <?= $validation->getError('file_foto') ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        <!-- Status -->
-                        <div class="form-group">
-                            <label>Status</label>
-                            <select name="status" class="form-control rounded-0">
-                                <option value="">- Pilih -</option>
-                                <option value="1" <?= old('status') == '1' ? 'selected' : '' ?>>Kasir</option>
-                                <option value="2" <?= old('status') == '2' ? 'selected' : '' ?>>Supervisor / Kepala Toko</option>
-                                <option value="3" <?= old('status') == '3' ? 'selected' : '' ?>>Gudang / Stocker</option>
-                                <option value="4" <?= old('status') == '4' ? 'selected' : '' ?>>Admin Penjualan</option>
-                                <option value="5" <?= old('status') == '5' ? 'selected' : '' ?>>Purchasing</option>
-                                <option value="6" <?= old('status') == '6' ? 'selected' : '' ?>>Owner / Manajer</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -308,4 +321,57 @@
         <?= form_close() ?>
     </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    // Username generation functionality
+    $('#generateUsernameBtn').click(function() {
+        const nama = $('input[name="nama"]').val();
+        
+        if (nama.trim()) {
+            // Generate username from nama
+            const cleanName = nama.toLowerCase()
+                .replace(/[^a-zA-Z0-9]/g, '')
+                .substring(0, 10);
+            
+            // Add random number to make it unique
+            const randomNum = Math.floor(Math.random() * 900) + 100;
+            const generatedUsername = cleanName + randomNum;
+            
+            $('input[name="username"]').val(generatedUsername);
+        } else {
+            alert('Silakan isi nama lengkap terlebih dahulu');
+        }
+    });
+
+    // Password confirmation validation
+    $('input[name="password_confirm"]').on('input', function() {
+        const password = $('input[name="password"]').val();
+        const confirmPassword = $(this).val();
+        
+        if (confirmPassword && password !== confirmPassword) {
+            $(this).addClass('is-invalid');
+            if (!$(this).next('.invalid-feedback').length) {
+                $(this).after('<div class="invalid-feedback">Password tidak sama</div>');
+            }
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+
+    // Form submission validation
+    $('form').on('submit', function(e) {
+        const password = $('input[name="password"]').val();
+        const confirmPassword = $('input[name="password_confirm"]').val();
+        
+        if (password && password !== confirmPassword) {
+            e.preventDefault();
+            alert('Password dan konfirmasi password tidak sama');
+            return false;
+        }
+    });
+});
+</script>
+
 <?= $this->endSection() ?>

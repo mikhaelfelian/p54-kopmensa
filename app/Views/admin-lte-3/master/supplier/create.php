@@ -22,14 +22,24 @@
                     <div class="col-md-6">
                         <!-- Kode -->
                         <div class="form-group">
-                            <label>Kode</label>
-                            <?= form_input([
-                                'name' => 'kode',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'value' => $kode,
-                                'readonly' => true
-                            ]) ?>
+                            <label>Kode <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <?= form_input([
+                                    'name' => 'kode',
+                                    'type' => 'text',
+                                    'class' => 'form-control rounded-0',
+                                    'value' => $kode,
+                                    'required' => true,
+                                    'id' => 'supplier_kode',
+                                    'placeholder' => 'SUP0001'
+                                ]) ?>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-secondary" id="generate_kode" title="Generate new code">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Leave empty for auto-generation or enter custom code</small>
                         </div>
 
                         <!-- Nama -->
@@ -47,17 +57,6 @@
                             </div>
                         </div>
 
-                        <!-- NPWP -->
-                        <div class="form-group">
-                            <label>NPWP</label>
-                            <?= form_input([
-                                'name' => 'npwp',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Nomor NPWP...',
-                                'value' => old('npwp')
-                            ]) ?>
-                        </div>
 
                         <!-- Alamat -->
                         <div class="form-group">
@@ -73,19 +72,10 @@
                                 <?= $validation->getError('alamat') ?>
                             </div>
                         </div>
+
                     </div>
                     <div class="col-md-6">
-                        <!-- Kota -->
-                        <div class="form-group">
-                            <label>Kota</label>
-                            <?= form_input([
-                                'name' => 'kota',
-                                'type' => 'text',
-                                'class' => 'form-control rounded-0',
-                                'placeholder' => 'Kota...',
-                                'value' => old('kota')
-                            ]) ?>
-                        </div>
+
 
                         <!-- No HP -->
                         <div class="form-group">
@@ -108,8 +98,9 @@
                             <?= form_dropdown(
                                 'tipe',
                                 [
-                                    '3' => 'Umum',
-                                    '4' => 'Anggota'
+                                    '' => '- Pilih -',
+                                    '1' => 'Pabrikan',
+                                    '2' => 'Personal'
                                 ],
                                 old('tipe'),
                                 'class="form-control rounded-0 ' . ($validation->hasError('tipe') ? 'is-invalid' : '') . '"'
@@ -119,15 +110,6 @@
                             </div>
                         </div>
 
-                        <!-- Status Limit -->
-                        <div class="form-group">
-                            <label>Status Limit</label>
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="status_limit" name="status_limit" value="1" <?= old('status_limit') == '1' ? 'checked' : '' ?>>
-                                <label class="custom-control-label" for="status_limit">Aktifkan Limit Kredit</label>
-                            </div>
-                            <small class="form-text text-muted">Centang untuk mengaktifkan limit kredit pelanggan</small>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -144,49 +126,47 @@
     </div>
 </div>
 
-<!-- Bootstrap Switch CSS -->
-<style>
-.custom-switch .custom-control-label::before {
-    width: 2rem;
-    height: 1.25rem;
-    border-radius: 0.625rem;
-}
 
-.custom-switch .custom-control-label::after {
-    width: calc(1.25rem - 4px);
-    height: calc(1.25rem - 4px);
-    border-radius: calc(0.625rem - 2px);
-}
-
-.custom-switch .custom-control-input:checked ~ .custom-control-label::after {
-    transform: translateX(0.75rem);
-}
-
-.custom-switch .custom-control-input:checked ~ .custom-control-label::before {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-</style>
-
-<!-- Bootstrap Switch JavaScript -->
 <script>
-$(document).ready(function() {
-    // Handle status limit switch change
-    $('#status_limit').on('change', function() {
-        const isChecked = $(this).is(':checked');
-        console.log('Status Limit:', isChecked ? '1' : '0');
-        
-        // You can add additional logic here if needed
-        // For example, show/hide related fields based on the switch state
+// Supplier code generation
+document.addEventListener('DOMContentLoaded', function() {
+    const kodeInput = document.getElementById('supplier_kode');
+    const generateBtn = document.getElementById('generate_kode');
+    
+    // Generate supplier code function
+    function generateSupplierCode() {
+        // Get the last supplier code from the database or start from 0001
+        // For now, we'll generate a sequential number based on timestamp
+        const timestamp = Date.now().toString().slice(-4); // Last 4 digits of timestamp
+        const paddedNumber = timestamp.padStart(4, '0'); // Ensure 4 digits with leading zeros
+        return 'SUP' + paddedNumber;
+    }
+    
+    // Auto-generate code on page load if field is empty
+    if (!kodeInput.value.trim()) {
+        kodeInput.value = generateSupplierCode();
+    }
+    
+    // Generate new code when button is clicked
+    generateBtn.addEventListener('click', function() {
+        kodeInput.value = generateSupplierCode();
+        kodeInput.focus();
     });
     
-    // Initialize switch state on page load
-    const initialValue = '<?= old('status_limit', '0') ?>';
-    if (initialValue === '1') {
-        $('#status_limit').prop('checked', true);
-    } else {
-        $('#status_limit').prop('checked', false);
-    }
+    // Auto-generate when field is cleared
+    kodeInput.addEventListener('input', function() {
+        if (!this.value.trim()) {
+            this.value = generateSupplierCode();
+        }
+    });
+    
+    // Add visual feedback for generate button
+    generateBtn.addEventListener('click', function() {
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        }, 500);
+    });
 });
 </script>
 

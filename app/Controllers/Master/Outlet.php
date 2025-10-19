@@ -452,4 +452,65 @@ class Outlet extends BaseController
         
         return $this->response->download($filepath, null);
     }
+
+    /**
+     * Bulk delete outlet
+     */
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada item yang dipilih'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+
+            foreach ($itemIds as $id) {
+                // Soft delete - set status_hps = 1
+                $data = [
+                    'status_hps' => '1',
+                    'deleted_at' => date('Y-m-d H:i:s')
+                ];
+                
+                // Set the status of all item stock records related to this warehouse to 0 (inactive)
+                $this->itemStokModel->where('id_gudang', $id)->set(['status' => '0'])->update();
+                
+                if ($this->outletModel->update($id, $data)) {
+                    $deletedCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+
+            if ($deletedCount > 0) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Berhasil menghapus {$deletedCount} outlet" . ($failedCount > 0 ? ", gagal {$failedCount} outlet" : "")
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menghapus semua outlet yang dipilih'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
 } 

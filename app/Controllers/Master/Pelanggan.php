@@ -20,6 +20,7 @@ class Pelanggan extends BaseController
     protected $validation;
     protected $pengaturan;
     protected $transJualModel;
+    protected $ionAuth;
 
     public function __construct()
     {
@@ -27,6 +28,7 @@ class Pelanggan extends BaseController
         $this->pengaturan = new PengaturanModel();
         $this->transJualModel = new TransJualModel();
         $this->validation = \Config\Services::validation();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
     public function index()
@@ -264,6 +266,20 @@ class Pelanggan extends BaseController
         // tipe pelanggan/anggota = 2 (anggota/pelanggan)
         $tipe      = '2';
 
+        // Auto-generate username and email if not provided
+        if (empty($username)) {
+            $firstName = preg_replace('/[^a-zA-Z0-9]/', '', trim($nama));
+            $username = strtolower($firstName) . rand(100, 999);
+        }
+        
+        if (empty($email)) {
+            $email = $username . '@kopmensa.com';
+        }
+        
+        if (empty($password)) {
+            $password = $username; // Use username as default password
+        }
+
         // Validasi input
         $rules = [
             'nama' => [
@@ -300,17 +316,15 @@ class Pelanggan extends BaseController
                 ]
             ],
             'email' => [
-                'rules' => 'required|valid_email|is_unique[users.email]',
+                'rules' => 'permit_empty|valid_email|is_unique[tbl_ion_users.email]',
                 'errors' => [
-                    'required' => 'Email harus diisi',
                     'valid_email' => 'Format email tidak valid',
                     'is_unique' => 'Email sudah terdaftar'
                 ]
             ],
             'username' => [
-                'rules' => 'required|alpha_numeric|min_length[4]|max_length[50]|is_unique[users.username]',
+                'rules' => 'permit_empty|alpha_numeric|min_length[4]|max_length[50]|is_unique[tbl_ion_users.username]',
                 'errors' => [
-                    'required' => 'Username harus diisi',
                     'alpha_numeric' => 'Username hanya boleh huruf dan angka',
                     'min_length' => 'Username minimal 4 karakter',
                     'max_length' => 'Username maksimal 50 karakter',
@@ -318,9 +332,8 @@ class Pelanggan extends BaseController
                 ]
             ],
             'password' => [
-                'rules' => 'required|min_length[6]',
+                'rules' => 'permit_empty|min_length[6]',
                 'errors' => [
-                    'required' => 'Password harus diisi',
                     'min_length' => 'Password minimal 6 karakter'
                 ]
             ]
@@ -406,12 +419,19 @@ class Pelanggan extends BaseController
                            ->with('error', 'Data pelanggan tidak ditemukan');
         }
 
+        // Get IonAuth user data for the pelanggan
+        $ionAuthUser = null;
+        if (!empty($pelanggan->id_user)) {
+            $ionAuthUser = $this->ionAuth->user($pelanggan->id_user)->row();
+        }
+
         $data = [
             'title'       => 'Form Ubah Pelanggan',
             'Pengaturan'     => $this->pengaturan,
             'user'           => $this->ionAuth->user()->row(),
             'validation'  => $this->validation,
             'pelanggan'   => $pelanggan,
+            'ionAuthUser' => $ionAuthUser,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/customer') . '">Pelanggan</a></li>
@@ -549,12 +569,45 @@ class Pelanggan extends BaseController
                            ->with('error', 'Data pelanggan tidak ditemukan');
         }
 
+        // Get contacts if customer is Instansi/Swasta type
+        $contacts = [];
+        if ($pelanggan->tipe > 1) {
+            // Assuming there's a contact model or table
+            // You may need to adjust this based on your actual implementation
+            try {
+                $db = \Config\Database::connect();
+                $contacts = $db->table('tbl_m_pelanggan_kontak')
+                    ->where('id_pelanggan', $id)
+                    ->get()
+                    ->getResult();
+            } catch (\Exception $e) {
+                $contacts = [];
+            }
+        }
+
+        // Get purchase history (transactions) from TransJual
+        $transactions = [];
+        try {
+            $db = \Config\Database::connect();
+            $transactions = $db->table('tbl_trans_jual')
+                ->where('id_pelanggan', $pelanggan->id_user) // Using id_user from pelanggan
+                ->orderBy('tgl_masuk', 'DESC')
+                ->limit(50) // Limit to last 50 transactions
+                ->get()
+                ->getResult();
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::detail] Error fetching transactions: ' . $e->getMessage());
+            $transactions = [];
+        }
+
         $data = [
-            'title'       => 'Detail Pelanggan',
-            'Pengaturan'     => $this->pengaturan,
-            'user'           => $this->ionAuth->user()->row(),
-            'pelanggan'   => $pelanggan,
-            'breadcrumbs' => '
+            'title'        => 'Detail Pelanggan',
+            'Pengaturan'   => $this->pengaturan,
+            'user'         => $this->ionAuth->user()->row(),
+            'pelanggan'    => $pelanggan,
+            'contacts'     => $contacts,
+            'transactions' => $transactions,
+            'breadcrumbs'  => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/customer') . '">Pelanggan</a></li>
                 <li class="breadcrumb-item active">Detail</li>
@@ -722,39 +775,6 @@ class Pelanggan extends BaseController
         }
     }
 
-    /**
-     * Reset user password
-     */
-    public function reset_password()
-    {
-        $user_id = $this->request->getPost('user_id');
-        
-        if (!$user_id) {
-            return $this->response->setJSON(['success' => false, 'message' => 'User ID required']);
-        }
-
-        try {
-            // Generate new password
-            $new_password = random_string('alnum', 8);
-            
-            // Update password
-            if ($this->ionAuth->update($user_id, ['password' => $new_password])) {
-                return $this->response->setJSON([
-                    'success' => true, 
-                    'new_password' => $new_password,
-                    'message' => 'Password reset successfully'
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false, 
-                    'message' => 'Failed to reset password: ' . implode(', ', $this->ionAuth->errors_array())
-                ]);
-            }
-        } catch (\Exception $e) {
-            log_message('error', '[Pelanggan::reset_password] ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Error resetting password']);
-        }
-    }
 
     /**
      * Generate new username
@@ -800,37 +820,6 @@ class Pelanggan extends BaseController
         }
     }
 
-    /**
-     * Toggle user block status
-     */
-    public function toggle_block()
-    {
-        $user_id = $this->request->getPost('user_id');
-        $action = $this->request->getPost('action');
-        
-        if (!$user_id || !in_array($action, ['block', 'unblock'])) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid parameters']);
-        }
-
-        try {
-            $active = ($action === 'unblock') ? 1 : 0;
-            
-            if ($this->ionAuth->update($user_id, ['active' => $active])) {
-                return $this->response->setJSON([
-                    'success' => true, 
-                    'message' => 'Account ' . $action . 'ed successfully'
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false, 
-                    'message' => 'Failed to ' . $action . ' account: ' . implode(', ', $this->ionAuth->errors_array())
-                ]);
-            }
-        } catch (\Exception $e) {
-            log_message('error', '[Pelanggan::toggle_block] ' . $e->getMessage());
-            return $this->response->setJSON(['success' => false, 'message' => 'Error updating account status']);
-        }
-    }
 
     /**
      * Get user activity logs
@@ -910,6 +899,307 @@ class Pelanggan extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan/import', $data);
+    }
+
+    /**
+     * Upload profile photo
+     */
+    public function upload_photo()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request method'
+            ]);
+        }
+
+        $id = $this->request->getPost('id');
+        $id_user = $this->request->getPost('id_user');
+
+        if (!$id || !$id_user) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'ID pelanggan atau user tidak ditemukan'
+            ]);
+        }
+
+        $file = $this->request->getFile('photo');
+        
+        if (!$file || !$file->isValid()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'File foto tidak valid'
+            ]);
+        }
+
+        // Validate file type and size
+        $rules = [
+            'photo' => [
+                'rules' => 'uploaded[photo]|max_size[photo,2048]|ext_in[photo,jpg,jpeg,png,gif]',
+                'errors' => [
+                    'uploaded' => 'File foto harus diupload',
+                    'max_size' => 'Ukuran file maksimal 2MB',
+                    'ext_in' => 'Format file harus JPG, JPEG, PNG, atau GIF'
+                ]
+            ]
+        ];
+
+        if (!$this->validate($rules)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Validasi gagal: ' . implode(', ', $this->validator->getErrors())
+            ]);
+        }
+
+        try {
+            // Create file/user/<user_id> directory if not exists
+            $uploadPath = FCPATH . 'file/user/' . $id_user . '/';
+            if (!is_dir($uploadPath)) {
+                if (!mkdir($uploadPath, 0755, true)) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal membuat direktori upload'
+                    ]);
+                }
+            }
+
+            // Generate unique filename
+            $extension = $file->getClientExtension();
+            $newName = 'profile_' . time() . '.' . $extension;
+            
+            // Move file to user-specific directory
+            if ($file->move($uploadPath, $newName)) {
+                // Save the full path to database
+                $fullPath = 'file/user/' . $id_user . '/' . $newName;
+                
+                // Update user profile in IonAuth users table directly
+                $db = \Config\Database::connect();
+                $builder = $db->table('tbl_ion_users');
+                $updateResult = $builder->where('id', $id_user)
+                                        ->set('profile', $fullPath)
+                                        ->update();
+                
+                if ($updateResult) {
+                    return $this->response->setJSON([
+                        'success' => true,
+                        'message' => 'Foto profil berhasil diupload',
+                        'filename' => $newName
+                    ]);
+                } else {
+                    // If database update fails, delete the uploaded file
+                    @unlink($uploadPath . $newName);
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal menyimpan data foto ke database'
+                    ]);
+                }
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengupload file: ' . $file->getErrorString()
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::upload_photo] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengupload foto: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Update username
+     */
+    public function update_username()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request method'
+            ]);
+        }
+
+        $id = $this->request->getPost('id');
+        $id_user = $this->request->getPost('id_user');
+        $username = $this->request->getPost('username');
+
+        if (!$id || !$id_user || !$username) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak lengkap'
+            ]);
+        }
+
+        // Validate username
+        if (strlen($username) < 3) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Username minimal 3 karakter'
+            ]);
+        }
+
+        try {
+            // Check if username already exists (exclude current user)
+            $db = \Config\Database::connect();
+            $existingUser = $db->table('tbl_ion_users')
+                              ->where('username', $username)
+                              ->where('id !=', $id_user)
+                              ->get()
+                              ->getRow();
+            
+            if ($existingUser) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Username sudah digunakan'
+                ]);
+            }
+
+            // Update username directly in IonAuth users table
+            $builder = $db->table('tbl_ion_users');
+            $updateResult = $builder->where('id', $id_user)
+                                    ->set('username', $username)
+                                    ->update();
+            
+            if ($updateResult !== false) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Username berhasil diubah'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengubah username'
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::update_username] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengubah username'
+            ]);
+        }
+    }
+
+    /**
+     * Toggle block/unblock user
+     */
+    public function toggle_block()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request method'
+            ]);
+        }
+
+        $id = $this->request->getPost('id');
+        $id_user = $this->request->getPost('id_user');
+        $status = $this->request->getPost('status');
+
+        if (!$id || !$id_user || !isset($status)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak lengkap'
+            ]);
+        }
+
+        try {
+            // Update user active status directly in IonAuth users table
+            $db = \Config\Database::connect();
+            $builder = $db->table('tbl_ion_users');
+            $updateResult = $builder->where('id', $id_user)
+                                    ->set('active', $status)
+                                    ->update();
+            
+            if ($updateResult !== false) {
+                $action = $status == '1' ? 'diaktifkan' : 'diblokir';
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Akun berhasil {$action}"
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengubah status akun'
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::toggle_block] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengubah status akun'
+            ]);
+        }
+    }
+
+    /**
+     * Reset password
+     */
+    public function reset_password()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request method'
+            ]);
+        }
+
+        $id = $this->request->getPost('id');
+        $password = $this->request->getPost('password');
+
+        if (!$id || !$password) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Data tidak lengkap'
+            ]);
+        }
+
+        // Validate password
+        if (strlen($password) < 6) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Password minimal 6 karakter'
+            ]);
+        }
+
+        try {
+            // Get pelanggan data
+            $pelanggan = $this->pelangganModel->find($id);
+            if (!$pelanggan || !$pelanggan->id_user) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Data pelanggan atau user tidak ditemukan'
+                ]);
+            }
+
+            // Hash the password and update directly in IonAuth users table
+            $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+            
+            $db = \Config\Database::connect();
+            $builder = $db->table('tbl_ion_users');
+            $updateResult = $builder->where('id', $pelanggan->id_user)
+                                    ->set('password', $hashedPassword)
+                                    ->update();
+            
+            if ($updateResult !== false) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Password berhasil direset'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mereset password'
+                ]);
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::reset_password] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mereset password'
+            ]);
+        }
     }
 
     /**
@@ -1028,5 +1318,57 @@ class Pelanggan extends BaseController
         }
         
         return $this->response->download($filepath, null);
+    }
+
+    /**
+     * Bulk delete pelanggan
+     */
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada item yang dipilih'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+
+            foreach ($itemIds as $id) {
+                if ($this->pelangganModel->delete($id)) {
+                    $deletedCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+
+            if ($deletedCount > 0) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Berhasil menghapus {$deletedCount} pelanggan" . ($failedCount > 0 ? ", gagal {$failedCount} pelanggan" : "")
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menghapus semua pelanggan yang dipilih'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
     }
 } 

@@ -132,18 +132,26 @@ class Supplier extends BaseController
      */
     public function store()
     {
+        // Validation rules
+        $rules = [
+            'kode' => 'required|max_length[20]|is_unique[tbl_m_supplier.kode]',
+            'nama' => 'required|max_length[255]',
+            'alamat' => 'required',
+            'no_hp' => 'required|max_length[20]',
+            'tipe' => 'required|in_list[1,2]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('validation', $this->validator);
+        }
+
         try {
             $data = [
-                'kode'       => $this->supplierModel->generateKode(),
+                'kode'       => $this->request->getPost('kode'),
                 'nama'       => $this->request->getPost('nama'),
-                'npwp'       => $this->request->getPost('npwp'),
                 'alamat'     => $this->request->getPost('alamat'),
-                'rt'         => $this->request->getPost('rt'),
-                'rw'         => $this->request->getPost('rw'),
-                'kelurahan'  => $this->request->getPost('kelurahan'),
-                'kecamatan'  => $this->request->getPost('kecamatan'),
-                'kota'       => $this->request->getPost('kota'),
-                'no_tlp'     => $this->request->getPost('no_tlp'),
                 'no_hp'      => $this->request->getPost('no_hp'),
                 'tipe'       => $this->request->getPost('tipe'),
                 'status'     => '1',
@@ -207,17 +215,26 @@ class Supplier extends BaseController
                            ->with('error', 'ID supplier tidak ditemukan');
         }
 
+        // Validation rules
+        $rules = [
+            'kode' => "required|max_length[20]|is_unique[tbl_m_supplier.kode,id,{$id}]",
+            'nama' => 'required|max_length[255]',
+            'alamat' => 'required',
+            'no_hp' => 'required|max_length[20]',
+            'tipe' => 'required|in_list[1,2]'
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                           ->withInput()
+                           ->with('validation', $this->validator);
+        }
+
         try {
             $data = [
+                'kode'       => $this->request->getPost('kode'),
                 'nama'       => $this->request->getPost('nama'),
-                'npwp'       => $this->request->getPost('npwp'),
                 'alamat'     => $this->request->getPost('alamat'),
-                'rt'         => $this->request->getPost('rt'),
-                'rw'         => $this->request->getPost('rw'),
-                'kelurahan'  => $this->request->getPost('kelurahan'),
-                'kecamatan'  => $this->request->getPost('kecamatan'),
-                'kota'       => $this->request->getPost('kota'),
-                'no_tlp'     => $this->request->getPost('no_tlp'),
                 'no_hp'      => $this->request->getPost('no_hp'),
                 'tipe'       => $this->request->getPost('tipe')
             ];
@@ -861,5 +878,63 @@ class Supplier extends BaseController
         }
         
         return $this->response->download($filepath, null);
+    }
+
+    /**
+     * Bulk delete suppliers
+     */
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada item yang dipilih'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+
+            foreach ($itemIds as $id) {
+                // Soft delete - set status_hps = 1
+                $data = [
+                    'status_hps' => '1',
+                    'deleted_at' => date('Y-m-d H:i:s')
+                ];
+                
+                if ($this->supplierModel->update($id, $data)) {
+                    $deletedCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+
+            if ($deletedCount > 0) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Berhasil menghapus {$deletedCount} supplier" . ($failedCount > 0 ? ", gagal {$failedCount} supplier" : "")
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menghapus semua supplier yang dipilih'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
     }
 } 

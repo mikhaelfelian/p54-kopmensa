@@ -14,7 +14,6 @@ namespace App\Controllers\Master;
 use App\Controllers\BaseController;
 use App\Models\PlatformModel;
 use App\Models\PengaturanModel;
-use App\Models\OutletModel;
 
 class Platform extends BaseController
 {
@@ -79,10 +78,19 @@ class Platform extends BaseController
      */
     public function create()
     {
+        // Get active outlets (only outlets, not warehouses)
+        $gudangModel = new \App\Models\GudangModel();
+        $outlets = $gudangModel->where('status_otl', '1')
+                              ->where('status', '1')
+                              ->where('status_hps', '0')
+                              ->orderBy('nama', 'ASC')
+                              ->findAll();
+        
         $data = [
             'title'       => 'Tambah Platform',
             'validation'  => $this->validation,
             'kode'        => $this->platformModel->generateKode(),
+            'outlets'     => $outlets,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/platform') . '">Platform</a></li>
@@ -195,9 +203,13 @@ class Platform extends BaseController
                            ->with('error', 'Data platform tidak ditemukan');
         }
 
-        // Get active outlets for dropdown
-        $outletModel = new OutletModel();
-        $outlets = $outletModel->where('status', '1')->findAll();
+        // Get active outlets (only outlets, not warehouses)
+        $gudangModel = new \App\Models\GudangModel();
+        $outlets = $gudangModel->where('status_otl', '1')
+                              ->where('status', '1')
+                              ->where('status_hps', '0')
+                              ->orderBy('nama', 'ASC')
+                              ->findAll();
 
         $data = [
             'title'       => 'Edit Platform',
@@ -354,6 +366,58 @@ class Platform extends BaseController
             log_message('error', '[Platform::delete] ' . $e->getMessage());
             return redirect()->back()
                            ->with('error', 'Gagal menghapus data platform');
+        }
+    }
+
+    /**
+     * Bulk delete platforms
+     */
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada item yang dipilih'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+
+            foreach ($itemIds as $id) {
+                if ($this->platformModel->delete($id)) {
+                    $deletedCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+
+            if ($deletedCount > 0) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Berhasil menghapus {$deletedCount} platform" . ($failedCount > 0 ? ", gagal {$failedCount} platform" : "")
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menghapus semua platform yang dipilih'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
         }
     }
 } 

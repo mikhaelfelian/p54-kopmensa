@@ -455,4 +455,64 @@ class Voucher extends BaseController
 
         return view($this->theme->getThemePath() . '/master/voucher/detail', $data);
     }
+
+    /**
+     * Bulk delete vouchers
+     */
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada item yang dipilih'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+
+            foreach ($itemIds as $id) {
+                $voucher = $this->voucherModel->find($id);
+                
+                // Check if voucher has been used
+                if ($voucher && $voucher->jml_keluar > 0) {
+                    $failedCount++;
+                    continue;
+                }
+                
+                if ($this->voucherModel->delete($id)) {
+                    $deletedCount++;
+                } else {
+                    $failedCount++;
+                }
+            }
+
+            if ($deletedCount > 0) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Berhasil menghapus {$deletedCount} voucher" . ($failedCount > 0 ? ", gagal {$failedCount} voucher (sudah digunakan)" : "")
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menghapus semua voucher yang dipilih (mungkin sudah digunakan)'
+                ]);
+            }
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+    }
 }

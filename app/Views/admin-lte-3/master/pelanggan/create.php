@@ -5,6 +5,14 @@
  * Github : github.com/mikhaelfelian
  * description : View for creating customer data
  * This file represents the View for creating customers.
+ * ----------------------------------------------------------------
+ * NOTE:
+ * - Tipe pelanggan/anggota = 2 (anggota/pelanggan)
+ * - Status pelanggan/anggota = 1 (aktif)
+ * - Status pelanggan/anggota = 0 (non aktif)
+ * - Limit pelanggan/anggota = 0 (tidak ada limit)
+ * - Limit pelanggan/anggota = 1 (ada limit)
+ * - Limit pelanggan/anggota = 2 (ada limit)
  */
 ?>
 
@@ -23,15 +31,23 @@
                 <?php $psnGagal = session()->getFlashdata('psn_gagal'); ?>
 
                 <div class="form-group <?= (!empty($psnGagal['kode']) ? 'has-error' : '') ?>">
-                    <label class="control-label">Kode</label>
-                    <?= form_input([
-                        'id' => 'kode',
-                        'name' => 'kode',
-                        'class' => 'form-control rounded-0' . (!empty($psnGagal['kode']) ? ' is-invalid' : ''),
-                        'placeholder' => 'Isikan kode ...',
-                        'value' => $kode ?? '',
-                        'readonly' => 'true'
-                    ]) ?>
+                    <label class="control-label">Kode <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <?= form_input([
+                            'id' => 'kode',
+                            'name' => 'kode',
+                            'class' => 'form-control rounded-0' . (!empty($psnGagal['kode']) ? ' is-invalid' : ''),
+                            'placeholder' => 'CUS0001',
+                            'value' => $kode ?? '',
+                            'required' => true
+                        ]) ?>
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" id="generate_kode" title="Generate new code">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Auto-generated or enter custom code</small>
                 </div>
 
                 <div class="form-group <?= (!empty($psnGagal['nama']) ? 'has-error' : '') ?>">
@@ -148,6 +164,46 @@
                         ]) ?>
                     </div>
                     <small class="form-text text-muted">Batas maksimal saldo yang dapat digunakan pelanggan (dalam Rupiah)</small>
+                </div>
+
+                <hr>
+                <h5 class="text-primary"><i class="fas fa-user-lock"></i> Data Login User</h5>
+                <small class="text-muted">Data ini akan digunakan untuk login ke sistem</small>
+
+                <div class="form-group <?= (!empty($psnGagal['email']) ? 'has-error' : '') ?>">
+                    <label class="control-label">Email <span class="text-danger">*</span></label>
+                    <?= form_input([
+                        'id' => 'email',
+                        'name' => 'email',
+                        'type' => 'email',
+                        'class' => 'form-control rounded-0' . (!empty($psnGagal['email']) ? ' is-invalid' : ''),
+                        'placeholder' => 'contoh@email.com',
+                        'value' => old('email')
+                    ]) ?>
+                    <small class="form-text text-muted">Email akan digunakan untuk login</small>
+                </div>
+
+                <div class="form-group <?= (!empty($psnGagal['username']) ? 'has-error' : '') ?>">
+                    <label class="control-label">Username <span class="text-danger">*</span></label>
+                    <?= form_input([
+                        'id' => 'username',
+                        'name' => 'username',
+                        'class' => 'form-control rounded-0' . (!empty($psnGagal['username']) ? ' is-invalid' : ''),
+                        'placeholder' => 'username123',
+                        'value' => old('username')
+                    ]) ?>
+                    <small class="form-text text-muted">Username minimal 4 karakter, hanya huruf dan angka</small>
+                </div>
+
+                <div class="form-group <?= (!empty($psnGagal['password']) ? 'has-error' : '') ?>">
+                    <label class="control-label">Password <span class="text-danger">*</span></label>
+                    <?= form_password([
+                        'id' => 'password',
+                        'name' => 'password',
+                        'class' => 'form-control rounded-0' . (!empty($psnGagal['password']) ? ' is-invalid' : ''),
+                        'placeholder' => 'Minimal 6 karakter'
+                    ]) ?>
+                    <small class="form-text text-muted">Password minimal 6 karakter</small>
                 </div>
             </div>
             <div class="card-footer">
@@ -266,6 +322,83 @@ $(document).ready(function() {
             $('#contactPersonSection').show();
         } else {
             $('#contactPersonSection').hide();
+        }
+    });
+
+    // Customer code generation
+    const kodeInput = document.getElementById('kode');
+    const generateBtn = document.getElementById('generate_kode');
+    
+    // Generate customer code function
+    function generateCustomerCode() {
+        const timestamp = Date.now().toString().slice(-4);
+        const paddedNumber = timestamp.padStart(4, '0');
+        return 'CUS' + paddedNumber;
+    }
+    
+    // Auto-generate code on page load if field is empty
+    if (!kodeInput.value.trim()) {
+        kodeInput.value = generateCustomerCode();
+    }
+    
+    // Generate new code when button is clicked
+    generateBtn.addEventListener('click', function() {
+        kodeInput.value = generateCustomerCode();
+        kodeInput.focus();
+        
+        // Visual feedback
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        }, 500);
+    });
+    
+    // Auto-generate when field is cleared
+    kodeInput.addEventListener('input', function() {
+        if (!this.value.trim()) {
+            this.value = generateCustomerCode();
+        }
+    });
+
+    // Auto-generate username and email based on name
+    const namaInput = document.getElementById('nama');
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+
+    function generateUsernameFromName(name) {
+        const cleanName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        return cleanName + Math.floor(Math.random() * 900 + 100);
+    }
+
+    function generateEmailFromUsername(username) {
+        return username + '@kopmensa.com';
+    }
+
+    namaInput.addEventListener('input', function() {
+        if (this.value.trim() && !usernameInput.value.trim()) {
+            const generatedUsername = generateUsernameFromName(this.value);
+            usernameInput.value = generatedUsername;
+            
+            if (!emailInput.value.trim()) {
+                emailInput.value = generateEmailFromUsername(generatedUsername);
+            }
+            
+            if (!passwordInput.value.trim()) {
+                passwordInput.value = generatedUsername;
+            }
+        }
+    });
+
+    // Clear dependent fields when name is cleared
+    namaInput.addEventListener('input', function() {
+        if (!this.value.trim()) {
+            if (emailInput.value.includes('@kopmensa.com')) {
+                emailInput.value = '';
+            }
+            if (passwordInput.value === usernameInput.value) {
+                passwordInput.value = '';
+            }
         }
     });
 });

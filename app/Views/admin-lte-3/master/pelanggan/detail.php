@@ -192,6 +192,92 @@
     <?php endif; ?>
 </div>
 
+<!-- Purchase History Section -->
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card card-default">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-shopping-cart"></i> Riwayat Pembelian</h3>
+                <div class="card-tools">
+                    <span class="badge badge-info">Total: <?= count($transactions ?? []) ?> Transaksi</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <?php if (!empty($transactions)): ?>
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th class="text-center">No</th>
+                                <th>No. Nota</th>
+                                <th>Tanggal</th>
+                                <th class="text-right">Total</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Pembayaran</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($transactions as $key => $trx): ?>
+                            <tr>
+                                <td class="text-center"><?= $key + 1 ?></td>
+                                <td><strong><?= esc($trx->no_nota) ?></strong></td>
+                                <td><?= date('d/m/Y H:i', strtotime($trx->tgl_masuk)) ?></td>
+                                <td class="text-right">Rp <?= number_format($trx->jml_gtotal, 0, ',', '.') ?></td>
+                                <td class="text-center">
+                                    <?php
+                                    $statusLabels = [
+                                        '0' => '<span class="badge badge-secondary">Draft</span>',
+                                        '1' => '<span class="badge badge-success">Selesai</span>',
+                                        '2' => '<span class="badge badge-danger">Batal</span>',
+                                        '3' => '<span class="badge badge-warning">Retur</span>',
+                                        '4' => '<span class="badge badge-info">Pending</span>'
+                                    ];
+                                    echo $statusLabels[$trx->status] ?? '<span class="badge badge-secondary">-</span>';
+                                    ?>
+                                </td>
+                                <td class="text-center">
+                                    <?php
+                                    $paymentLabels = [
+                                        '0' => '<span class="badge badge-warning">Belum Lunas</span>',
+                                        '1' => '<span class="badge badge-success">Lunas</span>'
+                                    ];
+                                    echo $paymentLabels[$trx->status_bayar] ?? '<span class="badge badge-secondary">-</span>';
+                                    ?>
+                                </td>
+                                <td class="text-center">
+                                    <a href="<?= base_url("transaksi/jual?search={$trx->no_nota}") ?>" 
+                                       class="btn btn-info btn-sm" 
+                                       title="Lihat Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-light">
+                                <th colspan="3" class="text-right">Total Pembelian:</th>
+                                <th class="text-right">
+                                    Rp <?= number_format(array_sum(array_column($transactions, 'jml_gtotal')), 0, ',', '.') ?>
+                                </th>
+                                <th colspan="3"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <?php else: ?>
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                    <p>Belum ada riwayat pembelian</p>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
 <!-- Add Contact Modal -->
 <?php if ($pelanggan->tipe > 1): ?>
 <div class="modal fade" id="addContactModal" tabindex="-1" role="dialog" aria-labelledby="addContactModalLabel" aria-hidden="true">

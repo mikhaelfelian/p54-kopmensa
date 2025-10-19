@@ -55,7 +55,7 @@ class ShiftController extends BaseController
                     $db = \Config\Database::connect();
                     $userQuery = $db->table('tbl_ion_users')
                         ->select('first_name, last_name, username, email')
-                        ->where('id', $shift['user_open_id'])
+                        ->where('id', $shift->user_open_id)
                         ->get();
                     
                     if ($userQuery->getNumRows() > 0) {
@@ -64,17 +64,17 @@ class ShiftController extends BaseController
                         $shift['user_open_lastname'] = $user->last_name ?? '';
                     } else {
                         // Fallback to IonAuth method
-                        $user = $this->ionAuth->user($shift['user_open_id'])->row();
+                        $user = $this->ionAuth->user($shift->user_open_id)->row();
                         if ($user) {
                             $shift['user_open_name'] = $user->first_name ?? 'User';
                             $shift['user_open_lastname'] = $user->last_name ?? '';
                         } else {
-                            $shift['user_open_name'] = 'User ID: ' . $shift['user_open_id'];
+                            $shift['user_open_name'] = 'User ID: ' . $shift->user_open_id;
                         }
                     }
                 } catch (\Exception $e) {
                     log_message('error', 'Error getting user data: ' . $e->getMessage());
-                    $shift['user_open_name'] = 'User ID: ' . $shift['user_open_id'];
+                    $shift['user_open_name'] = 'User ID: ' . $shift->user_open_id;
                 }
             }
             
@@ -217,9 +217,28 @@ class ShiftController extends BaseController
      */
     public function closeShift($shift_id)
     {
+        // Check if user is logged in
+        if (!$this->ionAuth->loggedIn()) {
+            session()->setFlashdata('error', 'Session telah berakhir. Silakan login kembali.');
+            return redirect()->to('/auth/login');
+        }
+
         $shift = $this->shiftModel->getShiftWithDetails($shift_id);
         if (!$shift) {
             session()->setFlashdata('error', 'Shift tidak ditemukan');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Check if shift is open
+        if ($shift['status'] !== 'open') {
+            session()->setFlashdata('error', 'Hanya shift yang sedang berjalan yang dapat ditutup');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Check if current user is the same as the user who opened the shift
+        $current_user_id = $this->ionAuth->user()->row()->id;
+        if ($shift['user_open_id'] != $current_user_id) {
+            session()->setFlashdata('error', 'Hanya user yang membuka shift yang dapat menutup shift ini');
             return redirect()->to('/transaksi/shift');
         }
 
@@ -284,6 +303,12 @@ class ShiftController extends BaseController
      */
     public function processClose()
     {
+        // Check if user is logged in
+        if (!$this->ionAuth->loggedIn()) {
+            session()->setFlashdata('error', 'Session telah berakhir. Silakan login kembali.');
+            return redirect()->to('/auth/login');
+        }
+
         $shift_id = $this->request->getPost('shift_id');
         $counted_cash = $this->request->getPost('counted_cash');
         $notes = $this->request->getPost('notes');
@@ -291,6 +316,35 @@ class ShiftController extends BaseController
         // Clean the counted_cash value - remove any formatting and convert to decimal
         if (is_string($counted_cash)) {
             $counted_cash = format_angka_db($counted_cash);
+        }
+
+        // Check if shift exists and get shift details
+        $shift = $this->shiftModel->find($shift_id);
+        if (!$shift) {
+            session()->setFlashdata('error', 'Shift tidak ditemukan');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Handle both array and object formats
+        if (is_array($shift)) {
+            $shift_status = $shift['status'];
+            $shift_user_open_id = $shift['user_open_id'];
+        } else {
+            $shift_status = $shift->status;
+            $shift_user_open_id = $shift->user_open_id;
+        }
+
+        // Check if shift is open
+        if ($shift_status !== 'open') {
+            session()->setFlashdata('error', 'Hanya shift yang sedang berjalan yang dapat ditutup');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Check if current user is the same as the user who opened the shift
+        $current_user_id = $this->ionAuth->user()->row()->id;
+        if ($shift_user_open_id != $current_user_id) {
+            session()->setFlashdata('error', 'Hanya user yang membuka shift yang dapat menutup shift ini');
+            return redirect()->to('/transaksi/shift');
         }
 
         $rules = [
@@ -318,6 +372,27 @@ class ShiftController extends BaseController
 
     public function approveShift($shift_id)
     {
+        // Check if user is logged in
+        if (!$this->ionAuth->loggedIn()) {
+            session()->setFlashdata('error', 'Session telah berakhir. Silakan login kembali.');
+            return redirect()->to('/auth/login');
+        }
+
+        // Check if shift exists and is closed
+        $shift = $this->shiftModel->find($shift_id);
+        if (!$shift) {
+            session()->setFlashdata('error', 'Shift tidak ditemukan');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Handle both array and object formats
+        $shift_status = is_array($shift) ? $shift['status'] : $shift->status;
+
+        if ($shift_status !== 'closed') {
+            session()->setFlashdata('error', 'Hanya shift yang sudah ditutup yang dapat disetujui');
+            return redirect()->to('/transaksi/shift');
+        }
+
         $user_approve_id = $this->ionAuth->user()->row()->id;
         
         if ($this->shiftModel->approveShift($shift_id, $user_approve_id)) {
@@ -328,6 +403,57 @@ class ShiftController extends BaseController
         
         return redirect()->to('/transaksi/shift');
     }
+
+    public function reopen($shift_id)
+    {
+        // Check if user is logged in
+        if (!$this->ionAuth->loggedIn()) {
+            session()->setFlashdata('error', 'Session telah berakhir. Silakan login kembali.');
+            return redirect()->to('/auth/login');
+        }
+
+        // Check if shift exists
+        $shift = $this->shiftModel->find($shift_id);
+        if (!$shift) {
+            session()->setFlashdata('error', 'Shift tidak ditemukan');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Handle both array and object formats
+        $shift_status = is_array($shift) ? $shift['status'] : $shift->status;
+
+        // Only allow reopening closed shifts, not open or approved ones
+        if ($shift_status === 'open') {
+            session()->setFlashdata('error', 'Shift sudah dalam keadaan terbuka');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        if ($shift_status === 'approved') {
+            session()->setFlashdata('error', 'Shift yang sudah disetujui tidak dapat dibuka kembali');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        if ($shift_status !== 'closed') {
+            session()->setFlashdata('error', 'Hanya shift yang sudah ditutup yang dapat dibuka kembali');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        $user_id = $this->ionAuth->user()->row()->id;
+        
+        if ($this->shiftModel->reopenShift($shift_id, $user_id)) {
+            session()->setFlashdata('success', 'Shift berhasil dibuka kembali');
+        } else {
+            session()->setFlashdata('error', 'Gagal membuka kembali shift');
+        }
+        
+        return redirect()->to('/transaksi/shift');
+    }
+
+    public function approve($shift_id)
+    {
+        return $this->approveShift($shift_id);
+    }
+
 
     public function viewShift($shift_id)
     {
@@ -652,6 +778,14 @@ class ShiftController extends BaseController
 
     public function apiCloseShift()
     {
+        // Check if user is logged in
+        if (!$this->ionAuth->loggedIn()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Session telah berakhir. Silakan login kembali.'
+            ]);
+        }
+
         $shift_id = $this->request->getPost('shift_id');
         $counted_cash = $this->request->getPost('counted_cash');
         $notes = $this->request->getPost('notes') ?? '';
@@ -660,6 +794,41 @@ class ShiftController extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Shift ID dan Counted Cash harus diisi'
+            ]);
+        }
+
+        // Check if shift exists and get shift details
+        $shift = $this->shiftModel->find($shift_id);
+        if (!$shift) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Shift tidak ditemukan'
+            ]);
+        }
+
+        // Handle both array and object formats
+        if (is_array($shift)) {
+            $shift_status = $shift['status'];
+            $shift_user_open_id = $shift['user_open_id'];
+        } else {
+            $shift_status = $shift->status;
+            $shift_user_open_id = $shift->user_open_id;
+        }
+
+        // Check if shift is open
+        if ($shift_status !== 'open') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Hanya shift yang sedang berjalan yang dapat ditutup'
+            ]);
+        }
+
+        // Check if current user is the same as the user who opened the shift
+        $current_user_id = $this->ionAuth->user()->row()->id;
+        if ($shift_user_open_id != $current_user_id) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Hanya user yang membuka shift yang dapat menutup shift ini'
             ]);
         }
 

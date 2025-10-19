@@ -82,20 +82,27 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                        <!-- <a href="<?= base_url('transaksi/shift/view/' . $shift['id']) ?>" 
-                                           class="btn btn-info btn-sm" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </a> -->
                                         <?php if ($shift['status'] === 'open') : ?>
-                                            <a href="<?= base_url('transaksi/shift/close/' . $shift['id']) ?>" 
-                                               class="btn btn-warning btn-sm" title="Close Shift">
-                                                <i class="fas fa-stop"></i>
-                                            </a>
+                                            <?php if ($shift['user_open_id'] == session('user_id')) : ?>
+                                                <a href="<?= base_url('transaksi/shift/close/' . $shift['id']) ?>" 
+                                                   class="btn btn-warning btn-sm" title="Close Shift">
+                                                    <i class="fas fa-stop"></i>
+                                                </a>
+                                            <?php else : ?>
+                                                <button class="btn btn-secondary btn-sm" disabled title="Hanya user yang membuka shift yang dapat menutup shift ini">
+                                                    <i class="fas fa-lock"></i>
+                                                </button>
+                                            <?php endif; ?>
                                         <?php elseif ($shift['status'] === 'closed') : ?>
                                             <a href="<?= base_url('transaksi/shift/approve/' . $shift['id']) ?>" 
                                                class="btn btn-success btn-sm" title="Approve Shift"
                                                onclick="return confirm('Are you sure you want to approve this shift?')">
                                                 <i class="fas fa-check"></i>
+                                            </a>
+                                            <a href="<?= base_url('transaksi/shift/reopen/' . $shift['id']) ?>" 
+                                               class="btn btn-info btn-sm" title="Reopen Shift"
+                                               onclick="return confirm('Are you sure you want to reopen this shift?')">
+                                                <i class="fas fa-redo"></i>
                                             </a>
                                         <?php endif; ?>
                                     </div>

@@ -20,12 +20,16 @@ class Karyawan extends BaseController
     protected $karyawanModel;
     protected $validation;
     protected $pengaturan;
+    protected $ionAuth;
+    protected $db;
 
     public function __construct()
     {
         $this->karyawanModel = new KaryawanModel();
         $this->pengaturan = new PengaturanModel();
         $this->validation = \Config\Services::validation();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
+        $this->db = \Config\Database::connect();
     }
 
     public function index()
@@ -46,11 +50,6 @@ class Karyawan extends BaseController
                 ->groupEnd();
         }
 
-        // Filter by status
-        $selectedStatus = $this->request->getVar('status');
-        if ($selectedStatus !== null && $selectedStatus !== '') {
-            $query->where('status', $selectedStatus);
-        }
 
         $data = [
             'title'          => 'Data Karyawan',
@@ -59,7 +58,6 @@ class Karyawan extends BaseController
             'currentPage'    => $currentPage,
             'perPage'        => $perPage,
             'search'         => $search,
-            'selectedStatus' => $selectedStatus,
             'breadcrumbs'    => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -160,7 +158,6 @@ class Karyawan extends BaseController
             $kode               = $this->karyawanModel->generateKode();
             $nik                = $this->request->getPost('nik');
             $nama               = $this->request->getPost('nama');
-            $nama_pgl           = $this->request->getPost('nama_pgl');
             $jns_klm            = $this->request->getPost('jns_klm');
             $tmp_lahir          = $this->request->getPost('tmp_lahir');
             $tgl_lahir          = $this->request->getPost('tgl_lahir');
@@ -175,16 +172,23 @@ class Karyawan extends BaseController
             $email              = $this->request->getPost('email');
             $username           = $this->request->getPost('username');
             $password           = $this->request->getPost('password');
+            $password_confirm   = $this->request->getPost('password_confirm');
             $jabatan            = $this->request->getPost('jabatan');
-            $status             = $this->request->getPost('status');
+
+            // Validate password confirmation if password is provided
+            if (!empty($password) && $password !== $password_confirm) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Password dan konfirmasi password tidak sama');
+            }
 
             // Prepare user data for ion_auth
             $user_email    = $email ?: strtolower(str_replace(' ', '', $nama)) . '@example.com';
-            $user_username = $username ?: strtolower(str_replace(' ', '', $nama_pgl));
+            $user_username = $username ?: strtolower(str_replace(' ', '', $nama));
             $user_password = $password ?: 'password123'; // Default password, should be changed
             $additional_data = [
                 'first_name' => $nama,
-                'last_name'  => $nama_pgl,
+                'last_name'  => $nama,
                 'phone'      => $no_hp,
                 'tipe'       => '1'
             ];
@@ -220,7 +224,6 @@ class Karyawan extends BaseController
                 'kode'            => $kode,
                 'nik'             => $nik,
                 'nama'            => $nama,
-                'nama_pgl'        => $nama_pgl,
                 'jns_klm'         => $jns_klm,
                 'tmp_lahir'       => $tmp_lahir,
                 'tgl_lahir'       => $tgl_lahir,
@@ -233,7 +236,6 @@ class Karyawan extends BaseController
                 'kelurahan'       => $kelurahan,
                 'kecamatan'       => $kecamatan,
                 'kota'            => $kota,
-                'status'          => $status
             ];
 
             if (!$this->karyawanModel->save($data)) {
@@ -270,10 +272,17 @@ class Karyawan extends BaseController
                            ->with('error', 'Data karyawan tidak ditemukan');
         }
 
+        // Get IonAuth user data
+        $ionAuthUser = null;
+        if (!empty($karyawan->id_user)) {
+            $ionAuthUser = $this->ionAuth->user($karyawan->id_user)->row();
+        }
+
         $data = [
             'title'       => 'Edit Karyawan',
             'validation'  => $this->validation,
             'karyawan'    => $karyawan,
+            'ionAuthUser' => $ionAuthUser,
             'jabatans'    => $this->ionAuth->groups()->result(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
@@ -296,15 +305,76 @@ class Karyawan extends BaseController
         }
 
         try {
+            $karyawan = $this->karyawanModel->find($id);
+            if (!$karyawan) {
+                throw new \RuntimeException('Data karyawan tidak ditemukan');
+            }
+
             $nama = $this->request->getPost('nama');
-            $nama_pgl = $this->request->getPost('nama_pgl');
+            $username = $this->request->getPost('username');
+            $password = $this->request->getPost('password');
+            $password_confirm = $this->request->getPost('password_confirm');
             $groups   = $this->ionAuth->group($this->request->getPost('id_user_group'))->row();
+
+            // Update IonAuth user data if user exists
+            if (!empty($karyawan->id_user)) {
+                $ionAuthData = [];
+                
+                // Update username if provided
+                if (!empty($username)) {
+                    // Check if username is unique (excluding current user)
+                    $existingUser = $this->ionAuth->where('username', $username)
+                                                ->where('id !=', $karyawan->id_user)
+                                                ->users()
+                                                ->row();
+                    
+                    if ($existingUser) {
+                        return redirect()->back()
+                                       ->withInput()
+                                       ->with('error', 'Username sudah digunakan oleh user lain');
+                    }
+                    
+                    $ionAuthData['username'] = $username;
+                }
+                
+                // Update first_name from nama field
+                if (!empty($nama)) {
+                    $ionAuthData['first_name'] = $nama;
+                }
+                
+                // Update phone from no_hp field
+                $no_hp = $this->request->getPost('no_hp');
+                if (!empty($no_hp)) {
+                    $ionAuthData['phone'] = $no_hp;
+                }
+                
+                // Update password if provided
+                if (!empty($password)) {
+                    // Validate password confirmation
+                    if ($password !== $password_confirm) {
+                        return redirect()->back()
+                                       ->withInput()
+                                       ->with('error', 'Password dan konfirmasi password tidak sama');
+                    }
+
+                    // Hash the password
+                    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                    $ionAuthData['password'] = $hashedPassword;
+                }
+                
+                // Update IonAuth user data if there's data to update
+                if (!empty($ionAuthData)) {
+                    $this->db->table('tbl_ion_users')
+                            ->where('id', $karyawan->id_user)
+                            ->set($ionAuthData)
+                            ->update();
+                }
+            }
 
             $data = [
                 'id_user_group'   => $this->request->getPost('id_user_group'),
                 'nik'             => $this->request->getPost('nik'),
                 'nama'            => $this->request->getPost('nama'),
-                'nama_pgl'        => $nama_pgl,
                 'jns_klm'         => $this->request->getPost('jns_klm'),
                 'tmp_lahir'       => $this->request->getPost('tmp_lahir'),
                 'tgl_lahir'       => $this->request->getPost('tgl_lahir'),
@@ -317,7 +387,6 @@ class Karyawan extends BaseController
                 'kota'            => $this->request->getPost('kota'),
                 'jabatan'         => $this->request->getPost('jabatan'),
                 'no_hp'           => $this->request->getPost('no_hp'),
-                'status'          => $this->request->getPost('status')
             ];
 
             if (!$this->karyawanModel->update($id, $data)) {
@@ -380,12 +449,19 @@ class Karyawan extends BaseController
                 throw new \RuntimeException('Data karyawan tidak ditemukan');
             }
 
+            // Delete IonAuth user if exists
+            if (!empty($karyawan->id_user)) {
+                $this->db->table('tbl_ion_users')
+                        ->where('id', $karyawan->id_user)
+                        ->delete();
+            }
+
             if (!$this->karyawanModel->delete($id)) {
                 throw new \RuntimeException('Gagal menghapus data karyawan');
             }
 
             return redirect()->to(base_url('master/karyawan'))
-                           ->with('success', 'Data karyawan berhasil dihapus');
+                           ->with('success', 'Data karyawan dan user login berhasil dihapus');
 
         } catch (\Exception $e) {
             log_message('error', '[Karyawan::delete] ' . $e->getMessage());
@@ -463,7 +539,6 @@ class Karyawan extends BaseController
                         'jenis_kelamin' => isset($row[6]) ? trim($row[6]) : '',
                         'jabatan' => isset($row[7]) ? trim($row[7]) : '',
                         'tanggal_masuk' => isset($row[8]) ? trim($row[8]) : date('Y-m-d'),
-                        'status' => isset($row[9]) ? trim($row[9]) : '1'
                     ];
                 }
             }
@@ -532,5 +607,68 @@ class Karyawan extends BaseController
         }
         
         return $this->response->download($filepath, null);
+    }
+
+    /**
+     * Bulk delete karyawan
+     */
+    public function bulk_delete()
+    {
+        $ids = $this->request->getPost('item_ids');
+        
+        if (empty($ids) || !is_array($ids)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($ids as $id) {
+                $karyawan = $this->karyawanModel->find($id);
+                if ($karyawan) {
+                    // Also delete associated user from ion_auth if exists
+                    if (!empty($karyawan->id_user)) {
+                        $this->db->table('tbl_ion_users')
+                                ->where('id', $karyawan->id_user)
+                                ->delete();
+                    }
+                    
+                    if ($this->karyawanModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus karyawan ID: {$id}";
+                    }
+                } else {
+                    $failedCount++;
+                    $errors[] = "Karyawan dengan ID {$id} tidak ditemukan";
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data karyawan";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Karyawan::bulk_delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
 } 

@@ -312,6 +312,18 @@ class ShiftModel extends Model
     }
 
     /**
+     * Reopen shift
+     */
+    public function reopenShift($shift_id, $user_id)
+    {
+        return $this->update($shift_id, [
+            'status' => 'open',
+            'user_approve_id' => null,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    /**
      * Update petty cash totals
      */
     public function updatePettyTotals($shift_id, $petty_in_total, $petty_out_total)
