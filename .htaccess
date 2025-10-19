@@ -1,10 +1,23 @@
 RewriteEngine On
-RewriteBase /p54-kopmensa
-
-# Allow direct access to files
+RewriteBase /
+# 1) Kalau file/dir beneran ada, langsung serve
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
+
+# 2) Tangani request ke /file/... -> arahkan ke /public/file/...
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^file/(.*)$ public/file/$1 [L]
+RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
+# 3) Sisanya route ke front controller di /public/index.php
+RewriteRule ^(.*)$ public/index.php [QSA,L]
+
+# Allow direct access to files
+# RewriteCond %{REQUEST_FILENAME} -f [OR]
+#RewriteCond %{REQUEST_FILENAME} -d
+#RewriteRule ^ - [L]
 
 # Route all other requests through index.php
 RewriteRule ^(.*)$ index.php [QSA,L]
