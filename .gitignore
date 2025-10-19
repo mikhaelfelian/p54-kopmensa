@@ -117,5 +117,5 @@ phpunit
 # Cursor
 .cursor
 
-# HTaccess
-.htaccess
+# Ignore .htaccess in public only (note: htaccess on root not ignored because it doesn't work)
+/.htaccess
