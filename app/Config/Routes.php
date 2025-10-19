@@ -127,6 +127,8 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
         $routes->post('shift/open', 'Shift::open');
         $routes->post('shift/close/(:num)', 'Shift::close/$1');
         $routes->post('shift/close', 'Shift::close');
+        $routes->post('shift/reopen/(:num)', 'Shift::reopen/$1');
+        $routes->post('shift/approve/(:num)', 'Shift::approve/$1');
         $routes->get('shift/details/(:num)', 'Shift::getShiftDetails/$1');
         $routes->post('shift/details', 'Shift::getShiftDetails');
         $routes->post('shift/summary', 'Shift::getShiftSummary');
@@ -259,6 +261,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('gudang/edit/(:num)', 'Gudang::edit/$1');
     $routes->post('gudang/update/(:num)', 'Gudang::update/$1');
     $routes->get('gudang/delete/(:num)', 'Gudang::delete/$1');
+    $routes->post('gudang/bulk_delete', 'Gudang::bulk_delete');
     $routes->get('gudang/trash', 'Gudang::trash');
     $routes->get('gudang/restore/(:num)', 'Gudang::restore/$1');
     $routes->get('gudang/delete_permanent/(:num)', 'Gudang::delete_permanent/$1');
@@ -275,6 +278,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('satuan/edit/(:num)', 'Satuan::edit/$1');
     $routes->post('satuan/update/(:num)', 'Satuan::update/$1');
     $routes->get('satuan/delete/(:num)', 'Satuan::delete/$1');
+    $routes->post('satuan/bulk_delete', 'Satuan::bulk_delete');
     $routes->get('satuan/import', 'Satuan::importForm');
     $routes->post('satuan/import', 'Satuan::importCsv');
     $routes->get('satuan/template', 'Satuan::downloadTemplate');
@@ -288,6 +292,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('kategori/edit/(:num)', 'Kategori::edit/$1');
     $routes->post('kategori/update/(:num)', 'Kategori::update/$1');
     $routes->get('kategori/delete/(:num)', 'Kategori::delete/$1');
+    $routes->post('kategori/bulk_delete', 'Kategori::bulk_delete');
     $routes->get('kategori/import', 'Kategori::importForm');
     $routes->post('kategori/import', 'Kategori::importCsv');
     $routes->get('kategori/template', 'Kategori::downloadTemplate');
@@ -301,6 +306,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('varian/edit/(:num)', 'Varian::edit/$1');
     $routes->post('varian/update/(:num)', 'Varian::update/$1');
     $routes->get('varian/delete/(:num)', 'Varian::delete/$1');
+    $routes->post('varian/bulk_delete', 'Varian::bulk_delete');
     $routes->get('varian/import', 'Varian::importForm');
     $routes->post('varian/import', 'Varian::importCsv');
     $routes->get('varian/template', 'Varian::downloadTemplate');
@@ -314,6 +320,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('voucher/edit/(:num)', 'Voucher::edit/$1');
     $routes->post('voucher/update/(:num)', 'Voucher::update/$1');
     $routes->get('voucher/delete/(:num)', 'Voucher::delete/$1');
+    $routes->post('voucher/bulk_delete', 'Voucher::bulk_delete');
     $routes->get('voucher/detail/(:num)', 'Voucher::detail/$1');
 });
 
@@ -325,6 +332,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('merk/edit/(:num)', 'Merk::edit/$1');
     $routes->post('merk/update/(:num)', 'Merk::update/$1');
     $routes->get('merk/delete/(:num)', 'Merk::delete/$1');
+    $routes->post('merk/bulk_delete', 'Merk::bulk_delete');
     $routes->get('merk/import', 'Merk::importForm');
     $routes->post('merk/import', 'Merk::importCsv');
     $routes->get('merk/template', 'Merk::downloadTemplate');
@@ -339,6 +347,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('karyawan/edit/(:num)', 'Karyawan::edit/$1');
     $routes->post('karyawan/update/(:num)', 'Karyawan::update/$1');
     $routes->get('karyawan/delete/(:num)', 'Karyawan::delete/$1');
+    $routes->post('karyawan/bulk_delete', 'Karyawan::bulk_delete');
     $routes->get('karyawan/detail/(:num)', 'Karyawan::detail/$1');
     $routes->get('karyawan/import', 'Karyawan::importForm');
     $routes->post('karyawan/import', 'Karyawan::importCsv');
@@ -414,6 +423,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/edit/(:num)', 'Supplier::edit/$1');
     $routes->post('supplier/update/(:num)', 'Supplier::update/$1');
     $routes->get('supplier/delete/(:num)', 'Supplier::delete/$1');
+    $routes->post('supplier/bulk_delete', 'Supplier::bulk_delete');
     $routes->get('supplier/detail/(:num)', 'Supplier::detail/$1');
     $routes->get('supplier/trash', 'Supplier::trash');
     $routes->get('supplier/export', 'Supplier::export');
@@ -436,6 +446,11 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('customer/edit/(:num)', 'Pelanggan::edit/$1');
     $routes->post('customer/update/(:num)', 'Pelanggan::update/$1');
     $routes->get('customer/delete/(:num)', 'Pelanggan::delete/$1');
+    $routes->post('customer/bulk_delete', 'Pelanggan::bulk_delete');
+$routes->post('customer/upload_photo', 'Pelanggan::upload_photo');
+$routes->post('customer/update_username', 'Pelanggan::update_username');
+$routes->post('customer/toggle_block', 'Pelanggan::toggle_block');
+$routes->post('customer/reset_password', 'Pelanggan::reset_password');
     $routes->get('customer/detail/(:num)', 'Pelanggan::detail/$1');
     $routes->get('customer/trash', 'Pelanggan::trash');
     $routes->get('customer/restore/(:num)', 'Pelanggan::restore/$1');
@@ -485,6 +500,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('platform/edit/(:num)', 'Platform::edit/$1');
     $routes->post('platform/update/(:num)', 'Platform::update/$1');
     $routes->get('platform/delete/(:num)', 'Platform::delete/$1');
+    $routes->post('platform/bulk_delete', 'Platform::bulk_delete');
     $routes->get('platform/detail/(:num)', 'Platform::detail/$1');
 });
 
@@ -496,6 +512,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('outlet/edit/(:num)', 'Outlet::edit/$1');
     $routes->post('outlet/update/(:num)', 'Outlet::update/$1');
     $routes->get('outlet/delete/(:num)', 'Outlet::delete/$1');
+    $routes->post('outlet/bulk_delete', 'Outlet::bulk_delete');
     $routes->get('outlet/trash', 'Outlet::trash');
     $routes->get('outlet/restore/(:num)', 'Outlet::restore/$1');
     $routes->get('outlet/delete_permanent/(:num)', 'Outlet::delete_permanent/$1');
