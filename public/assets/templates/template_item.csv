@@ -1,0 +1,3 @@
+Item,Barcode,Deskripsi,ID Kategori,ID Merk,ID Supplier,Jml Min,Harga Beli,Harga Jual,Tipe,Status,Status Stok,Status PPN
+Laptop Asus,1234567890123,Laptop gaming Asus,1,1,1,5,10000000,12000000,1,1,1,0
+Mouse Logitech,1234567890124,Mouse wireless Logitech,1,2,1,10,50000,75000,1,1,1,0
