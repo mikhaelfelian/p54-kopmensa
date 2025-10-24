@@ -330,7 +330,7 @@ class Outlet extends BaseController
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/outlet') . '">Outlet</a></li>
-                <li class="breadcrumb-item active">Import CSV</li>
+                <li class="breadcrumb-item active">Import Excel</li>
             '
         ];
 
@@ -338,25 +338,25 @@ class Outlet extends BaseController
     }
 
     /**
-     * Process CSV import
+     * Process Excel import
      */
     public function importCsv()
     {
-        $file = $this->request->getFile('csv_file');
+        $file = $this->request->getFile('excel_file');
         
         if (!$file || !$file->isValid()) {
             return redirect()->back()
-                ->with('error', 'File CSV tidak valid');
+                ->with('error', 'File Excel tidak valid');
         }
 
         // Validation rules
         $rules = [
-            'csv_file' => [
-                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+            'excel_file' => [
+                'rules' => 'uploaded[excel_file]|ext_in[excel_file,xlsx,xls]|max_size[excel_file,5120]',
                 'errors' => [
-                    'uploaded' => 'File CSV harus diupload',
-                    'ext_in' => 'File harus berformat CSV',
-                    'max_size' => 'Ukuran file maksimal 2MB'
+                    'uploaded' => 'File Excel harus diupload',
+                    'ext_in' => 'File harus berformat Excel',
+                    'max_size' => 'Ukuran file maksimal 5MB'
                 ]
             ]
         ];
@@ -377,10 +377,10 @@ class Outlet extends BaseController
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 2) { // At least nama, alamat
                     $csvData[] = [
-                        'nama' => trim($row[0]),
-                        'alamat' => isset($row[1]) ? trim($row[1]) : '',
-                        'telepon' => isset($row[2]) ? trim($row[2]) : '',
-                        'keterangan' => isset($row[3]) ? trim($row[3]) : '',
+                        'nama' => trim($row[0] ?? ''),
+                        'alamat' => trim($row[1] ?? ''),
+                        'telepon' => trim($row[2] ?? ''),
+                        'keterangan' => trim($row[3] ?? ''),
                         'status_otl' => isset($row[4]) ? trim($row[4]) : '1',
                         'status_hps' => isset($row[5]) ? trim($row[5]) : '0'
                     ];
@@ -388,16 +388,16 @@ class Outlet extends BaseController
             }
             fclose($handle);
 
-            if (empty($csvData)) {
+            if (empty($excelData)) {
                 return redirect()->back()
-                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
 
             $successCount = 0;
             $errorCount = 0;
             $errors = [];
 
-            foreach ($csvData as $index => $data) {
+            foreach ($excelData as $index => $row) {
                 try {
                     if ($this->outletModel->insert($data)) {
                         $successCount++;
@@ -429,11 +429,11 @@ class Outlet extends BaseController
     }
 
     /**
-     * Download CSV template
+     * Download Excel template
      */
     public function downloadTemplate()
     {
-        $filename = 'template_outlet.csv';
+        $filename = 'template_outlet.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
         
         // Create template if not exists
@@ -443,11 +443,12 @@ class Outlet extends BaseController
                 mkdir($templateDir, 0777, true);
             }
             
-            $template = "Nama,Alamat,Telepon,Keterangan,Status Outlet,Status Hapus\n";
-            $template .= "Outlet Pusat,Jl. Sudirman No. 1,08123456789,Outlet utama,1,0\n";
-            $template .= "Outlet Cabang,Jl. Thamrin No. 2,08123456788,Outlet cabang,1,0\n";
-            
-            file_put_contents($filepath, $template);
+            $headers = ['Nama,Alamat,Telepon,Keterangan,Status Outlet,Status Hapus\n'];
+        $sampleData = [
+            ['Outlet Pusat,Jl. Sudirman No. 1,08123456789,Outlet utama,1,0\n'],
+            ['Outlet Cabang,Jl. Thamrin No. 2,08123456788,Outlet cabang,1,0\n']
+        ];
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
         
         return $this->response->download($filepath, null);
