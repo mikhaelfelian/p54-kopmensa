@@ -28,7 +28,66 @@ class PelangganGrup extends BaseController
         $this->pelangganModel = new PelangganModel();
         $this->validation = \Config\Services::validation();
         $this->db = \Config\Database::connect();
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function index()
     {
@@ -48,11 +107,129 @@ class PelangganGrup extends BaseController
                 ->like('grup', $query)
                 ->orLike('deskripsi', $query)
                 ->groupEnd();
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         if ($status !== null && $status !== '') {
             $this->pelangganGrupModel->where('tbl_m_pelanggan_grup.status', $status);
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         if (count($row) >= 3) { // At least nama, no_telp, alamat
                     try {
@@ -75,7 +252,66 @@ class PelangganGrup extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan_grup/index', $data);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function create()
     {
@@ -95,7 +331,66 @@ class PelangganGrup extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan_grup/create', $data);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function store()
     {
@@ -125,7 +420,66 @@ class PelangganGrup extends BaseController
                 ->withInput()
                 ->with('validation_errors', $this->validator->getErrors())
                 ->with('error', 'Validasi gagal. Silakan periksa kembali input Anda.');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         try {
             if (count($row) >= 3) { // At least nama, no_telp, alamat
@@ -138,17 +492,253 @@ class PelangganGrup extends BaseController
 
             if (!$this->pelangganGrupModel->insert($data)) {
                 throw new \Exception('Gagal menambahkan data grup pelanggan');
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             return redirect()->to(base_url('master/customer-group'))
                 ->with('success', 'Data grup pelanggan berhasil ditambahkan');
 
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal menambahkan data grup pelanggan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     public function edit($id)
     {
@@ -156,7 +746,66 @@ class PelangganGrup extends BaseController
         if (!$grup) {
             return redirect()->to(base_url('master/customer-group'))
                 ->with('error', 'Data grup pelanggan tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         if (count($row) >= 3) { // At least nama, no_telp, alamat
                     try {
@@ -175,7 +824,66 @@ class PelangganGrup extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan_grup/edit', $data);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function update($id)
     {
@@ -205,7 +913,66 @@ class PelangganGrup extends BaseController
                 ->withInput()
                 ->with('validation_errors', $this->validator->getErrors())
                 ->with('error', 'Validasi gagal. Silakan periksa kembali input Anda.');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         try {
             if (count($row) >= 3) { // At least nama, no_telp, alamat
@@ -218,17 +985,253 @@ class PelangganGrup extends BaseController
 
             if (!$this->pelangganGrupModel->update($id, $data)) {
                 throw new \Exception('Gagal mengubah data grup pelanggan');
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             return redirect()->to(base_url('master/customer-group'))
                 ->with('success', 'Data grup pelanggan berhasil diubah');
 
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal mengubah data grup pelanggan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     public function delete($id)
     {
@@ -242,11 +1245,129 @@ class PelangganGrup extends BaseController
         if ($this->pelangganGrupModel->update($id, $data)) {
             return redirect()->to(base_url('master/customer-group'))
                 ->with('success', 'Data grup pelanggan berhasil dihapus');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         return redirect()->back()
             ->with('error', 'Gagal menghapus data grup pelanggan');
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function detail($id)
     {
@@ -254,7 +1375,66 @@ class PelangganGrup extends BaseController
         if (!$grup) {
             return redirect()->to(base_url('master/customer-group'))
                 ->with('error', 'Data grup pelanggan tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         if (count($row) >= 3) { // At least nama, no_telp, alamat
                     try {
@@ -272,7 +1452,66 @@ class PelangganGrup extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan_grup/detail', $data);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function trash()
     {
@@ -287,7 +1526,66 @@ class PelangganGrup extends BaseController
                 ->like('grup', $keyword)
                 ->orLike('deskripsi', $keyword)
                 ->groupEnd();
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         if (count($row) >= 3) { // At least nama, no_telp, alamat
                     try {
@@ -309,7 +1607,66 @@ class PelangganGrup extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan_grup/trash', $data);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function restore($id)
     {
@@ -323,22 +1680,258 @@ class PelangganGrup extends BaseController
         if ($this->pelangganGrupModel->update($id, $data)) {
             return redirect()->to(base_url('master/customer-group/trash'))
                 ->with('success', 'Data grup pelanggan berhasil dikembalikan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         return redirect()->back()
             ->with('error', 'Gagal mengembalikan data grup pelanggan');
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     public function delete_permanent($id)
     {
         if ($this->pelangganGrupModel->delete($id, true)) {
             return redirect()->to(base_url('master/customer-group/trash'))
                 ->with('success', 'Data grup pelanggan berhasil dihapus permanen');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         return redirect()->back()
             ->with('error', 'Gagal menghapus permanen data grup pelanggan');
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     /**
      * Manage group members
@@ -349,7 +1942,66 @@ class PelangganGrup extends BaseController
         if (!$grup) {
             return redirect()->to(base_url('master/customer-group'))
                 ->with('error', 'Data grup pelanggan tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         $currentMembers = $this->pelangganGrupModel->getGroupMembers($groupId);
         
@@ -386,7 +2038,66 @@ class PelangganGrup extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan_grup/members', $data);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     /**
      * Add member to group
@@ -396,7 +2107,66 @@ class PelangganGrup extends BaseController
         // Validate request method - now accepts regular POST
         if (!$this->request->getMethod() === 'post') {
             return redirect()->back()->with('error', 'Invalid request method');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         $groupId = $this->request->getVar('id_grup');
         $customerId = $this->request->getVar('id_pelanggan');
@@ -404,32 +2174,563 @@ class PelangganGrup extends BaseController
         // Validate input
         if (!$groupId || !$customerId) {
             return redirect()->back()->with('error', 'Data tidak lengkap');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         // Validate group exists
         $group = $this->pelangganGrupModel->find($groupId);
         if (!$group) {
             return redirect()->back()->with('error', 'Grup tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         // Validate customer exists
         $customer = $this->pelangganModel->find($customerId);
         if (!$customer) {
             return redirect()->back()->with('error', 'Pelanggan tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
         }
 
         try {
-            if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
-                return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
-                    ->with('success', 'Member berhasil ditambahkan ke grup "' . $group->grup . '"');
-            } else {
-                return redirect()->back()->with('error', 'Member sudah ada dalam grup ini');
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
-            log_message('error', 'Error adding member to group: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal menambahkan member: ' . $e->getMessage());
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+}
+
+        try {
+            if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
+                return redirect()->to(base_url("master/customer-group/members/{$groupId
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}"))
+                    ->with('success', 'Member berhasil ditambahkan ke grup "' . $group->grup . '"');
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} else {
+                return redirect()->back()->with('error', 'Member sudah ada dalam grup ini');
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
+            log_message('error', 'Error adding member to group: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menambahkan member: ' . $e->getMessage());
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     /**
      * Remove member from group
@@ -439,7 +2740,66 @@ class PelangganGrup extends BaseController
         // Validate request method - now accepts regular POST
         if (!$this->request->getMethod() === 'post') {
             return redirect()->back()->with('error', 'Invalid request method');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         $groupId = $this->request->getVar('id_grup');
         $customerId = $this->request->getVar('id_pelanggan');
@@ -447,32 +2807,563 @@ class PelangganGrup extends BaseController
         // Validate input
         if (!$groupId || !$customerId) {
             return redirect()->back()->with('error', 'Data tidak lengkap');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         // Validate group exists
         $group = $this->pelangganGrupModel->find($groupId);
         if (!$group) {
             return redirect()->back()->with('error', 'Grup tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         // Validate customer exists
         $customer = $this->pelangganModel->find($customerId);
         if (!$customer) {
             return redirect()->back()->with('error', 'Pelanggan tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
         }
 
         try {
-            if ($this->pelangganGrupModel->removeMemberFromGroup($groupId, $customerId)) {
-                return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
-                    ->with('success', 'Member berhasil dihapus dari grup "' . $group->grup . '"');
-            } else {
-                return redirect()->back()->with('error', 'Member tidak ditemukan dalam grup ini');
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
-            log_message('error', 'Error removing member from group: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Gagal menghapus member: ' . $e->getMessage());
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+}
+
+        try {
+            if ($this->pelangganGrupModel->removeMemberFromGroup($groupId, $customerId)) {
+                return redirect()->to(base_url("master/customer-group/members/{$groupId
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}"))
+                    ->with('success', 'Member berhasil dihapus dari grup "' . $group->grup . '"');
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} else {
+                return redirect()->back()->with('error', 'Member tidak ditemukan dalam grup ini');
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
+            log_message('error', 'Error removing member from group: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus member: ' . $e->getMessage());
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     /**
      * Add multiple members to group (bulk)
@@ -483,34 +3374,506 @@ class PelangganGrup extends BaseController
         if (!$this->request->getMethod() === 'post') {
             return redirect()->to(base_url("master/customer-group/members/" . $this->request->getVar('id_grup')))
                 ->with('error', 'Invalid request method');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         $groupId = $this->request->getVar('id_grup');
         $customerIds = $this->request->getVar('id_pelanggan');
 
         // Validate input
         if (!$groupId || !$customerIds) {
-            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
-                ->with('error', 'Data tidak lengkap');
+            return redirect()->to(base_url("master/customer-group/members/{$groupId
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}"))
+                ->with('error', 'Data tidak lengkap');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         if (!is_array($customerIds)) {
             $customerIds = [$customerIds];
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         // Validate group exists
         $group = $this->pelangganGrupModel->find($groupId);
         if (!$group) {
-            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
-                ->with('error', 'Grup tidak ditemukan');
+            return redirect()->to(base_url("master/customer-group/members/{$groupId
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}"))
+                ->with('error', 'Grup tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         // Validate all customers exist
         $customers = $this->pelangganModel->whereIn('id', $customerIds)->findAll();
         if (count($customers) !== count($customerIds)) {
-            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
-                ->with('error', 'Beberapa pelanggan tidak ditemukan');
+            return redirect()->to(base_url("master/customer-group/members/{$groupId
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}"))
+                ->with('error', 'Beberapa pelanggan tidak ditemukan');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         $successCount = 0;
         $alreadyExistsCount = 0;
@@ -521,7 +3884,66 @@ class PelangganGrup extends BaseController
             foreach ($customerIds as $customerId) {
                 $customer = array_filter($customers, function($c) use ($customerId) {
                     return $c->id == $customerId;
-                });
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+});
                 $customer = reset($customer);
 
                 if ($this->pelangganGrupModel->addMemberToGroup($groupId, $customerId)) {
@@ -532,7 +3954,66 @@ class PelangganGrup extends BaseController
                         'status' => 'success',
                         'message' => 'Berhasil ditambahkan'
                     ];
-                } else {
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} else {
                     $alreadyExistsCount++;
                     $results[] = [
                         'customer_id' => $customerId,
@@ -540,23 +4021,613 @@ class PelangganGrup extends BaseController
                         'status' => 'exists',
                         'message' => 'Sudah ada dalam grup'
                     ];
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
                 }
             }
 
-            $message = "Berhasil menambahkan {$successCount} member";
-            if ($alreadyExistsCount > 0) {
-                $message .= ", {$alreadyExistsCount} member sudah ada dalam grup";
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
             }
 
-            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
-                ->with('success', $message);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
 
         } catch (\Exception $e) {
-            log_message('error', 'Error adding bulk members to group: ' . $e->getMessage());
-            return redirect()->to(base_url("master/customer-group/members/{$groupId}"))
-                ->with('error', 'Gagal menambahkan member secara bulk: ' . $e->getMessage());
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+}
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+
+            $message = "Berhasil menambahkan {$successCount
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} member";
+            if ($alreadyExistsCount > 0) {
+                $message .= ", {$alreadyExistsCount
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} member sudah ada dalam grup";
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+
+            return redirect()->to(base_url("master/customer-group/members/{$groupId
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}"))
+                ->with('success', $message);
+
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
+            log_message('error', 'Error adding bulk members to group: ' . $e->getMessage());
+            return redirect()->to(base_url("master/customer-group/members/{$groupId
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}"))
+                ->with('error', 'Gagal menambahkan member secara bulk: ' . $e->getMessage());
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     /**
      * Search customers for adding to group (AJAX)
@@ -566,7 +4637,66 @@ class PelangganGrup extends BaseController
         // Validate request method
         if (!$this->request->isAJAX()) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         $search = $this->request->getVar('search') ?? '';
         $status = $this->request->getVar('status') ?? '';
@@ -586,12 +4716,130 @@ class PelangganGrup extends BaseController
                     ->orLike('no_telp', $search)
                     ->orLike('kode', $search)
                     ->groupEnd();
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             // Apply status filter
             if ($status !== '') {
                 $query->where('status', $status);
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             // Exclude customers already in the group
             if ($groupId > 0) {
@@ -604,8 +4852,126 @@ class PelangganGrup extends BaseController
                 $existingIds = array_column($existingMembers, 'id_pelanggan');
                 if (!empty($existingIds)) {
                     $query->whereNotIn('id', $existingIds);
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
                 }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             // Get total count for pagination
             $totalAvailable = $query->countAllResults(false);
@@ -620,7 +4986,66 @@ class PelangganGrup extends BaseController
                 $totalCurrent = $this->db->table('tbl_m_pelanggan_grup_member')
                     ->where('id_grup', $groupId)
                     ->countAllResults();
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             return $this->response->setJSON([
                 'success' => true,
@@ -632,14 +5057,191 @@ class PelangganGrup extends BaseController
                 'total_pages' => ceil($totalAvailable / $perPage)
             ]);
 
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
             log_message('error', 'Error searching customers: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false, 
                 'message' => 'Gagal mencari pelanggan: ' . $e->getMessage()
             ]);
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     /**
      * Get current members of a group (AJAX)
@@ -649,7 +5251,66 @@ class PelangganGrup extends BaseController
         // Validate request method
         if (!$this->request->isAJAX()) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid request method']);
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         try {
             $groupId = (int)$groupId;
@@ -669,14 +5330,191 @@ class PelangganGrup extends BaseController
                 'members' => $members
             ]);
 
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
             log_message('error', 'Error getting current members: ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false, 
                 'message' => 'Gagal mengambil data member: ' . $e->getMessage()
             ]);
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     /**
      * Show CSV import form
@@ -698,7 +5536,66 @@ class PelangganGrup extends BaseController
         ];
 
         return view($this->theme->getThemePath() . '/master/pelanggan-grup/import', $data);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
+}
 
     /**
      * Process Excel import
@@ -710,7 +5607,66 @@ class PelangganGrup extends BaseController
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File Excel tidak valid');
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         // Validation rules
         $rules = [
@@ -728,7 +5684,66 @@ class PelangganGrup extends BaseController
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
         try {
             $csvData = [];
@@ -744,14 +5759,191 @@ class PelangganGrup extends BaseController
                         'deskripsi' => trim($row[1] ?? ''),
                         'status' => isset($row[2]) ? trim($row[2]) : '1'
                     ];
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
                 }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
             fclose($handle);
 
             if (empty($excelData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             $successCount = 0;
             $errorCount = 0;
@@ -761,32 +5953,740 @@ class PelangganGrup extends BaseController
                 try {
                     if ($this->pelangganGrupModel->insert($data)) {
                         $successCount++;
+                    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
                     } else {
-                        $errorCount++;
-                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->pelangganGrupModel->errors());
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
                     }
                 } catch (\Exception $e) {
-                    $errorCount++;
-                    $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
                 }
             }
 
-            $message = "Import selesai. Berhasil: {$successCount}, Gagal: {$errorCount}";
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} else {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->pelangganGrupModel->errors());
+                    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+} catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+
+            $message = "Import selesai. Berhasil: {$successCount
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}, Gagal: {$errorCount
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}";
             if (!empty($errors)) {
                 $message .= "<br>Error details:<br>" . implode("<br>", array_slice($errors, 0, 10));
                 if (count($errors) > 10) {
                     $message .= "<br>... dan " . (count($errors) - 10) . " error lainnya";
+                
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
                 }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
             return redirect()->to(base_url('master/customer-group'))
                 ->with('success', $message);
 
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Error: ' . $e->getMessage());
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
         }
     }
+} catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error: ' . $e->getMessage());
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
 
     /**
      * Download Excel template
@@ -801,7 +6701,66 @@ class PelangganGrup extends BaseController
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
+            
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
             }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
             
             $template = "Grup,Deskripsi,Status\n";
             $template .= "VIP,Pelanggan VIP dengan diskon khusus,1\n";
@@ -809,8 +6768,185 @@ class PelangganGrup extends BaseController
             $template .= "Member,Pelanggan member dengan benefit,1\n";
             
             file_put_contents($filepath, $template);
+        
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
         
         return $this->response->download($filepath, null);
+    
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+
+    public function bulk_delete()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->pelanggangrupModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
     }
 }
