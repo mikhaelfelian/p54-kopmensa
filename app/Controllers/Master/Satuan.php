@@ -268,7 +268,7 @@ class Satuan extends BaseController
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/satuan') . '">Satuan</a></li>
-                <li class="breadcrumb-item active">Import CSV</li>
+                <li class="breadcrumb-item active">Import Excel</li>
             '
         ];
 
@@ -276,25 +276,25 @@ class Satuan extends BaseController
     }
 
     /**
-     * Process CSV import
+     * Process Excel import
      */
     public function importCsv()
     {
-        $file = $this->request->getFile('csv_file');
+        $file = $this->request->getFile('excel_file');
         
         if (!$file || !$file->isValid()) {
             return redirect()->back()
-                ->with('error', 'File CSV tidak valid');
+                ->with('error', 'File Excel tidak valid');
         }
 
         // Validation rules
         $rules = [
-            'csv_file' => [
-                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+            'excel_file' => [
+                'rules' => 'uploaded[excel_file]|ext_in[excel_file,xlsx,xls]|max_size[excel_file,5120]',
                 'errors' => [
-                    'uploaded' => 'File CSV harus diupload',
-                    'ext_in' => 'File harus berformat CSV',
-                    'max_size' => 'Ukuran file maksimal 2MB'
+                    'uploaded' => 'File Excel harus diupload',
+                    'ext_in' => 'File harus berformat Excel',
+                    'max_size' => 'Ukuran file maksimal 5MB'
                 ]
             ]
         ];
@@ -315,7 +315,7 @@ class Satuan extends BaseController
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 3) { // At least satuanKecil, satuanBesar, jml
                     $csvData[] = [
-                        'satuanKecil' => trim($row[0]),
+                        'satuanKecil' => trim($row[0] ?? ''),
                         'satuanBesar' => trim($row[1]),
                         'jml' => isset($row[2]) ? (int)trim($row[2]) : 1,
                         'status' => isset($row[3]) ? trim($row[3]) : '1'
@@ -324,16 +324,16 @@ class Satuan extends BaseController
             }
             fclose($handle);
 
-            if (empty($csvData)) {
+            if (empty($excelData)) {
                 return redirect()->back()
-                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
 
             $successCount = 0;
             $errorCount = 0;
             $errors = [];
 
-            foreach ($csvData as $index => $data) {
+            foreach ($excelData as $index => $row) {
                 try {
                     if ($this->satuanModel->insert($data)) {
                         $successCount++;
@@ -365,11 +365,11 @@ class Satuan extends BaseController
     }
 
     /**
-     * Download CSV template
+     * Download Excel template
      */
     public function downloadTemplate()
     {
-        $filename = 'template_satuan.csv';
+        $filename = 'template_satuan.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
         
         // Create template if not exists
