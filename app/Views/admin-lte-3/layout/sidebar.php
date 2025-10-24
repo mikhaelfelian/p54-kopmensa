@@ -929,6 +929,5 @@
             <!-- /.sidebar-menu -->
         </div>
     <?php endif; ?>
-
     <!-- /.sidebar -->
 </aside>
