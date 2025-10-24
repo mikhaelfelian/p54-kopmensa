@@ -105,5 +105,6 @@ class Autoload extends AutoloadConfig
         'permission',
         'akses',
         'shift',
+        'excel',
     ];
 }
