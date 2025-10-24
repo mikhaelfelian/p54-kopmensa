@@ -54,7 +54,9 @@ class PelangganGrup extends BaseController
             $this->pelangganGrupModel->where('tbl_m_pelanggan_grup.status', $status);
         }
 
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'title' => 'Data Grup Pelanggan',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
@@ -77,7 +79,9 @@ class PelangganGrup extends BaseController
 
     public function create()
     {
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'title' => 'Form Grup Pelanggan',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
@@ -124,7 +128,9 @@ class PelangganGrup extends BaseController
         }
 
         try {
-            $data = [
+            if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
                 'grup' => $grup,
                 'deskripsi' => $deskripsi,
                 'status' => $status
@@ -152,7 +158,9 @@ class PelangganGrup extends BaseController
                 ->with('error', 'Data grup pelanggan tidak ditemukan');
         }
 
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'title' => 'Form Grup Pelanggan',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
@@ -200,7 +208,9 @@ class PelangganGrup extends BaseController
         }
 
         try {
-            $data = [
+            if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
                 'grup' => $grup,
                 'deskripsi' => $deskripsi,
                 'status' => $status
@@ -222,7 +232,9 @@ class PelangganGrup extends BaseController
 
     public function delete($id)
     {
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'status' => '0',
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -244,7 +256,9 @@ class PelangganGrup extends BaseController
                 ->with('error', 'Data grup pelanggan tidak ditemukan');
         }
 
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'title' => 'Detail Grup Pelanggan',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
@@ -275,7 +289,9 @@ class PelangganGrup extends BaseController
                 ->groupEnd();
         }
 
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'title' => 'Data Grup Pelanggan Terhapus',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
@@ -297,7 +313,9 @@ class PelangganGrup extends BaseController
 
     public function restore($id)
     {
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'status' => '1',
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -344,7 +362,9 @@ class PelangganGrup extends BaseController
         $availableCustomers = $this->pelangganGrupModel->getAvailableCustomersPaginated($groupId, $perPage, $page, $search, $status);
         $totalAvailable = $this->pelangganGrupModel->getTotalAvailableCustomers($groupId, $search, $status);
 
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'title' => 'Kelola Member Grup: ' . $grup->grup,
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
@@ -663,7 +683,9 @@ class PelangganGrup extends BaseController
      */
     public function importForm()
     {
-        $data = [
+        if (count($row) >= 3) { // At least nama, no_telp, alamat
+                    try {
+                        $data = [
             'title'         => 'Import Data Grup Pelanggan',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
@@ -671,7 +693,7 @@ class PelangganGrup extends BaseController
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/customer-group') . '">Grup Pelanggan</a></li>
-                <li class="breadcrumb-item active">Import CSV</li>
+                <li class="breadcrumb-item active">Import Excel</li>
             '
         ];
 
@@ -679,25 +701,25 @@ class PelangganGrup extends BaseController
     }
 
     /**
-     * Process CSV import
+     * Process Excel import
      */
     public function importCsv()
     {
-        $file = $this->request->getFile('csv_file');
+        $file = $this->request->getFile('excel_file');
         
         if (!$file || !$file->isValid()) {
             return redirect()->back()
-                ->with('error', 'File CSV tidak valid');
+                ->with('error', 'File Excel tidak valid');
         }
 
         // Validation rules
         $rules = [
-            'csv_file' => [
-                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+            'excel_file' => [
+                'rules' => 'uploaded[excel_file]|ext_in[excel_file,xlsx,xls]|max_size[excel_file,5120]',
                 'errors' => [
-                    'uploaded' => 'File CSV harus diupload',
-                    'ext_in' => 'File harus berformat CSV',
-                    'max_size' => 'Ukuran file maksimal 2MB'
+                    'uploaded' => 'File Excel harus diupload',
+                    'ext_in' => 'File harus berformat Excel',
+                    'max_size' => 'Ukuran file maksimal 5MB'
                 ]
             ]
         ];
@@ -718,24 +740,24 @@ class PelangganGrup extends BaseController
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 1) { // At least grup
                     $csvData[] = [
-                        'grup' => trim($row[0]),
-                        'deskripsi' => isset($row[1]) ? trim($row[1]) : '',
+                        'grup' => trim($row[0] ?? ''),
+                        'deskripsi' => trim($row[1] ?? ''),
                         'status' => isset($row[2]) ? trim($row[2]) : '1'
                     ];
                 }
             }
             fclose($handle);
 
-            if (empty($csvData)) {
+            if (empty($excelData)) {
                 return redirect()->back()
-                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
 
             $successCount = 0;
             $errorCount = 0;
             $errors = [];
 
-            foreach ($csvData as $index => $data) {
+            foreach ($excelData as $index => $row) {
                 try {
                     if ($this->pelangganGrupModel->insert($data)) {
                         $successCount++;
@@ -767,11 +789,11 @@ class PelangganGrup extends BaseController
     }
 
     /**
-     * Download CSV template
+     * Download Excel template
      */
     public function downloadTemplate()
     {
-        $filename = 'template_pelanggan_grup.csv';
+        $filename = 'template_pelanggan_grup.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
         
         // Create template if not exists
