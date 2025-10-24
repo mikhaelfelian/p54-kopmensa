@@ -756,7 +756,7 @@ class Supplier extends BaseController
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/supplier') . '">Supplier</a></li>
-                <li class="breadcrumb-item active">Import CSV</li>
+                <li class="breadcrumb-item active">Import Excel</li>
             '
         ];
 
@@ -764,25 +764,25 @@ class Supplier extends BaseController
     }
 
     /**
-     * Process CSV import
+     * Process Excel import
      */
     public function importCsv()
     {
-        $file = $this->request->getFile('csv_file');
+        $file = $this->request->getFile('excel_file');
         
         if (!$file || !$file->isValid()) {
             return redirect()->back()
-                ->with('error', 'File CSV tidak valid');
+                ->with('error', 'File Excel tidak valid');
         }
 
         // Validation rules
         $rules = [
-            'csv_file' => [
-                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+            'excel_file' => [
+                'rules' => 'uploaded[excel_file]|ext_in[excel_file,xlsx,xls]|max_size[excel_file,5120]',
                 'errors' => [
-                    'uploaded' => 'File CSV harus diupload',
-                    'ext_in' => 'File harus berformat CSV',
-                    'max_size' => 'Ukuran file maksimal 2MB'
+                    'uploaded' => 'File Excel harus diupload',
+                    'ext_in' => 'File harus berformat Excel',
+                    'max_size' => 'Ukuran file maksimal 5MB'
                 ]
             ]
         ];
@@ -803,28 +803,28 @@ class Supplier extends BaseController
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 3) { // At least nama, alamat, telepon
                     $csvData[] = [
-                        'nama' => trim($row[0]),
-                        'alamat' => isset($row[1]) ? trim($row[1]) : '',
-                        'telepon' => isset($row[2]) ? trim($row[2]) : '',
-                        'email' => isset($row[3]) ? trim($row[3]) : '',
-                        'contact_person' => isset($row[4]) ? trim($row[4]) : '',
-                        'keterangan' => isset($row[5]) ? trim($row[5]) : '',
+                        'nama' => trim($row[0] ?? ''),
+                        'alamat' => trim($row[1] ?? ''),
+                        'telepon' => trim($row[2] ?? ''),
+                        'email' => trim($row[3] ?? ''),
+                        'contact_person' => trim($row[4] ?? ''),
+                        'keterangan' => trim($row[5] ?? ''),
                         'status' => isset($row[6]) ? trim($row[6]) : '1'
                     ];
                 }
             }
             fclose($handle);
 
-            if (empty($csvData)) {
+            if (empty($excelData)) {
                 return redirect()->back()
-                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
 
             $successCount = 0;
             $errorCount = 0;
             $errors = [];
 
-            foreach ($csvData as $index => $data) {
+            foreach ($excelData as $index => $row) {
                 try {
                     if ($this->supplierModel->insert($data)) {
                         $successCount++;
@@ -856,11 +856,11 @@ class Supplier extends BaseController
     }
 
     /**
-     * Download CSV template
+     * Download Excel template
      */
     public function downloadTemplate()
     {
-        $filename = 'template_supplier.csv';
+        $filename = 'template_supplier.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
         
         // Create template if not exists
@@ -870,11 +870,12 @@ class Supplier extends BaseController
                 mkdir($templateDir, 0777, true);
             }
             
-            $template = "Nama,Alamat,Telepon,Email,Contact Person,Keterangan,Status\n";
-            $template .= "PT ABC,Jl. Sudirman No. 1,08123456789,abc@email.com,John Doe,Supplier elektronik,1\n";
-            $template .= "CV XYZ,Jl. Thamrin No. 2,08123456788,xyz@email.com,Jane Smith,Supplier pakaian,1\n";
-            
-            file_put_contents($filepath, $template);
+            $headers = ['Nama,Alamat,Telepon,Email,Contact Person,Keterangan,Status\n'];
+        $sampleData = [
+            ['PT ABC,Jl. Sudirman No. 1,08123456789,abc@email.com,John Doe,Supplier elektronik,1\n'],
+            ['CV XYZ,Jl. Thamrin No. 2,08123456788,xyz@email.com,Jane Smith,Supplier pakaian,1\n']
+        ];
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
         
         return $this->response->download($filepath, null);
