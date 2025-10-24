@@ -660,11 +660,65 @@ class Item extends BaseController
         }
     }
 
+    
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
         }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+            ]);
+        }
+
+        try {
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->itemModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+            ]);
+        }
+    }
 
         $itemIds = $this->request->getVar('item_ids');
         
