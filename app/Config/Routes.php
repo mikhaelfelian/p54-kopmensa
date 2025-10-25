@@ -726,6 +726,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
 $routes->group('publik', function ($routes) {
     $routes->get('items', 'Publik::getItems');
     $routes->get('items_stock', 'Publik::getItemsStock');
+    $routes->get('items_by_supplier', 'Publik::getItemsBySupplier');
     $routes->get('satuan', 'Publik::getSatuan');
 });
 
