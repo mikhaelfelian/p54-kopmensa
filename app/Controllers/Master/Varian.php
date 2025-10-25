@@ -17,11 +17,15 @@ class Varian extends BaseController
 {
     protected $varianModel;
     protected $validation;
+    protected $pengaturan;
+    protected $ionAuth;
 
     public function __construct()
     {
         $this->varianModel = new VarianModel();
         $this->validation = \Config\Services::validation();
+        $this->pengaturan = new \App\Models\PengaturanModel();
+        $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
     public function index()
@@ -360,14 +364,8 @@ class Varian extends BaseController
 
     public function bulk_delete()
     {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Invalid request'
-            ]);
-        }
-
-        $itemIds = $this->request->getPost('item_ids');
+        // Get item_ids from either POST or GET
+        $itemIds = $this->request->getPost('item_ids') ?: $this->request->getPost('item_ids[]') ?: $this->request->getVar('item_ids');
 
         if (empty($itemIds) || !is_array($itemIds)) {
             return $this->response->setJSON([
