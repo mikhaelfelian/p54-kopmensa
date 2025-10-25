@@ -307,6 +307,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('varian/update/(:num)', 'Varian::update/$1');
     $routes->get('varian/delete/(:num)', 'Varian::delete/$1');
     $routes->post('varian/bulk_delete', 'Varian::bulk_delete');
+    $routes->get('varian/bulk_delete', 'Varian::bulk_delete');
     $routes->get('varian/import', 'Varian::importForm');
     $routes->post('varian/import', 'Varian::importCsv');
     $routes->get('varian/template', 'Varian::downloadTemplate');
