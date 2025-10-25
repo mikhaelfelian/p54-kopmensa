@@ -3,9 +3,9 @@
  * Created by:
  * Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * 2025-01-17
- * 
+ *
  * Karyawan Controller
- * 
+ *
  * Controller for managing employee (karyawan) data
  */
 
@@ -319,7 +319,7 @@ class Karyawan extends BaseController
             // Update IonAuth user data if user exists
             if (!empty($karyawan->id_user)) {
                 $ionAuthData = [];
-                
+
                 // Update username if provided
                 if (!empty($username)) {
                     // Check if username is unique (excluding current user)
@@ -327,27 +327,27 @@ class Karyawan extends BaseController
                                                 ->where('id !=', $karyawan->id_user)
                                                 ->users()
                                                 ->row();
-                    
+
                     if ($existingUser) {
                         return redirect()->back()
                                        ->withInput()
                                        ->with('error', 'Username sudah digunakan oleh user lain');
                     }
-                    
+
                     $ionAuthData['username'] = $username;
                 }
-                
+
                 // Update first_name from nama field
                 if (!empty($nama)) {
                     $ionAuthData['first_name'] = $nama;
                 }
-                
+
                 // Update phone from no_hp field
                 $no_hp = $this->request->getPost('no_hp');
                 if (!empty($no_hp)) {
                     $ionAuthData['phone'] = $no_hp;
                 }
-                
+
                 // Update password if provided
                 if (!empty($password)) {
                     // Validate password confirmation
@@ -361,7 +361,7 @@ class Karyawan extends BaseController
                     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
                     $ionAuthData['password'] = $hashedPassword;
                 }
-                
+
                 // Update IonAuth user data if there's data to update
                 if (!empty($ionAuthData)) {
                     $this->db->table('tbl_ion_users')
@@ -496,7 +496,7 @@ class Karyawan extends BaseController
     public function importCsv()
     {
         $file = $this->request->getFile('excel_file');
-        
+
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File Excel tidak valid');
@@ -523,10 +523,10 @@ class Karyawan extends BaseController
         try {
             $csvData = [];
             $handle = fopen($file->getTempName(), 'r');
-            
+
             // Skip header row
             $header = fgetcsv($handle);
-            
+
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 3) { // At least nama, nik, alamat
                     $csvData[] = [
@@ -591,14 +591,14 @@ class Karyawan extends BaseController
     {
         $filename = 'template_karyawan.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
-        
+
         // Create template if not exists
         if (!file_exists($filepath)) {
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
             }
-            
+
             $headers = ['Nama,NIK,Alamat,No Telp,Email,Tanggal Lahir,Jenis Kelamin,Jabatan,Tanggal Masuk,Status\n'];
         $sampleData = [
             ['John Doe,1234567890123456,Jl. Sudirman No. 1,08123456789,john@email.com,1990-01-01,L,Kasir,2024-01-01,1\n'],
@@ -606,14 +606,14 @@ class Karyawan extends BaseController
         ];
         $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
-        
+
         return $this->response->download($filepath, null);
     }
 
     /**
      * Bulk delete karyawan
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -672,53 +672,4 @@ class Karyawan extends BaseController
             ]);
         }
     }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-            $errors = [];
-
-            foreach ($ids as $id) {
-                $karyawan = $this->karyawanModel->find($id);
-                if ($karyawan) {
-                    // Also delete associated user from ion_auth if exists
-                    if (!empty($karyawan->id_user)) {
-                        $this->db->table('tbl_ion_users')
-                                ->where('id', $karyawan->id_user)
-                                ->delete();
-                    }
-                    
-                    if ($this->karyawanModel->delete($id)) {
-                        $deletedCount++;
-                    } else {
-                        $failedCount++;
-                        $errors[] = "Gagal menghapus karyawan ID: {$id}";
-                    }
-                } else {
-                    $failedCount++;
-                    $errors[] = "Karyawan dengan ID {$id} tidak ditemukan";
-                }
-            }
-
-            $message = "Berhasil menghapus {$deletedCount} data karyawan";
-            if ($failedCount > 0) {
-                $message .= ", {$failedCount} data gagal dihapus";
-            }
-
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => $message,
-                'deleted_count' => $deletedCount,
-                'failed_count' => $failedCount,
-                'errors' => $errors
-            ]);
-
-        } catch (\Exception $e) {
-            log_message('error', '[Karyawan::bulk_delete] ' . $e->getMessage());
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
-            ]);
-        }
-    }
-} 
+}
