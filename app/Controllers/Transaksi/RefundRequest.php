@@ -24,7 +24,7 @@ class RefundRequest extends BaseController
     {
         $this->refundRequestModel = new RefundRequestModel();
         $this->transJualModel = new TransJualModel();
-        $this->pelangganModel = new PelangganModel();
+        $this->pelangganModel = new PelangganModel(); 
     }
 
     /**
