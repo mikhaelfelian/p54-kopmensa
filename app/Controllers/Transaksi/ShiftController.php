@@ -347,16 +347,21 @@ class ShiftController extends BaseController
             return redirect()->to('/transaksi/shift');
         }
 
+        // Format counted_cash before validation
+        $counted_cash_formatted = format_angka_db($counted_cash);
+        
         $rules = [
             'shift_id' => 'required|integer',
-            'counted_cash' => 'required|numeric',
             'notes' => 'permit_empty|max_length[500]'
         ];
+
+        // Override the counted_cash value for validation
+        $this->request->setGlobal('post', array_merge($this->request->getPost(), ['counted_cash' => $counted_cash_formatted]));
 
         if ($this->validate($rules)) {
             $user_close_id = $this->ionAuth->user()->row()->id;
 
-            if ($this->shiftModel->closeShift($shift_id, $user_close_id, $counted_cash, $notes)) {
+            if ($this->shiftModel->closeShift($shift_id, $user_close_id, $counted_cash_formatted, $notes)) {
                 session()->setFlashdata('success', 'Shift berhasil ditutup');
                 return redirect()->to('/transaksi/shift');
             } else {
@@ -789,6 +794,11 @@ class ShiftController extends BaseController
         $shift_id = $this->request->getPost('shift_id');
         $counted_cash = $this->request->getPost('counted_cash');
         $notes = $this->request->getPost('notes') ?? '';
+        
+        // Format counted_cash to database format
+        if (is_string($counted_cash)) {
+            $counted_cash = format_angka_db($counted_cash);
+        }
         
         if (!$shift_id || !$counted_cash) {
             return $this->response->setJSON([
