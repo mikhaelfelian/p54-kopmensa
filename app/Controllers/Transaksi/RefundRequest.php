@@ -129,11 +129,42 @@ class RefundRequest extends BaseController
                 throw new \Exception('Jumlah refund tidak boleh melebihi total transaksi');
             }
 
+            // Handle customer ID - if null or invalid, get or create default UMUM customer
+            $customerId = $transaction->id_pelanggan;
+            if (empty($customerId) || $customerId <= 0) {
+                // Get or create default UMUM customer
+                $umumCustomer = $this->pelangganModel
+                    ->where('nama', 'UMUM')
+                    ->where('tipe', '2') // tipe 2 = umum
+                    ->first();
+                
+                if (!$umumCustomer) {
+                    // Create default UMUM customer
+                    $umumData = [
+                        'id_user' => 0, // No user account for general customer
+                        'kode' => 'UMUM001',
+                        'nama' => 'UMUM',
+                        'no_telp' => '',
+                        'alamat' => '',
+                        'kota' => '',
+                        'provinsi' => '',
+                        'tipe' => '2', // 2 = umum
+                        'status' => '1',
+                        'status_hps' => '0',
+                        'status_blokir' => '0',
+                        'limit' => 0.00
+                    ];
+                    $customerId = $this->pelangganModel->insert($umumData);
+                } else {
+                    $customerId = $umumCustomer->id;
+                }
+            }
+
             // Create refund request
             $refundData = [
                 'id_transaction' => $this->request->getPost('id_transaction'),
                 'id_user' => $this->ionAuth->user()->row()->id,
-                'id_pelanggan' => $transaction->id_pelanggan,
+                'id_pelanggan' => $customerId,
                 'no_nota' => $transaction->no_nota,
                 'amount' => $amount,
                 'reason' => $this->request->getPost('reason'),
