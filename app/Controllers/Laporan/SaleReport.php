@@ -82,6 +82,7 @@ class SaleReport extends BaseController
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
 
+
         // Calculate summary
         $totalSales = 0;
         $totalItems = 0;
@@ -89,6 +90,11 @@ class SaleReport extends BaseController
 
         foreach ($sales as $sale) {
             $totalSales += $sale->jml_gtotal ?? 0;
+            
+            // For sales, show username if sales_nama is not available
+            if (empty($sale->sales_nama) || $sale->sales_nama === '-') {
+                $sale->sales_nama = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
+            }
         }
 
         // Get filter options
@@ -183,7 +189,12 @@ class SaleReport extends BaseController
         $sale->pelanggan_nama = $sale->pelanggan_nama ?? '-';
         $sale->pelanggan_alamat = $sale->pelanggan_alamat ?? '-';
         $sale->pelanggan_telepon = $sale->pelanggan_telepon ?? '-';
-        $sale->sales_nama = $sale->sales_nama ?? '-';
+        
+        // For sales, show username if sales_nama is not available
+        if (empty($sale->sales_nama) || $sale->sales_nama === '-') {
+            $sale->sales_nama = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
+        }
+        
         $sale->gudang_nama = $sale->gudang_nama ?? '-';
         $sale->shift_nama = $sale->shift_nama ?? '-';
         $sale->username = $sale->username ?? '-';
@@ -280,12 +291,18 @@ class SaleReport extends BaseController
             $fullName = trim(($sale->user_first_name ?? '') . ' ' . ($sale->user_last_name ?? ''));
             $userDisplayName = $fullName ?: $sale->username ?? '-';
             
+            // For sales, show username if sales_nama is not available
+            $salesDisplayName = $sale->sales_nama ?? '-';
+            if (empty($salesDisplayName) || $salesDisplayName === '-') {
+                $salesDisplayName = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
+            }
+            
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($sale->tgl_masuk)));
             $sheet->setCellValue('C' . $row, $sale->no_nota);
             $sheet->setCellValue('D' . $row, $sale->pelanggan_nama ?? '-');
             $sheet->setCellValue('E' . $row, $sale->gudang_nama ?? '-');
-            $sheet->setCellValue('F' . $row, $sale->sales_nama ?? '-');
+            $sheet->setCellValue('F' . $row, $salesDisplayName);
             $sheet->setCellValue('G' . $row, $sale->shift_nama ?? '-');
             $sheet->setCellValue('H' . $row, $userDisplayName);
             $sheet->setCellValue('I' . $row, number_format($sale->jml_gtotal ?? 0, 0, ',', '.'));
