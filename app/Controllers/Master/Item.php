@@ -488,7 +488,7 @@ class Item extends BaseController
                 'tipe'        => $tipe,
                 'status'      => $status,
                 'status_stok' => $status_stok,  
-                'status_ppn'  => $status_ppn
+                'status_ppn'  => $status_ppn 
             ];
 
             if (!$this->itemModel->update($id, $data)) {
