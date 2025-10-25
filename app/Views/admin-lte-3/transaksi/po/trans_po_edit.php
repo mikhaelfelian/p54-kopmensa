@@ -111,17 +111,9 @@
                 <!-- Item -->
                 <div class="form-group">
                     <label>Item <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <?= form_input([
-                            'type' => 'text',
-                            'id' => 'item',
-                            'name' => 'item',
-                            'class' => 'form-control rounded-0' . (session('errors.id_item') ? ' is-invalid' : ''),
-                            'placeholder' => 'Cari item...',
-                            'value' => old('item')
-                        ]) ?>
-                        <input type="hidden" id="id_item" name="id_item" value="<?= old('id_item') ?>">
-                    </div>
+                    <select id="item" name="id_item" class="form-control rounded-0 select2-item <?= session('errors.id_item') ? 'is-invalid' : '' ?>">
+                        <option value="">Pilih Item...</option>
+                    </select>
                     <?php if (session('errors.id_item')): ?>
                         <div class="invalid-feedback">
                             <?= session('errors.id_item') ?>
@@ -263,37 +255,53 @@
 <?= $this->section('js') ?>
 <script>
     $(document).ready(function () {
-        // Initialize Select2
+        // Initialize Select2 for supplier
         $('.select2').select2({
             theme: 'bootstrap4',
             width: '100%'
         });
 
-        // Initialize jQuery UI Autocomplete
-        $('#item').autocomplete({
-            source: function (request, response) {
-                $.ajax({
-                    url: '<?= base_url('publik/items_stock') ?>',
-                    dataType: 'json',
-                    data: {
-                        term: request.term
-                    },
-                    success: function (data) {
-                        response(data);
-                    }
-                });
+        // Initialize Select2 for items (will be populated dynamically)
+        $('.select2-item').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            placeholder: 'Pilih Item...',
+            allowClear: true,
+            ajax: {
+                url: '<?= base_url('publik/items_by_supplier') ?>',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term,
+                        supplier_id: $('select[name="supplier_id"]').val()
+                    };
+                },
+                processResults: function (data) {
+                    return {
+                        results: data.results
+                    };
+                },
+                cache: true
             },
-            minLength: 1,
-            select: function (event, ui) {
-                $('#id_item').val(ui.item.id);
-                $('#item').val(ui.item.item);
-                return false;
+            minimumInputLength: 1
+        });
+
+        // Handle supplier change
+        $('select[name="supplier_id"]').on('change', function() {
+            var supplierId = $(this).val();
+            
+            // Clear and disable item select
+            $('.select2-item').empty().append('<option value="">Pilih Item...</option>').trigger('change');
+            $('.select2-item').prop('disabled', !supplierId);
+            
+            if (supplierId) {
+                $('.select2-item').prop('disabled', false);
             }
-        }).autocomplete("instance")._renderItem = function (ul, item) {
-            return $("<li>")
-                .append("<div>" + item.kode + " - " + item.item + "</div>")
-                .appendTo(ul);
-        };
+        });
+
+        // Trigger initial supplier change to set initial state
+        $('select[name="supplier_id"]').trigger('change');
     });
 
     function updateStatus(id) {
