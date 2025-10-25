@@ -246,7 +246,7 @@ class Outlet extends BaseController
             // Delete all item stock records related to this outlet before permanently deleting the outlet
             $this->itemStokModel->where('id_gudang', $id)->delete();
         }
-        
+
         if ($this->outletModel->delete($id, true)) {
             return redirect()->to(base_url('master/outlet/trash'))
                 ->with('success', 'Data outlet berhasil dihapus permanen');
@@ -343,7 +343,7 @@ class Outlet extends BaseController
     public function importCsv()
     {
         $file = $this->request->getFile('excel_file');
-        
+
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File Excel tidak valid');
@@ -370,10 +370,10 @@ class Outlet extends BaseController
         try {
             $csvData = [];
             $handle = fopen($file->getTempName(), 'r');
-            
+
             // Skip header row
             $header = fgetcsv($handle);
-            
+
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 2) { // At least nama, alamat
                     $csvData[] = [
@@ -435,14 +435,14 @@ class Outlet extends BaseController
     {
         $filename = 'template_outlet.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
-        
+
         // Create template if not exists
         if (!file_exists($filepath)) {
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
             }
-            
+
             $headers = ['Nama,Alamat,Telepon,Keterangan,Status Outlet,Status Hapus\n'];
         $sampleData = [
             ['Outlet Pusat,Jl. Sudirman No. 1,08123456789,Outlet utama,1,0\n'],
@@ -450,14 +450,14 @@ class Outlet extends BaseController
         ];
         $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
-        
+
         return $this->response->download($filepath, null);
     }
 
     /**
      * Bulk delete outlet
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -483,7 +483,16 @@ class Outlet extends BaseController
 
             foreach ($itemIds as $id) {
                 try {
-                    if ($this->outletModel->delete($id)) {
+                    // Soft delete - set status_hps = 1
+                    $data = [
+                        'status_hps' => '1',
+                        'deleted_at' => date('Y-m-d H:i:s')
+                    ];
+                    
+                    // Set the status of all item stock records related to this warehouse to 0 (inactive)
+                    $this->itemStokModel->where('id_gudang', $id)->set(['status' => '0'])->update();
+                    
+                    if ($this->outletModel->update($id, $data)) {
                         $deletedCount++;
                     } else {
                         $failedCount++;
@@ -516,53 +525,4 @@ class Outlet extends BaseController
             ]);
         }
     }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                // Soft delete - set status_hps = 1
-                $data = [
-                    'status_hps' => '1',
-                    'deleted_at' => date('Y-m-d H:i:s')
-                ];
-                
-                // Set the status of all item stock records related to this warehouse to 0 (inactive)
-                $this->itemStokModel->where('id_gudang', $id)->set(['status' => '0'])->update();
-                
-                if ($this->outletModel->update($id, $data)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} outlet" . ($failedCount > 0 ? ", gagal {$failedCount} outlet" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua outlet yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
-} 
+}
