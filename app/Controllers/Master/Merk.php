@@ -1,10 +1,10 @@
 <?php
 /**
  * Merk Controller
- * 
+ *
  * Controller for managing brands (merk)
  * Handles CRUD operations and other related functionalities
- * 
+ *
  * @author    Mikhael Felian Waskito <mikhaelfelian@gmail.com>
  * @date      2025-01-12
  */
@@ -132,7 +132,7 @@ class Merk extends BaseController
                 // Get the last error from the model
                 $errors = $this->merkModel->errors();
                 $errorMessage = !empty($errors) ? implode(', ', $errors) : 'Gagal menambahkan data merk';
-                
+
                 return redirect()->to(base_url('master/merk'))
                     ->with('error', $errorMessage)
                     ->withInput();
@@ -247,7 +247,7 @@ class Merk extends BaseController
     public function importCsv()
     {
         $file = $this->request->getFile('excel_file');
-        
+
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File Excel tidak valid');
@@ -274,10 +274,10 @@ class Merk extends BaseController
         try {
             $csvData = [];
             $handle = fopen($file->getTempName(), 'r');
-            
+
             // Skip header row
             $header = fgetcsv($handle);
-            
+
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 2) { // At least merk and keterangan
                     $csvData[] = [
@@ -302,7 +302,7 @@ class Merk extends BaseController
                 try {
                     // Generate kode
                     $kode = $this->merkModel->generateKode($data['merk']);
-                    
+
                     $insertData = [
                         'kode' => $kode,
                         'merk' => $data['merk'],
@@ -348,29 +348,29 @@ class Merk extends BaseController
     {
         $filename = 'template_merk.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
-        
+
         // Create template if not exists
         if (!file_exists($filepath)) {
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
             }
-            
+
             $template = "Merk,Keterangan,Status\n";
             $template .= "Samsung,Produk elektronik Samsung,1\n";
             $template .= "Apple,Produk Apple Inc,1\n";
             $template .= "Nike,Produk olahraga Nike,1\n";
-            
+
             file_put_contents($filepath, $template);
         }
-        
+
         return $this->response->download($filepath, null);
     }
 
     /**
      * Bulk delete merk
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -429,44 +429,4 @@ class Merk extends BaseController
             ]);
         }
     }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                if ($this->merkModel->delete($id)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} merk" . ($failedCount > 0 ? ", gagal {$failedCount} merk" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua merk yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
-} 
+}
