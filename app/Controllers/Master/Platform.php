@@ -3,9 +3,9 @@
  * Created by:
  * Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * 2025-01-18
- * 
+ *
  * Platform Controller
- * 
+ *
  * Controller for managing Platform (Payment Platform) data
  */
 
@@ -85,7 +85,7 @@ class Platform extends BaseController
                               ->where('status_hps', '0')
                               ->orderBy('nama', 'ASC')
                               ->findAll();
-        
+
         $data = [
             'title'       => 'Tambah Platform',
             'validation'  => $this->validation,
@@ -112,7 +112,7 @@ class Platform extends BaseController
         $keterangan = trim($this->request->getPost('keterangan'));
         $persen     = $this->request->getPost('persen') !== '' ? floatval($this->request->getPost('persen')) : null;
         $status     = $this->request->getPost('status');
-        
+
         // Validation rules
         $rules = [
             'id_outlet' => [
@@ -372,7 +372,7 @@ class Platform extends BaseController
     /**
      * Bulk delete platforms
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -431,44 +431,4 @@ class Platform extends BaseController
             ]);
         }
     }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                if ($this->platformModel->delete($id)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} platform" . ($failedCount > 0 ? ", gagal {$failedCount} platform" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua platform yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
-} 
+}
