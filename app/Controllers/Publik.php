@@ -18,12 +18,14 @@ class Publik extends BaseController
 {
     protected $itemModel;
     protected $itemStokModel;
+    protected $db;
 
     public function __construct()
     {
         parent::__construct();
         $this->itemModel = new ItemModel();
         $this->itemStokModel = new ItemStokModel();
+        $this->db = \Config\Database::connect();
     }
 
     /**
@@ -217,6 +219,84 @@ class Publik extends BaseController
         } catch (\Exception $e) {
             // Log the error
             log_message('error', '[Publik::getItems] Error: ' . $e->getMessage());
+
+            // Send error response
+            header('HTTP/1.1 500 Internal Server Error');
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'error' => true,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Internal server error'
+            ]);
+            exit();
+        }
+    }
+
+    /**
+     * Get items by supplier for Select2
+     */
+    public function getItemsBySupplier()
+    {
+        try {
+            $term = $this->request->getGet('q');
+            $supplierId = $this->request->getGet('supplier_id');
+
+            if (!$supplierId) {
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['results' => []]);
+                exit();
+            }
+
+            // Build the query based on the actual tbl_m_item structure
+            $builder = $this->db->table('tbl_m_item');
+            $builder->select('
+                id,
+                kode,
+                barcode,
+                item,
+                deskripsi,
+                harga_beli,
+                harga_jual
+            ');
+            $builder->where('status', '1');
+            $builder->where('status_hps', '0');
+            $builder->where('id_supplier', $supplierId);
+
+            // Add search condition if term provided
+            if (!empty($term)) {
+                $builder->groupStart()
+                    ->like('item', $term)
+                    ->orLike('kode', $term)
+                    ->orLike('barcode', $term)
+                    ->orLike('deskripsi', $term)
+                    ->groupEnd();
+            }
+
+            $builder->orderBy('item', 'ASC');
+            $query = $builder->get();
+            $results = $query->getResult();
+
+            // Format the results for Select2
+            $data = [];
+            foreach ($results as $item) {
+                $data[] = [
+                    'id' => $item->id,
+                    'text' => $item->item . ($item->kode ? ' (' . $item->kode . ')' : ''),
+                    'item' => $item->item,
+                    'kode' => $item->kode,
+                    'barcode' => $item->barcode,
+                    'deskripsi' => $item->deskripsi,
+                    'harga_beli' => (float)$item->harga_beli,
+                    'harga_jual' => (float)$item->harga_jual
+                ];
+            }
+
+            // Send JSON response in Select2 format
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['results' => $data]);
+            exit();
+        } catch (\Exception $e) {
+            // Log the error
+            log_message('error', '[Publik::getItemsBySupplier] Error: ' . $e->getMessage());
 
             // Send error response
             header('HTTP/1.1 500 Internal Server Error');
