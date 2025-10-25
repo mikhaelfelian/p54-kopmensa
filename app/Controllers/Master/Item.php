@@ -720,6 +720,15 @@ class Item extends BaseController
         }
     }
 
+    public function bulk_archive()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
         $itemIds = $this->request->getVar('item_ids');
         
         if (empty($itemIds) || !is_array($itemIds)) {
