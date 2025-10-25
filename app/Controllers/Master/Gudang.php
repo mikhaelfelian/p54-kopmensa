@@ -1,10 +1,10 @@
 <?php
 /**
  * Gudang Controller
- * 
+ *
  * Controller for managing warehouses (gudang)
  * Handles CRUD operations and other related functionalities
- * 
+ *
  * @author    Mikhael Felian Waskito <mikhaelfelian@gmail.com>
  * @date      2025-01-12
  */
@@ -234,7 +234,7 @@ class Gudang extends BaseController
             // Hapus semua item stok yang terkait dengan gudang ini sebelum menghapus gudang secara permanen
             $this->itemStokModel->where('id_gudang', $id)->delete();
         }
-        
+
         if ($this->gudangModel->delete($id, true)) {
             return redirect()->to(base_url('master/gudang/trash'))
                 ->with('success', 'Data gudang berhasil dihapus permanen');
@@ -330,7 +330,7 @@ class Gudang extends BaseController
     public function importCsv()
     {
         $file = $this->request->getFile('excel_file');
-        
+
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File Excel tidak valid');
@@ -357,10 +357,10 @@ class Gudang extends BaseController
         try {
             $csvData = [];
             $handle = fopen($file->getTempName(), 'r');
-            
+
             // Skip header row
             $header = fgetcsv($handle);
-            
+
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 2) { // At least nama, alamat
                     $csvData[] = [
@@ -422,14 +422,14 @@ class Gudang extends BaseController
     {
         $filename = 'template_gudang.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
-        
+
         // Create template if not exists
         if (!file_exists($filepath)) {
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
             }
-            
+
             $headers = ['Nama,Alamat,Telepon,Keterangan,Status Outlet,Status Hapus\n'];
         $sampleData = [
             ['Gudang Pusat,Jl. Sudirman No. 1,08123456789,Gudang utama,0,0\n'],
@@ -437,14 +437,14 @@ class Gudang extends BaseController
         ];
         $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
-        
+
         return $this->response->download($filepath, null);
     }
 
     /**
      * Bulk delete gudang
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -500,55 +500,6 @@ class Gudang extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                // Soft delete - set status_hps = 1
-                $data = [
-                    'status_hps' => '1',
-                    'deleted_at' => date('Y-m-d H:i:s')
-                ];
-                
-                // Set the status of all item stock records related to this warehouse to 0 (inactive)
-                $this->itemStokModel->where('id_gudang', $id)->set(['status' => '0'])->update();
-                
-                if ($this->gudangModel->update($id, $data)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} gudang" . ($failedCount > 0 ? ", gagal {$failedCount} gudang" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua gudang yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
             ]);
         }
     }
