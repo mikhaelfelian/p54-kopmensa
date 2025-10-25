@@ -305,25 +305,18 @@ class Satuan extends BaseController
                 ->with('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
         }
 
-        try {
-            $csvData = [];
-            $handle = fopen($file->getTempName(), 'r');
-            
-            // Skip header row
-            $header = fgetcsv($handle);
-            
-            while (($row = fgetcsv($handle)) !== false) {
-                if (count($row) >= 3) { // At least satuanKecil, satuanBesar, jml
-                    $csvData[] = [
-                        'satuanKecil' => trim($row[0] ?? ''),
-                        'satuanBesar' => trim($row[1]),
-                        'jml' => isset($row[2]) ? (int)trim($row[2]) : 1,
-                        'status' => isset($row[3]) ? trim($row[3]) : '1'
-                    ];
-                }
-            }
-            fclose($handle);
+        // Validate Excel file
+        $validation = validateExcelFile($file);
+        if (!$validation['valid']) {
+            return redirect()->back()
+                ->with('error', implode(', ', $validation['errors']));
+        }
 
+        try {
+            // Move uploaded file to temp location
+            $tempPath = $file->getTempName();
+            $excelData = readExcelFile($tempPath);
+            
             if (empty($excelData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
@@ -334,16 +327,25 @@ class Satuan extends BaseController
             $errors = [];
 
             foreach ($excelData as $index => $row) {
-                try {
-                    if ($this->satuanModel->insert($data)) {
-                        $successCount++;
-                    } else {
+                if (count($row) >= 3) { // At least satuanKecil, satuanBesar, jml
+                    try {
+                        $data = [
+                            'satuanKecil' => trim($row[0] ?? ''),
+                            'satuanBesar' => trim($row[1] ?? ''),
+                            'jml' => (int)trim($row[2] ?? 1),
+                            'status' => trim($row[3] ?? '1')
+                        ];
+
+                        if ($this->satuanModel->insert($data)) {
+                            $successCount++;
+                        } else {
+                            $errorCount++;
+                            $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->satuanModel->errors());
+                        }
+                    } catch (\Exception $e) {
                         $errorCount++;
-                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->satuanModel->errors());
+                        $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
                     }
-                } catch (\Exception $e) {
-                    $errorCount++;
-                    $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
                 }
             }
 
@@ -369,23 +371,21 @@ class Satuan extends BaseController
      */
     public function downloadTemplate()
     {
-        $filename = 'template_satuan.xlsx';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
+        $headers = [
+            'Satuan Kecil',
+            'Satuan Besar', 
+            'Jumlah',
+            'Status'
+        ];
         
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-            
-            $template = "Satuan Kecil,Satuan Besar,Jumlah,Status\n";
-            $template .= "Pcs,Box,12,1\n";
-            $template .= "Gram,Kilogram,1000,1\n";
-            $template .= "Ml,Liter,1000,1\n";
-            
-            file_put_contents($filepath, $template);
-        }
+        $sampleData = [
+            ['Pcs', 'Box', '12', '1'],
+            ['Gram', 'Kilogram', '1000', '1'],
+            ['Ml', 'Liter', '1000', '1']
+        ];
+        
+        $filename = 'template_satuan.xlsx';
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
         
         return $this->response->download($filepath, null);
     }
@@ -449,46 +449,6 @@ class Satuan extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                if ($this->satuanModel->delete($id)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} satuan" . ($failedCount > 0 ? ", gagal {$failedCount} satuan" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua satuan yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
             ]);
         }
     }
