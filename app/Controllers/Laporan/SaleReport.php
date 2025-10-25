@@ -276,13 +276,19 @@ class SaleReport extends BaseController
         $total = 0;
 
         foreach ($sales as $index => $sale) {
+            // Create full name from first_name and last_name
+            $fullName = trim(($sale->user_first_name ?? '') . ' ' . ($sale->user_last_name ?? ''));
+            $userDisplayName = $fullName ?: $sale->username ?? '-';
+            
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($sale->tgl_masuk)));
             $sheet->setCellValue('C' . $row, $sale->no_nota);
             $sheet->setCellValue('D' . $row, $sale->pelanggan_nama ?? '-');
             $sheet->setCellValue('E' . $row, $sale->gudang_nama ?? '-');
             $sheet->setCellValue('F' . $row, $sale->sales_nama ?? '-');
-            $sheet->setCellValue('G' . $row, number_format($sale->jml_gtotal ?? 0, 0, ',', '.'));
+            $sheet->setCellValue('G' . $row, $sale->shift_nama ?? '-');
+            $sheet->setCellValue('H' . $row, $userDisplayName);
+            $sheet->setCellValue('I' . $row, number_format($sale->jml_gtotal ?? 0, 0, ',', '.'));
             
             $total += $sale->jml_gtotal ?? 0;
             $row++;
@@ -290,10 +296,10 @@ class SaleReport extends BaseController
 
         // Add total
         $sheet->setCellValue('A' . $row, 'TOTAL');
-        $sheet->setCellValue('G' . $row, number_format($total, 0, ',', '.'));
+        $sheet->setCellValue('I' . $row, number_format($total, 0, ',', '.'));
 
         // Auto size columns
-        foreach (range('A', 'G') as $col) {
+        foreach (range('A', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
