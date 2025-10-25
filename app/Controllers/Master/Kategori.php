@@ -282,21 +282,29 @@ class Kategori extends BaseController
 
             foreach ($excelData as $index => $row) {
                 try {
-                    // Generate kode
-                    $kode = $this->kategoriModel->generateKode($data['kategori']);
-                    
-                    $insertData = [
-                        'kode' => $kode,
-                        'kategori' => $data['kategori'],
-                        'keterangan' => $data['keterangan'],
-                        'status' => $data['status']
-                    ];
+                    if (count($row) >= 3) { // At least kategori, keterangan, status
+                        $data = [
+                            'kategori' => trim($row[0] ?? ''),
+                            'keterangan' => trim($row[1] ?? ''),
+                            'status' => trim($row[2] ?? '1')
+                        ];
+                        
+                        // Generate kode
+                        $kode = $this->kategoriModel->generateKode($data['kategori']);
+                        
+                        $insertData = [
+                            'kode' => $kode,
+                            'kategori' => $data['kategori'],
+                            'keterangan' => $data['keterangan'],
+                            'status' => $data['status']
+                        ];
 
-                    if ($this->kategoriModel->insert($insertData)) {
-                        $successCount++;
-                    } else {
-                        $errorCount++;
-                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->kategoriModel->errors());
+                        if ($this->kategoriModel->insert($insertData)) {
+                            $successCount++;
+                        } else {
+                            $errorCount++;
+                            $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->kategoriModel->errors());
+                        }
                     }
                 } catch (\Exception $e) {
                     $errorCount++;
@@ -406,46 +414,6 @@ class Kategori extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                if ($this->kategoriModel->delete($id)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} kategori" . ($failedCount > 0 ? ", gagal {$failedCount} kategori" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua kategori yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
             ]);
         }
     }
