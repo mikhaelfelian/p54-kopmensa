@@ -221,11 +221,17 @@ class SaleReport extends BaseController
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
                 tbl_m_gudang.nama as gudang_nama,
-                tbl_m_karyawan.nama as sales_nama
+                tbl_m_karyawan.nama as sales_nama,
+                tbl_m_shift.shift_code as shift_nama,
+                tbl_ion_users.username as username,
+                tbl_ion_users.first_name as user_first_name,
+                tbl_ion_users.last_name as user_last_name
             ')
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
+            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
             ->where('tbl_trans_jual.status_nota', '1');
 
         // Apply filters
@@ -262,7 +268,9 @@ class SaleReport extends BaseController
         $sheet->setCellValue('D4', 'Pelanggan');
         $sheet->setCellValue('E4', 'Gudang');
         $sheet->setCellValue('F4', 'Sales');
-        $sheet->setCellValue('G4', 'Total');
+        $sheet->setCellValue('G4', 'Shift');
+        $sheet->setCellValue('H4', 'Username');
+        $sheet->setCellValue('I4', 'Total');
 
         $row = 5;
         $total = 0;
