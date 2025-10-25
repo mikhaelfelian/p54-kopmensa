@@ -19,7 +19,7 @@ Login :
 			"tipe": "<your_role>"
 		}
 	}
-	
+	 
 Profile
 	URI 	: <base_url>/api/anggota/profile
 	Method	: GET
