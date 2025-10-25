@@ -3,9 +3,9 @@
  * Created by:
  * Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * 2025-01-18
- * 
+ *
  * Supplier Controller
- * 
+ *
  * Controller for managing supplier data
  */
 
@@ -536,7 +536,7 @@ class Supplier extends BaseController
             $existingItem = $this->itemModel->where('item', $this->request->getPost('item'))
                                           ->where('status_hps', '0')
                                           ->first();
-            
+
             if ($existingItem) {
                 return redirect()->back()
                                ->withInput()
@@ -582,7 +582,7 @@ class Supplier extends BaseController
         try {
             // Get the same data as index method with filters
             $query = $this->supplierModel;
-            
+
             // Only show non-deleted suppliers (active records)
             $query->where('status_hps', '0');
 
@@ -713,7 +713,7 @@ class Supplier extends BaseController
 
             if ($row > 2) {
                 $sheet->getStyle($dataRange)->applyFromArray($dataStyle);
-                
+
                 // Center align specific columns
                 $sheet->getStyle('A2:A' . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getStyle('L2:M' . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -769,7 +769,7 @@ class Supplier extends BaseController
     public function importCsv()
     {
         $file = $this->request->getFile('excel_file');
-        
+
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File Excel tidak valid');
@@ -796,10 +796,10 @@ class Supplier extends BaseController
         try {
             $csvData = [];
             $handle = fopen($file->getTempName(), 'r');
-            
+
             // Skip header row
             $header = fgetcsv($handle);
-            
+
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 3) { // At least nama, alamat, telepon
                     $csvData[] = [
@@ -862,14 +862,14 @@ class Supplier extends BaseController
     {
         $filename = 'template_supplier.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
-        
+
         // Create template if not exists
         if (!file_exists($filepath)) {
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
             }
-            
+
             $headers = ['Nama,Alamat,Telepon,Email,Contact Person,Keterangan,Status\n'];
         $sampleData = [
             ['PT ABC,Jl. Sudirman No. 1,08123456789,abc@email.com,John Doe,Supplier elektronik,1\n'],
@@ -877,14 +877,14 @@ class Supplier extends BaseController
         ];
         $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
-        
+
         return $this->response->download($filepath, null);
     }
 
     /**
      * Bulk delete suppliers
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -943,50 +943,4 @@ class Supplier extends BaseController
             ]);
         }
     }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                // Soft delete - set status_hps = 1
-                $data = [
-                    'status_hps' => '1',
-                    'deleted_at' => date('Y-m-d H:i:s')
-                ];
-                
-                if ($this->supplierModel->update($id, $data)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} supplier" . ($failedCount > 0 ? ", gagal {$failedCount} supplier" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua supplier yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
-} 
+}
