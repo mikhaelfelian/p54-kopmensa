@@ -192,16 +192,18 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
 
         // Send AJAX request
+        // Create form data with proper array format
+        const formData = new FormData();
+        itemIds.forEach(id => {
+            formData.append('item_ids[]', id);
+        });
+
         fetch('<?= base_url('master/varian/bulk_delete') ?>', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: new URLSearchParams({
-                'item_ids': itemIds,
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-            })
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
