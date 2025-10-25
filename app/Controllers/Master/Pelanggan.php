@@ -72,7 +72,7 @@ class Pelanggan extends BaseController
     public function resetAccount($id)
     {
         $pelanggan = $this->pelangganModel->find($id);
-        
+
         if (!$pelanggan) {
             return redirect()->to('master/pelanggan')->with('error', 'Member tidak ditemukan');
         }
@@ -105,13 +105,13 @@ class Pelanggan extends BaseController
     public function blockAccount($id)
     {
         $pelanggan = $this->pelangganModel->find($id);
-        
+
         if (!$pelanggan) {
             return redirect()->to('master/pelanggan')->with('error', 'Member tidak ditemukan');
         }
 
         $reason = $this->request->getPost('reason');
-        
+
         if (empty($reason)) {
             return redirect()->back()->with('error', 'Alasan pemblokiran harus diisi');
         }
@@ -271,11 +271,11 @@ class Pelanggan extends BaseController
             $firstName = preg_replace('/[^a-zA-Z0-9]/', '', trim($nama));
             $username = strtolower($firstName) . rand(100, 999);
         }
-        
+
         if (empty($email)) {
             $email = $username . '@kopmensa.com';
         }
-        
+
         if (empty($password)) {
             $password = $username; // Use username as default password
         }
@@ -782,7 +782,7 @@ class Pelanggan extends BaseController
     public function generate_username()
     {
         $user_id = $this->request->getPost('user_id');
-        
+
         if (!$user_id) {
             return $this->response->setJSON(['success' => false, 'message' => 'User ID required']);
         }
@@ -792,7 +792,7 @@ class Pelanggan extends BaseController
             $user = $this->ionAuth->user($user_id)->row();
             $first_name = $user->first_name;
             $new_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $first_name)) . rand(100, 999);
-            
+
             // Ensure username is unique
             $counter = 1;
             $original_username = $new_username;
@@ -800,17 +800,17 @@ class Pelanggan extends BaseController
                 $new_username = $original_username . $counter;
                 $counter++;
             }
-            
+
             // Update username
             if ($this->ionAuth->update($user_id, ['username' => $new_username])) {
                 return $this->response->setJSON([
-                    'success' => true, 
+                    'success' => true,
                     'new_username' => $new_username,
                     'message' => 'Username generated successfully'
                 ]);
             } else {
                 return $this->response->setJSON([
-                    'success' => false, 
+                    'success' => false,
                     'message' => 'Failed to generate username: ' . implode(', ', $this->ionAuth->errors_array())
                 ]);
             }
@@ -924,7 +924,7 @@ class Pelanggan extends BaseController
         }
 
         $file = $this->request->getFile('photo');
-        
+
         if (!$file || !$file->isValid()) {
             return $this->response->setJSON([
                 'success' => false,
@@ -966,19 +966,19 @@ class Pelanggan extends BaseController
             // Generate unique filename
             $extension = $file->getClientExtension();
             $newName = 'profile_' . time() . '.' . $extension;
-            
+
             // Move file to user-specific directory
             if ($file->move($uploadPath, $newName)) {
                 // Save the full path to database
                 $fullPath = 'file/user/' . $id_user . '/' . $newName;
-                
+
                 // Update user profile in IonAuth users table directly
                 $db = \Config\Database::connect();
                 $builder = $db->table('tbl_ion_users');
                 $updateResult = $builder->where('id', $id_user)
                                         ->set('profile', $fullPath)
                                         ->update();
-                
+
                 if ($updateResult) {
                     return $this->response->setJSON([
                         'success' => true,
@@ -1047,7 +1047,7 @@ class Pelanggan extends BaseController
                               ->where('id !=', $id_user)
                               ->get()
                               ->getRow();
-            
+
             if ($existingUser) {
                 return $this->response->setJSON([
                     'success' => false,
@@ -1060,7 +1060,7 @@ class Pelanggan extends BaseController
             $updateResult = $builder->where('id', $id_user)
                                     ->set('username', $username)
                                     ->update();
-            
+
             if ($updateResult !== false) {
                 return $this->response->setJSON([
                     'success' => true,
@@ -1111,7 +1111,7 @@ class Pelanggan extends BaseController
             $updateResult = $builder->where('id', $id_user)
                                     ->set('active', $status)
                                     ->update();
-            
+
             if ($updateResult !== false) {
                 $action = $status == '1' ? 'diaktifkan' : 'diblokir';
                 return $this->response->setJSON([
@@ -1175,13 +1175,13 @@ class Pelanggan extends BaseController
 
             // Hash the password and update directly in IonAuth users table
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-            
+
             $db = \Config\Database::connect();
             $builder = $db->table('tbl_ion_users');
             $updateResult = $builder->where('id', $pelanggan->id_user)
                                     ->set('password', $hashedPassword)
                                     ->update();
-            
+
             if ($updateResult !== false) {
                 return $this->response->setJSON([
                     'success' => true,
@@ -1208,7 +1208,7 @@ class Pelanggan extends BaseController
     public function importCsv()
     {
         $file = $this->request->getFile('csv_file');
-        
+
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File CSV tidak valid');
@@ -1235,10 +1235,10 @@ class Pelanggan extends BaseController
         try {
             $csvData = [];
             $handle = fopen($file->getTempName(), 'r');
-            
+
             // Skip header row
             $header = fgetcsv($handle);
-            
+
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 3) { // At least nama, no_telp, alamat
                     $csvData[] = [
@@ -1302,28 +1302,28 @@ class Pelanggan extends BaseController
     {
         $filename = 'template_pelanggan.csv';
         $filepath = FCPATH . 'assets/templates/' . $filename;
-        
+
         // Create template if not exists
         if (!file_exists($filepath)) {
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
             }
-            
+
             $template = "Nama,No Telp,Alamat,Email,Tanggal Lahir,Jenis Kelamin,Keterangan,Status\n";
             $template .= "John Doe,08123456789,Jl. Sudirman No. 1,john@email.com,1990-01-01,L,Pelanggan VIP,1\n";
             $template .= "Jane Smith,08123456788,Jl. Thamrin No. 2,jane@email.com,1992-05-15,P,Pelanggan reguler,1\n";
-            
+
             file_put_contents($filepath, $template);
         }
-        
+
         return $this->response->download($filepath, null);
     }
 
     /**
      * Bulk delete pelanggan
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -1382,44 +1382,4 @@ class Pelanggan extends BaseController
             ]);
         }
     }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                if ($this->pelangganModel->delete($id)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} pelanggan" . ($failedCount > 0 ? ", gagal {$failedCount} pelanggan" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua pelanggan yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
-} 
+}
