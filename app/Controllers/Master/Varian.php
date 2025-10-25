@@ -228,7 +228,7 @@ class Varian extends BaseController
     public function importCsv()
     {
         $file = $this->request->getFile('excel_file');
-        
+
         if (!$file || !$file->isValid()) {
             return redirect()->back()
                 ->with('error', 'File Excel tidak valid');
@@ -255,10 +255,10 @@ class Varian extends BaseController
         try {
             $csvData = [];
             $handle = fopen($file->getTempName(), 'r');
-            
+
             // Skip header row
             $header = fgetcsv($handle);
-            
+
             while (($row = fgetcsv($handle)) !== false) {
                 if (count($row) >= 1) { // At least nama
                     $csvData[] = [
@@ -270,7 +270,7 @@ class Varian extends BaseController
             }
             fclose($handle);
 
-            if (empty($excelData)) {
+            if (empty($csvData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
@@ -279,23 +279,31 @@ class Varian extends BaseController
             $errorCount = 0;
             $errors = [];
 
-            foreach ($excelData as $index => $row) {
+            foreach ($csvData as $index => $row) {
                 try {
-                    // Generate kode
-                    $kode = $this->varianModel->generateKode();
-                    
-                    $insertData = [
-                        'kode' => $kode,
-                        'nama' => $data['nama'],
-                        'keterangan' => $data['keterangan'],
-                        'status' => $data['status']
-                    ];
+                    if (count($row) >= 1) { // At least nama
+                        $data = [
+                            'nama' => trim($row[0] ?? ''),
+                            'keterangan' => trim($row[1] ?? ''),
+                            'status' => trim($row[2] ?? '1')
+                        ];
+                        
+                        // Generate kode
+                        $kode = $this->varianModel->generateCode();
 
-                    if ($this->varianModel->insert($insertData)) {
-                        $successCount++;
-                    } else {
-                        $errorCount++;
-                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->varianModel->errors());
+                        $insertData = [
+                            'kode' => $kode,
+                            'nama' => $data['nama'],
+                            'keterangan' => $data['keterangan'],
+                            'status' => $data['status']
+                        ];
+
+                        if ($this->varianModel->insert($insertData)) {
+                            $successCount++;
+                        } else {
+                            $errorCount++;
+                            $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->varianModel->errors());
+                        }
                     }
                 } catch (\Exception $e) {
                     $errorCount++;
@@ -327,29 +335,29 @@ class Varian extends BaseController
     {
         $filename = 'template_varian.xlsx';
         $filepath = FCPATH . 'assets/templates/' . $filename;
-        
+
         // Create template if not exists
         if (!file_exists($filepath)) {
             $templateDir = dirname($filepath);
             if (!is_dir($templateDir)) {
                 mkdir($templateDir, 0777, true);
             }
-            
+
             $template = "Nama,Keterangan,Status\n";
             $template .= "Warna,Variasi warna produk,1\n";
             $template .= "Ukuran,Variasi ukuran produk,1\n";
             $template .= "Model,Variasi model produk,1\n";
-            
+
             file_put_contents($filepath, $template);
         }
-        
+
         return $this->response->download($filepath, null);
     }
 
     /**
      * Bulk delete varian
      */
-    
+
     public function bulk_delete()
     {
         if (!$this->request->isAJAX()) {
@@ -408,44 +416,4 @@ class Varian extends BaseController
             ]);
         }
     }
-
-        $itemIds = $this->request->getPost('item_ids');
-
-        if (empty($itemIds) || !is_array($itemIds)) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
-            ]);
-        }
-
-        try {
-            $deletedCount = 0;
-            $failedCount = 0;
-
-            foreach ($itemIds as $id) {
-                if ($this->varianModel->delete($id)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
-                }
-            }
-
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} varian" . ($failedCount > 0 ? ", gagal {$failedCount} varian" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua varian yang dipilih'
-                ]);
-            }
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
-            ]);
-        }
-    }
-} 
+}
