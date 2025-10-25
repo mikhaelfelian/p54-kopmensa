@@ -88,7 +88,8 @@ class Filters extends BaseFilters
                 'transaksi/retur/jual/sales-items/*',
                 'transaksi/retur/jual/test',
                 'master/voucher/bulk_delete',
-                'master/karyawan/bulk_delete'
+                'master/karyawan/bulk_delete',
+                'master/varian/bulk_delete'
             ]],
         ],
         'after' => [
