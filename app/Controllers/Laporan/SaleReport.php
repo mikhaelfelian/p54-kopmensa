@@ -49,11 +49,17 @@ class SaleReport extends BaseController
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
                 tbl_m_gudang.nama as gudang_nama,
-                tbl_m_karyawan.nama as sales_nama
+                tbl_m_karyawan.nama as sales_nama,
+                tbl_m_shift.shift_code as shift_nama,
+                tbl_ion_users.username as username,
+                tbl_ion_users.first_name as user_first_name,
+                tbl_ion_users.last_name as user_last_name
             ')
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
+            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
             ->where('tbl_trans_jual.status_nota', '1');
 
         // Apply filters
@@ -123,11 +129,17 @@ class SaleReport extends BaseController
                 tbl_m_pelanggan.alamat as pelanggan_alamat,
                 tbl_m_pelanggan.no_telp as pelanggan_telepon,
                 tbl_m_gudang.nama as gudang_nama,
-                tbl_m_karyawan.nama as sales_nama
+                tbl_m_karyawan.nama as sales_nama,
+                tbl_m_shift.shift_code as shift_nama,
+                tbl_ion_users.username as username,
+                tbl_ion_users.first_name as user_first_name,
+                tbl_ion_users.last_name as user_last_name
             ')
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
+            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
             ->where('tbl_trans_jual.id', $id)
             ->first();
 
@@ -173,6 +185,12 @@ class SaleReport extends BaseController
         $sale->pelanggan_telepon = $sale->pelanggan_telepon ?? '-';
         $sale->sales_nama = $sale->sales_nama ?? '-';
         $sale->gudang_nama = $sale->gudang_nama ?? '-';
+        $sale->shift_nama = $sale->shift_nama ?? '-';
+        $sale->username = $sale->username ?? '-';
+        
+        // Create full name from first_name and last_name
+        $fullName = trim(($sale->user_first_name ?? '') . ' ' . ($sale->user_last_name ?? ''));
+        $sale->user_full_name = $fullName ?: $sale->username;
 
         $data = [
             'title' => 'Detail Penjualan - ' . $sale->no_nota,
