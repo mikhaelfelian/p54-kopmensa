@@ -718,14 +718,22 @@ class TransBeli extends BaseController
                 throw new \Exception('Transaksi tidak ditemukan');
             }
 
-            // Get all active items from tbl_m_item where status=1 and status_stok=1
-            $items = $this->db->table('tbl_m_item')
+            // Get supplier ID from transaction
+            $supplierId = $this->request->getGet('supplier_id') ?? $transaksi->id_supplier;
+
+            // Build query for items
+            $builder = $this->db->table('tbl_m_item')
                              ->select('tbl_m_item.*, tbl_m_satuan.satuanBesar, tbl_m_satuan.jml as jml_satuan')
                              ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
                              ->where('tbl_m_item.status', '1')
-                             ->where('tbl_m_item.status_stok', '1')
-                             ->get()
-                             ->getResult();
+                             ->where('tbl_m_item.status_stok', '1');
+            
+            // Filter by supplier if provided
+            if ($supplierId && $supplierId > 0) {
+                $builder->where('tbl_m_item.id_supplier', $supplierId);
+            }
+
+            $items = $builder->get()->getResult();
 
             $formattedItems = [];
             foreach ($items as $item) {
