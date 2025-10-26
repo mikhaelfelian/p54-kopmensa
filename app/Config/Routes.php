@@ -636,6 +636,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('beli/detail/(:num)', 'TransBeli::detail/$1');
     $routes->get('beli/edit/(:num)', 'TransBeli::edit/$1');
     $routes->post('beli/update/(:num)', 'TransBeli::update/$1');
+    $routes->get('beli/print/(:num)', 'TransBeli::print/$1');
     $routes->post('beli/cart_add/(:num)', 'TransBeli::cart_add/$1');
     $routes->get('beli/cart_add/(:num)', 'TransBeli::cart_add_redirect/$1');
     $routes->post('beli/cart_update/(:num)', 'TransBeli::cart_update/$1');

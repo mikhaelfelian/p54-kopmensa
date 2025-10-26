@@ -940,4 +940,85 @@ class TransBeli extends BaseController
                             ->with('error', 'Gagal memuat detail transaksi: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Print purchase transaction
+     * 
+     * @param int $id Transaction ID
+     * @return mixed
+     */
+    public function print($id)
+    {
+        try {
+            // Get transaction data
+            $transaksi = $this->transBeliModel->find($id);
+            if (!$transaksi) {
+                throw new \Exception('Transaksi tidak ditemukan');
+            }
+
+            // Get transaction items with item and satuan data
+            $items = $this->transBeliDetModel->select('
+                    tbl_trans_beli_det.*,
+                    tbl_m_item.kode as item_kode,
+                    tbl_m_item.item as item_name,
+                    tbl_m_satuan.satuanBesar as satuan_name
+                ')
+                ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_det.id_item', 'left')
+                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_beli_det.id_satuan', 'left')
+                ->where('id_pembelian', $id)
+                ->findAll();
+
+            // Calculate totals
+            $subtotal = 0;
+            $totalDiskon = 0;
+            $totalPotongan = 0;
+            
+            foreach ($items as $item) {
+                $subtotal += $item->subtotal ?? 0;
+                $totalDiskon += ($item->disk1 ?? 0) + ($item->disk2 ?? 0) + ($item->disk3 ?? 0);
+                $totalPotongan += $item->potongan ?? 0;
+            }
+
+            // Calculate DPP and PPN based on status_ppn
+            $dpp = 0;
+            $ppn = 0;
+            
+            if ($transaksi->status_ppn == '1') { // Tambah PPN
+                $dpp = $subtotal;
+                $ppn = $dpp * 0.11;
+            } else if ($transaksi->status_ppn == '2') { // Include PPN
+                $dpp = $subtotal / 1.11;
+                $ppn = $subtotal - $dpp;
+            } else { // Non PPN
+                $dpp = $subtotal;
+                $ppn = 0;
+            }
+
+            $total = $subtotal + $ppn;
+
+            // Get supplier data
+            $supplier = $this->supplierModel->find($transaksi->id_supplier);
+
+            $data = [
+                'title'         => 'Cetak Transaksi Pembelian',
+                'Pengaturan'    => $this->pengaturan,
+                'user'          => $this->ionAuth->user()->row(),
+                'transaksi'     => $transaksi,
+                'items'         => $items,
+                'supplier'      => $supplier,
+                'subtotal'      => $subtotal,
+                'total_diskon'  => $totalDiskon,
+                'total_potongan' => $totalPotongan,
+                'dpp'           => $dpp,
+                'ppn'           => $ppn,
+                'total'         => $total
+            ];
+
+            return view('admin-lte-3/transaksi/beli/print', $data);
+
+        } catch (\Exception $e) {
+            return redirect()->to('transaksi/beli')
+                            ->with('error', 'Gagal mencetak transaksi: ' . $e->getMessage());
+        }
+    }
 } 
