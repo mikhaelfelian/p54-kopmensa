@@ -268,7 +268,8 @@
                                     <td><?= format_angka($item->subtotal) ?></td>
                                     <td>
                                         <button type="button" class="btn btn-info btn-sm rounded-0 btn-edit"
-                                                data-id="<?= $item->id ?>">
+                                                data-id="<?= $item->id ?>"
+                                                data-item-id="<?= $item->id_item ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button type="button" class="btn btn-danger btn-sm rounded-0 btn-delete"
@@ -341,6 +342,18 @@ $(document).ready(function() {
         $('#no_po').val(noPo);
     });
 
+    // Handle supplier change to filter items
+    $('#id_supplier').on('change', function() {
+        const supplierId = $(this).val();
+        if (supplierId) {
+            // Reload items filtered by supplier
+            loadItemsBySupplier(supplierId);
+        } else {
+            // Load all items if no supplier selected
+            loadItems();
+        }
+    });
+
     // Load items for the current transaction
     loadItems();
 
@@ -351,6 +364,28 @@ $(document).ready(function() {
         $.ajax({
             url: '<?= base_url('transaksi/beli/get-items/') ?>' + transactionId,
             type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    populateItemDropdown(response.items);
+                } else {
+                    console.error('Error loading items:', response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Ajax error:', error);
+            }
+        });
+    }
+
+    // Function to load items by supplier
+    function loadItemsBySupplier(supplierId) {
+        const transactionId = <?= $transaksi->id ?>;
+        
+        $.ajax({
+            url: '<?= base_url('transaksi/beli/get-items/') ?>' + transactionId,
+            type: 'GET',
+            data: { supplier_id: supplierId },
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
@@ -490,7 +525,8 @@ $(document).ready(function() {
 
     // Handle edit button click
     $(document).on('click', '.btn-edit', function() {
-        const itemId = $(this).data('id');
+        const cartDetailId = $(this).data('id'); // Cart detail ID for update action
+        const itemId = $(this).data('item-id'); // Actual item ID for dropdown selection
         const row = $(this).closest('tr');
         
         // Get item data from the row
@@ -504,7 +540,7 @@ $(document).ready(function() {
         const potonganText = row.find('td:eq(5)').text().trim();
         const potongan = potonganText.replace(/[^\d]/g, '') || 0;
         
-        // Populate the form with item data
+        // Populate the form with item data - use the actual item ID
         $('#id_item').val(itemId).trigger('change');
         $('#jml').val(jml);
         $('#harga').val(harga);
@@ -515,8 +551,8 @@ $(document).ready(function() {
             $('#id_satuan').val(satuan).trigger('change');
         }, 500);
         
-        // Change form action to update instead of add
-        $('#form-item').attr('action', '<?= base_url("transaksi/beli/cart_update/") ?>' + itemId);
+        // Change form action to update instead of add - use cart detail ID
+        $('#form-item').attr('action', '<?= base_url("transaksi/beli/cart_update/") ?>' + cartDetailId);
         
         // Change button text
         $('#form-item button[type="submit"]').html('<i class="fas fa-edit mr-1"></i> Update');
