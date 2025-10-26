@@ -92,7 +92,15 @@ class Opname extends BaseController
             // Check if id_user is not null before calling user() method
             if ($opname->id_user) {
                 $user = $this->ionAuth->user($opname->id_user)->row();
-                $opname->user_name = $user ? $user->first_name : 'Unknown User';
+                if ($user) {
+                    // Combine first_name and last_name for full name
+                    $opname->user_name = trim($user->first_name . ' ' . $user->last_name);
+                    if (empty($opname->user_name)) {
+                        $opname->user_name = $user->username ?? 'Unknown User';
+                    }
+                } else {
+                    $opname->user_name = 'Unknown User';
+                }
             } else {
                 $opname->user_name = 'Unknown User';
             }
