@@ -12,7 +12,6 @@ namespace App\Controllers\Gudang;
 use App\Controllers\BaseController;
 use App\Models\UtilSOModel;
 use App\Models\GudangModel;
-use App\Models\OutletModel;
 use App\Models\ItemModel;
 use App\Models\ItemStokModel;
 use App\Models\ItemHistModel;
@@ -22,7 +21,6 @@ class Opname extends BaseController
 {
     protected $utilSOModel;
     protected $gudangModel;
-    protected $outletModel;
     protected $itemModel;
     protected $itemStokModel;
     protected $itemHistModel;
@@ -35,7 +33,6 @@ class Opname extends BaseController
         parent::__construct();
         $this->utilSOModel = new UtilSOModel();
         $this->gudangModel = new GudangModel();
-        $this->outletModel = new OutletModel();
         $this->itemModel = new ItemModel();
         $this->itemStokModel = new ItemStokModel();
         $this->itemHistModel = new ItemHistModel();
@@ -94,33 +91,30 @@ class Opname extends BaseController
         foreach ($opnameData as $opname) {
             // Check if id_user is not null before calling user() method
             if ($opname->id_user) {
-            $user = $this->ionAuth->user($opname->id_user)->row();
-            $opname->user_name = $user ? $user->first_name : 'Unknown User';
+                $user = $this->ionAuth->user($opname->id_user)->row();
+                $opname->user_name = $user ? $user->first_name : 'Unknown User';
             } else {
                 $opname->user_name = 'Unknown User';
             }
             
             // Determine opname type and location based on tipe field
+            // Both Gudang (tipe=1) and Outlet (tipe=2) use id_gudang pointing to tbl_m_gudang
             if ($opname->tipe == '1') {
                 // Gudang opname
                 $gudang = $this->gudangModel->find($opname->id_gudang);
                 $opname->opname_type = 'Gudang';
                 $opname->location_name = $gudang ? $gudang->nama : 'N/A';
             } elseif ($opname->tipe == '2') {
-                // Outlet opname
-                $outlet = $this->outletModel->find($opname->id_outlet);
+                // Outlet opname - also uses id_gudang from tbl_m_gudang where status_otl=1
+                $gudang = $this->gudangModel->find($opname->id_gudang);
                 $opname->opname_type = 'Outlet';
-                $opname->location_name = $outlet ? $outlet->nama : 'N/A';
+                $opname->location_name = $gudang ? $gudang->nama : 'N/A';
             } else {
                 // Fallback to legacy method for records without tipe
                 if ($opname->id_gudang > 0) {
                     $gudang = $this->gudangModel->find($opname->id_gudang);
                     $opname->opname_type = 'Gudang';
                     $opname->location_name = $gudang ? $gudang->nama : 'N/A';
-                } elseif ($opname->id_outlet > 0) {
-                    $outlet = $this->outletModel->find($opname->id_outlet);
-                    $opname->opname_type = 'Outlet';
-                    $opname->location_name = $outlet ? $outlet->nama : 'N/A';
                 } else {
                     $opname->opname_type = 'Unknown';
                     $opname->location_name = 'N/A';
