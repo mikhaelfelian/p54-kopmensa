@@ -285,21 +285,15 @@ class Varian extends BaseController
 
             foreach ($csvData as $index => $row) {
                 try {
-                    if (count($row) >= 1) { // At least nama
-                        $data = [
-                            'nama' => trim($row[0] ?? ''),
-                            'keterangan' => trim($row[1] ?? ''),
-                            'status' => trim($row[2] ?? '1')
-                        ];
-                        
+                    if (!empty($row['nama'])) {
                         // Generate kode
                         $kode = $this->varianModel->generateCode();
 
                         $insertData = [
                             'kode' => $kode,
-                            'nama' => $data['nama'],
-                            'keterangan' => $data['keterangan'],
-                            'status' => $data['status']
+                            'nama' => $row['nama'],
+                            'keterangan' => $row['keterangan'],
+                            'status' => $row['status']
                         ];
 
                         if ($this->varianModel->insert($insertData)) {
@@ -337,24 +331,16 @@ class Varian extends BaseController
      */
     public function downloadTemplate()
     {
+        $headers = ['Nama', 'Keterangan', 'Status'];
+        $sampleData = [
+            ['Warna', 'Variasi warna produk', '1'],
+            ['Ukuran', 'Variasi ukuran produk', '1'],
+            ['Model', 'Variasi model produk', '1']
+        ];
+        
         $filename = 'template_varian.xlsx';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
-
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-
-            $template = "Nama,Keterangan,Status\n";
-            $template .= "Warna,Variasi warna produk,1\n";
-            $template .= "Ukuran,Variasi ukuran produk,1\n";
-            $template .= "Model,Variasi model produk,1\n";
-
-            file_put_contents($filepath, $template);
-        }
-
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
+        
         return $this->response->download($filepath, null);
     }
 
