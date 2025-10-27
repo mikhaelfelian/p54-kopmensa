@@ -1233,13 +1233,17 @@ class Pelanggan extends BaseController
         }
 
         try {
+            // Read Excel file using PhpSpreadsheet
+            $tempPath = $file->getTempName();
+            $excelData = readExcelFile($tempPath);
+            
+            if (empty($excelData)) {
+                return redirect()->back()
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
+            }
+
             $csvData = [];
-            $handle = fopen($file->getTempName(), 'r');
-
-            // Skip header row
-            $header = fgetcsv($handle);
-
-            while (($row = fgetcsv($handle)) !== false) {
+            foreach ($excelData as $row) {
                 if (count($row) >= 3) { // At least nama, no_telp, alamat
                     $csvData[] = [
                         'nama' => trim($row[0]),
@@ -1252,12 +1256,6 @@ class Pelanggan extends BaseController
                         'status' => isset($row[7]) ? trim($row[7]) : '1'
                     ];
                 }
-            }
-            fclose($handle);
-
-            if (empty($csvData)) {
-                return redirect()->back()
-                    ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
 
             $successCount = 0;
