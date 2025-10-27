@@ -413,7 +413,7 @@ class TransJual extends BaseController
                     ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id AND tbl_m_item_stok.id_gudang = ' . (int)$warehouseId, 'left')
                     ->where('tbl_m_item.status_hps', '0')
                     ->where('tbl_m_item.status', '1')
-                    ->groupBy('tbl_m_item.id')
+                    ->groupBy('tbl_m_item.id, tbl_m_item.status_stok')
                     ->orderBy('tbl_m_item.item', 'ASC');
 
                 if ($search) {
@@ -442,7 +442,7 @@ class TransJual extends BaseController
                     ->join('tbl_m_item_stok', 'tbl_m_item_stok.id_item = tbl_m_item.id', 'left')
                     ->where('tbl_m_item.status_hps', '0')
                     ->where('tbl_m_item.status', '1')
-                    ->groupBy('tbl_m_item.id')
+                    ->groupBy('tbl_m_item.id, tbl_m_item.status_stok')
                     ->orderBy('tbl_m_item.item', 'ASC');
 
                 if ($search) {

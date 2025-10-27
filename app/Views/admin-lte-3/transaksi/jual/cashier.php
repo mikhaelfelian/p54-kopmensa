@@ -2298,24 +2298,55 @@ helper('form');
                 const price = product.harga_jual || product.harga || 0;
                 const stock = product.stok || 0;
                 const description = product.deskripsi || '';
+                const statusStok = product.status_stok || '1'; // Default to stockable
+
+                // Determine if product should be blocked (stock = 0 and not non-stockable)
+                const isBlocked = (stock <= 0 && statusStok === '1');
+                const isNonStockable = (statusStok === '0');
+
+                // Determine background color, opacity, and cursor
+                let bgColor = '#f8f9fa';
+                let opacity = 1;
+                let cursorStyle = 'pointer';
+                let onClickAction = `onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})"`;
+
+                if (isBlocked) {
+                    bgColor = '#ffebee';
+                    opacity = 0.5;
+                    cursorStyle = 'not-allowed';
+                    onClickAction = `onclick="toastr.error('Stok habis! Produk tidak dapat dijual.')"`;
+                } else if (isNonStockable) {
+                    bgColor = '#e8f5e9';
+                }
 
                 // Stock status logic
                 let stockStatus = '';
                 let stockClass = '';
-                if (stock <= 0) {
+                if (isBlocked) {
                     stockStatus = 'Stok Habis';
-                    stockClass = 'btn-danger';
-                } else if (stock <= 5) {
+                    stockClass = 'text-danger';
+                } else if (stock <= 5 && statusStok === '1') {
                     stockStatus = 'Stok Rendah';
-                    stockClass = 'btn-warning';
+                    stockClass = 'text-warning';
+                } else if (isNonStockable) {
+                    stockStatus = 'Non-Stockable';
+                    stockClass = 'text-info';
                 }
 
                 // Product name with code (like in your image)
                 const displayName = productCode ? `${itemName}-${productCode}` : itemName;
 
+                // Determine stock display text and style
+                let stockDisplay = isNonStockable ? 'Non-Stockable' : stock;
+                let stockTextColor = '';
+                if (stockClass === 'text-danger') stockTextColor = '#dc3545';
+                else if (stockClass === 'text-warning') stockTextColor = '#ffc107';
+                else if (stockClass === 'text-info') stockTextColor = '#17a2b8';
+                else stockTextColor = '#007bff';
+
                 html += `
                 <div class="col-12 mb-2">
-                    <div class="product-grid-item border-bottom py-3 px-2" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})" style="cursor: pointer; background: #f8f9fa;">
+                    <div class="product-grid-item border-bottom py-3 px-2" ${onClickAction} style="cursor: ${cursorStyle}; background: ${bgColor}; opacity: ${opacity};">
                         <div class="d-flex align-items-start">
                             <!-- Product Icon -->
                             <div class="product-icon me-3" style="flex-shrink: 0;">
@@ -2337,8 +2368,8 @@ helper('form');
                                             <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
                                                 ${description ? description : ''}
                                             </div>
-                                            <div class="product-stock" style="font-size: 11px; color: #007bff; text-align: left; margin-top: 2px;">
-                                                <i class="fas fa-boxes"></i> Stok: ${stock} PCS
+                                            <div class="product-stock" style="font-size: 11px; color: ${stockTextColor}; text-align: left; margin-top: 2px;">
+                                                <i class="fas fa-boxes"></i> Stok: ${stockDisplay} PCS${stockStatus ? ' - ' + stockStatus : ''}
                                             </div>
                                         </div>
                                         <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
