@@ -1207,21 +1207,21 @@ class Pelanggan extends BaseController
      */
     public function importCsv()
     {
-        $file = $this->request->getFile('csv_file');
+        $file = $this->request->getFile('excel_file');
 
         if (!$file || !$file->isValid()) {
             return redirect()->back()
-                ->with('error', 'File CSV tidak valid');
+                ->with('error', 'File Excel tidak valid');
         }
 
         // Validation rules
         $rules = [
-            'csv_file' => [
-                'rules' => 'uploaded[csv_file]|ext_in[csv_file,csv]|max_size[csv_file,2048]',
+            'excel_file' => [
+                'rules' => 'uploaded[excel_file]|ext_in[excel_file,xlsx,xls]|max_size[excel_file,5120]',
                 'errors' => [
-                    'uploaded' => 'File CSV harus diupload',
-                    'ext_in' => 'File harus berformat CSV',
-                    'max_size' => 'Ukuran file maksimal 2MB'
+                    'uploaded' => 'File Excel harus diupload',
+                    'ext_in' => 'File harus berformat Excel',
+                    'max_size' => 'Ukuran file maksimal 5MB'
                 ]
             ]
         ];
@@ -1257,7 +1257,7 @@ class Pelanggan extends BaseController
 
             if (empty($csvData)) {
                 return redirect()->back()
-                    ->with('error', 'File CSV kosong atau format tidak sesuai');
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
 
             $successCount = 0;
@@ -1300,23 +1300,15 @@ class Pelanggan extends BaseController
      */
     public function downloadTemplate()
     {
-        $filename = 'template_pelanggan.csv';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
-
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-
-            $template = "Nama,No Telp,Alamat,Email,Tanggal Lahir,Jenis Kelamin,Keterangan,Status\n";
-            $template .= "John Doe,08123456789,Jl. Sudirman No. 1,john@email.com,1990-01-01,L,Pelanggan VIP,1\n";
-            $template .= "Jane Smith,08123456788,Jl. Thamrin No. 2,jane@email.com,1992-05-15,P,Pelanggan reguler,1\n";
-
-            file_put_contents($filepath, $template);
-        }
-
+        $headers = ['Nama', 'No Telp', 'Alamat', 'Email', 'Tanggal Lahir', 'Jenis Kelamin', 'Keterangan', 'Status'];
+        $sampleData = [
+            ['John Doe', '08123456789', 'Jl. Sudirman No. 1', 'john@email.com', '1990-01-01', 'L', 'Pelanggan VIP', '1'],
+            ['Jane Smith', '08123456788', 'Jl. Thamrin No. 2', 'jane@email.com', '1992-05-15', 'P', 'Pelanggan reguler', '1']
+        ];
+        
+        $filename = 'template_pelanggan.xlsx';
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
+        
         return $this->response->download($filepath, null);
     }
 
