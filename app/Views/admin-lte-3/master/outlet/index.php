@@ -77,12 +77,19 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
+                                        <a href="<?= base_url("master/outlet/platforms/{$row->id}") ?>"
+                                            class="btn btn-info btn-sm rounded-0"
+                                            title="Kelola Platform">
+                                            <i class="fas fa-credit-card"></i>
+                                        </a>
                                         <a href="<?= base_url("master/outlet/edit/{$row->id}") ?>"
-                                            class="btn btn-warning btn-sm rounded-0">
+                                            class="btn btn-warning btn-sm rounded-0"
+                                            title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
                                         <a href="<?= base_url("master/outlet/delete/{$row->id}") ?>"
                                             class="btn btn-danger btn-sm rounded-0"
+                                            title="Hapus"
                                             onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
