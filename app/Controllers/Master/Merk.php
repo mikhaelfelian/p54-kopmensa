@@ -289,7 +289,7 @@ class Merk extends BaseController
             }
             fclose($handle);
 
-            if (empty($excelData)) {
+            if (empty($csvData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
@@ -298,25 +298,27 @@ class Merk extends BaseController
             $errorCount = 0;
             $errors = [];
 
-            foreach ($excelData as $index => $row) {
+            foreach ($csvData as $index => $row) {
                 try {
-                    // Generate kode
-                    $kode = $this->merkModel->generateKode($data['merk']);
+                    if (!empty($row['merk'])) {
+                        // Generate kode
+                        $kode = $this->merkModel->generateKode($row['merk']);
 
-                    $insertData = [
-                        'kode' => $kode,
-                        'merk' => $data['merk'],
-                        'keterangan' => $data['keterangan'],
-                        'status' => $data['status'],
-                        'created_at' => date('Y-m-d H:i:s'),
-                        'updated_at' => date('Y-m-d H:i:s')
-                    ];
+                        $insertData = [
+                            'kode' => $kode,
+                            'merk' => $row['merk'],
+                            'keterangan' => $row['keterangan'],
+                            'status' => $row['status'],
+                            'created_at' => date('Y-m-d H:i:s'),
+                            'updated_at' => date('Y-m-d H:i:s')
+                        ];
 
-                    if ($this->merkModel->insert($insertData)) {
-                        $successCount++;
-                    } else {
-                        $errorCount++;
-                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->merkModel->errors());
+                        if ($this->merkModel->insert($insertData)) {
+                            $successCount++;
+                        } else {
+                            $errorCount++;
+                            $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->merkModel->errors());
+                        }
                     }
                 } catch (\Exception $e) {
                     $errorCount++;
@@ -346,24 +348,16 @@ class Merk extends BaseController
      */
     public function downloadTemplate()
     {
+        $headers = ['Merk', 'Keterangan', 'Status'];
+        $sampleData = [
+            ['Samsung', 'Produk elektronik Samsung', '1'],
+            ['Apple', 'Produk Apple Inc', '1'],
+            ['Nike', 'Produk olahraga Nike', '1']
+        ];
+        
         $filename = 'template_merk.xlsx';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
-
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-
-            $template = "Merk,Keterangan,Status\n";
-            $template .= "Samsung,Produk elektronik Samsung,1\n";
-            $template .= "Apple,Produk Apple Inc,1\n";
-            $template .= "Nike,Produk olahraga Nike,1\n";
-
-            file_put_contents($filepath, $template);
-        }
-
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
+        
         return $this->response->download($filepath, null);
     }
 
