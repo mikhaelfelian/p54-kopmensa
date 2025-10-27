@@ -388,7 +388,7 @@ class Outlet extends BaseController
             }
             fclose($handle);
 
-            if (empty($excelData)) {
+            if (empty($csvData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
@@ -397,9 +397,9 @@ class Outlet extends BaseController
             $errorCount = 0;
             $errors = [];
 
-            foreach ($excelData as $index => $row) {
+            foreach ($csvData as $index => $row) {
                 try {
-                    if ($this->outletModel->insert($data)) {
+                    if ($this->outletModel->insert($row)) {
                         $successCount++;
                     } else {
                         $errorCount++;
@@ -433,24 +433,15 @@ class Outlet extends BaseController
      */
     public function downloadTemplate()
     {
-        $filename = 'template_outlet.xlsx';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
-
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-
-            $headers = ['Nama,Alamat,Telepon,Keterangan,Status Outlet,Status Hapus\n'];
+        $headers = ['Nama', 'Alamat', 'Telepon', 'Keterangan', 'Status Outlet', 'Status Hapus'];
         $sampleData = [
-            ['Outlet Pusat,Jl. Sudirman No. 1,08123456789,Outlet utama,1,0\n'],
-            ['Outlet Cabang,Jl. Thamrin No. 2,08123456788,Outlet cabang,1,0\n']
+            ['Outlet Pusat', 'Jl. Sudirman No. 1', '08123456789', 'Outlet utama', '1', '0'],
+            ['Outlet Cabang', 'Jl. Thamrin No. 2', '08123456788', 'Outlet cabang', '1', '0']
         ];
+        
+        $filename = 'template_outlet.xlsx';
         $filepath = createExcelTemplate($headers, $sampleData, $filename);
-        }
-
+        
         return $this->response->download($filepath, null);
     }
 
