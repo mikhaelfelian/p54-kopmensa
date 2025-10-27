@@ -468,50 +468,68 @@ class Voucher extends BaseController
             ]);
         }
 
+        // Get item_ids from either POST format (item_ids or item_ids[])
         $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            $itemIds = $this->request->getPost('item_ids[]');
+        }
+        if (empty($itemIds)) {
+            $itemIds = $this->request->getVar('item_ids');
+        }
 
         if (empty($itemIds) || !is_array($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak ada item yang dipilih'
+                'message' => 'Tidak ada data yang dipilih untuk dihapus'
             ]);
         }
 
         try {
             $deletedCount = 0;
             $failedCount = 0;
+            $errors = [];
 
             foreach ($itemIds as $id) {
-                $voucher = $this->voucherModel->find($id);
-                
-                // Check if voucher has been used
-                if ($voucher && $voucher->jml_keluar > 0) {
+                try {
+                    $voucher = $this->voucherModel->find($id);
+                    
+                    // Check if voucher has been used
+                    if ($voucher && $voucher->jml_keluar > 0) {
+                        $failedCount++;
+                        $errors[] = "Voucher ID {$id} tidak dapat dihapus (sudah digunakan)";
+                        continue;
+                    }
+                    
+                    if ($this->voucherModel->delete($id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus voucher ID: {$id}";
+                    }
+                } catch (\Exception $e) {
                     $failedCount++;
-                    continue;
-                }
-                
-                if ($this->voucherModel->delete($id)) {
-                    $deletedCount++;
-                } else {
-                    $failedCount++;
+                    $errors[] = "Error menghapus voucher ID {$id}: " . $e->getMessage();
                 }
             }
 
-            if ($deletedCount > 0) {
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Berhasil menghapus {$deletedCount} voucher" . ($failedCount > 0 ? ", gagal {$failedCount} voucher (sudah digunakan)" : "")
-                ]);
-            } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal menghapus semua voucher yang dipilih (mungkin sudah digunakan)'
-                ]);
+            $message = "Berhasil menghapus {$deletedCount} voucher";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} voucher gagal dihapus";
             }
+
+            return $this->response->setJSON([
+                'success' => $deletedCount > 0,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors
+            ]);
+
         } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete Voucher] ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Error: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menghapus voucher: ' . $e->getMessage()
             ]);
         }
     }
