@@ -815,7 +815,7 @@ class Supplier extends BaseController
             }
             fclose($handle);
 
-            if (empty($excelData)) {
+            if (empty($csvData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
@@ -824,9 +824,9 @@ class Supplier extends BaseController
             $errorCount = 0;
             $errors = [];
 
-            foreach ($excelData as $index => $row) {
+            foreach ($csvData as $index => $row) {
                 try {
-                    if ($this->supplierModel->insert($data)) {
+                    if ($this->supplierModel->insert($row)) {
                         $successCount++;
                     } else {
                         $errorCount++;
@@ -860,24 +860,15 @@ class Supplier extends BaseController
      */
     public function downloadTemplate()
     {
-        $filename = 'template_supplier.xlsx';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
-
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-
-            $headers = ['Nama,Alamat,Telepon,Email,Contact Person,Keterangan,Status\n'];
+        $headers = ['Nama', 'Alamat', 'Telepon', 'Email', 'Contact Person', 'Keterangan', 'Status'];
         $sampleData = [
-            ['PT ABC,Jl. Sudirman No. 1,08123456789,abc@email.com,John Doe,Supplier elektronik,1\n'],
-            ['CV XYZ,Jl. Thamrin No. 2,08123456788,xyz@email.com,Jane Smith,Supplier pakaian,1\n']
+            ['PT ABC', 'Jl. Sudirman No. 1', '08123456789', 'abc@email.com', 'John Doe', 'Supplier elektronik', '1'],
+            ['CV XYZ', 'Jl. Thamrin No. 2', '08123456788', 'xyz@email.com', 'Jane Smith', 'Supplier pakaian', '1']
         ];
+        
+        $filename = 'template_supplier.xlsx';
         $filepath = createExcelTemplate($headers, $sampleData, $filename);
-        }
-
+        
         return $this->response->download($filepath, null);
     }
 
