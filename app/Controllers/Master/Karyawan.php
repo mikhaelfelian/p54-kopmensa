@@ -544,7 +544,7 @@ class Karyawan extends BaseController
             }
             fclose($handle);
 
-            if (empty($excelData)) {
+            if (empty($csvData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
@@ -553,9 +553,9 @@ class Karyawan extends BaseController
             $errorCount = 0;
             $errors = [];
 
-            foreach ($excelData as $index => $row) {
+            foreach ($csvData as $index => $row) {
                 try {
-                    if ($this->karyawanModel->insert($data)) {
+                    if ($this->karyawanModel->insert($row)) {
                         $successCount++;
                     } else {
                         $errorCount++;
@@ -589,24 +589,15 @@ class Karyawan extends BaseController
      */
     public function downloadTemplate()
     {
-        $filename = 'template_karyawan.xlsx';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
-
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-
-            $headers = ['Nama,NIK,Alamat,No Telp,Email,Tanggal Lahir,Jenis Kelamin,Jabatan,Tanggal Masuk,Status\n'];
+        $headers = ['Nama', 'NIK', 'Alamat', 'No Telp', 'Email', 'Tanggal Lahir', 'Jenis Kelamin', 'Jabatan', 'Tanggal Masuk', 'Status'];
         $sampleData = [
-            ['John Doe,1234567890123456,Jl. Sudirman No. 1,08123456789,john@email.com,1990-01-01,L,Kasir,2024-01-01,1\n'],
-            ['Jane Smith,1234567890123457,Jl. Thamrin No. 2,08123456788,jane@email.com,1992-05-15,P,Manager,2024-01-01,1\n']
+            ['John Doe', '1234567890123456', 'Jl. Sudirman No. 1', '08123456789', 'john@email.com', '1990-01-01', 'L', 'Kasir', '2024-01-01', '1'],
+            ['Jane Smith', '1234567890123457', 'Jl. Thamrin No. 2', '08123456788', 'jane@email.com', '1992-05-15', 'P', 'Manager', '2024-01-01', '1']
         ];
+        
+        $filename = 'template_karyawan.xlsx';
         $filepath = createExcelTemplate($headers, $sampleData, $filename);
-        }
-
+        
         return $this->response->download($filepath, null);
     }
 
