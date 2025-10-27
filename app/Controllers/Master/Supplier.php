@@ -794,13 +794,17 @@ class Supplier extends BaseController
         }
 
         try {
+            // Read Excel file using PhpSpreadsheet
+            $tempPath = $file->getTempName();
+            $excelData = readExcelFile($tempPath);
+            
+            if (empty($excelData)) {
+                return redirect()->back()
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
+            }
+
             $csvData = [];
-            $handle = fopen($file->getTempName(), 'r');
-
-            // Skip header row
-            $header = fgetcsv($handle);
-
-            while (($row = fgetcsv($handle)) !== false) {
+            foreach ($excelData as $row) {
                 if (count($row) >= 3) { // At least nama, alamat, telepon
                     $csvData[] = [
                         'nama' => trim($row[0] ?? ''),
@@ -812,12 +816,6 @@ class Supplier extends BaseController
                         'status' => isset($row[6]) ? trim($row[6]) : '1'
                     ];
                 }
-            }
-            fclose($handle);
-
-            if (empty($csvData)) {
-                return redirect()->back()
-                    ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
 
             $successCount = 0;
