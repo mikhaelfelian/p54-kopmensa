@@ -561,10 +561,6 @@ class Outlet extends BaseController
      */
     public function assignPlatform($id)
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->to(base_url('master/outlet'));
-        }
-
         $id_platform = $this->request->getPost('id_platform');
 
         if (empty($id_platform)) {
@@ -606,9 +602,6 @@ class Outlet extends BaseController
      */
     public function removePlatform($id, $id_platform)
     {
-        if (!$this->request->isAJAX()) {
-            return redirect()->to(base_url('master/outlet'));
-        }
 
         if ($this->outletPlatformModel->removePlatform($id, $id_platform)) {
             return $this->response->setJSON([
