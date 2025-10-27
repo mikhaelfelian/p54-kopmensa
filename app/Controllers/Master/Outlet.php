@@ -6,6 +6,8 @@ use App\Controllers\BaseController;
 use App\Models\GudangModel;
 use App\Models\ItemModel;
 use App\Models\ItemStokModel;
+use App\Models\PlatformModel;
+use App\Models\OutletPlatformModel;
 
 /**
  * Created by: Mikhael Felian Waskito - mikhaelfelian@gmail.com
@@ -23,12 +25,17 @@ class Outlet extends BaseController
     protected $validation;
     protected $itemModel;
     protected $itemStokModel;
+    protected $platformModel;
+    protected $outletPlatformModel;
+    
     public function __construct()
     {
-        $this->outletModel   = new GudangModel();
-        $this->itemModel     = new ItemModel();
-        $this->itemStokModel = new ItemStokModel();
-        $this->validation    = \Config\Services::validation();
+        $this->outletModel         = new GudangModel();
+        $this->itemModel           = new ItemModel();
+        $this->itemStokModel       = new ItemStokModel();
+        $this->platformModel       = new PlatformModel();
+        $this->outletPlatformModel = new OutletPlatformModel();
+        $this->validation          = \Config\Services::validation();
     }
 
     public function index()
@@ -152,24 +159,28 @@ class Outlet extends BaseController
 
     public function edit($id)
     {
+        $outlet = $this->outletModel->find($id);
+        
+        if (empty($outlet)) {
+            return redirect()->to(base_url('master/outlet'))
+                ->with('error', 'Data outlet tidak ditemukan');
+        }
+
         $data = [
-            'title'         => 'Form Outlet',
-            'Pengaturan'    => $this->pengaturan,
-            'user'          => $this->ionAuth->user()->row(),
-            'validation'    => $this->validation,
-            'outlet'        => $this->outletModel->find($id),
-            'breadcrumbs'   => '
+            'title'              => 'Form Outlet',
+            'Pengaturan'         => $this->pengaturan,
+            'user'               => $this->ionAuth->user()->row(),
+            'validation'         => $this->validation,
+            'outlet'             => $outlet,
+            'assignedPlatforms'  => $this->outletPlatformModel->getPlatformsByOutlet($id),
+            'availablePlatforms' => $this->outletPlatformModel->getAvailablePlatforms($id),
+            'breadcrumbs'        => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/outlet') . '">Outlet</a></li>
                 <li class="breadcrumb-item active">Edit</li>
             '
         ];
-
-        if (empty($data['outlet'])) {
-            return redirect()->to(base_url('master/outlet'))
-                ->with('error', 'Data outlet tidak ditemukan');
-        }
 
         return view($this->theme->getThemePath() . '/master/outlet/edit', $data);
     }
@@ -513,5 +524,102 @@ class Outlet extends BaseController
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Manage platforms for outlet
+     */
+    public function platforms($id)
+    {
+        $outlet = $this->outletModel->find($id);
+        
+        if (empty($outlet)) {
+            return redirect()->to(base_url('master/outlet'))
+                ->with('error', 'Data outlet tidak ditemukan');
+        }
+
+        $data = [
+            'title'              => 'Kelola Platform Pembayaran - ' . $outlet->nama,
+            'Pengaturan'         => $this->pengaturan,
+            'user'               => $this->ionAuth->user()->row(),
+            'outlet'             => $outlet,
+            'assignedPlatforms'  => $this->outletPlatformModel->getPlatformsByOutlet($id),
+            'availablePlatforms' => $this->outletPlatformModel->getAvailablePlatforms($id),
+            'breadcrumbs'        => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/outlet') . '">Outlet</a></li>
+                <li class="breadcrumb-item active">Platform</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/master/outlet/platforms', $data);
+    }
+
+    /**
+     * Assign platform to outlet
+     */
+    public function assignPlatform($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to(base_url('master/outlet'));
+        }
+
+        $id_platform = $this->request->getPost('id_platform');
+
+        if (empty($id_platform)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Platform harus dipilih'
+            ]);
+        }
+
+        // Check if already assigned
+        if ($this->outletPlatformModel->isPlatformAssigned($id, $id_platform)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Platform sudah ditambahkan ke outlet ini'
+            ]);
+        }
+
+        $data = [
+            'id_outlet'   => $id,
+            'id_platform' => $id_platform,
+            'status'      => '1'
+        ];
+
+        if ($this->outletPlatformModel->insert($data)) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Platform berhasil ditambahkan'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Gagal menambahkan platform'
+        ]);
+    }
+
+    /**
+     * Remove platform from outlet
+     */
+    public function removePlatform($id, $id_platform)
+    {
+        if (!$this->request->isAJAX()) {
+            return redirect()->to(base_url('master/outlet'));
+        }
+
+        if ($this->outletPlatformModel->removePlatform($id, $id_platform)) {
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Platform berhasil dihapus'
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Gagal menghapus platform'
+        ]);
     }
 }
