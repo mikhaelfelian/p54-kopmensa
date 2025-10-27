@@ -375,7 +375,7 @@ class Gudang extends BaseController
             }
             fclose($handle);
 
-            if (empty($excelData)) {
+            if (empty($csvData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
@@ -384,9 +384,9 @@ class Gudang extends BaseController
             $errorCount = 0;
             $errors = [];
 
-            foreach ($excelData as $index => $row) {
+            foreach ($csvData as $index => $row) {
                 try {
-                    if ($this->gudangModel->insert($data)) {
+                    if ($this->gudangModel->insert($row)) {
                         $successCount++;
                     } else {
                         $errorCount++;
@@ -430,12 +430,12 @@ class Gudang extends BaseController
                 mkdir($templateDir, 0777, true);
             }
 
-            $headers = ['Nama,Alamat,Telepon,Keterangan,Status Outlet,Status Hapus\n'];
-        $sampleData = [
-            ['Gudang Pusat,Jl. Sudirman No. 1,08123456789,Gudang utama,0,0\n'],
-            ['Gudang Cabang,Jl. Thamrin No. 2,08123456788,Gudang cabang,0,0\n']
-        ];
-        $filepath = createExcelTemplate($headers, $sampleData, $filename);
+            $headers = ['Nama', 'Alamat', 'Telepon', 'Keterangan', 'Status Outlet', 'Status Hapus'];
+            $sampleData = [
+                ['Gudang Pusat', 'Jl. Sudirman No. 1', '08123456789', 'Gudang utama', '0', '0'],
+                ['Gudang Cabang', 'Jl. Thamrin No. 2', '08123456788', 'Gudang cabang', '0', '0']
+            ];
+            $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
 
         return $this->response->download($filepath, null);
