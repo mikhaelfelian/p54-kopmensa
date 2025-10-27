@@ -19,6 +19,7 @@ use App\Models\ItemStokModel;
 use App\Models\KaryawanModel;
 use App\Models\GudangModel;
 use App\Models\PlatformModel;
+use App\Models\OutletPlatformModel;
 use App\Models\ItemHistModel;
 use App\Models\VoucherModel;
 use App\Models\PengaturanModel;
@@ -38,6 +39,7 @@ class TransJual extends BaseController
     protected $karyawanModel;
     protected $gudangModel;
     protected $platformModel;
+    protected $outletPlatformModel;
     protected $itemHistModel;
     protected $voucherModel;
     protected $pengaturanModel;
@@ -59,6 +61,7 @@ class TransJual extends BaseController
         $this->karyawanModel       = new KaryawanModel();
         $this->gudangModel         = new GudangModel();
         $this->platformModel       = new PlatformModel();
+        $this->outletPlatformModel = new OutletPlatformModel();
         $this->itemHistModel       = new ItemHistModel();
         $this->voucherModel        = new VoucherModel();
         $this->pengaturanModel     = new PengaturanModel();
@@ -475,6 +478,45 @@ class TransJual extends BaseController
             return $this->response->setJSON([
                 'error' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Terjadi kesalahan pada server. Silakan coba lagi.'
             ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Get outlet platforms (AJAX)
+     */
+    public function getOutletPlatforms()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        try {
+            $warehouseId = $this->request->getPost('warehouse_id');
+            
+            if (empty($warehouseId)) {
+                // Return all platforms if no outlet selected
+                $platforms = $this->platformModel->where('status', '1')->findAll();
+                return $this->response->setJSON([
+                    'success' => true,
+                    'platforms' => $platforms
+                ]);
+            }
+
+            // Get platforms assigned to this outlet
+            $outletPlatforms = $this->outletPlatformModel->getPlatformsByOutlet($warehouseId);
+            
+            // Return the platforms
+            return $this->response->setJSON([
+                'success' => true,
+                'platforms' => $outletPlatforms
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'getOutletPlatforms error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
