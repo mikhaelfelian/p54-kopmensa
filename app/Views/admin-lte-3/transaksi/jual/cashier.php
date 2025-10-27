@@ -1188,6 +1188,7 @@ helper('form');
         // Warehouse selection change event
         $('#warehouse_id').on('change', function () {
             loadProducts();
+            loadOutletPlatforms(); // Load platforms for selected outlet
         });
 
         // Barcode scanner integration
@@ -1677,14 +1678,48 @@ helper('form');
     }
 
     // Payment Methods Functions
+    // Store outlet platforms globally
+    let outletPlatforms = <?= json_encode($platforms ?? []) ?>;
+    
+    // Load platforms for selected outlet
+    function loadOutletPlatforms() {
+        const warehouseId = $('#warehouse_id').val();
+        
+        if (!warehouseId) {
+            // Use default platforms if no outlet selected
+            outletPlatforms = <?= json_encode($platforms ?? []) ?>;
+            return;
+        }
+
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/get-outlet-platforms') ?>',
+            type: 'POST',
+            data: {
+                warehouse_id: warehouseId,
+                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.platforms) {
+                    outletPlatforms = response.platforms;
+                    toastr.info(`Memuat ${outletPlatforms.length} platform pembayaran`);
+                }
+            },
+            error: function() {
+                // Fallback to default platforms on error
+                outletPlatforms = <?= json_encode($platforms ?? []) ?>;
+                console.log('Error loading outlet platforms, using defaults');
+            }
+        });
+    }
+
     function addPaymentMethod() {
         paymentCounter++;
-        const platforms = <?= json_encode($platforms ?? []) ?>;
 
         // Add voucher as a payment method option
         let platformOptions = '<option value="">Pilih Platform</option>';
-        if (platforms && platforms.length > 0) {
-            platforms.forEach(platform => {
+        if (outletPlatforms && outletPlatforms.length > 0) {
+            outletPlatforms.forEach(platform => {
                 platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
             });
         }
