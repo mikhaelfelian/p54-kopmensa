@@ -520,6 +520,10 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('outlet/import', 'Outlet::importForm');
     $routes->post('outlet/import', 'Outlet::importCsv');
     $routes->get('outlet/template', 'Outlet::downloadTemplate');
+    // Platform management routes
+    $routes->get('outlet/platforms/(:num)', 'Outlet::platforms/$1');
+    $routes->post('outlet/assign_platform/(:num)', 'Outlet::assignPlatform/$1');
+    $routes->post('outlet/remove_platform/(:num)/(:num)', 'Outlet::removePlatform/$1/$2');
 });
 
 // Items routes
