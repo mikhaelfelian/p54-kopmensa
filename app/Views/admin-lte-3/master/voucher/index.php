@@ -10,6 +10,15 @@
                         <a href="<?= base_url('master/voucher/create') ?>" class="btn btn-sm btn-primary rounded-0">
                             <i class="fas fa-plus"></i> Tambah Voucher
                         </a>
+                        <a href="<?= base_url('master/voucher/import') ?>" class="btn btn-sm btn-success rounded-0">
+                            <i class="fas fa-file-import"></i> IMPORT
+                        </a>
+                        <a href="<?= base_url('master/voucher/template') ?>" class="btn btn-sm btn-info rounded-0">
+                            <i class="fas fa-download"></i> Template
+                        </a>
+                        <a href="<?= base_url('master/voucher/export') ?>" class="btn btn-sm btn-warning rounded-0">
+                            <i class="fas fa-file-export"></i> EXPORT
+                        </a>
                         <button type="button" id="bulk-delete-btn" class="btn btn-sm btn-danger rounded-0" style="display: none;">
                             <i class="fas fa-trash-alt"></i> Hapus <span id="selected-count">0</span> Terpilih
                         </button>
@@ -283,16 +292,18 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkDeleteBtn.disabled = true;
         bulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
 
-        // Get fresh CSRF token first
+        // Send bulk delete request
+        const formData = new FormData();
+        itemIds.forEach(id => {
+            formData.append('item_ids[]', id);
+        });
+
         fetch('<?= base_url('master/voucher/bulk_delete') ?>', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: new URLSearchParams({
-                'item_ids': itemIds
-            })
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
