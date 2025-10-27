@@ -660,6 +660,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->post('jual/store', 'TransJual::store');
     $routes->get('jual/get-details/(:num)', 'TransJual::getTransactionDetails/$1');
     $routes->match(['get', 'post'], 'jual/search-items', 'TransJual::searchItems');
+    $routes->post('jual/get-outlet-platforms', 'TransJual::getOutletPlatforms');
     $routes->get('jual/get-customer/(:num)', 'TransJual::getCustomerInfo/$1');
     $routes->get('jual/search-customer', 'TransJual::searchCustomer');
     $routes->get('jual/get-customer-by-iduser', 'TransJual::getCustomerByIdUser');
