@@ -121,6 +121,9 @@ $(document).ready(function() {
         $.ajax({
             url: '<?= base_url("master/outlet/assign_platform/{$outlet->id}") ?>',
             type: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             data: {
                 id_platform: platformId,
                 '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
@@ -128,30 +131,19 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: response.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    }).then(function() {
-                        location.reload();
-                    });
+                    alert(response.message);
+                    location.reload();
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal!',
-                        text: response.message
-                    });
+                    alert(response.message);
                     btn.prop('disabled', false).html('<i class="fas fa-plus"></i>');
                 }
             },
-            error: function() {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Terjadi kesalahan pada server'
-                });
+            error: function(xhr) {
+                let errorMsg = 'Terjadi kesalahan pada server';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                alert(errorMsg);
                 btn.prop('disabled', false).html('<i class="fas fa-plus"></i>');
             }
         });
@@ -171,36 +163,28 @@ $(document).ready(function() {
         $.ajax({
             url: '<?= base_url("master/outlet/remove_platform/{$outlet->id}/") ?>' + platformId,
             type: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             data: {
                 '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
             },
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: response.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    }).then(function() {
-                        location.reload();
-                    });
+                    alert(response.message);
+                    location.reload();
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal!',
-                        text: response.message
-                    });
+                    alert(response.message);
                     btn.prop('disabled', false).html('<i class="fas fa-times"></i>');
                 }
             },
-            error: function() {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Terjadi kesalahan pada server'
-                });
+            error: function(xhr) {
+                let errorMsg = 'Terjadi kesalahan pada server';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                alert(errorMsg);
                 btn.prop('disabled', false).html('<i class="fas fa-times"></i>');
             }
         });
