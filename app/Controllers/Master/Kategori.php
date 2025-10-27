@@ -271,7 +271,7 @@ class Kategori extends BaseController
             }
             fclose($handle);
 
-            if (empty($excelData)) {
+            if (empty($csvData)) {
                 return redirect()->back()
                     ->with('error', 'File Excel kosong atau format tidak sesuai');
             }
@@ -280,23 +280,17 @@ class Kategori extends BaseController
             $errorCount = 0;
             $errors = [];
 
-            foreach ($excelData as $index => $row) {
+            foreach ($csvData as $index => $row) {
                 try {
-                    if (count($row) >= 3) { // At least kategori, keterangan, status
-                        $data = [
-                            'kategori' => trim($row[0] ?? ''),
-                            'keterangan' => trim($row[1] ?? ''),
-                            'status' => trim($row[2] ?? '1')
-                        ];
-                        
+                    if (!empty($row['kategori'])) {
                         // Generate kode
-                        $kode = $this->kategoriModel->generateKode($data['kategori']);
+                        $kode = $this->kategoriModel->generateKode($row['kategori']);
                         
                         $insertData = [
                             'kode' => $kode,
-                            'kategori' => $data['kategori'],
-                            'keterangan' => $data['keterangan'],
-                            'status' => $data['status']
+                            'kategori' => $row['kategori'],
+                            'keterangan' => $row['keterangan'],
+                            'status' => $row['status']
                         ];
 
                         if ($this->kategoriModel->insert($insertData)) {
@@ -334,23 +328,15 @@ class Kategori extends BaseController
      */
     public function downloadTemplate()
     {
-        $filename = 'template_kategori.xlsx';
-        $filepath = FCPATH . 'assets/templates/' . $filename;
+        $headers = ['Kategori', 'Keterangan', 'Status'];
+        $sampleData = [
+            ['Elektronik', 'Produk elektronik dan gadget', '1'],
+            ['Pakaian', 'Produk fashion dan pakaian', '1'],
+            ['Makanan', 'Produk makanan dan minuman', '1']
+        ];
         
-        // Create template if not exists
-        if (!file_exists($filepath)) {
-            $templateDir = dirname($filepath);
-            if (!is_dir($templateDir)) {
-                mkdir($templateDir, 0777, true);
-            }
-            
-            $template = "Kategori,Keterangan,Status\n";
-            $template .= "Elektronik,Produk elektronik dan gadget,1\n";
-            $template .= "Pakaian,Produk fashion dan pakaian,1\n";
-            $template .= "Makanan,Produk makanan dan minuman,1\n";
-            
-            file_put_contents($filepath, $template);
-        }
+        $filename = 'template_kategori.xlsx';
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
         
         return $this->response->download($filepath, null);
     }
