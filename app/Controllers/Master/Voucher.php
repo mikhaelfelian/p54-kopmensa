@@ -468,13 +468,17 @@ class Voucher extends BaseController
             ]);
         }
 
-        // Get item_ids from either POST format (item_ids or item_ids[])
+        // Get item_ids - handle both item_ids[] and item_ids formats
         $itemIds = $this->request->getPost('item_ids');
         if (empty($itemIds)) {
-            $itemIds = $this->request->getPost('item_ids[]');
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
         }
-        if (empty($itemIds)) {
-            $itemIds = $this->request->getVar('item_ids');
+
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
         }
 
         if (empty($itemIds) || !is_array($itemIds)) {

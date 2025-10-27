@@ -81,14 +81,6 @@ class TransJual extends BaseController
     }
 
     /**
-     * Test method to verify route is working
-     */
-    public function test_route()
-    {
-        return "Route is working! Method: " . __METHOD__;
-    }
-
-    /**
      * Check if there's an active shift for the current outlet
      */
     /**

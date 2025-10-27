@@ -292,18 +292,18 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkDeleteBtn.disabled = true;
         bulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
 
-        // Send bulk delete request
-        const formData = new FormData();
-        itemIds.forEach(id => {
-            formData.append('item_ids[]', id);
-        });
+        // Send AJAX request
+        const params = new URLSearchParams();
+        itemIds.forEach(id => params.append('item_ids[]', id));
+        params.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
 
         fetch('<?= base_url('master/voucher/bulk_delete') ?>', {
             method: 'POST',
             headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: formData
+            body: params
         })
         .then(response => response.json())
         .then(data => {
