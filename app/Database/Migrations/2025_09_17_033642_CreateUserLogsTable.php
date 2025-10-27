@@ -8,7 +8,7 @@ class CreateUserLogsTable extends Migration
 {
     public function up()
     {
-        // Drop table if exists
+        // Drop table if exists 
         $this->forge->dropTable('user_logs', true);
         
         $this->forge->addField([
