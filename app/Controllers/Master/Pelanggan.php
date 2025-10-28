@@ -1039,6 +1039,8 @@ class Pelanggan extends BaseController
         $id_user = $this->request->getPost('id_user');
         $username = $this->request->getPost('username');
 
+        // Use $username as provided in the request
+
         if (!$id || !$id_user || !$username) {
             return $this->response->setJSON([
                 'success' => false,
@@ -1046,7 +1048,7 @@ class Pelanggan extends BaseController
             ]);
         }
 
-        // Validate username
+        // Validate username using the provided 'username'
         if (strlen($username) < 3) {
             return $this->response->setJSON([
                 'success' => false,
@@ -1058,10 +1060,10 @@ class Pelanggan extends BaseController
             // Check if username already exists (exclude current user)
             $db = \Config\Database::connect();
             $existingUser = $db->table('tbl_ion_users')
-                              ->where('username', $username)
-                              ->where('id !=', $id_user)
-                              ->get()
-                              ->getRow();
+                ->where('username', $username)
+                ->where('id !=', $id_user)
+                ->get()
+                ->getRow();
 
             if ($existingUser) {
                 return $this->response->setJSON([
@@ -1070,11 +1072,11 @@ class Pelanggan extends BaseController
                 ]);
             }
 
-            // Update username directly in IonAuth users table
+            // Update username directly in IonAuth users table using $username
             $builder = $db->table('tbl_ion_users');
             $updateResult = $builder->where('id', $id_user)
-                                    ->set('username', $username)
-                                    ->update();
+                ->set('username', $username)
+                ->update();
 
             if ($updateResult !== false) {
                 return $this->response->setJSON([
