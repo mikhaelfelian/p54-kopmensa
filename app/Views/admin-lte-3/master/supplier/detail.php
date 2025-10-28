@@ -245,7 +245,11 @@
                             <div class="form-group">
                                 <label for="itemSelect">Pilih Item</label>
                                 <select id="itemSelect" name="item_ids[]" class="form-control" multiple required>
-                                    <!-- Options will be loaded via AJAX -->
+                                    <?php if (!empty($availableItems)): ?>
+                                        <?php foreach ($availableItems as $item): ?>
+                                            <option value="<?= $item['id_item'] ?>">[<?= esc($item['item_kode']) ?>] <?= esc($item['nama_item']) ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
                                 </select>
                                 <small class="form-text text-muted">Pilih satu atau lebih item untuk ditambahkan</small>
                             </div>

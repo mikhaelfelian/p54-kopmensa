@@ -297,6 +297,9 @@ class Supplier extends BaseController
         // Get supplier statistics
         $supplierStats = $this->itemSupplierModel->getSupplierStats($id);
 
+        // Get available items for assignment
+        $availableItems = $this->itemModel->getAvailableItems();
+
         $data = [
             'title'       => 'Detail Supplier',
             'Pengaturan'     => $this->pengaturan,
@@ -304,6 +307,7 @@ class Supplier extends BaseController
             'supplier'    => $supplier,
             'linkedItems' => $linkedItems,
             'supplierStats' => $supplierStats,
+            'availableItems' => $availableItems,
             'getTipeLabel'   => function($tipe) {
                 return $this->supplierModel->getTipeLabel($tipe);
             },

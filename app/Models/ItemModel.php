@@ -621,4 +621,19 @@ public function getItemWithRelations($id)
                     ->get()
                     ->getResult();
     }
+
+    /**
+     * Get all available items that are not assigned to any supplier
+     * 
+     * @return array
+     */
+    public function getAvailableItems()
+    {
+        return $this->select('id as id_item, item as nama_item, kode as item_kode')
+                    ->where('status', '1')
+                    ->where('status_hps', '0')
+                    ->where('id_supplier IS NULL', null, false)
+                    ->orderBy('item', 'ASC')
+                    ->findAll();
+    }
 } 
