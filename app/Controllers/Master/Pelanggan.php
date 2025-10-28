@@ -48,6 +48,9 @@ class Pelanggan extends BaseController
                 ->groupEnd();
         }
 
+        // Get trash count
+        $trashCount = $this->pelangganModel->onlyDeleted()->countAllResults();
+
         $data = [
             'title'         => 'Data Pelanggan',
             'Pengaturan'    => $this->pengaturan,
@@ -57,6 +60,7 @@ class Pelanggan extends BaseController
             'currentPage'   => $curr_page,
             'perPage'       => $per_page,
             'keyword'       => $query,
+            'trashCount'    => $trashCount,
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -1151,7 +1155,7 @@ class Pelanggan extends BaseController
                 
                 $counter = 1;
                 while ($existingUser) {
-                    $username = $baseUsername . rand(100, 999) . $counter;
+                    $username = $firstName . rand(100, 999) . $counter;
                     $existingUser = $db->table('tbl_ion_users')
                                         ->where('username', $username)
                                         ->get()
@@ -1203,32 +1207,38 @@ class Pelanggan extends BaseController
 
             } else if (!empty($id_user) && $id_user != 0 && $id_user != '0') {
                 // Update existing user active status
-            $builder = $db->table('tbl_ion_users');
-            $updateResult = $builder->where('id', $id_user)
-                                    ->set('active', $status)
-                                    ->update();
+                $builder = $db->table('tbl_ion_users');
+                $updateResult = $builder->where('id', $id_user)
+                                        ->set('active', $status)
+                                        ->update();
 
-            if ($updateResult !== false) {
-                    // Update status_blokir in pelanggan table
-                    $this->pelangganModel->update($id, [
-                        'status_blokir' => ($status == '1' ? '0' : '1')
+                if ($updateResult === false) {
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal mengubah status akun user'
                     ]);
+                }
+
+                // Update status_blokir in pelanggan table
+                $this->pelangganModel->update($id, [
+                    'status_blokir' => ($status == '1' ? '0' : '1')
+                ]);
+
+                $db->transComplete();
 
                 $action = $status == '1' ? 'diaktifkan' : 'diblokir';
                 return $this->response->setJSON([
                     'success' => true,
-                        'message' => "Akun berhasil {$action}",
-                        'auto_created' => false
+                    'message' => "Akun berhasil {$action}",
+                    'auto_created' => false
                 ]);
             } else {
-                return $this->response->setJSON([
-                    'success' => false,
-                    'message' => 'Gagal mengubah status akun'
-                ]);
-            }
-            } else {
-                // Deactivating but no user exists - just update pelanggan status
+                // Blocking but no user exists - just update pelanggan status
                 $this->pelangganModel->update($id, ['status_blokir' => '1']);
+                
+                $db->transComplete();
+                
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Akun berhasil diblokir',

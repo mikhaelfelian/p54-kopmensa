@@ -211,6 +211,14 @@ helper('form');
                                 </div>
                             </div>
 
+                            <div id="customerBlockAlert" class="mt-2" style="display: none;">
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-ban"></i>
+                                    <strong>Akun Customer Terblokir!</strong>
+                                    <p class="mb-0">Customer ini hanya dapat melakukan pembayaran dengan metode Tunai.</p>
+                                </div>
+                            </div>
+
                             <div id="anggotaInfo" class="anggota-info mt-2" style="display: none;">
                                 <div class="alert alert-info alert-sm">
                                     <div class="row">
@@ -243,6 +251,7 @@ helper('form');
                     <input type="hidden" id="selectedCustomerId" name="selectedCustomerId" value="2">
                     <input type="hidden" id="selectedCustomerName" name="selectedCustomerName" value="">
                     <input type="hidden" id="selectedCustomerType" name="selectedCustomerType" value="umum">
+                    <input type="hidden" id="selectedCustomerIsBlocked" name="selectedCustomerIsBlocked" value="0">
 
                     <!-- Cart Area -->
                     <div class="cart-container rounded-0">
@@ -3845,6 +3854,17 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     // Store customer data
                     $('#selectedCustomerId').val(customer.id);
                     $('#selectedCustomerName').val(customer.nama);
+                    
+                    // Check block status
+                    const isBlocked = customer.status_blokir == '1' || customer.status_blokir == 1;
+                    $('#selectedCustomerIsBlocked').val(isBlocked ? '1' : '0');
+
+                    // Show/hide block alert
+                    if (isBlocked) {
+                        $('#customerBlockAlert').show();
+                    } else {
+                        $('#customerBlockAlert').hide();
+                    }
 
                     // Show customer info in the display section
                     $('#displayCustomerName').text(customer.nama);
@@ -3942,6 +3962,17 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     // Store customer data
                     $('#selectedCustomerId').val(customer.id);
                     $('#selectedCustomerName').val(customer.nama);
+                    
+                    // Check block status
+                    const isBlocked = customer.status_blokir == '1' || customer.status_blokir == 1;
+                    $('#selectedCustomerIsBlocked').val(isBlocked ? '1' : '0');
+
+                    // Show/hide block alert
+                    if (isBlocked) {
+                        $('#customerBlockAlert').show();
+                    } else {
+                        $('#customerBlockAlert').hide();
+                    }
 
                     // Show customer info in the display section
                     $('#displayCustomerName').text(customer.nama);

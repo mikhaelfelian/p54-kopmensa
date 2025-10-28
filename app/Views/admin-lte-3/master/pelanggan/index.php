@@ -28,6 +28,11 @@
                         <a href="<?= base_url('master/customer/template') ?>" class="btn btn-sm btn-info rounded-0">
                             <i class="fas fa-download"></i> Template
                         </a>
+                        <?php if (isset($trashCount) && $trashCount > 0): ?>
+                            <a href="<?= base_url('master/customer/trash') ?>" class="btn btn-sm btn-danger rounded-0">
+                                <i class="fas fa-trash"></i> Arsip (<?= $trashCount ?>)
+                            </a>
+                        <?php endif ?>
                         <button type="button" id="bulk-delete-btn" class="btn btn-sm btn-danger rounded-0" style="display: none;">
                             <i class="fas fa-trash-alt"></i> Hapus <span id="selected-count">0</span> Terpilih
                         </button>

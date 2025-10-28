@@ -532,7 +532,7 @@ class TransJual extends BaseController
             return $this->response->setJSON(['error' => 'Invalid request']);
         }
 
-        $customer = $this->pelangganModel->where('id_user', $id)->first();
+        $customer = $this->pelangganModel->where('kode', $id)->first();
         if (!$customer) {
             return $this->response->setJSON(['error' => 'Customer not found']);
         }

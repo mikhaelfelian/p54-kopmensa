@@ -174,9 +174,8 @@ class PelangganModel extends Model
     public function searchCustomer($searchTerm)
     {
         // First try exact match on id_user
-        $exactIdUser = $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit')
+        $exactIdUser = $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit, status_blokir')
                     ->where('status', '1')
-                    ->where('status_blokir', '0')
                     ->where('id_user', $searchTerm)
                     ->first();
         
@@ -185,9 +184,8 @@ class PelangganModel extends Model
         }
         
         // If no exact match, search with LIKE conditions
-        return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit')
+        return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit, status_blokir')
                     ->where('status', '1')
-                    ->where('status_blokir', '0')
                     ->groupStart()
                         ->like('id_user', $searchTerm)
                         ->orLike('kode', $searchTerm)
@@ -206,11 +204,44 @@ class PelangganModel extends Model
      */
     public function getCustomerByIdUser($idUser)
     {
-        return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit')
+        return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit, status_blokir')
                     ->where('id_user', $idUser)
                     ->where('status', '1')
-                    ->where('status_blokir', '0')
                     ->first();
+    }
+
+    /**
+     * Check if customer is blocked
+     * 
+     * @param int $customerId
+     * @return bool
+     */
+    public function isBlocked($customerId)
+    {
+        $customer = $this->find($customerId);
+        return ($customer && (int)$customer->status_blokir === 1);
+    }
+
+    /**
+     * Get customer blocking status with details
+     * 
+     * @param int $customerId
+     * @return array|false
+     */
+    public function getBlockStatus($customerId)
+    {
+        $customer = $this->select('id, nama, status_blokir')
+                        ->find($customerId);
+        
+        if (!$customer) {
+            return false;
+        }
+
+        return [
+            'is_blocked' => (int)$customer->status_blokir === 1,
+            'status_blokir' => $customer->status_blokir,
+            'nama' => $customer->nama
+        ];
     }
 
 
