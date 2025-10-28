@@ -333,6 +333,24 @@ class Transaksi extends BaseController
             }
             
             foreach ($input['cart'] as $item) {
+                // Get item details to check PPN status
+                $itemDetails = $mItem->find($item['id_item']);
+                $ppnRate = $this->pengaturan->ppn ?? 11; // Default to 11%
+                
+                // Calculate per-item PPN based on item's status_ppn
+                $itemPpnAmount = 0;
+                if ($itemDetails && $itemDetails->status_ppn == '1') {
+                    // Item is taxable, calculate PPN
+                    $statusPpn = $input['status_ppn'] ?? '1';
+                    if ($statusPpn == '1') {
+                        // PPN included in price
+                        $itemPpnAmount = ($item['subtotal'] / (1 + ($ppnRate / 100))) * ($ppnRate / 100);
+                    } else {
+                        // PPN added to price
+                        $itemPpnAmount = $item['subtotal'] * ($ppnRate / 100);
+                    }
+                }
+
                 $detailData = [
                     'id_penjualan'   => $transactionId,
                     'id_item'        => $item['id_item'],
@@ -354,6 +372,7 @@ class Transaksi extends BaseController
                     'diskon'         => isset($item['diskon']) ? $item['diskon'] : 0,
                     'potongan'       => isset($item['potongan']) ? $item['potongan'] : 0,
                     'subtotal'       => $item['subtotal'],
+                    'ppn_amount'     => $itemPpnAmount,
                     'status'         => isset($item['status']) ? $item['status'] : 1
                 ];
                 $mTransJualDet->insert($detailData);

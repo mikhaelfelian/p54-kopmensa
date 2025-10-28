@@ -144,6 +144,9 @@
                     <div class="item">
                         <div><?= esc($item->name ?? $item->produk ?? 'Unknown Product') ?></div>
                         <div><?= ($item->quantity ?? $item->jml ?? 1) ?> x Rp <?= number_format($item->price ?? $item->harga ?? 0, 0, ',', '.') ?> = Rp <?= number_format($item->total ?? $item->subtotal ?? 0, 0, ',', '.') ?></div>
+                        <?php if (isset($item->ppn_amount) && $item->ppn_amount > 0): ?>
+                            <div style="font-size: 0.9em; color: #666;">PPN: Rp <?= number_format($item->ppn_amount, 0, ',', '.') ?></div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>

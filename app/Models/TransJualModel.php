@@ -196,7 +196,7 @@ class TransJualModel extends Model
     }
 
     /**
-     * Get sales summary by shift (placeholder - shift_id not yet implemented in sales table)
+     * Get sales summary by shift with payment method breakdown
      */
     public function getSalesSummaryByShift($shift_id)
     {
@@ -213,13 +213,49 @@ class TransJualModel extends Model
 
         $result = $builder->get()->getRowArray();
 
+        // Get detailed payment method breakdown
+        $paymentMethods = $this->getPaymentMethodBreakdownByShift($shift_id);
+
         // Ensure all keys exist and are numeric
         return [
             'total_transactions'   => (int)($result['total_transactions'] ?? 0),
             'total_cash_sales'     => (float)($result['total_cash_sales'] ?? 0),
             'total_non_cash_sales' => (float)($result['total_non_cash_sales'] ?? 0),
-            'total_sales'          => (float)($result['total_sales'] ?? 0)
+            'total_sales'          => (float)($result['total_sales'] ?? 0),
+            'payment_methods'      => $paymentMethods
         ];
+    }
+
+    /**
+     * Get payment method breakdown by shift
+     */
+    public function getPaymentMethodBreakdownByShift($shift_id)
+    {
+        $builder = $this->db->table('tbl_trans_jual_platform tjp');
+        $builder->select([
+            'tjp.platform as payment_method',
+            'SUM(tjp.nominal) as total_amount',
+            'COUNT(tjp.id) as transaction_count'
+        ]);
+        $builder->join('tbl_trans_jual tj', 'tj.id = tjp.id_penjualan', 'inner');
+        $builder->where('tj.id_shift', $shift_id);
+        $builder->where('tj.status', '1'); // Only finalized transactions
+        $builder->groupBy('tjp.platform');
+        $builder->orderBy('total_amount', 'DESC');
+
+        $result = $builder->get()->getResultArray();
+
+        // Format the result
+        $paymentMethods = [];
+        foreach ($result as $row) {
+            $paymentMethods[] = [
+                'method' => $row['payment_method'],
+                'amount' => (float)$row['total_amount'],
+                'count' => (int)$row['transaction_count']
+            ];
+        }
+
+        return $paymentMethods;
     }
 
     /**

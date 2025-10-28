@@ -812,6 +812,23 @@ class TransJual extends BaseController
             if ($items && is_array($items)) {
                 foreach ($items as $item) {
                     if (!empty($item['id_item']) && !empty($item['qty'])) {
+                        // Get item details to check PPN status
+                        $itemDetails = $this->itemModel->find($item['id_item']);
+                        $ppnRate = $this->pengaturan->ppn ?? 11; // Default to 11%
+                        
+                        // Calculate per-item PPN based on item's status_ppn
+                        $itemPpnAmount = 0;
+                        if ($itemDetails && $itemDetails->status_ppn == '1') {
+                            // Item is taxable, calculate PPN
+                            if ($harga_include_pajak == '1') {
+                                // PPN included in price
+                                $itemPpnAmount = ($item['jumlah'] / (1 + ($ppnRate / 100))) * ($ppnRate / 100);
+                            } else {
+                                // PPN added to price
+                                $itemPpnAmount = $item['jumlah'] * ($ppnRate / 100);
+                            }
+                        }
+
                         $detailData = [
                             'id_penjualan'   => $transactionId,
                             'id_item'        => $item['id_item'],
@@ -833,6 +850,7 @@ class TransJual extends BaseController
                             'diskon'         => $item['diskon']        ?? 0,
                             'potongan'       => $item['potongan']      ?? 0,
                             'subtotal'       => $item['jumlah'],
+                            'ppn_amount'     => $itemPpnAmount,
                             'status'         => 1
                         ];
 

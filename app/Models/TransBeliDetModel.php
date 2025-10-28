@@ -45,6 +45,7 @@ class TransBeliDetModel extends Model
         'diskon',
         'potongan',
         'subtotal',
+        'ppn_amount',
         'satuan_retur',
         'keterangan',
         'status_item',

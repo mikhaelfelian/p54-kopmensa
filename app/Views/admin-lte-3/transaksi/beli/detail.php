@@ -108,7 +108,8 @@
                                 <th width="12%" class="text-right">Harga</th>
                                 <th width="8%" class="text-center">Diskon</th>
                                 <th width="10%" class="text-right">Potongan</th>
-                                <th width="15%" class="text-right">Subtotal</th>
+                                <th width="12%" class="text-right">Subtotal</th>
+                                <th width="12%" class="text-right">PPN</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -134,43 +135,44 @@
                                         </td>
                                         <td class="text-right"><?= number_format($item->potongan ?? 0) ?></td>
                                         <td class="text-right"><?= number_format($item->subtotal ?? 0) ?></td>
+                                        <td class="text-right"><?= number_format($item->ppn_amount ?? 0) ?></td>
                                     </tr>
                                 <?php endforeach ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Tidak ada item</td>
+                                    <td colspan="10" class="text-center">Tidak ada item</td>
                                 </tr>
                             <?php endif ?>
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="8" class="text-right"><strong>Subtotal</strong></td>
+                                <td colspan="9" class="text-right"><strong>Subtotal</strong></td>
                                 <td class="text-right"><strong><?= number_format($subtotal) ?></strong></td>
                             </tr>
                             <?php if ($total_diskon > 0): ?>
                                 <tr>
-                                    <td colspan="8" class="text-right"><strong>Total Diskon</strong></td>
+                                    <td colspan="9" class="text-right"><strong>Total Diskon</strong></td>
                                     <td class="text-right"><strong><?= number_format($total_diskon, 2) ?>%</strong></td>
                                 </tr>
                             <?php endif; ?>
                             <?php if ($total_potongan > 0): ?>
                                 <tr>
-                                    <td colspan="8" class="text-right"><strong>Total Potongan</strong></td>
+                                    <td colspan="9" class="text-right"><strong>Total Potongan</strong></td>
                                     <td class="text-right"><strong><?= number_format($total_potongan) ?></strong></td>
                                 </tr>
                             <?php endif; ?>
                             <?php if ($ppn > 0): ?>
                                 <tr>
-                                    <td colspan="8" class="text-right"><strong>DPP</strong></td>
+                                    <td colspan="9" class="text-right"><strong>DPP</strong></td>
                                     <td class="text-right"><strong><?= number_format($dpp) ?></strong></td>
                                 </tr>
                                 <tr>
-                                    <td colspan="8" class="text-right"><strong>PPN (11%)</strong></td>
+                                    <td colspan="9" class="text-right"><strong>PPN (11%)</strong></td>
                                     <td class="text-right"><strong><?= number_format($ppn) ?></strong></td>
                                 </tr>
                             <?php endif; ?>
                             <tr>
-                                <td colspan="8" class="text-right"><strong>Grand Total</strong></td>
+                                <td colspan="9" class="text-right"><strong>Grand Total</strong></td>
                                 <td class="text-right"><strong><?= number_format($total) ?></strong></td>
                             </tr>
                         </tfoot>

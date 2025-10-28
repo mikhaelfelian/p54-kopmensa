@@ -42,6 +42,7 @@ class TransJualDetModel extends Model
         'diskon',
         'potongan',
         'subtotal',
+        'ppn_amount',
         'status'
     ];
 

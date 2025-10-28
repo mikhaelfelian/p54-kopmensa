@@ -2579,7 +2579,35 @@ helper('form');
                         const price = product.harga_jual || product.harga || 0;
                         const stock = product.stok || 0;
                         const description = product.deskripsi || '';
+                        const statusStok = product.status_stok || '1'; // Default to stockable
                         const base_url = '<?= base_url() ?>';
+
+                        // Stock status logic (same as displayProducts)
+                        const isNonStockable = (statusStok === '0');
+                        const isBlocked = (stock <= 0 && statusStok === '1');
+                        
+                        let stockBadgeClass = '';
+                        let stockBadgeText = '';
+                        let stockDisplay = isNonStockable ? 'Non-Stockable' : stock;
+                        let stockTextColor = '#007bff';
+                        
+                        if (isBlocked) {
+                            stockBadgeClass = 'badge-danger';
+                            stockBadgeText = 'Stok Habis';
+                            stockTextColor = '#dc3545';
+                        } else if (stock <= 5 && statusStok === '1') {
+                            stockBadgeClass = 'badge-warning';
+                            stockBadgeText = 'Stok Rendah';
+                            stockTextColor = '#ffc107';
+                        } else if (isNonStockable) {
+                            stockBadgeClass = 'badge-info';
+                            stockBadgeText = 'Non-Stockable';
+                            stockTextColor = '#17a2b8';
+                        } else {
+                            stockBadgeClass = 'badge-success';
+                            stockBadgeText = 'Stockable';
+                            stockTextColor = '#28a745';
+                        }
 
                         // Same design as the main product grid (displayProducts)
                         return `
@@ -2603,16 +2631,21 @@ helper('form');
                                                 <div class="product-name" style="font-size: 14px; line-height: 1.3; color: #000; font-weight: 500; text-align: left;">
                                                     ${product.kode ? `${itemName}-${product.kode}` : itemName}
                                                 </div>
-                                                                                            <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
-                                                ${description ? description : ''}
+                                                <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
+                                                    ${description ? description : ''}
+                                                </div>
+                                                <div class="d-flex align-items-center" style="margin-top: 4px;">
+                                                    <div class="product-stock" style="font-size: 11px; color: ${stockTextColor}; text-align: left;">
+                                                        <i class="fas fa-boxes"></i> Stok: ${stockDisplay} PCS
+                                                    </div>
+                                                    <span class="badge ${stockBadgeClass} ml-2" style="font-size: 10px; padding: 2px 6px;">
+                                                        ${stockBadgeText}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div class="product-stock" style="font-size: 11px; color: #007bff; text-align: left; margin-top: 2px;">
-                                                <i class="fas fa-boxes"></i> Stok: ${stock} PCS
+                                            <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
+                                                Rp ${numberFormat(price)}
                                             </div>
-                                        </div>
-                                        <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">
-                                            Rp ${numberFormat(price)}
-                                        </div>
                                         </div>
                                     </div>
                                 </div>

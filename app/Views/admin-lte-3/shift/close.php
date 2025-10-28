@@ -87,6 +87,17 @@ helper('shift');
                         <td>Pendapatan:</td>
                         <td class="text-right"><?= format_angka($salesSummary['total_sales'], 0) ?></td>
                     </tr>
+                    <?php if (!empty($salesSummary['payment_methods'])): ?>
+                    <tr>
+                        <td colspan="2" class="text-center"><strong>Metode Pembayaran:</strong></td>
+                    </tr>
+                    <?php foreach ($salesSummary['payment_methods'] as $payment): ?>
+                    <tr>
+                        <td class="pl-4"><?= esc($payment['method']) ?>:</td>
+                        <td class="text-right"><?= format_angka($payment['amount'], 0) ?> (<?= $payment['count'] ?>x)</td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                     <tr>
                         <td>Kas Kecil Masuk:</td>
                         <td class="text-right text-success"><?= format_angka($shift['petty_in_total'], 0) ?></td>
