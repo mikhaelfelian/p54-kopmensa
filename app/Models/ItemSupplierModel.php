@@ -160,5 +160,181 @@ class ItemSupplierModel extends Model
                     ->orderBy('tbl_m_item_supplier.prioritas', 'ASC')
                     ->first();
     }
+
+    /**
+     * Get items not yet assigned to a supplier
+     * 
+     * @param int $supplierId Optional supplier ID to exclude
+     * @return array
+     */
+    public function getUnassignedItems($supplierId = null)
+    {
+        $builder = $this->db->table('tbl_m_item')
+                            ->select('tbl_m_item.id, tbl_m_item.kode, tbl_m_item.item, tbl_m_item.harga_jual')
+                            ->where('tbl_m_item.status_hps', '0');
+
+        if ($supplierId) {
+            // Exclude items already assigned to this supplier
+            $builder->whereNotIn('tbl_m_item.id', function($query) use ($supplierId) {
+                return $query->select('id_item')
+                            ->from('tbl_m_item_supplier')
+                            ->where('id_supplier', $supplierId)
+                            ->where('deleted_at IS NULL', null, false);
+            });
+        } else {
+            // Get items with no supplier assignments
+            $builder->whereNotIn('tbl_m_item.id', function($query) {
+                return $query->select('id_item')
+                            ->from('tbl_m_item_supplier')
+                            ->where('deleted_at IS NULL', null, false);
+            });
+        }
+
+        return $builder->orderBy('tbl_m_item.item', 'ASC')->get()->getResult();
+    }
+
+    /**
+     * Bulk assign items to supplier
+     * 
+     * @param int $supplierId
+     * @param array $itemIds
+     * @param float $defaultHargaBeli
+     * @param int $defaultPrioritas
+     * @return array Results with success/failure counts
+     */
+    public function bulkAssignItems($supplierId, $itemIds, $defaultHargaBeli = 0, $defaultPrioritas = 0)
+    {
+        $results = [
+            'success' => 0,
+            'failed' => 0,
+            'skipped' => 0,
+            'errors' => []
+        ];
+
+        foreach ($itemIds as $itemId) {
+            try {
+                // Check if mapping already exists
+                if ($this->mappingExists($itemId, $supplierId)) {
+                    $results['skipped']++;
+                    continue;
+                }
+
+                // Insert new mapping
+                $inserted = $this->insert([
+                    'id_item'      => $itemId,
+                    'id_supplier'  => $supplierId,
+                    'harga_beli'   => $defaultHargaBeli,
+                    'prioritas'    => $defaultPrioritas
+                ]);
+
+                if ($inserted) {
+                    $results['success']++;
+                } else {
+                    $results['failed']++;
+                    $results['errors'][] = "Failed to assign item ID: $itemId";
+                }
+            } catch (\Exception $e) {
+                $results['failed']++;
+                $results['errors'][] = "Error assigning item ID $itemId: " . $e->getMessage();
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Bulk remove items from supplier
+     * 
+     * @param int $supplierId
+     * @param array $itemIds
+     * @return array Results with success/failure counts
+     */
+    public function bulkRemoveItems($supplierId, $itemIds)
+    {
+        $results = [
+            'success' => 0,
+            'failed' => 0,
+            'errors' => []
+        ];
+
+        foreach ($itemIds as $itemId) {
+            try {
+                $deleted = $this->removeMapping($itemId, $supplierId);
+                if ($deleted) {
+                    $results['success']++;
+                } else {
+                    $results['failed']++;
+                    $results['errors'][] = "Failed to remove item ID: $itemId";
+                }
+            } catch (\Exception $e) {
+                $results['failed']++;
+                $results['errors'][] = "Error removing item ID $itemId: " . $e->getMessage();
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Get supplier statistics
+     * 
+     * @param int $supplierId
+     * @return object
+     */
+    public function getSupplierStats($supplierId)
+    {
+        $totalItems = $this->where('id_supplier', $supplierId)->countAllResults(false);
+        
+        $avgPrice = $this->selectAvg('harga_beli')
+                         ->where('id_supplier', $supplierId)
+                         ->where('harga_beli >', 0)
+                         ->first();
+
+        $priceRange = $this->select('MIN(harga_beli) as min_price, MAX(harga_beli) as max_price')
+                           ->where('id_supplier', $supplierId)
+                           ->where('harga_beli >', 0)
+                           ->first();
+
+        return (object) [
+            'total_items' => $totalItems,
+            'avg_price' => $avgPrice ? $avgPrice->harga_beli : 0,
+            'min_price' => $priceRange ? $priceRange->min_price : 0,
+            'max_price' => $priceRange ? $priceRange->max_price : 0
+        ];
+    }
+
+    /**
+     * Search items for supplier assignment
+     * 
+     * @param int $supplierId
+     * @param string $searchTerm
+     * @return array
+     */
+    public function searchItemsForAssignment($supplierId, $searchTerm = '')
+    {
+        $builder = $this->db->table('tbl_m_item')
+                            ->select('tbl_m_item.id, tbl_m_item.kode, tbl_m_item.item, tbl_m_item.harga_jual')
+                            ->where('tbl_m_item.status_hps', '0');
+
+        if ($searchTerm) {
+            $builder->groupStart()
+                    ->like('tbl_m_item.item', $searchTerm)
+                    ->orLike('tbl_m_item.kode', $searchTerm)
+                    ->groupEnd();
+        }
+
+        // Exclude items already assigned to this supplier
+        $builder->whereNotIn('tbl_m_item.id', function($query) use ($supplierId) {
+            return $query->select('id_item')
+                        ->from('tbl_m_item_supplier')
+                        ->where('id_supplier', $supplierId)
+                        ->where('deleted_at IS NULL', null, false);
+        });
+
+        return $builder->orderBy('tbl_m_item.item', 'ASC')
+                       ->limit(50)
+                       ->get()
+                       ->getResult();
+    }
 }
 

@@ -18,6 +18,7 @@ use App\Models\ItemModel;
 use App\Models\KategoriModel;
 use App\Models\MerkModel;
 use App\Models\SatuanModel;
+use App\Models\ItemSupplierModel;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -33,6 +34,7 @@ class Supplier extends BaseController
     protected $kategoriModel;
     protected $merkModel;
     protected $satuanModel;
+    protected $itemSupplierModel;
     protected $ionAuth;
 
     public function __construct()
@@ -44,6 +46,7 @@ class Supplier extends BaseController
         $this->kategoriModel = new KategoriModel();
         $this->merkModel = new MerkModel();
         $this->satuanModel = new SatuanModel();
+        $this->itemSupplierModel = new ItemSupplierModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -288,11 +291,19 @@ class Supplier extends BaseController
                            ->with('error', 'Data supplier tidak ditemukan');
         }
 
+        // Get linked items using ItemSupplierModel
+        $linkedItems = $this->itemSupplierModel->getItemsBySupplier($id);
+        
+        // Get supplier statistics
+        $supplierStats = $this->itemSupplierModel->getSupplierStats($id);
+
         $data = [
             'title'       => 'Detail Supplier',
             'Pengaturan'     => $this->pengaturan,
             'user'           => $this->ionAuth->user()->row(),
             'supplier'    => $supplier,
+            'linkedItems' => $linkedItems,
+            'supplierStats' => $supplierStats,
             'getTipeLabel'   => function($tipe) {
                 return $this->supplierModel->getTipeLabel($tipe);
             },
@@ -1015,6 +1026,337 @@ class Supplier extends BaseController
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
             ]);
+        }
+    }
+
+    /**
+     * AJAX endpoint: Get unassigned items for supplier
+     */
+    public function getUnassignedItems($supplierId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request method',
+                'data' => []
+            ])->setStatusCode(400);
+        }
+
+        if (!$supplierId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Supplier ID is required',
+                'data' => []
+            ])->setStatusCode(400);
+        }
+
+        try {
+            $searchTerm = $this->request->getGet('q') ?? '';
+            $items = $this->itemSupplierModel->searchItemsForAssignment($supplierId, $searchTerm);
+            
+            $formattedData = [];
+            foreach ($items as $item) {
+                $formattedData[] = [
+                    'id' => $item->id,
+                    'text' => '[' . $item->kode . '] ' . $item->item,
+                    'kode' => $item->kode,
+                    'nama' => $item->item,
+                    'harga_jual' => $item->harga_jual ?? 0
+                ];
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Items retrieved successfully',
+                'data' => $formattedData,
+                'count' => count($formattedData)
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::getUnassignedItems] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Error retrieving items: ' . $e->getMessage(),
+                'data' => []
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * AJAX endpoint: Bulk assign items to supplier
+     */
+    public function bulkAssignItems($supplierId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request method'
+            ])->setStatusCode(400);
+        }
+
+        if (!$supplierId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Supplier ID is required'
+            ])->setStatusCode(400);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+        $defaultHargaBeli = $this->request->getPost('default_harga_beli') ?? 0;
+        $defaultPrioritas = $this->request->getPost('default_prioritas') ?? 0;
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'No items selected for assignment'
+            ])->setStatusCode(400);
+        }
+
+        try {
+            $results = $this->itemSupplierModel->bulkAssignItems(
+                $supplierId, 
+                $itemIds, 
+                $defaultHargaBeli, 
+                $defaultPrioritas
+            );
+
+            $message = "Successfully assigned {$results['success']} items";
+            if ($results['skipped'] > 0) {
+                $message .= ", {$results['skipped']} items already assigned";
+            }
+            if ($results['failed'] > 0) {
+                $message .= ", {$results['failed']} items failed to assign";
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => $message,
+                'results' => $results
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::bulkAssignItems] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Error assigning items: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * AJAX endpoint: Bulk remove items from supplier
+     */
+    public function bulkRemoveItems($supplierId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request method'
+            ])->setStatusCode(400);
+        }
+
+        if (!$supplierId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Supplier ID is required'
+            ])->setStatusCode(400);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'No items selected for removal'
+            ])->setStatusCode(400);
+        }
+
+        try {
+            $results = $this->itemSupplierModel->bulkRemoveItems($supplierId, $itemIds);
+
+            $message = "Successfully removed {$results['success']} items";
+            if ($results['failed'] > 0) {
+                $message .= ", {$results['failed']} items failed to remove";
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => $message,
+                'results' => $results
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::bulkRemoveItems] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Error removing items: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * AJAX endpoint: Update item-supplier mapping
+     */
+    public function updateItemMapping($supplierId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request method'
+            ])->setStatusCode(400);
+        }
+
+        if (!$supplierId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Supplier ID is required'
+            ])->setStatusCode(400);
+        }
+
+        $itemId = $this->request->getPost('item_id');
+        $hargaBeli = $this->request->getPost('harga_beli') ?? 0;
+        $prioritas = $this->request->getPost('prioritas') ?? 0;
+
+        if (!$itemId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Item ID is required'
+            ])->setStatusCode(400);
+        }
+
+        try {
+            $result = $this->itemSupplierModel->addOrUpdateMapping(
+                $itemId, 
+                $supplierId, 
+                $hargaBeli, 
+                $prioritas
+            );
+
+            if ($result) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Item mapping updated successfully'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to update item mapping'
+                ])->setStatusCode(500);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::updateItemMapping] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Error updating item mapping: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * AJAX endpoint: Remove single item from supplier
+     */
+    public function removeItemMapping($supplierId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request method'
+            ])->setStatusCode(400);
+        }
+
+        if (!$supplierId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Supplier ID is required'
+            ])->setStatusCode(400);
+        }
+
+        $itemId = $this->request->getPost('item_id');
+
+        if (!$itemId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Item ID is required'
+            ])->setStatusCode(400);
+        }
+
+        try {
+            $result = $this->itemSupplierModel->removeMapping($itemId, $supplierId);
+
+            if ($result) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'message' => 'Item removed from supplier successfully'
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'status' => 'error',
+                    'message' => 'Failed to remove item from supplier'
+                ])->setStatusCode(500);
+            }
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::removeItemMapping] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Error removing item: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * AJAX endpoint: Get supplier items for DataTables
+     */
+    public function getSupplierItems($supplierId = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request method',
+                'data' => []
+            ])->setStatusCode(400);
+        }
+
+        if (!$supplierId) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Supplier ID is required',
+                'data' => []
+            ])->setStatusCode(400);
+        }
+
+        try {
+            $items = $this->itemSupplierModel->getItemsBySupplier($supplierId);
+            
+            $formattedData = [];
+            foreach ($items as $item) {
+                $formattedData[] = [
+                    'id' => $item->id,
+                    'item_id' => $item->id_item,
+                    'item_kode' => $item->item_kode,
+                    'item_nama' => $item->item_nama,
+                    'harga_beli' => $item->harga_beli,
+                    'harga_jual' => $item->harga_jual,
+                    'prioritas' => $item->prioritas,
+                    'created_at' => $item->created_at
+                ];
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Items retrieved successfully',
+                'data' => $formattedData,
+                'count' => count($formattedData)
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::getSupplierItems] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Error retrieving items: ' . $e->getMessage(),
+                'data' => []
+            ])->setStatusCode(500);
         }
     }
 }

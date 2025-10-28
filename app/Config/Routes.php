@@ -443,6 +443,14 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/items/(:num)', 'Supplier::items/$1');
     $routes->get('supplier/items/(:num)/add', 'Supplier::addItem/$1');
     $routes->post('supplier/items/(:num)/store', 'Supplier::storeItem/$1');
+    
+    // Supplier-Item Management AJAX endpoints
+    $routes->get('supplier/unassigned-items/(:num)', 'Supplier::getUnassignedItems/$1');
+    $routes->post('supplier/bulk-assign-items/(:num)', 'Supplier::bulkAssignItems/$1');
+    $routes->post('supplier/bulk-remove-items/(:num)', 'Supplier::bulkRemoveItems/$1');
+    $routes->post('supplier/update-item-mapping/(:num)', 'Supplier::updateItemMapping/$1');
+    $routes->post('supplier/remove-item-mapping/(:num)', 'Supplier::removeItemMapping/$1');
+    $routes->get('supplier/get-items/(:num)', 'Supplier::getSupplierItems/$1');
 });
 
 // Pelanggan & Customer Group Routes
