@@ -636,4 +636,51 @@ public function getItemWithRelations($id)
                     ->orderBy('item', 'ASC')
                     ->findAll();
     }
+
+    /**
+     * Get items for POS with stock status information
+     * 
+     * @param string|null $keyword Search keyword
+     * @return array
+     */
+    public function getPosItems($keyword = null)
+    {
+        $builder = $this->db->table('tbl_m_item')
+            ->select('id, item, harga_jual, id_supplier, status_stok, kode, barcode')
+            ->where('status', '1')
+            ->where('status_hps', '0');
+
+        if (!empty($keyword)) {
+            $builder->groupStart()
+                ->like('item', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('barcode', $keyword)
+                ->groupEnd();
+        }
+
+        $builder->orderBy('item', 'ASC');
+        return $builder->get()->getResultArray();
+    }
+
+    /**
+     * Get stock status label
+     * 
+     * @param string|int $statusStok
+     * @return string
+     */
+    public function getStockStatusLabel($statusStok)
+    {
+        return ((int)$statusStok === 1) ? 'Stockable' : 'Non-Stockable';
+    }
+
+    /**
+     * Get stock status badge class for UI
+     * 
+     * @param string|int $statusStok
+     * @return string
+     */
+    public function getStockStatusBadgeClass($statusStok)
+    {
+        return ((int)$statusStok === 1) ? 'badge-success' : 'badge-warning';
+    }
 } 
