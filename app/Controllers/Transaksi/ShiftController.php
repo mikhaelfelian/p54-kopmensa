@@ -424,29 +424,53 @@ class ShiftController extends BaseController
             return redirect()->to('/transaksi/shift');
         }
 
+        $user_id = $this->ionAuth->user()->row()->id;
+        
         // Handle both array and object formats
         $shift_status = is_array($shift) ? $shift['status'] : $shift->status;
+        $shift_user_id = is_array($shift) ? $shift['user_open_id'] : $shift->user_open_id;
 
-        // Only allow reopening closed shifts, not open or approved ones
-        if ($shift_status === 'open') {
-            session()->setFlashdata('error', 'Shift sudah dalam keadaan terbuka');
+        // Check if current user is the owner of this shift
+        if ($shift_user_id != $user_id) {
+            session()->setFlashdata('error', 'Hanya user yang membuka shift yang dapat membuka kembali shift ini');
             return redirect()->to('/transaksi/shift');
         }
 
+        // If shift is already open, just restore the session context
+        if ($shift_status === 'open') {
+            // Set shift context in session
+            session()->set([
+                'shift_id' => $shift_id,
+                'outlet_id' => is_array($shift) ? $shift['outlet_id'] : $shift->outlet_id,
+                'shift_code' => is_array($shift) ? $shift['shift_code'] : $shift->shift_code
+            ]);
+            
+            session()->setFlashdata('success', 'Sesi shift berhasil dipulihkan');
+            return redirect()->to('/transaksi/jual/cashier');
+        }
+
+        // Only allow reopening closed shifts, not approved ones
         if ($shift_status === 'approved') {
             session()->setFlashdata('error', 'Shift yang sudah disetujui tidak dapat dibuka kembali');
             return redirect()->to('/transaksi/shift');
         }
 
         if ($shift_status !== 'closed') {
-            session()->setFlashdata('error', 'Hanya shift yang sudah ditutup yang dapat dibuka kembali');
+            session()->setFlashdata('error', 'Hanya shift yang sudah ditutup atau terbuka yang dapat dibuka kembali');
             return redirect()->to('/transaksi/shift');
         }
 
-        $user_id = $this->ionAuth->user()->row()->id;
-        
+        // Reopen closed shift and restore session
         if ($this->shiftModel->reopenShift($shift_id, $user_id)) {
-            session()->setFlashdata('success', 'Shift berhasil dibuka kembali');
+            // Set shift context in session
+            session()->set([
+                'shift_id' => $shift_id,
+                'outlet_id' => is_array($shift) ? $shift['outlet_id'] : $shift->outlet_id,
+                'shift_code' => is_array($shift) ? $shift['shift_code'] : $shift->shift_code
+            ]);
+            
+            session()->setFlashdata('success', 'Shift berhasil dibuka kembali dan sesi dipulihkan');
+            return redirect()->to('/transaksi/jual/cashier');
         } else {
             session()->setFlashdata('error', 'Gagal membuka kembali shift');
         }
@@ -857,3 +881,4 @@ class ShiftController extends BaseController
         }
     }
 }
+

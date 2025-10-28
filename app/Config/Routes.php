@@ -376,6 +376,7 @@ $routes->group('transaksi/shift', ['namespace' => 'App\Controllers\Transaksi', '
     $routes->post('open', 'ShiftController::storeShift');
     $routes->get('close/(:num)', 'ShiftController::closeShift/$1');
     $routes->post('close', 'ShiftController::processClose');
+    $routes->get('reopen/(:num)', 'ShiftController::reopen/$1');
     $routes->get('approve/(:num)', 'ShiftController::approveShift/$1');
     $routes->get('view/(:num)', 'ShiftController::viewShift/$1');
     $routes->get('check-status', 'ShiftController::checkShiftStatus');

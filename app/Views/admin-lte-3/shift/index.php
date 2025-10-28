@@ -88,6 +88,10 @@
                                                    class="btn btn-warning btn-sm" title="Close Shift">
                                                     <i class="fas fa-stop"></i>
                                                 </a>
+                                                <a href="<?= base_url('transaksi/shift/reopen/' . $shift['id']) ?>" 
+                                                   class="btn btn-info btn-sm" title="Buka Kembali Sesi">
+                                                    <i class="fas fa-redo"></i> Buka Kembali
+                                                </a>
                                             <?php else : ?>
                                                 <button class="btn btn-secondary btn-sm" disabled title="Hanya user yang membuka shift yang dapat menutup shift ini">
                                                     <i class="fas fa-lock"></i>
@@ -98,11 +102,6 @@
                                                class="btn btn-success btn-sm" title="Approve Shift"
                                                onclick="return confirm('Are you sure you want to approve this shift?')">
                                                 <i class="fas fa-check"></i>
-                                            </a>
-                                            <a href="<?= base_url('transaksi/shift/reopen/' . $shift['id']) ?>" 
-                                               class="btn btn-info btn-sm" title="Reopen Shift"
-                                               onclick="return confirm('Are you sure you want to reopen this shift?')">
-                                                <i class="fas fa-redo"></i>
                                             </a>
                                         <?php endif; ?>
                                     </div>
