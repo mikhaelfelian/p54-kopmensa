@@ -267,6 +267,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('gudang/delete_permanent/(:num)', 'Gudang::delete_permanent/$1');
     $routes->get('gudang/import', 'Gudang::importForm');
     $routes->post('gudang/import', 'Gudang::importCsv');
+    $routes->get('gudang/export', 'Gudang::exportExcel');
     $routes->get('gudang/template', 'Gudang::downloadTemplate');
 });
 
@@ -431,6 +432,8 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('supplier/bulk_delete', 'Supplier::bulk_delete');
     $routes->get('supplier/detail/(:num)', 'Supplier::detail/$1');
     $routes->get('supplier/trash', 'Supplier::trash');
+    $routes->get('supplier/restore/(:num)', 'Supplier::restore/$1');
+    $routes->get('supplier/delete_permanent/(:num)', 'Supplier::deletePermanent/$1');
     $routes->get('supplier/export', 'Supplier::export');
     $routes->get('supplier/import', 'Supplier::importForm');
     $routes->post('supplier/import', 'Supplier::importCsv');
@@ -452,6 +455,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('customer/update/(:num)', 'Pelanggan::update/$1');
     $routes->get('customer/delete/(:num)', 'Pelanggan::delete/$1');
     $routes->post('customer/bulk_delete', 'Pelanggan::bulk_delete');
+    $routes->post('customer/bulk_restore', 'Pelanggan::bulk_restore');
 $routes->post('customer/upload_photo', 'Pelanggan::upload_photo');
 $routes->post('customer/update_username', 'Pelanggan::update_username');
 $routes->post('customer/toggle_block', 'Pelanggan::toggle_block');
@@ -470,6 +474,7 @@ $routes->post('customer/reset_password', 'Pelanggan::reset_password');
     $routes->get('customer/get_purchase_history/(:num)', 'Pelanggan::get_purchase_history/$1');
     $routes->get('customer/import', 'Pelanggan::importForm');
     $routes->post('customer/import', 'Pelanggan::importCsv');
+    $routes->get('customer/export', 'Pelanggan::exportExcel');
     $routes->get('customer/template', 'Pelanggan::downloadTemplate');
 
     // Customer Group (Grup Pelanggan) routes
@@ -523,6 +528,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('outlet/delete_permanent/(:num)', 'Outlet::delete_permanent/$1');
     $routes->get('outlet/import', 'Outlet::importForm');
     $routes->post('outlet/import', 'Outlet::importCsv');
+    $routes->get('outlet/export', 'Outlet::exportExcel');
     $routes->get('outlet/template', 'Outlet::downloadTemplate');
     // Platform management routes
     $routes->get('outlet/platforms/(:num)', 'Outlet::platforms/$1');
@@ -547,6 +553,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('item/store_price/(:num)', 'Item::store_price/$1');
     $routes->post('item/delete_price/(:num)', 'Item::delete_price/$1');
     $routes->post('item/bulk_delete', 'Item::bulk_delete');
+    $routes->post('item/bulk_restore', 'Item::bulk_restore');
     $routes->get('item/export_excel', 'Item::export_to_excel');
     $routes->post('item/store_variant/(:num)', 'Item::store_variant/$1');
     $routes->get('item/get_variants/(:num)', 'Item::get_variants/$1');

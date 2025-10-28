@@ -18,10 +18,10 @@ class PelangganGrupModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'object';
-    protected $useSoftDeletes   = false;
+    protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'grup', 'deskripsi', 'status'
+        'grup', 'deskripsi', 'status', 'status_hps'
     ];
 
     // Dates
@@ -29,6 +29,7 @@ class PelangganGrupModel extends Model
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
+    protected $deletedField   = 'deleted_at';
 
     /**
      * Get all active customer groups with member count
@@ -241,5 +242,68 @@ class PelangganGrupModel extends Model
         }
         
         return $query->countAllResults();
+    }
+
+    /**
+     * Archive multiple groups (soft delete)
+     *
+     * @param array $ids Group IDs to archive
+     * @return bool
+     */
+    public function archiveMany(array $ids): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        try {
+            $now = date('Y-m-d H:i:s');
+            return $this->builder()
+                ->whereIn('id', $ids)
+                ->set(['status_hps' => '1', 'deleted_at' => $now])
+                ->update();
+        } catch (\Exception $e) {
+            log_message('error', '[PelangganGrupModel::archiveMany] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Restore multiple archived groups
+     *
+     * @param array $ids Group IDs to restore
+     * @return bool
+     */
+    public function restoreMany(array $ids): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        try {
+            return $this->builder()
+                ->whereIn('id', $ids)
+                ->set(['status_hps' => '0', 'deleted_at' => null])
+                ->update();
+        } catch (\Exception $e) {
+            log_message('error', '[PelangganGrupModel::restoreMany] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Count archived groups
+     *
+     * @return int
+     */
+    public function countArchived(): int
+    {
+        $builder = $this->db->table($this->table);
+        return (int) $builder
+            ->groupStart()
+                ->where('status_hps', '1')
+                ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd()
+            ->countAllResults();
     }
 }

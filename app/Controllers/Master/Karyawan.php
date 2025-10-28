@@ -608,7 +608,8 @@ class Karyawan extends BaseController
         if (!$this->request->isAJAX()) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Invalid request'
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
@@ -617,48 +618,250 @@ class Karyawan extends BaseController
         if (empty($itemIds) || !is_array($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+                'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
         try {
-            $deletedCount = 0;
-            $failedCount = 0;
-            $errors = [];
+            $this->db->transStart();
 
-            foreach ($itemIds as $id) {
-                try {
-                    if ($this->karyawanModel->delete($id)) {
-                        $deletedCount++;
-                    } else {
-                        $failedCount++;
-                        $errors[] = "Gagal menghapus data ID: {$id}";
-                    }
-                } catch (\Exception $e) {
-                    $failedCount++;
-                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
-                }
+            // Use archiveMany to set status_hps='1' and deleted_at
+            $archived = $this->karyawanModel->archiveMany($itemIds);
+
+            $this->db->transComplete();
+
+            if (!$archived || $this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengarsipkan karyawan',
+                    'csrfHash' => csrf_hash()
+                ]);
             }
 
-            $message = "Berhasil menghapus {$deletedCount} data";
-            if ($failedCount > 0) {
-                $message .= ", {$failedCount} data gagal dihapus";
-            }
-
+            $count = count($itemIds);
             return $this->response->setJSON([
                 'success' => true,
-                'message' => $message,
-                'deleted_count' => $deletedCount,
-                'failed_count' => $failedCount,
-                'errors' => $errors
+                'message' => "Berhasil mengarsipkan {$count} karyawan",
+                'archived_count' => $count,
+                'csrfHash' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
-            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            log_message('error', '[Karyawan::bulk_delete] ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat mengarsipkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
             ]);
         }
+    }
+
+    /**
+     * Bulk restore karyawan
+     */
+    public function bulk_restore()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dipulihkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $this->db->transStart();
+
+            // Use restoreMany to set status_hps='0' and deleted_at=null
+            $restored = $this->karyawanModel->restoreMany($itemIds);
+
+            $this->db->transComplete();
+
+            if (!$restored || $this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal memulihkan karyawan',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            $count = count($itemIds);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "Berhasil memulihkan {$count} karyawan",
+                'restored_count' => $count,
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Karyawan::bulk_restore] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memulihkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Display trash (deleted karyawan)
+     */
+    public function trash()
+    {
+        $currentPage = $this->request->getVar('page_karyawan') ?? 1;
+        $perPage = $this->pengaturan->pagination_limit ?? 10;
+
+        $query = $this->karyawanModel;
+
+        // Use withDeleted() to include soft-deleted items
+        $query->withDeleted();
+
+        // Show items where status_hps = '1' OR deleted_at IS NOT NULL
+        $query->groupStart()
+            ->where('status_hps', '1')
+            ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd();
+
+        $search = $this->request->getVar('search');
+        if ($search) {
+            $query->groupStart()
+                ->like('nama', $search)
+                ->orLike('kode', $search)
+                ->orLike('nik', $search)
+                ->groupEnd();
+        }
+
+        // Order by deleted_at descending
+        $query->orderBy('deleted_at', 'DESC');
+
+        $total = $query->countAllResults(false);
+        $trashCount = $this->karyawanModel->countArchived();
+
+        $data = [
+            'title'       => 'Trash Karyawan',
+            'karyawans'   => $query->paginate($perPage, 'karyawan'),
+            'pager'       => $this->karyawanModel->pager,
+            'currentPage' => $currentPage,
+            'perPage'     => $perPage,
+            'total'       => $total,
+            'search'      => $search,
+            'trashCount'  => $trashCount,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/karyawan') . '">Karyawan</a></li>
+                <li class="breadcrumb-item active">Trash</li>
+            '
+        ];
+
+        return $this->view($this->theme->getThemePath() . '/master/karyawan/trash', $data);
+    }
+
+    /**
+     * Restore deleted karyawan
+     */
+    public function restore($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('master/karyawan/trash')
+                           ->with('error', 'ID karyawan tidak ditemukan');
+        }
+
+        try {
+            // Use restoreMany with single ID
+            if (!$this->karyawanModel->restoreMany([$id])) {
+                throw new \RuntimeException('Gagal mengembalikan data karyawan');
+            }
+
+            return redirect()->to(base_url('master/karyawan/trash'))
+                           ->with('success', 'Data karyawan berhasil dikembalikan');
+
+        } catch (\Exception $e) {
+            log_message('error', '[Karyawan::restore] ' . $e->getMessage());
+            return redirect()->back()
+                           ->with('error', 'Gagal mengembalikan data karyawan');
+        }
+    }
+
+    /**
+     * Permanently delete karyawan
+     */
+    public function delete_permanent($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('master/karyawan/trash')
+                           ->with('error', 'ID karyawan tidak ditemukan');
+        }
+
+        try {
+            if (!$this->karyawanModel->delete($id, true)) {
+                throw new \RuntimeException('Gagal menghapus permanen data karyawan');
+            }
+
+            return redirect()->to(base_url('master/karyawan/trash'))
+                           ->with('success', 'Data karyawan berhasil dihapus permanen');
+
+        } catch (\Exception $e) {
+            log_message('error', '[Karyawan::delete_permanent] ' . $e->getMessage());
+            return redirect()->back()
+                           ->with('error', 'Gagal menghapus permanen data karyawan');
+        }
+    }
+
+    /**
+     * Export karyawan data to Excel
+     */
+    public function exportExcel()
+    {
+        $keyword = $this->request->getVar('keyword');
+        
+        // Build query - same filters as index
+        $query = $this->karyawanModel;
+        $query->where('status_hps', '0');
+        
+        if ($keyword) {
+            $query->groupStart()
+                ->like('nama', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('nik', $keyword)
+                ->groupEnd();
+        }
+        
+        // Get all data (no pagination for export)
+        $karyawans = $query->orderBy('id', 'DESC')->findAll();
+        
+        // Prepare Excel data
+        $headers = ['Kode', 'NIK', 'Nama', 'No. HP', 'Alamat', 'Jabatan', 'Status'];
+        
+        $excelData = [];
+        foreach ($karyawans as $karyawan) {
+            $jabatanLabel = $this->karyawanModel->getStatusLabel($karyawan->jabatan ?? 0);
+            $statusLabel = ($karyawan->status == '1') ? 'Aktif' : 'Tidak Aktif';
+            
+            $excelData[] = [
+                $karyawan->kode ?? '',
+                $karyawan->nik ?? '',
+                $karyawan->nama ?? '',
+                $karyawan->no_hp ?? '',
+                $karyawan->alamat ?? '',
+                $jabatanLabel,
+                $statusLabel
+            ];
+        }
+        
+        $filename = 'export_karyawan_' . date('Y-m-d_His') . '.xlsx';
+        $filepath = createExcelTemplate($headers, $excelData, $filename);
+
+        return $this->response->download($filepath, null);
     }
 }
