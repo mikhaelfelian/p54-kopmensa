@@ -47,15 +47,78 @@ class TransBeli extends BaseController
         $currentPage = $this->request->getVar('page_transbeli') ?? 1;
         $perPage = $this->pengaturan->pagination_limit;
 
+        // Get filter parameters
+        $startDate = $this->request->getGet('start_date');
+        $endDate = $this->request->getGet('end_date');
+        $idSupplier = $this->request->getGet('id_supplier');
+        $search = $this->request->getGet('search');
+        $statusPpn = $this->request->getGet('status_ppn');
+        $statusBayar = $this->request->getGet('status_bayar');
+        $minTotal = $this->request->getGet('min_total');
+        $maxTotal = $this->request->getGet('max_total');
+
+        // Build query with filters
+        $builder = $this->transBeliModel->builder();
+        $builder->select('tbl_trans_beli.*, tbl_m_supplier.nama as supplier_nama')
+                ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
+                ->where('tbl_trans_beli.deleted_at IS NULL');
+
+        // Apply filters
+        if ($startDate) {
+            $builder->where('DATE(tbl_trans_beli.tgl_masuk) >=', $startDate);
+        }
+
+        if ($endDate) {
+            $builder->where('DATE(tbl_trans_beli.tgl_masuk) <=', $endDate);
+        }
+
+        if ($idSupplier) {
+            $builder->where('tbl_trans_beli.id_supplier', $idSupplier);
+        }
+
+        if ($search) {
+            $builder->groupStart()
+                    ->like('tbl_trans_beli.no_nota', $search)
+                    ->orLike('tbl_trans_beli.no_po', $search)
+                    ->orLike('tbl_m_supplier.nama', $search)
+                    ->groupEnd();
+        }
+
+        if ($statusPpn !== null && $statusPpn !== '') {
+            $builder->where('tbl_trans_beli.status_ppn', $statusPpn);
+        }
+
+        if ($statusBayar !== null && $statusBayar !== '') {
+            $builder->where('tbl_trans_beli.status_bayar', $statusBayar);
+        }
+
+        if ($minTotal) {
+            $builder->where('tbl_trans_beli.jml_gtotal >=', $minTotal);
+        }
+
+        if ($maxTotal) {
+            $builder->where('tbl_trans_beli.jml_gtotal <=', $maxTotal);
+        }
+
+        $builder->orderBy('tbl_trans_beli.tgl_masuk', 'DESC');
+
+        // Get paginated results
+        $transaksi = $this->transBeliModel->paginate($perPage, 'transbeli', null, 0, $builder);
+
+        // Get suppliers for filter dropdown
+        $suppliers = $this->supplierModel->where('status_hps', '0')
+                                         ->orderBy('nama', 'ASC')
+                                         ->findAll();
 
         $data = [
             'title'         => 'Data Pembelian',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'transaksi'     => $this->transBeliModel->paginate($perPage, 'transbeli'),
+            'transaksi'     => $transaksi,
             'pager'         => $this->transBeliModel->pager,
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
+            'suppliers'     => $suppliers,
         ];
 
         return $this->view($this->theme->getThemePath() . '/transaksi/beli/index', $data);
