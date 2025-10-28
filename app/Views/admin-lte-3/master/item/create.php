@@ -67,7 +67,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="control-label">Barcode</label>
+                                <label class="control-label">Kode Produk</label>
                                 <?= form_input(['name' => 'barcode', 'id' => 'barcode', 'class' => 'form-control rounded-0', 'placeholder' => 'Isikan barcode ...', 'value' => old('barcode')]) ?>
                             </div>
                         </div>
