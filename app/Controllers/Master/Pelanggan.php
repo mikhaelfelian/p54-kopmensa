@@ -803,10 +803,10 @@ class Pelanggan extends BaseController
         }
 
         try {
-            // Generate new username based on first name + random number
+            // Generate new username using sanitized name + random number
             $user = $this->ionAuth->user($user_id)->row();
-            $first_name = $user->first_name;
-            $new_username = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $first_name)) . rand(100, 999);
+            $firstName = preg_replace('/[^a-zA-Z0-9]/', '', trim($user->first_name ?? 'user'));
+            $new_username = strtolower($firstName) . rand(100, 999);
 
             // Ensure username is unique
             $counter = 1;
@@ -1136,12 +1136,12 @@ class Pelanggan extends BaseController
 
             // If activating and no user exists, create one
             if ($status == '1' && (empty($id_user) || $id_user == 0 || $id_user == '0')) {
-                // Generate username from name (lowercase, alphanumeric only) + random number
-                $baseUsername = strtolower(preg_replace('/[^a-z0-9]/', '', $pelanggan->nama ?? 'user'));
-                if (empty($baseUsername)) {
-                    $baseUsername = 'user';
+                // Generate username using sanitized name + random number
+                $firstName = preg_replace('/[^a-zA-Z0-9]/', '', trim($pelanggan->nama ?? 'user'));
+                if ($firstName === '') {
+                    $firstName = 'user';
                 }
-                $username = $baseUsername . rand(100, 999);
+                $username = strtolower($firstName) . rand(100, 999);
                 
                 // Ensure username is unique
                 $existingUser = $db->table('tbl_ion_users')
