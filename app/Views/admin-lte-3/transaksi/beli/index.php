@@ -49,17 +49,36 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Supplier Filter -->
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Supplier</label>
+                                        <select name="id_supplier" class="form-control form-control-sm rounded-0">
+                                            <option value="">Semua Supplier</option>
+                                            <?php if (!empty($suppliers)): ?>
+                                                <?php foreach ($suppliers as $supplier): ?>
+                                                    <option value="<?= $supplier->id ?>" <?= ($_GET['id_supplier'] ?? '') == $supplier->id ? 'selected' : '' ?>>
+                                                        <?= esc($supplier->nama) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                
                                 <!-- Search Filter -->
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label>Pencarian</label>
                                         <input type="text" name="search" class="form-control form-control-sm rounded-0" 
-                                               placeholder="No. Faktur, Supplier, No. PO..." 
+                                               placeholder="No. Faktur, No. PO..." 
                                                value="<?= $_GET['search'] ?? '' ?>">
                                     </div>
                                 </div>
-                                
-                                <!-- Status Filter -->
+                            </div>
+                            
+                            <div class="row">
+                                <!-- Status PPN Filter -->
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label>Status PPN</label>
@@ -71,7 +90,6 @@
                                         </select>
                                     </div>
                                 </div>
-                            </div>
                             
                             <div class="row">
                                 <!-- Payment Status Filter -->
