@@ -190,8 +190,7 @@
                                 <strong><i class="fas fa-phone mr-1"></i> Kontak</strong>
                                 <p class="text-muted">
                                     <strong>Telepon:</strong> <?= esc($supplier->no_tlp) ?: '-' ?><br>
-                                    <strong>HP:</strong> <?= esc($supplier->no_hp) ?><br>
-                                    <strong>Email:</strong> <?= esc($supplier->email) ?: '-' ?>
+                                    <strong>HP:</strong> <?= esc($supplier->no_hp) ?: '-' ?>
                                 </p>
                             </div>
                         </div>
