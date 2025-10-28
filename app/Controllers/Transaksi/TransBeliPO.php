@@ -49,9 +49,14 @@ class TransBeliPO extends BaseController
     public function index()
     {
         $filters = [
-            'supplier' => $this->request->getGet('supplier'),
-            'status'   => $this->request->getGet('status'),
-            'q'        => $this->request->getGet('q')
+            'no_nota'      => $this->request->getGet('no_nota'),
+            'supplier'     => $this->request->getGet('supplier'),
+            'status'       => $this->request->getGet('status'),
+            'date_start'   => $this->request->getGet('date_start'),
+            'date_end'     => $this->request->getGet('date_end'),
+            'min_items'    => $this->request->getGet('min_items'),
+            'max_items'    => $this->request->getGet('max_items'),
+            'q'            => $this->request->getGet('q')
         ];
 
         $data = [

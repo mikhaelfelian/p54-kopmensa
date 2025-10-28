@@ -75,7 +75,8 @@ class TransBeliPOModel extends Model
                 (SELECT COUNT(*) FROM tbl_trans_beli_po_det WHERE id_pembelian = tbl_trans_beli_po.id) as total_items
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli_po.id_supplier', 'left')
-            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_beli_po.id_user', 'left');
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_beli_po.id_user', 'left')
+            ->where('tbl_trans_beli_po.deleted_at IS NULL');
 
         // If single record is requested
         if (isset($conditions['tbl_trans_beli_po.id'])) {
@@ -83,14 +84,41 @@ class TransBeliPOModel extends Model
         }
 
         // Apply filters for list view
+        
+        // Filter by PO Number (no_po)
+        if (!empty($conditions['no_nota'])) {
+            $builder->like('tbl_trans_beli_po.no_nota', $conditions['no_nota']);
+        }
+
+        // Filter by supplier
         if (!empty($conditions['supplier'])) {
             $builder->where('tbl_trans_beli_po.id_supplier', $conditions['supplier']);
         }
 
+        // Filter by status
         if (isset($conditions['status']) && $conditions['status'] !== '') {
             $builder->where('tbl_trans_beli_po.status', $conditions['status']);
         }
 
+        // Date range filter
+        if (!empty($conditions['date_start'])) {
+            $builder->where('DATE(tbl_trans_beli_po.created_at) >=', $conditions['date_start']);
+        }
+
+        if (!empty($conditions['date_end'])) {
+            $builder->where('DATE(tbl_trans_beli_po.created_at) <=', $conditions['date_end']);
+        }
+
+        // Item count range filter
+        if (!empty($conditions['min_items'])) {
+            $builder->having('total_items >=', (int)$conditions['min_items']);
+        }
+
+        if (!empty($conditions['max_items'])) {
+            $builder->having('total_items <=', (int)$conditions['max_items']);
+        }
+
+        // General search query (searches in PO number and supplier name)
         if (!empty($conditions['q'])) {
             $builder->groupStart()
                    ->like('tbl_trans_beli_po.no_nota', $conditions['q'])
