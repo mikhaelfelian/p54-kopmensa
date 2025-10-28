@@ -90,7 +90,14 @@ class Item extends BaseController
         $harga_jual_value = $this->request->getVar('harga_jual_value') ?? '';
 
         // Get trash count (use a clone so it doesn't affect the main query)
-        $trashCount = (clone $this->itemModel)->where('status_hps', '1')->countAllResults();
+        // Count items where status_hps = '1' OR deleted_at IS NOT NULL
+        $trashCount = (clone $this->itemModel)
+            ->withDeleted()
+            ->groupStart()
+                ->where('status_hps', '1')
+                ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd()
+            ->countAllResults();
 
         // Now filter only active items for the main list
         $this->itemModel->where('tbl_m_item.status_hps', '0');
