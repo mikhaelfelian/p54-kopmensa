@@ -70,7 +70,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label class="control-label">SKU</label>
-                            <?= form_input(['name' => 'kode', 'value' => old('kode', $item->kode ?? ''), 'id' => 'kode', 'class' => 'form-control rounded-0', 'placeholder' => 'Isikan SKU ...']) ?>
+                            <?= form_input(['name' => 'kode', 'value' => old('kode', $item->kode ?? ''), 'id' => 'kode', 'class' => 'form-control rounded-0', 'placeholder' => 'Isikan SKU ...', 'readonly' => 'readonly']) ?>
                         </div>
                     </div>
                     <div class="col-md-6">
