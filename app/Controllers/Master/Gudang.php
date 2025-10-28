@@ -22,12 +22,19 @@ class Gudang extends BaseController
     protected $validation;
     protected $itemModel;
     protected $itemStokModel;
+    protected $ionAuth;
+    protected $pengaturan;
+    
     public function __construct()
     {
         $this->gudangModel      = new GudangModel();
         $this->itemModel        = new ItemModel();
         $this->itemStokModel    = new ItemStokModel();
         $this->validation       = \Config\Services::validation();
+        $this->ionAuth          = new \IonAuth\Libraries\IonAuth();
+        
+        $pengaturanModel = new \App\Models\PengaturanModel();
+        $this->pengaturan = $pengaturanModel->getSettings();
     }
 
     public function index()
@@ -123,14 +130,42 @@ class Gudang extends BaseController
             'status_gd'  => $status_gd
         ];
 
-        if ($this->gudangModel->insert($data)) {
+        $db = \Config\Database::connect();
+        $db->transStart();
+        try {
+            if (!$this->gudangModel->insert($data)) {
+                throw new \Exception('Gagal menyimpan data gudang');
+            }
+            
+            $last_id = $this->gudangModel->getInsertID();
+            
+            // Create stock records for all items when new warehouse is added
+            $items = $this->itemModel->where('status_hps', '0')->where('status', '1')->findAll();
+            foreach ($items as $item) {
+                $this->itemStokModel->insert([
+                    'id_item'   => $item->id,
+                    'id_gudang' => $last_id,
+                    'id_user'   => $this->ionAuth->user()->row()->id ?? 0,
+                    'jml_stok'  => 0,
+                    'status'    => '1',
+                ]);
+            }
+            
+            $db->transComplete();
+            
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+            
             return redirect()->to(base_url('master/gudang'))
                 ->with('success', 'Data gudang berhasil ditambahkan');
+                
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Gagal menambahkan data gudang: ' . $e->getMessage());
         }
-
-        return redirect()->to(base_url('master/gudang/create'))
-            ->with('error', 'Gagal menambahkan data gudang')
-            ->withInput();
     }
 
     public function edit($id)
@@ -366,14 +401,14 @@ class Gudang extends BaseController
 
             $csvData = [];
             foreach ($excelData as $row) {
-                if (count($row) >= 2) { // At least nama, alamat
+                if (count($row) >= 2) { // At least nama, keterangan
                     $csvData[] = [
                         'nama' => trim($row[0] ?? ''),
-                        'alamat' => trim($row[1] ?? ''),
-                        'telepon' => trim($row[2] ?? ''),
-                        'keterangan' => trim($row[3] ?? ''),
-                        'status_otl' => isset($row[4]) ? trim($row[4]) : '0',
-                        'status_hps' => isset($row[5]) ? trim($row[5]) : '0'
+                        'deskripsi' => trim($row[1] ?? ''),
+                        'status' => isset($row[2]) ? trim($row[2]) : '1',
+                        'status_gd' => isset($row[3]) ? trim($row[3]) : '1',
+                        'status_otl' => '0',  // Gudang, not outlet
+                        'status_hps' => '0'
                     ];
                 }
             }
@@ -428,14 +463,55 @@ class Gudang extends BaseController
                 mkdir($templateDir, 0777, true);
             }
 
-            $headers = ['Nama', 'Alamat', 'Telepon', 'Keterangan', 'Status Outlet', 'Status Hapus'];
+            $headers = ['Nama Gudang', 'Keterangan', 'Status', 'Status Gudang'];
             $sampleData = [
-                ['Gudang Pusat', 'Jl. Sudirman No. 1', '08123456789', 'Gudang utama', '0', '0'],
-                ['Gudang Cabang', 'Jl. Thamrin No. 2', '08123456788', 'Gudang cabang', '0', '0']
+                ['Gudang Pusat', 'Gudang utama', '1', '1'],
+                ['Gudang Cabang', 'Gudang cabang', '1', '1']
             ];
             $filepath = createExcelTemplate($headers, $sampleData, $filename);
         }
 
+        return $this->response->download($filepath, null);
+    }
+
+    /**
+     * Export gudang data to Excel
+     */
+    public function exportExcel()
+    {
+        $keyword = $this->request->getVar('keyword');
+        
+        // Build query
+        $this->gudangModel->where('status_otl', '0')->where('status_hps', '0');
+        
+        if ($keyword) {
+            $this->gudangModel->groupStart()
+                ->like('nama', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('deskripsi', $keyword)
+                ->groupEnd();
+        }
+        
+        // Get all data (no pagination for export)
+        $gudangs = $this->gudangModel->orderBy('id', 'DESC')->findAll();
+        
+        // Prepare Excel data
+        $headers = ['Kode', 'Nama Gudang', 'Keterangan', 'Status', 'Status Gudang'];
+        $excelData = [];
+        
+        foreach ($gudangs as $gudang) {
+            $excelData[] = [
+                $gudang->kode,
+                $gudang->nama,
+                $gudang->deskripsi,
+                ($gudang->status == '1') ? 'Aktif' : 'Tidak Aktif',
+                ($gudang->status_gd == '1') ? 'Aktif' : 'Tidak Aktif'
+            ];
+        }
+        
+        $filename = 'export_gudang_' . date('Y-m-d_His') . '.xlsx';
+        $filepath = createExcelTemplate($headers, $excelData, $filename);
+        
         return $this->response->download($filepath, null);
     }
 
@@ -468,7 +544,16 @@ class Gudang extends BaseController
 
             foreach ($itemIds as $id) {
                 try {
-                    if ($this->gudangModel->delete($id)) {
+                    // Soft delete - set status_hps = 1
+                    $data = [
+                        'status_hps' => '1',
+                        'deleted_at' => date('Y-m-d H:i:s')
+                    ];
+                    
+                    // Set the status of all item stock records related to this warehouse to 0 (inactive)
+                    $this->itemStokModel->where('id_gudang', $id)->set(['status' => '0'])->update();
+                    
+                    if ($this->gudangModel->update($id, $data)) {
                         $deletedCount++;
                     } else {
                         $failedCount++;

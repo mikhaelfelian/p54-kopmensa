@@ -455,6 +455,46 @@ class Outlet extends BaseController
     }
 
     /**
+     * Export outlet data to Excel
+     */
+    public function exportExcel()
+    {
+        $keyword = $this->request->getVar('keyword');
+        
+        // Build query
+        $this->outletModel->where('status_otl', '1')->where('status_hps', '0');
+        
+        if ($keyword) {
+            $this->outletModel->groupStart()
+                ->like('nama', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('deskripsi', $keyword)
+                ->groupEnd();
+        }
+        
+        // Get all data (no pagination for export)
+        $outlets = $this->outletModel->orderBy('id', 'DESC')->findAll();
+        
+        // Prepare Excel data
+        $headers = ['Kode', 'Nama Outlet', 'Deskripsi', 'Status'];
+        $excelData = [];
+        
+        foreach ($outlets as $outlet) {
+            $excelData[] = [
+                $outlet->kode,
+                $outlet->nama,
+                $outlet->deskripsi,
+                ($outlet->status == '1') ? 'Aktif' : 'Tidak Aktif'
+            ];
+        }
+        
+        $filename = 'export_outlet_' . date('Y-m-d_His') . '.xlsx';
+        $filepath = createExcelTemplate($headers, $excelData, $filename);
+        
+        return $this->response->download($filepath, null);
+    }
+
+    /**
      * Bulk delete outlet
      */
 
