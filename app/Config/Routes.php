@@ -740,6 +740,13 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('transaksi/refund/get-transaction/(:num)', 'RefundRequest::getTransactionDetails/$1');
 });
 
+// Additional AJAX endpoints for Purchase Order edit form
+$routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
+    $routes->get('po/items-search', 'TransBeliPO::itemsSearch');
+    $routes->get('po/suppliers-by-item/(:num)', 'TransBeliPO::suppliersByItem/$1');
+    $routes->get('po/details-json/(:num)', 'TransBeliPO::detailsJson/$1');
+});
+
 // Public API routes
 $routes->group('publik', function ($routes) {
     $routes->get('items', 'Publik::getItems');

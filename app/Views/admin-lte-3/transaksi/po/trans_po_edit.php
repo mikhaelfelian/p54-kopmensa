@@ -261,31 +261,108 @@
             width: '100%'
         });
 
-        // Initialize Select2 for items (will be populated dynamically)
+        // Initialize Select2 for items (search via PO itemsSearch)
         $('.select2-item').select2({
             theme: 'bootstrap4',
             width: '100%',
             placeholder: 'Pilih Item...',
             allowClear: true,
             ajax: {
-                url: '<?= base_url('publik/items_by_supplier') ?>',
+                url: '<?= base_url('transaksi/po/items-search') ?>',
                 dataType: 'json',
                 delay: 250,
                 data: function (params) {
-                    return {
-                        q: params.term,
-                        supplier_id: $('select[name="supplier_id"]').val()
-                    };
+                    return { q: params.term };
                 },
                 processResults: function (data) {
-                    return {
-                        results: data.results
-                    };
+                    return { results: data.results };
                 },
                 cache: true
             },
             minimumInputLength: 1
         });
+
+        // Load suppliers by item when item changes
+        $('#item').on('change', function() {
+            const itemId = $(this).val();
+            if (!itemId) {
+                $('#supplier_by_item').empty().trigger('change');
+                return;
+            }
+
+            $.get('<?= base_url('transaksi/po/suppliers-by-item') ?>/' + itemId, function(res) {
+                if (res.status === 'error') {
+                    toastr.error(res.message || 'Gagal memuat supplier');
+                    return;
+                }
+                const $sel = $('#supplier_by_item');
+                $sel.empty();
+                (res.data || []).forEach(function(s) {
+                    const text = '[' + (s.kode_supplier || '-') + '] ' + s.nama_supplier + ' - Rp ' + (s.harga_beli || 0).toLocaleString('id-ID');
+                    $sel.append(`<option value="${s.id}">${text}</option>`);
+                });
+                $sel.select2({ theme: 'bootstrap4', width: '100%' });
+            });
+        });
+
+        // AJAX submit add-item form
+        $('#form-add-item').on('submit', function(e) {
+            e.preventDefault();
+            const $form = $(this);
+            const action = $form.attr('action');
+            const formData = $form.serialize();
+
+            $('#btn-add-item').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+            $.ajax({
+                url: action,
+                type: 'POST',
+                data: formData,
+                dataType: 'json',
+                success: function(resp) {
+                    if (resp.success) {
+                        toastr.success(resp.message || 'Item ditambahkan');
+                        refreshDetailTable(<?= (int)($po->id ?? 0) ?>);
+                        $form[0].reset();
+                        $('#item').val(null).trigger('change');
+                        $('#supplier_by_item').empty().trigger('change');
+                    } else {
+                        toastr.error(resp.message || 'Gagal menambahkan item');
+                    }
+                    $('#btn-add-item').prop('disabled', false).html('<i class="fas fa-plus"></i> Tambah');
+                },
+                error: function(xhr) {
+                    const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Terjadi kesalahan server';
+                    toastr.error(msg);
+                    $('#btn-add-item').prop('disabled', false).html('<i class="fas fa-plus"></i> Tambah');
+                }
+            });
+        });
+
+        // Refresh detail list without reload
+        function refreshDetailTable(poId) {
+            $.get('<?= base_url('transaksi/po/details-json') ?>/' + poId, function(resp) {
+                if (!resp.success) {
+                    toastr.error(resp.message || 'Gagal memuat detail');
+                    return;
+                }
+                const tbody = $('#po-detail-body');
+                tbody.empty();
+                (resp.data || []).forEach(function(row, idx) {
+                    const tr = `<tr>
+                        <td>${idx + 1}</td>
+                        <td>[${row.item_kode || '-'}] ${row.item_nama || '-'}</td>
+                        <td class="text-right">${row.jml || 0}</td>
+                        <td>${row.satuan_nama || '-'}</td>
+                        <td>${row.keterangan || ''}</td>
+                        <td class="text-right">
+                            <a href="<?= base_url('transaksi/po/cart_delete') ?>/${row.id}?id=<?= (int)($po->id ?? 0) ?>" class="btn btn-xs btn-danger" onclick="return confirm('Hapus item ini?')"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>`;
+                    tbody.append(tr);
+                });
+            });
+        }
 
         // Handle supplier change
         $('select[name="supplier_id"]').on('change', function() {

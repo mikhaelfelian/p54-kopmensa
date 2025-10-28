@@ -365,9 +365,18 @@ class TransBeliPO extends BaseController
             ];
 
             if (!$this->validate($rules)) {
-                return redirect()->back()
+                if ($this->request->isAJAX()) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Validasi gagal',
+                        'errors'  => $this->validator->getErrors(),
+                        'csrfHash'=> csrf_hash(),
+                    ])->setStatusCode(422);
+                }
+                return redirect()->to(base_url("transaksi/po/edit/{$po_id}"))
                                ->withInput()
-                               ->with('errors', $this->validator->getErrors());
+                               ->with('errors', $this->validator->getErrors())
+                               ->with('error', 'Validasi gagal, periksa kembali input Anda');
             }
 
             // Get validated data
@@ -416,6 +425,13 @@ class TransBeliPO extends BaseController
             }
             $this->db->transCommit();
 
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Item berhasil ditambahkan',
+                    'csrfHash'=> csrf_hash(),
+                ]);
+            }
             return redirect()->to(base_url("transaksi/po/edit/$po_id"))
                            ->with('success', 'Item berhasil ditambahkan');
         } catch (\Exception $e) {
@@ -427,9 +443,131 @@ class TransBeliPO extends BaseController
                 $this->db->transRollback();
             }
 
-            return redirect()->back()
+            if ($this->request->isAJAX()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menambahkan item: ' . $e->getMessage(),
+                    'csrfHash'=> csrf_hash(),
+                ])->setStatusCode(500);
+            }
+            return redirect()->to(base_url("transaksi/po/edit/{$po_id}"))
                            ->withInput()
-                           ->with('error', ENVIRONMENT === 'development' ? $e->getMessage() : 'Gagal menambahkan item');
+                           ->with('error', 'Gagal menambahkan item: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * AJAX: Search items for Select2
+     */
+    public function itemsSearch()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request'])->setStatusCode(400);
+        }
+
+        $q = trim((string) $this->request->getGet('q'));
+        $limit = (int) ($this->request->getGet('limit') ?? 20);
+
+        $builder = $this->itemModel->builder();
+        if ($q !== '') {
+            $builder->groupStart()
+                ->like('kode', $q)
+                ->orLike('item', $q)
+            ->groupEnd();
+        }
+        $items = $builder->where('status_hps', '0')->limit($limit)->orderBy('item', 'ASC')->get()->getResult();
+
+        $results = [];
+        foreach ($items as $it) {
+            $results[] = [
+                'id'   => $it->id,
+                'text' => '[' . ($it->kode ?? '-') . '] ' . ($it->item ?? '-')
+            ];
+        }
+
+        return $this->response->setJSON(['results' => $results]);
+    }
+
+    /**
+     * AJAX: Get suppliers by item using mapping table
+     */
+    public function suppliersByItem($itemId)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => 'error', 'message' => 'Invalid request'])->setStatusCode(400);
+        }
+
+        try {
+            if (empty($itemId)) {
+                throw new \RuntimeException('Item ID tidak valid');
+            }
+
+            $suppliers = $this->supplierModel->getSuppliersByItem($itemId);
+            if (!$suppliers) {
+                return $this->response->setJSON([
+                    'status' => 'success',
+                    'data'   => [],
+                    'count'  => 0,
+                    'csrfHash'=> csrf_hash(),
+                ]);
+            }
+
+            $data = [];
+            foreach ($suppliers as $s) {
+                $data[] = [
+                    'id'            => $s->supplier_id ?? $s->id_supplier,
+                    'kode_supplier' => $s->supplier_kode ?? '',
+                    'nama_supplier' => $s->supplier_nama ?? '',
+                    'harga_beli'    => (float) ($s->harga_beli ?? 0),
+                    'prioritas'     => (int) ($s->prioritas ?? 0),
+                ];
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'data'   => $data,
+                'count'  => count($data),
+                'csrfHash'=> csrf_hash(),
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[TransBeliPO::suppliersByItem] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+                'csrfHash'=> csrf_hash(),
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * AJAX: Get PO details (to refresh table without reload)
+     */
+    public function detailsJson($poId)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request'])->setStatusCode(400);
+        }
+
+        try {
+            $items = $this->transBeliPODetModel->select('tbl_trans_beli_po_det.*, tbl_m_item.kode as item_kode, tbl_m_item.item as item_nama, tbl_m_satuan.satuanBesar as satuan_nama')
+                ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_po_det.id_item', 'left')
+                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_beli_po_det.id_satuan', 'left')
+                ->where('id_pembelian', $poId)
+                ->orderBy('tbl_trans_beli_po_det.id', 'DESC')
+                ->findAll();
+
+            return $this->response->setJSON([
+                'success' => true,
+                'data'    => $items,
+                'count'   => count($items),
+                'csrfHash'=> csrf_hash(),
+            ]);
+        } catch (\Exception $e) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'csrfHash'=> csrf_hash(),
+            ])->setStatusCode(500);
         }
     }
 
