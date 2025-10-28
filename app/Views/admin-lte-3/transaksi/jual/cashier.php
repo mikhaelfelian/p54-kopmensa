@@ -2366,15 +2366,29 @@ helper('form');
                 // Stock status logic
                 let stockStatus = '';
                 let stockClass = '';
+                let stockBadgeClass = '';
+                let stockBadgeText = '';
+                
                 if (isBlocked) {
                     stockStatus = 'Stok Habis';
                     stockClass = 'text-danger';
+                    stockBadgeClass = 'badge-danger';
+                    stockBadgeText = 'Stok Habis';
                 } else if (stock <= 5 && statusStok === '1') {
                     stockStatus = 'Stok Rendah';
                     stockClass = 'text-warning';
+                    stockBadgeClass = 'badge-warning';
+                    stockBadgeText = 'Stok Rendah';
                 } else if (isNonStockable) {
                     stockStatus = 'Non-Stockable';
                     stockClass = 'text-info';
+                    stockBadgeClass = 'badge-info';
+                    stockBadgeText = 'Non-Stockable';
+                } else {
+                    stockStatus = 'Stockable';
+                    stockClass = 'text-success';
+                    stockBadgeClass = 'badge-success';
+                    stockBadgeText = 'Stockable';
                 }
 
                 // Product name with code (like in your image)
@@ -2386,6 +2400,7 @@ helper('form');
                 if (stockClass === 'text-danger') stockTextColor = '#dc3545';
                 else if (stockClass === 'text-warning') stockTextColor = '#ffc107';
                 else if (stockClass === 'text-info') stockTextColor = '#17a2b8';
+                else if (stockClass === 'text-success') stockTextColor = '#28a745';
                 else stockTextColor = '#007bff';
 
                 html += `
@@ -2412,8 +2427,13 @@ helper('form');
                                             <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
                                                 ${description ? description : ''}
                                             </div>
-                                            <div class="product-stock" style="font-size: 11px; color: ${stockTextColor}; text-align: left; margin-top: 2px;">
-                                                <i class="fas fa-boxes"></i> Stok: ${stockDisplay} PCS${stockStatus ? ' - ' + stockStatus : ''}
+                                            <div class="d-flex align-items-center" style="margin-top: 4px;">
+                                                <div class="product-stock" style="font-size: 11px; color: ${stockTextColor}; text-align: left;">
+                                                    <i class="fas fa-boxes"></i> Stok: ${stockDisplay} PCS
+                                                </div>
+                                                <span class="badge ${stockBadgeClass} ml-2" style="font-size: 10px; padding: 2px 6px;">
+                                                    ${stockBadgeText}
+                                                </span>
                                             </div>
                                         </div>
                                         <div class="product-price" style="font-size: 14px; font-weight: 500; color: #000; margin-left: 15px; text-align: right;">

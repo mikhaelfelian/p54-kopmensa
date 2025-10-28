@@ -640,7 +640,7 @@ class TransJual extends BaseController
         $outlets    = $this->gudangModel->getOutlets(); // Uses: status=1, status_otl=1, status_hps=0
         
         $platforms  = $this->platformModel->where('status', '1')->findAll();
-        $items      = $this->itemModel->getItemsWithRelationsActive(100); // Get items with relations
+        $items      = $this->itemModel->getPosItems(); // Get items with stock status info
         
         // Get active categories
         $categories = $this->kategoriModel->getActiveCategories();
@@ -659,7 +659,8 @@ class TransJual extends BaseController
             'platforms'     => $platforms,
             'items'         => $items,
             'categories'    => $categories,
-            'lastTransactions' => $lastTransactions
+            'lastTransactions' => $lastTransactions,
+            'itemModel'     => $this->itemModel // Pass model instance for helper methods
         ];
 
         return $this->view($this->theme->getThemePath() . '/transaksi/jual/cashier', $data);
