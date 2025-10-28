@@ -1113,12 +1113,34 @@ class Supplier extends BaseController
         }
 
         try {
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            // 1) Insert mappings in tbl_m_item_supplier
             $results = $this->itemSupplierModel->bulkAssignItems(
-                $supplierId, 
-                $itemIds, 
-                $defaultHargaBeli, 
+                $supplierId,
+                $itemIds,
+                $defaultHargaBeli,
                 $defaultPrioritas
             );
+
+            // 2) Update tbl_m_item with supplier, harga_beli, prioritas
+            if (!empty($itemIds)) {
+                $db->table('tbl_m_item')
+                    ->whereIn('id', $itemIds)
+                    ->set([
+                        'id_supplier' => $supplierId,
+                        'harga_beli' => $defaultHargaBeli,
+                        'prioritas' => $defaultPrioritas,
+                        'updated_at' => date('Y-m-d H:i:s')
+                    ])
+                    ->update();
+            }
+
+            $db->transComplete();
+            if ($db->transStatus() === false) {
+                throw new \RuntimeException('Database transaction failed');
+            }
 
             $message = "Successfully assigned {$results['success']} items";
             if ($results['skipped'] > 0) {
