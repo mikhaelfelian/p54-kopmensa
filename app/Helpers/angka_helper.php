@@ -28,9 +28,10 @@ if (!function_exists('format_angka_db')) {
      */
     function format_angka_db($str)
     {
-        $angka  = (float) $str;
-        $string = str_replace(',','.', str_replace('.','', $str));
-        return $string;
+        // Remove thousand separators and normalize decimal point
+        $cleaned = str_replace('.', '', $str); // Remove thousand separators (dots)
+        $cleaned = str_replace(',', '.', $cleaned); // Normalize decimal separator to dot
+        return (float) $cleaned;
     }
 }
 
