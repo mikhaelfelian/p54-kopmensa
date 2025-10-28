@@ -1111,33 +1111,44 @@ class TransJual extends BaseController
 
                 $this->transJualDetModel->insert($detailData);
 
-                // Update stock (decrease stock) - only for completed transactions, not drafts
+                // Update stock (decrease stock) - only for completed transactions and stockable items
                 if (!$isDraft && $warehouseId) {
-                    $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
+                    $stockable = true;
+                    if (isset($itemDetails->is_stockable)) {
+                        $stockable = ((int) $itemDetails->is_stockable) === 1;
+                    }
+                    if ($stockable) {
+                        $this->updateStock($item['id'], $warehouseId, $item['quantity'], 'decrease');
+                    }
                 }
 
-                // Insert item history record (Stok Keluar Penjualan - status 4)
-                $historyData = [
-                    'id_item'        => $item['id'],
-                    'id_satuan'      => $itemDetails->id_satuan,
-                    'id_gudang'      => $warehouseId,
-                    'id_user'        => $this->ionAuth->user()->row()->id,
-                    'id_pelanggan'   => $customerId,
-                    'id_penjualan'   => $transactionId,
-                    'tgl_masuk'      => date('Y-m-d H:i:s'),
-                    'no_nota'        => $noNota,
-                    'kode'           => $itemDetails->kode,
-                    'item'           => $item['name'],
-                    'keterangan'     => 'Penjualan - ' . $noNota,
-                    'nominal'        => $item['price'],
-                    'jml'            => $item['quantity'],
-                    'jml_satuan'     => 1,
-                    'satuan'         => $itemDetails->satuan ?? 'PCS',
-                    'status'         => '4', // Stok Keluar Penjualan
-                    'sp'             => null
-                ];
-
-                $this->itemHistModel->insert($historyData);
+                // Insert item history record (Stok Keluar Penjualan - status 4) only if stockable
+                $stockableForHistory = true;
+                if (isset($itemDetails->is_stockable)) {
+                    $stockableForHistory = ((int) $itemDetails->is_stockable) === 1;
+                }
+                if ($stockableForHistory) {
+                    $historyData = [
+                        'id_item'        => $item['id'],
+                        'id_satuan'      => $itemDetails->id_satuan,
+                        'id_gudang'      => $warehouseId,
+                        'id_user'        => $this->ionAuth->user()->row()->id,
+                        'id_pelanggan'   => $customerId,
+                        'id_penjualan'   => $transactionId,
+                        'tgl_masuk'      => date('Y-m-d H:i:s'),
+                        'no_nota'        => $noNota,
+                        'kode'           => $itemDetails->kode,
+                        'item'           => $item['name'],
+                        'keterangan'     => 'Penjualan - ' . $noNota,
+                        'nominal'        => $item['price'],
+                        'jml'            => $item['quantity'],
+                        'jml_satuan'     => 1,
+                        'satuan'         => $itemDetails->satuan ?? 'PCS',
+                        'status'         => '4', // Stok Keluar Penjualan
+                        'sp'             => null
+                    ];
+                    $this->itemHistModel->insert($historyData);
+                }
             }
 
             // Insert multiple platform payments - only for completed transactions, not drafts
@@ -1767,7 +1778,8 @@ class TransJual extends BaseController
                 'ppn' => 11, // 11% PPN
                 'total' => $transaction->jml_gtotal,
                 'items' => [],
-                'payment_methods' => []
+                'payment_methods' => [],
+                'payment_note' => $transaction->catatan_pembayaran ?? $transaction->payment_note ?? ''
             ];
 
             // Format items for printing - using correct column names

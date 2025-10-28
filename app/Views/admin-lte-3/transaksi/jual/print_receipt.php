@@ -214,6 +214,12 @@
         <div class="divider"></div>
         
         <div class="footer">
+            <?php if (!empty($transactionData->payment_note)): ?>
+                <div style="margin-bottom: <?= $printType === 'printer' ? '5px' : '8px' ?>; text-align:left;">
+                    <strong>Catatan Pembayaran:</strong>
+                    <div><?= nl2br(esc($transactionData->payment_note)) ?></div>
+                </div>
+            <?php endif; ?>
             <div>Terima kasih atas kunjungan Anda</div>
             <div>Barang yang sudah dibeli tidak dapat dikembalikan</div>
             <div>Powered by Kopmensa System</div>
