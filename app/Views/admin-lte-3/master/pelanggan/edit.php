@@ -462,14 +462,40 @@ $(document).ready(function() {
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        alert(response.message);
-                        location.reload();
+                        // Show success toastr
+                        if (response.auto_created) {
+                            toastr.success(
+                                response.message,
+                                'Akun Berhasil Dibuat',
+                                {
+                                    timeOut: 10000,
+                                    closeButton: true,
+                                    positionClass: 'toast-top-right',
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            toastr.success(
+                                response.message,
+                                'Status Akun',
+                                {
+                                    timeOut: 3000,
+                                    closeButton: true,
+                                    positionClass: 'toast-top-right'
+                                }
+                            );
+                        }
+                        
+                        // Reload page after short delay to show toastr
+                        setTimeout(function() {
+                            location.reload();
+                        }, response.auto_created ? 12000 : 3000);
                     } else {
-                        alert('Error: ' + response.message);
+                        toastr.error(response.message, 'Error');
                     }
                 },
-                error: function() {
-                    alert('Terjadi kesalahan saat mengubah status akun');
+                error: function(xhr, status, error) {
+                    toastr.error('Terjadi kesalahan saat mengubah status akun', 'Error');
                 }
             });
         }

@@ -1098,6 +1098,7 @@ class Pelanggan extends BaseController
 
     /**
      * Toggle block/unblock user
+     * If activating and no user exists, automatically create one
      */
     public function toggle_block()
     {
@@ -1112,7 +1113,7 @@ class Pelanggan extends BaseController
         $id_user = $this->request->getPost('id_user');
         $status = $this->request->getPost('status');
 
-        if (!$id || !$id_user || !isset($status)) {
+        if (!$id || !isset($status)) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Data tidak lengkap'
@@ -1120,30 +1121,123 @@ class Pelanggan extends BaseController
         }
 
         try {
-            // Update user active status directly in IonAuth users table
-            $db = \Config\Database::connect();
-            $builder = $db->table('tbl_ion_users');
-            $updateResult = $builder->where('id', $id_user)
-                                    ->set('active', $status)
-                                    ->update();
-
-            if ($updateResult !== false) {
-                $action = $status == '1' ? 'diaktifkan' : 'diblokir';
-                return $this->response->setJSON([
-                    'success' => true,
-                    'message' => "Akun berhasil {$action}"
-                ]);
-            } else {
+            $pelanggan = $this->pelangganModel->find($id);
+            if (!$pelanggan) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Gagal mengubah status akun'
+                    'message' => 'Data anggota tidak ditemukan'
                 ]);
             }
+
+            $db = \Config\Database::connect();
+            $db->transStart();
+
+            // If activating and no user exists, create one
+            if ($status == '1' && (empty($id_user) || $id_user == 0 || $id_user == '0')) {
+                // Generate username from name (lowercase, alphanumeric only) + random number
+                $baseUsername = strtolower(preg_replace('/[^a-z0-9]/', '', $pelanggan->nama ?? 'user'));
+                if (empty($baseUsername)) {
+                    $baseUsername = 'user';
+                }
+                $username = $baseUsername . rand(100, 999);
+                
+                // Ensure username is unique
+                $existingUser = $db->table('tbl_ion_users')
+                                    ->where('username', $username)
+                                    ->get()
+                                    ->getRow();
+                
+                $counter = 1;
+                while ($existingUser) {
+                    $username = $baseUsername . rand(100, 999) . $counter;
+                    $existingUser = $db->table('tbl_ion_users')
+                                        ->where('username', $username)
+                                        ->get()
+                                        ->getRow();
+                    $counter++;
+                }
+
+                // Generate email from username
+                $email = $username . '@koperasi.local';
+
+                // Create password hash (default password: 123456)
+                $password = password_hash('123456', PASSWORD_BCRYPT);
+
+                // Insert into IonAuth users table
+                $userData = [
+                    'username' => $username,
+                    'email' => $email,
+                    'password' => $password,
+                    'active' => '1',
+                    'created_on' => date('Y-m-d H:i:s'),
+                    'updated_on' => date('Y-m-d H:i:s')
+                ];
+
+                $db->table('tbl_ion_users')->insert($userData);
+                $newUserId = $db->insertID();
+
+                // Link user to pelanggan
+                $this->pelangganModel->update($id, ['id_user' => $newUserId]);
+
+                // Also update status_blokir to '0' (not blocked)
+                $this->pelangganModel->update($id, ['status_blokir' => '0']);
+
+                $db->transComplete();
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception('Failed to create user account');
+                }
+
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => "Akun anggota berhasil diaktifkan dan user login telah dibuat. Username: {$username}, Password: 123456",
+                    'auto_created' => true,
+                    'username' => $username
+                ]);
+
+            } else if (!empty($id_user) && $id_user != 0 && $id_user != '0') {
+                // Update existing user active status
+                $builder = $db->table('tbl_ion_users');
+                $updateResult = $builder->where('id', $id_user)
+                                        ->set('active', $status)
+                                        ->update();
+
+                if ($updateResult !== false) {
+                    // Update status_blokir in pelanggan table
+                    $this->pelangganModel->update($id, [
+                        'status_blokir' => ($status == '1' ? '0' : '1')
+                    ]);
+
+                    $action = $status == '1' ? 'diaktifkan' : 'diblokir';
+                    return $this->response->setJSON([
+                        'success' => true,
+                        'message' => "Akun berhasil {$action}",
+                        'auto_created' => false
+                    ]);
+                } else {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal mengubah status akun'
+                    ]);
+                }
+            } else {
+                // Deactivating but no user exists - just update pelanggan status
+                $this->pelangganModel->update($id, ['status_blokir' => '1']);
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Akun berhasil diblokir',
+                    'auto_created' => false
+                ]);
+            }
+
         } catch (\Exception $e) {
             log_message('error', '[Pelanggan::toggle_block] ' . $e->getMessage());
+            if (isset($db) && $db->transStatus() !== false) {
+                $db->transRollback();
+            }
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengubah status akun'
+                'message' => 'Terjadi kesalahan saat mengubah status akun: ' . $e->getMessage()
             ]);
         }
     }
