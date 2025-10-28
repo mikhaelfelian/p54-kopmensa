@@ -1170,7 +1170,6 @@ class Pelanggan extends BaseController
                     'password' => $password,
                     'active' => '1',
                     'created_on' => date('Y-m-d H:i:s'),
-                    'modified_at' => date('Y-m-d H:i:s')
                 ];
 
                 $builderUsers = $db->table('tbl_ion_users');
