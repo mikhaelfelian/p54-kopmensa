@@ -112,24 +112,24 @@ class TransJualModel extends Model
      */
     public function generateKode()
     {
-        // Get today's date in YYMMDD
-        $datePart = date('ymdHi');
-        $prefix = '6' . $datePart;
+        // Get today's date in yymmdd format (6 digits)
+        $datePart = date('ymd');
+        $prefix = $datePart;
 
-        // Find the last transaction for today with this prefix
+        // Find the last transaction for today with this 6 digit prefix
         $last = $this->where('no_nota LIKE', $prefix . '%')
                      ->orderBy('no_nota', 'DESC')
                      ->first();
 
-        if ($last && preg_match('/^6\d{6}(\d{4})$/', $last->no_nota, $matches)) {
-            $lastNumber = (int)$matches[1];
+        if ($last && preg_match('/^(\d{6})(\d{2})$/', $last->no_nota, $matches)) {
+            $lastNumber = (int)$matches[2];
             $newNumber = $lastNumber + 1;
         } else {
             $newNumber = 1;
         }
 
-        // Pad to 4 digits
-        $kode = $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        // Pad to 2 digits (so no_nota is always 8 digits: 6 date + 2 running)
+        $kode = $prefix . str_pad($newNumber, 2, '0', STR_PAD_LEFT);
         return $kode;
     }
 
