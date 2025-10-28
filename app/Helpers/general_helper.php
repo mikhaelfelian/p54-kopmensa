@@ -82,11 +82,15 @@ if (!function_exists('jns_klm')) {
     /**
      * Get gender description based on the provided code
      * 
-     * @param string $code Gender code
+     * @param string|null $code Gender code
      * @return string Gender description
      */
-    function jns_klm(string $code): string
+    function jns_klm(?string $code): string
     {
+        if (empty($code)) {
+            return '-';
+        }
+
         $genders = [
             'L' => 'Laki-laki',
             'P' => 'Perempuan',
