@@ -117,9 +117,10 @@ class TransBeliPO extends BaseController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to(base_url('transaksi/po/create'))
                             ->withInput()
-                            ->with('errors', $this->validation->getErrors());
+                            ->with('errors', $this->validation->getErrors())
+                            ->with('error', 'Validasi gagal, periksa kembali input Anda');
         }
 
         try {
@@ -158,7 +159,7 @@ class TransBeliPO extends BaseController
 
         } catch (\Exception $e) {
             log_message('error', '[TransBeliPO::store] ' . $e->getMessage());
-            return redirect()->back()
+            return redirect()->to(base_url('transaksi/po/create'))
                             ->withInput()
                             ->with('error', 'Gagal membuat Purchase Order: ' . $e->getMessage());
         }
@@ -229,9 +230,10 @@ class TransBeliPO extends BaseController
         ];
 
         if (!$this->validate($rules)) {
-            return redirect()->back()
+            return redirect()->to(base_url('transaksi/po/edit/' . $id))
                             ->withInput()
-                            ->with('errors', $this->validation->getErrors());
+                            ->with('errors', $this->validation->getErrors())
+                            ->with('error', 'Validasi gagal, periksa kembali input Anda');
         }
 
         try {

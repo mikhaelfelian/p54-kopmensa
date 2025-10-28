@@ -216,9 +216,10 @@ class TransBeli extends BaseController
                             ->with('success', 'Transaksi berhasil disimpan');
 
         } catch (\Exception $e) {
-            return redirect()->back()
+            log_message('error', '[TransBeli::store] ' . $e->getMessage());
+            return redirect()->to(base_url('transaksi/beli/create'))
                             ->withInput()
-                            ->with('error', $e->getMessage());
+                            ->with('error', 'Gagal menyimpan transaksi: ' . $e->getMessage());
         }
     }
 
@@ -232,7 +233,7 @@ class TransBeli extends BaseController
         // Check if transaction exists
         $transaksi = $this->transBeliModel->find($id);
         if (!$transaksi) {
-            return redirect()->back()
+            return redirect()->to(base_url('transaksi/beli'))
                             ->with('error', 'Transaksi tidak ditemukan');
         }
 
