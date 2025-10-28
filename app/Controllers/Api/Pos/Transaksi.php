@@ -246,6 +246,20 @@ class Transaksi extends BaseController
             ) {
                 return $this->failValidationErrors('Data transaksi tidak lengkap untuk transaksi final');
             }
+
+            if (empty($input['payment_methods']) || !is_array($input['payment_methods'])) {
+                return $this->failValidationErrors('Metode pembayaran harus diisi');
+            }
+
+            // Enforce blocked-member rule for Piutang Anggota
+            $paymentGuard = new \App\Libraries\PaymentGuard();
+            $guardResult = $paymentGuard->allowPayment(isset($input['id_pelanggan']) ? (int) $input['id_pelanggan'] : null, $input['payment_methods']);
+            if (!$guardResult['allowed']) {
+                return $this->respond([
+                    'success' => false,
+                    'error' => $guardResult['message']
+                ], 400);
+            }
         }
 
         try {

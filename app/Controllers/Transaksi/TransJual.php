@@ -33,6 +33,7 @@ class TransJual extends BaseController
     protected $transJualModel;
     protected $transJualDetModel;
     protected $transJualPlatModel;
+    protected $paymentGuard;
     protected $pelangganModel;
     protected $itemModel;
     protected $itemStokModel;
@@ -55,6 +56,8 @@ class TransJual extends BaseController
         $this->transJualModel      = new TransJualModel();
         $this->transJualDetModel   = new TransJualDetModel();
         $this->transJualPlatModel  = new TransJualPlatModel();
+        // Payment guard to enforce blocked-member rule for Piutang
+        $this->paymentGuard        = new \App\Libraries\PaymentGuard();
         $this->pelangganModel      = new PelangganModel();
         $this->itemModel           = new ItemModel();
         $this->itemStokModel       = new ItemStokModel();
@@ -916,10 +919,16 @@ class TransJual extends BaseController
             return $this->response->setJSON(['error' => 'Gudang harus dipilih']);
         }
 
-        // Skip payment validation for drafts
+        // Skip payment validation for drafts; otherwise, validate
         if (!$isDraft) {
             if (empty($paymentMethods) || !is_array($paymentMethods)) {
                 return $this->response->setJSON(['error' => 'Metode pembayaran harus diisi']);
+            }
+
+            // Enforce blocked-member rule for Piutang Anggota
+            $guardResult = $this->paymentGuard->allowPayment($customerId ? (int) $customerId : null, $paymentMethods);
+            if (!$guardResult['allowed']) {
+                return $this->response->setJSON(['error' => $guardResult['message']]);
             }
 
             if ($totalAmountReceived < $grandTotal) {
