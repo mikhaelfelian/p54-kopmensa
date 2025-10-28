@@ -618,7 +618,7 @@ class Karyawan extends BaseController
         if (empty($itemIds) || !is_array($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
+                'message' => 'Tidak ada data yang dipilih untuk dihapus',
                 'csrfHash' => csrf_hash()
             ]);
         }
@@ -626,15 +626,17 @@ class Karyawan extends BaseController
         try {
             $this->db->transStart();
 
-            // Use archiveMany to set status_hps='1' and deleted_at
-            $archived = $this->karyawanModel->archiveMany($itemIds);
+            // Use CI4 native soft delete
+            foreach ($itemIds as $id) {
+                $this->karyawanModel->delete($id);
+            }
 
             $this->db->transComplete();
 
-            if (!$archived || $this->db->transStatus() === false) {
+            if ($this->db->transStatus() === false) {
                 return $this->response->setJSON([
                     'success' => false,
-                    'message' => 'Gagal mengarsipkan karyawan',
+                    'message' => 'Gagal menghapus karyawan',
                     'csrfHash' => csrf_hash()
                 ]);
             }
@@ -642,8 +644,8 @@ class Karyawan extends BaseController
             $count = count($itemIds);
             return $this->response->setJSON([
                 'success' => true,
-                'message' => "Berhasil mengarsipkan {$count} karyawan",
-                'archived_count' => $count,
+                'message' => "Berhasil menghapus {$count} karyawan",
+                'deleted_count' => $count,
                 'csrfHash' => csrf_hash()
             ]);
 
@@ -651,7 +653,7 @@ class Karyawan extends BaseController
             log_message('error', '[Karyawan::bulk_delete] ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mengarsipkan data: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage(),
                 'csrfHash' => csrf_hash()
             ]);
         }
@@ -683,12 +685,14 @@ class Karyawan extends BaseController
         try {
             $this->db->transStart();
 
-            // Use restoreMany to set status_hps='0' and deleted_at=null
-            $restored = $this->karyawanModel->restoreMany($itemIds);
+            // Use CI4 native restore
+            foreach ($itemIds as $id) {
+                $this->karyawanModel->update($id, ['deleted_at' => null]);
+            }
 
             $this->db->transComplete();
 
-            if (!$restored || $this->db->transStatus() === false) {
+            if ($this->db->transStatus() === false) {
                 return $this->response->setJSON([
                     'success' => false,
                     'message' => 'Gagal memulihkan karyawan',
@@ -722,41 +726,18 @@ class Karyawan extends BaseController
         $currentPage = $this->request->getVar('page_karyawan') ?? 1;
         $perPage = $this->pengaturan->pagination_limit ?? 10;
 
-        $query = $this->karyawanModel;
-
-        // Use withDeleted() to include soft-deleted items
-        $query->withDeleted();
-
-        // Show items where status_hps = '1' OR deleted_at IS NOT NULL
-        $query->groupStart()
-            ->where('status_hps', '1')
-            ->orWhere('deleted_at IS NOT NULL', null, false)
-            ->groupEnd();
-
         $search = $this->request->getVar('search');
-        if ($search) {
-            $query->groupStart()
-                ->like('nama', $search)
-                ->orLike('kode', $search)
-                ->orLike('nik', $search)
-                ->groupEnd();
-        }
-
-        // Order by deleted_at descending
-        $query->orderBy('deleted_at', 'DESC');
-
-        $total = $query->countAllResults(false);
-        $trashCount = $this->karyawanModel->countArchived();
-
+        
+        // Get only deleted items using CI4 native onlyDeleted()
         $data = [
             'title'       => 'Trash Karyawan',
-            'karyawans'   => $query->paginate($perPage, 'karyawan'),
+            'karyawans'   => $this->karyawanModel->onlyDeleted()->findAll(),
             'pager'       => $this->karyawanModel->pager,
             'currentPage' => $currentPage,
             'perPage'     => $perPage,
-            'total'       => $total,
             'search'      => $search,
-            'trashCount'  => $trashCount,
+            'trashCount'  => $this->karyawanModel->onlyDeleted()->countAllResults(),
+
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/karyawan') . '">Karyawan</a></li>
@@ -778,10 +759,8 @@ class Karyawan extends BaseController
         }
 
         try {
-            // Use restoreMany with single ID
-            if (!$this->karyawanModel->restoreMany([$id])) {
-                throw new \RuntimeException('Gagal mengembalikan data karyawan');
-            }
+            // Use CI4 native restore
+            $this->karyawanModel->update($id, ['deleted_at' => null]);
 
             return redirect()->to(base_url('master/karyawan/trash'))
                            ->with('success', 'Data karyawan berhasil dikembalikan');
@@ -825,9 +804,8 @@ class Karyawan extends BaseController
     {
         $keyword = $this->request->getVar('keyword');
         
-        // Build query - same filters as index
+        // Build query - same filters as index (automatically excludes deleted)
         $query = $this->karyawanModel;
-        $query->where('status_hps', '0');
         
         if ($keyword) {
             $query->groupStart()

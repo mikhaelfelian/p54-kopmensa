@@ -217,11 +217,26 @@ class Supplier extends BaseController
 
         // Validation rules
         $rules = [
-            'kode' => "required|max_length[20]|is_unique[tbl_m_supplier.kode,id,{$id}]",
-            'nama' => 'required|max_length[255]',
-            'alamat' => 'required',
-            'no_hp' => 'required|max_length[20]',
-            'tipe' => 'required|in_list[1,2]'
+            'kode' => [
+                'label' => 'Kode',
+                'rules' => "required|max_length[20]|is_unique[tbl_m_supplier.kode,id,{$id}]"
+            ],
+            'nama' => [
+                'label' => 'Nama',
+                'rules' => 'required|max_length[255]'
+            ],
+            'alamat' => [
+                'label' => 'Alamat',
+                'rules' => 'required'
+            ],
+            'no_hp' => [
+                'label' => 'No. HP',
+                'rules' => 'required|max_length[20]'
+            ],
+            'tipe' => [
+                'label' => 'Tipe',
+                'rules' => 'required|in_list[1,2]'
+            ]
         ];
 
         if (!$this->validate($rules)) {
@@ -236,7 +251,10 @@ class Supplier extends BaseController
                 'nama'       => $this->request->getPost('nama'),
                 'alamat'     => $this->request->getPost('alamat'),
                 'no_hp'      => $this->request->getPost('no_hp'),
-                'tipe'       => $this->request->getPost('tipe')
+                'no_tlp'     => $this->request->getPost('no_tlp'),
+                'npwp'       => $this->request->getPost('npwp'),
+                'tipe'       => $this->request->getPost('tipe'),
+                'status'     => $this->request->getPost('status') ?? '1'
             ];
 
             if (!$this->supplierModel->update($id, $data)) {
@@ -292,7 +310,7 @@ class Supplier extends BaseController
     }
 
     /**
-     * Delete supplier data
+     * Delete supplier data (Archive - soft delete)
      */
     public function delete($id = null)
     {
@@ -307,18 +325,70 @@ class Supplier extends BaseController
                 throw new \RuntimeException('Data supplier tidak ditemukan');
             }
 
-            // Soft delete by updating status_hps
-            if (!$this->supplierModel->update($id, ['status_hps' => '1'])) {
-                throw new \RuntimeException('Gagal menghapus data supplier');
+            // Archive using archive method (soft delete)
+            if (!$this->supplierModel->archive($id)) {
+                throw new \RuntimeException('Gagal mengarsipkan data supplier');
             }
 
             return redirect()->to(base_url('master/supplier'))
-                           ->with('success', 'Data supplier berhasil dihapus');
+                           ->with('success', 'Data supplier berhasil diarsipkan');
 
         } catch (\Exception $e) {
             log_message('error', '[Supplier::delete] ' . $e->getMessage());
             return redirect()->back()
-                           ->with('error', 'Gagal menghapus data supplier');
+                           ->with('error', 'Gagal mengarsipkan data supplier');
+        }
+    }
+
+    /**
+     * Restore archived supplier
+     */
+    public function restore($id)
+    {
+        try {
+            $supplier = $this->supplierModel->withDeleted()->find($id);
+            if (!$supplier) {
+                return redirect()->to('master/supplier/trash')
+                               ->with('error', 'Data supplier tidak ditemukan');
+            }
+
+            if (!$this->supplierModel->restore($id)) {
+                throw new \RuntimeException('Gagal memulihkan data supplier');
+            }
+
+            return redirect()->to('master/supplier/trash')
+                           ->with('success', 'Data supplier berhasil dipulihkan');
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::restore] ' . $e->getMessage());
+            return redirect()->back()
+                           ->with('error', 'Gagal memulihkan data supplier');
+        }
+    }
+
+    /**
+     * Permanently delete supplier
+     */
+    public function deletePermanent($id)
+    {
+        try {
+            $supplier = $this->supplierModel->withDeleted()->find($id);
+            if (!$supplier) {
+                return redirect()->to('master/supplier/trash')
+                               ->with('error', 'Data supplier tidak ditemukan');
+            }
+
+            if (!$this->supplierModel->purge($id)) {
+                throw new \RuntimeException('Gagal menghapus permanen data supplier');
+            }
+
+            return redirect()->to('master/supplier/trash')
+                           ->with('success', 'Data supplier berhasil dihapus permanen');
+
+        } catch (\Exception $e) {
+            log_message('error', '[Supplier::deletePermanent] ' . $e->getMessage());
+            return redirect()->back()
+                           ->with('error', 'Gagal menghapus permanen data supplier');
         }
     }
 
@@ -327,47 +397,62 @@ class Supplier extends BaseController
      */
     public function trash()
     {
-        $filters = [
-            'status' => $this->request->getGet('status'),
-            'tipe'   => $this->request->getGet('tipe'),
-            'q'      => $this->request->getGet('q')
-        ];
+        $currentPage = $this->request->getVar('page_supplier') ?? 1;
+        $perPage = $this->pengaturan->pagination_limit ?? 10;
 
-        $query = $this->supplierModel->onlyDeleted();
+        // Use withDeleted() to include soft-deleted items
+        $query = $this->supplierModel->withDeleted();
 
-        // Apply filters
-        if (!empty($filters['q'])) {
+        // Show items where status_hps = '1' OR deleted_at IS NOT NULL
+        $query->groupStart()
+            ->where('status_hps', '1')
+            ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd();
+
+        // Apply search filter
+        $search = $this->request->getVar('search');
+        if ($search) {
             $query->groupStart()
-                ->like('nama', $filters['q'])
-                ->orLike('kode', $filters['q'])
-                ->orLike('npwp', $filters['q'])
+                ->like('nama', $search)
+                ->orLike('kode', $search)
+                ->orLike('npwp', $search)
                 ->groupEnd();
         }
 
-        if (!empty($filters['tipe'])) {
-            $query->where('tipe', $filters['tipe']);
+        // Apply tipe filter
+        $selectedTipe = $this->request->getVar('tipe');
+        if ($selectedTipe !== null && $selectedTipe !== '') {
+            $query->where('tipe', $selectedTipe);
         }
 
-        if (isset($filters['status']) && $filters['status'] !== '') {
-            $query->where('status', $filters['status']);
-        }
+        // Order by deleted_at descending
+        $query->orderBy('deleted_at', 'DESC');
+
+        // Get trash count
+        $trashCount = $this->supplierModel->countArchived();
 
         $data = [
             'title'         => 'Data Sampah Supplier',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'suppliers'     => $query->paginate(10, 'suppliers'),
+            'suppliers'     => $query->paginate($perPage, 'suppliers'),
             'pager'         => $this->supplierModel->pager,
-            'selectedTipe'  => $filters['tipe'],
-            'selectedStatus'=> $filters['status'],
-            'search'        => $filters['q'],
-            'trashCount'    => $this->supplierModel->onlyDeleted()->countAllResults(),
+            'currentPage'   => $currentPage,
+            'perPage'       => $perPage,
+            'selectedTipe'  => $selectedTipe,
+            'search'        => $search,
+            'trashCount'    => $trashCount,
             'getTipeLabel'  => function($tipe) {
                 return $this->supplierModel->getTipeLabel($tipe);
             },
             'getStatusLabel' => function($status) {
                 return $this->supplierModel->getStatusLabel($status);
-            }
+            },
+            'breadcrumbs'   => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/supplier') . '">Supplier</a></li>
+                <li class="breadcrumb-item active">Sampah</li>
+            '
         ];
 
         return $this->view($this->theme->getThemePath() . '/master/supplier/trash', $data);

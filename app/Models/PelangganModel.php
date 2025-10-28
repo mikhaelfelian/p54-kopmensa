@@ -21,7 +21,7 @@ class PelangganModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'id_user', 'kode', 'nama', 'no_telp', 'alamat', 'kota', 
-        'provinsi', 'tipe', 'status', 'status_hps', 'status_blokir', 'limit'
+        'provinsi', 'tipe', 'status', 'is_blocked', 'limit_belanja', 'status_hps', 'status_blokir', 'limit'
     ];
 
     // Dates
@@ -102,6 +102,69 @@ class PelangganModel extends Model
     {
         $this->orderBy('id', 'DESC');
         return parent::paginate($perPage, $group, $page, $segment);
+    }
+
+    /**
+     * Archive multiple pelanggan (soft delete)
+     *
+     * @param array $ids Pelanggan IDs to archive
+     * @return bool
+     */
+    public function archiveMany(array $ids): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        try {
+            $now = date('Y-m-d H:i:s');
+            return $this->builder()
+                ->whereIn('id', $ids)
+                ->set(['status_hps' => '1', 'deleted_at' => $now])
+                ->update();
+        } catch (\Exception $e) {
+            log_message('error', '[PelangganModel::archiveMany] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Restore multiple archived pelanggan
+     *
+     * @param array $ids Pelanggan IDs to restore
+     * @return bool
+     */
+    public function restoreMany(array $ids): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        try {
+            return $this->builder()
+                ->whereIn('id', $ids)
+                ->set(['status_hps' => '0', 'deleted_at' => null])
+                ->update();
+        } catch (\Exception $e) {
+            log_message('error', '[PelangganModel::restoreMany] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Count archived pelanggan
+     *
+     * @return int
+     */
+    public function countArchived(): int
+    {
+        $builder = $this->db->table($this->table);
+        return (int) $builder
+            ->groupStart()
+                ->where('status_hps', '1')
+                ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd()
+            ->countAllResults();
     }
 
     /**

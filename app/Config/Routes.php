@@ -657,6 +657,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->post('beli/cart_update/(:num)', 'TransBeli::cart_update/$1');
     $routes->post('beli/cart_delete/(:num)', 'TransBeli::cart_delete/$1');
     $routes->get('beli/get-items/(:num)', 'TransBeli::getItems/$1');
+    $routes->get('beli/get-suppliers-by-item/(:num)', 'TransBeli::getSuppliersByItem/$1');
     $routes->get('beli/proses/(:num)', 'TransBeli::proses/$1');
 
     // Sales Transaction Routes

@@ -526,4 +526,99 @@ public function getItemWithRelations($id)
         return $result;
     }
 
+    /**
+     * Archive multiple items by setting status_hps to '1' and deleted_at
+     *
+     * @param array $ids Item IDs to archive
+     * @return bool
+     */
+    public function archiveMany(array $ids): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        try {
+            $now = date('Y-m-d H:i:s');
+            return $this->builder()
+                ->whereIn('id', $ids)
+                ->set(['status_hps' => '1', 'deleted_at' => $now])
+                ->update();
+        } catch (\Exception $e) {
+            log_message('error', '[ItemModel::archiveMany] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Restore multiple archived items by setting status_hps to '0' and deleted_at to null
+     *
+     * @param array $ids Item IDs to restore
+     * @return bool
+     */
+    public function restoreMany(array $ids): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        try {
+            return $this->builder()
+                ->whereIn('id', $ids)
+                ->set(['status_hps' => '0', 'deleted_at' => null])
+                ->update();
+        } catch (\Exception $e) {
+            log_message('error', '[ItemModel::restoreMany] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Permanently delete multiple items (admin/maintenance only)
+     * WARNING: This permanently removes records from database
+     *
+     * @param array $ids Item IDs to purge
+     * @return bool
+     */
+    public function purgeMany(array $ids): bool
+    {
+        if (empty($ids)) {
+            return false;
+        }
+
+        try {
+            // Only purge if status_hps is '1' (archived)
+            return $this->builder()
+                ->whereIn('id', $ids)
+                ->where('status_hps', '1')
+                ->delete();
+        } catch (\Exception $e) {
+            log_message('error', '[ItemModel::purgeMany] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get all suppliers for this item
+     * Uses the item-supplier mapping table
+     * 
+     * @param int $itemId
+     * @return array
+     */
+    public function getSuppliers($itemId = null)
+    {
+        if ($itemId === null) {
+            return [];
+        }
+
+        return $this->db->table('tbl_m_item_supplier')
+                    ->select('tbl_m_item_supplier.*, tbl_m_supplier.kode as supplier_kode, tbl_m_supplier.nama as supplier_nama, tbl_m_supplier.no_tlp, tbl_m_supplier.alamat, tbl_m_supplier.status')
+                    ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item_supplier.id_supplier')
+                    ->where('tbl_m_item_supplier.id_item', $itemId)
+                    ->where('tbl_m_supplier.status_hps', '0')
+                    ->where('tbl_m_item_supplier.deleted_at IS NULL', null, false)
+                    ->orderBy('tbl_m_item_supplier.prioritas', 'ASC')
+                    ->get()
+                    ->getResult();
+    }
 } 

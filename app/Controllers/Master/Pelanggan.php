@@ -21,6 +21,7 @@ class Pelanggan extends BaseController
     protected $pengaturan;
     protected $transJualModel;
     protected $ionAuth;
+    protected $db;
 
     public function __construct()
     {
@@ -658,6 +659,15 @@ class Pelanggan extends BaseController
         // Start with the model query
         $query = $this->pelangganModel;
 
+        // Use withDeleted() to include soft-deleted items
+        $query->withDeleted();
+
+        // Show items where status_hps = '1' OR deleted_at IS NOT NULL
+        $query->groupStart()
+            ->where('status_hps', '1')
+            ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd();
+
         // Filter by name/code
         $search = $this->request->getVar('search');
         if ($search) {
@@ -667,22 +677,26 @@ class Pelanggan extends BaseController
                 ->groupEnd();
         }
 
-        // Filter by status_hps = '1' (deleted)
-        $query->where('status_hps', '1');
+        // Order by deleted_at descending
+        $query->orderBy('deleted_at', 'DESC');
 
         // Get total records for pagination
         $total = $query->countAllResults(false);
+
+        // Get trash count
+        $trashCount = $this->pelangganModel->countArchived();
 
         $data = [
             'title'          => 'Trash Pelanggan',
             'Pengaturan'     => $this->pengaturan,
             'user'           => $this->ionAuth->user()->row(),
-            'pelanggans'     => $query->paginate($perPage, 'pelanggan'),
+            'pelanggan'      => $query->paginate($perPage, 'pelanggan'),
             'pager'          => $this->pelangganModel->pager,
             'currentPage'    => $currentPage,
             'perPage'        => $perPage,
             'total'          => $total,
             'search'         => $search,
+            'trashCount'     => $trashCount,
             'breadcrumbs'    => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/customer') . '">Pelanggan</a></li>
@@ -704,7 +718,8 @@ class Pelanggan extends BaseController
         }
 
         try {
-            if (!$this->pelangganModel->restore($id)) {
+            // Use restoreMany with single ID
+            if (!$this->pelangganModel->restoreMany([$id])) {
                 throw new \RuntimeException('Gagal mengembalikan data pelanggan');
             }
 
@@ -1311,6 +1326,59 @@ class Pelanggan extends BaseController
     }
 
     /**
+     * Export pelanggan data to Excel
+     */
+    public function exportExcel()
+    {
+        $keyword = $this->request->getVar('keyword');
+        
+        // Build query - same filters as index
+        $query = $this->pelangganModel;
+        $query->where('status_hps', '0');
+        
+        if ($keyword) {
+            $query->groupStart()
+                ->like('nama', $keyword)
+                ->orLike('kode', $keyword)
+                ->orLike('no_telp', $keyword)
+                ->orLike('alamat', $keyword)
+                ->groupEnd();
+        }
+        
+        // Get all data (no pagination for export)
+        $pelanggans = $query->orderBy('id', 'DESC')->findAll();
+        
+        // Prepare Excel data
+        $headers = ['Kode', 'Nama', 'No. Telp', 'Email', 'Alamat', 'Kota', 'Provinsi', 'Tipe', 'Status'];
+        $excelData = [];
+        
+        $tipeLabels = [
+            '0' => '-',
+            '1' => 'Anggota',
+            '2' => 'Pelanggan'
+        ];
+        
+        foreach ($pelanggans as $pelanggan) {
+            $excelData[] = [
+                $pelanggan->kode,
+                $pelanggan->nama,
+                $pelanggan->no_telp ?? '',
+                $pelanggan->email ?? '',
+                $pelanggan->alamat ?? '',
+                $pelanggan->kota ?? '',
+                $pelanggan->provinsi ?? '',
+                $tipeLabels[$pelanggan->tipe] ?? '-',
+                ($pelanggan->status == '1') ? 'Aktif' : 'Tidak Aktif'
+            ];
+        }
+        
+        $filename = 'export_pelanggan_' . date('Y-m-d_His') . '.xlsx';
+        $filepath = createExcelTemplate($headers, $excelData, $filename);
+
+        return $this->response->download($filepath, null);
+    }
+
+    /**
      * Bulk delete pelanggan
      */
 
@@ -1319,7 +1387,8 @@ class Pelanggan extends BaseController
         if (!$this->request->isAJAX()) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Invalid request'
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
@@ -1328,47 +1397,100 @@ class Pelanggan extends BaseController
         if (empty($itemIds) || !is_array($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+                'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
         try {
-            $deletedCount = 0;
-            $failedCount = 0;
-            $errors = [];
+            $this->db = \Config\Database::connect();
+            $this->db->transStart();
 
-            foreach ($itemIds as $id) {
-                try {
-                    if ($this->pelangganModel->delete($id)) {
-                        $deletedCount++;
-                    } else {
-                        $failedCount++;
-                        $errors[] = "Gagal menghapus data ID: {$id}";
-                    }
-                } catch (\Exception $e) {
-                    $failedCount++;
-                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
-                }
+            // Use archiveMany to set status_hps='1' and deleted_at
+            $archived = $this->pelangganModel->archiveMany($itemIds);
+
+            $this->db->transComplete();
+
+            if (!$archived || $this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengarsipkan pelanggan',
+                    'csrfHash' => csrf_hash()
+                ]);
             }
 
-            $message = "Berhasil menghapus {$deletedCount} data";
-            if ($failedCount > 0) {
-                $message .= ", {$failedCount} data gagal dihapus";
-            }
-
+            $count = count($itemIds);
             return $this->response->setJSON([
                 'success' => true,
-                'message' => $message,
-                'deleted_count' => $deletedCount,
-                'failed_count' => $failedCount,
-                'errors' => $errors
+                'message' => "Berhasil mengarsipkan {$count} pelanggan",
+                'archived_count' => $count,
+                'csrfHash' => csrf_hash()
+            ]);
+
+                } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::bulk_delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengarsipkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Bulk restore pelanggan
+     */
+    public function bulk_restore()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dipulihkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $this->db = \Config\Database::connect();
+            $this->db->transStart();
+
+            // Use restoreMany to set status_hps='0' and deleted_at=null
+            $restored = $this->pelangganModel->restoreMany($itemIds);
+
+            $this->db->transComplete();
+
+            if (!$restored || $this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal memulihkan pelanggan',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            $count = count($itemIds);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "Berhasil memulihkan {$count} pelanggan",
+                'restored_count' => $count,
+                'csrfHash' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
-            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            log_message('error', '[Pelanggan::bulk_restore] ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat memulihkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
             ]);
         }
     }

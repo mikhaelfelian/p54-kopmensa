@@ -24,7 +24,7 @@ class SupplierModel extends Model
     protected $allowedFields    = [
         'kode', 'nama', 'npwp', 'alamat', 'rt', 'rw', 
         'kecamatan', 'kelurahan', 'kota', 'no_tlp', 'no_hp',
-        'tipe', 'status', 'status_hps'
+        'tipe', 'kategori', 'status', 'status_hps'
     ];
 
     // Dates
@@ -74,5 +74,74 @@ class SupplierModel extends Model
     public function getStatusLabel($status)
     {
         return $status == '1' ? 'Aktif' : 'Non-Aktif';
+    }
+
+    /**
+     * Archive supplier (soft delete)
+     */
+    public function archive($id): bool
+    {
+        return $this->builder()
+            ->where('id', $id)
+            ->set([
+                'status_hps' => '1',
+                'deleted_at' => date('Y-m-d H:i:s'),
+            ])
+            ->update();
+    }
+
+    /**
+     * Restore archived supplier
+     */
+    public function restore($id): bool
+    {
+        return $this->builder()
+            ->where('id', $id)
+            ->set([
+                'status_hps' => '0',
+                'deleted_at' => null,
+            ])
+            ->update();
+    }
+
+    /**
+     * Permanently delete supplier
+     */
+    public function purge($id): bool
+    {
+        return $this->builder()->where('id', $id)->delete();
+    }
+
+    /**
+     * Count archived suppliers
+     */
+    public function countArchived(): int
+    {
+        return (int) $this->builder()
+            ->groupStart()
+                ->where('status_hps', '1')
+                ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd()
+            ->countAllResults();
+    }
+
+    /**
+     * Get all suppliers for a specific item
+     * Uses the item-supplier mapping table
+     * 
+     * @param int $itemId
+     * @return array
+     */
+    public function getSuppliersByItem($itemId)
+    {
+        return $this->db->table('tbl_m_item_supplier')
+                    ->select('tbl_m_item_supplier.*, tbl_m_supplier.id as supplier_id, tbl_m_supplier.kode as supplier_kode, tbl_m_supplier.nama as supplier_nama, tbl_m_supplier.no_tlp, tbl_m_supplier.alamat, tbl_m_supplier.status')
+                    ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item_supplier.id_supplier')
+                    ->where('tbl_m_item_supplier.id_item', $itemId)
+                    ->where('tbl_m_supplier.status_hps', '0')
+                    ->where('tbl_m_item_supplier.deleted_at IS NULL', null, false)
+                    ->orderBy('tbl_m_item_supplier.prioritas', 'ASC')
+                    ->get()
+                    ->getResult();
     }
 } 

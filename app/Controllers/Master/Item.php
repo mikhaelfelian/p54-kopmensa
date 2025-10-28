@@ -587,7 +587,15 @@ class Item extends BaseController
         $perPage = 10;
         $keyword = $this->request->getVar('keyword');
 
-        $this->itemModel->where('status_hps', '1');
+        // Use withDeleted() to include soft-deleted items
+        // This overrides the default "WHERE deleted_at IS NULL" filter
+        $this->itemModel->withDeleted();
+
+        // Show items where status_hps = '1' OR deleted_at IS NOT NULL
+        $this->itemModel->groupStart()
+            ->where('status_hps', '1')
+            ->orWhere('deleted_at IS NOT NULL')
+            ->groupEnd();
 
         if ($keyword) {
             $this->itemModel->groupStart()
@@ -597,6 +605,9 @@ class Item extends BaseController
                 ->orLike('deskripsi', $keyword)
                 ->groupEnd();
         }
+
+        // Order by deleted_at descending to show recently archived items first
+        $this->itemModel->orderBy('deleted_at', 'DESC');
 
         $data = [
             'title'         => 'Data Item Terhapus',
@@ -684,7 +695,8 @@ class Item extends BaseController
         if (!$this->request->isAJAX()) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Invalid request'
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
@@ -693,47 +705,95 @@ class Item extends BaseController
         if (empty($itemIds) || !is_array($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+                'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
         try {
-            $deletedCount = 0;
-            $failedCount = 0;
-            $errors = [];
+            $this->db->transStart();
 
-            foreach ($itemIds as $id) {
-                try {
-                    if ($this->itemModel->delete($id)) {
-                        $deletedCount++;
-                    } else {
-                        $failedCount++;
-                        $errors[] = "Gagal menghapus data ID: {$id}";
-                    }
-                } catch (\Exception $e) {
-                    $failedCount++;
-                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
-                }
+            // Use archiveMany to set status_hps='1' and deleted_at
+            $archived = $this->itemModel->archiveMany($itemIds);
+
+            $this->db->transComplete();
+
+            if (!$archived || $this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengarsipkan item',
+                    'csrfHash' => csrf_hash()
+                ]);
             }
 
-            $message = "Berhasil menghapus {$deletedCount} data";
-            if ($failedCount > 0) {
-                $message .= ", {$failedCount} data gagal dihapus";
-            }
-
+            $count = count($itemIds);
             return $this->response->setJSON([
                 'success' => true,
-                'message' => $message,
-                'deleted_count' => $deletedCount,
-                'failed_count' => $failedCount,
-                'errors' => $errors
+                'message' => "Berhasil mengarsipkan {$count} item",
+                'archived_count' => $count,
+                'csrfHash' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
-            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            log_message('error', '[Bulk Delete/Archive] ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat mengarsipkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    public function bulk_restore()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        $itemIds = $this->request->getPost('item_ids');
+
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dipulihkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $this->db->transStart();
+
+            // Use restoreMany to set status_hps='0' and deleted_at=null
+            $restored = $this->itemModel->restoreMany($itemIds);
+
+            $this->db->transComplete();
+
+            if (!$restored || $this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal memulihkan item',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            $count = count($itemIds);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "Berhasil memulihkan {$count} item",
+                'restored_count' => $count,
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Restore] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memulihkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
             ]);
         }
     }

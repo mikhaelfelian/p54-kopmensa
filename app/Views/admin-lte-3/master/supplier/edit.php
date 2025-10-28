@@ -12,7 +12,7 @@
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
-        <?= form_open('master/supplier/update/' . $supplier->id) ?>
+        <?= form_open('master/supplier/update/' . $supplier->id, ['method' => 'post', 'enctype' => 'multipart/form-data']) ?>
         <div class="card rounded-0">
             <div class="card-header">
                 <h3 class="card-title">Form Edit Supplier</h3>
@@ -91,6 +91,21 @@
                             </div>
                         </div>
 
+                        <!-- No Telepon -->
+                        <div class="form-group">
+                            <label>No. Telepon</label>
+                            <?= form_input([
+                                'name' => 'no_tlp',
+                                'type' => 'text',
+                                'class' => 'form-control rounded-0 ' . ($validation->hasError('no_tlp') ? 'is-invalid' : ''),
+                                'placeholder' => 'Nomor Telepon...',
+                                'value' => old('no_tlp', $supplier->no_tlp ?? '')
+                            ]) ?>
+                            <div class="invalid-feedback">
+                                <?= $validation->getError('no_tlp') ?>
+                            </div>
+                        </div>
+
                         <!-- Tipe -->
                         <div class="form-group">
                             <label>Tipe <span class="text-danger">*</span></label>
@@ -101,12 +116,38 @@
                                     '1' => 'Pabrikan',
                                     '2' => 'Personal'
                                 ],
-                                old('tipe', $supplier->tipe),
+                                old('tipe', $supplier->tipe ?? ''),
                                 'class="form-control rounded-0 ' . ($validation->hasError('tipe') ? 'is-invalid' : '') . '"'
                             ) ?>
                             <div class="invalid-feedback">
                                 <?= $validation->getError('tipe') ?>
                             </div>
+                        </div>
+
+                        <!-- NPWP -->
+                        <div class="form-group">
+                            <label>NPWP</label>
+                            <?= form_input([
+                                'name' => 'npwp',
+                                'type' => 'text',
+                                'class' => 'form-control rounded-0',
+                                'placeholder' => 'Nomor NPWP...',
+                                'value' => old('npwp', $supplier->npwp ?? '')
+                            ]) ?>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label>Status</label>
+                            <?= form_dropdown(
+                                'status',
+                                [
+                                    '1' => 'Aktif',
+                                    '0' => 'Tidak Aktif'
+                                ],
+                                old('status', $supplier->status ?? '1'),
+                                'class="form-control rounded-0"'
+                            ) ?>
                         </div>
                     </div>
                 </div>
@@ -116,7 +157,7 @@
                     <i class="fas fa-arrow-left"></i> Kembali
                 </a>
                 <button type="submit" class="btn btn-primary rounded-0 float-right">
-                    <i class="fas fa-save"></i> Update
+                    <i class="fas fa-save"></i> Simpan
                 </button>
             </div>
         </div>

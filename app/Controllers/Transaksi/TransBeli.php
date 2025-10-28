@@ -1021,4 +1021,66 @@ class TransBeli extends BaseController
                             ->with('error', 'Gagal mencetak transaksi: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Get suppliers for a specific item (AJAX endpoint)
+     * Used for multi-supplier selection in PO form
+     * 
+     * @param int $id Item ID
+     * @return \CodeIgniter\HTTP\ResponseInterface
+     */
+    public function getSuppliersByItem($id = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Invalid request method',
+                'data' => []
+            ])->setStatusCode(400);
+        }
+
+        if (!$id) {
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Item ID is required',
+                'data' => []
+            ])->setStatusCode(400);
+        }
+
+        try {
+            // Get suppliers for this item from the mapping table
+            $suppliers = $this->supplierModel->getSuppliersByItem($id);
+            
+            // Format data for Select2
+            $formattedData = [];
+            foreach ($suppliers as $supplier) {
+                $formattedData[] = [
+                    'id' => $supplier->supplier_id ?? $supplier->id_supplier,
+                    'text' => $supplier->supplier_nama . ' (' . $supplier->supplier_kode . ')',
+                    'kode' => $supplier->supplier_kode,
+                    'nama' => $supplier->supplier_nama,
+                    'alamat' => $supplier->alamat ?? '-',
+                    'no_tlp' => $supplier->no_tlp ?? '-',
+                    'harga_beli' => $supplier->harga_beli ?? 0,
+                    'prioritas' => $supplier->prioritas ?? 0,
+                    'status' => $supplier->status ?? '1'
+                ];
+            }
+
+            return $this->response->setJSON([
+                'status' => 'success',
+                'message' => 'Suppliers retrieved successfully',
+                'data' => $formattedData,
+                'count' => count($formattedData)
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[TransBeli::getSuppliersByItem] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'status' => 'error',
+                'message' => 'Error retrieving suppliers: ' . $e->getMessage(),
+                'data' => []
+            ])->setStatusCode(500);
+        }
+    }
 } 

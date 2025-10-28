@@ -13,6 +13,9 @@
                         <a href="<?= base_url('master/gudang/import') ?>" class="btn btn-sm btn-success rounded-0">
                             <i class="fas fa-file-import"></i> IMPORT
                         </a>
+                        <a href="<?= base_url('master/gudang/export') ?>" class="btn btn-sm btn-warning rounded-0">
+                            <i class="fas fa-file-export"></i> EXPORT
+                        </a>
                         <a href="<?= base_url('master/gudang/template') ?>" class="btn btn-sm btn-info rounded-0">
                             <i class="fas fa-download"></i> Template
                         </a>
@@ -183,17 +186,19 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkDeleteBtn.disabled = true;
         bulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
 
-        // Send AJAX request
+        // Send AJAX request with FormData to properly handle arrays
+        const formData = new FormData();
+        itemIds.forEach(id => {
+            formData.append('item_ids[]', id);
+        });
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        
         fetch('<?= base_url('master/gudang/bulk_delete') ?>', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: new URLSearchParams({
-                'item_ids': itemIds,
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>'
-            })
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
