@@ -30,12 +30,24 @@ class Item extends BaseController
     protected $merkModel;
     protected $supplierModel;
     protected $itemHargaModel;
+    protected $satuanModel;
     protected $pengaturan;
     protected $ionAuth;
     protected $validation;
     protected $varianModel;
     protected $pelangganGrupModel;
     protected $db;
+
+    /**
+     * Apply secure filter to query builder
+     * Prevents SQL injection by validating operator
+     */
+    private function applySecureFilter($builder, $column, $operator, $value)
+    {
+        $allowedOperators = ['=', '<', '>', '<=', '>=', '!='];
+        $validOp = in_array($operator, $allowedOperators) ? $operator : '=';
+        return $builder->where("{$column} {$validOp}", $value);
+    }
 
     public function __construct()
     {
@@ -101,19 +113,25 @@ class Item extends BaseController
                 ->groupEnd();
         }
         
-        // Apply min stock filter
+        // Apply min stock filter (SECURE - prevents SQL injection)
         if ($min_stok_operator && $min_stok_value !== '') {
-            $this->itemModel->where("tbl_m_item.jml_min {$min_stok_operator}", $min_stok_value);
+            $allowedOps = ['=', '<', '>', '<=', '>=', '!='];
+            $minStokOp = in_array($min_stok_operator, $allowedOps) ? $min_stok_operator : '=';
+            $this->itemModel->where("tbl_m_item.jml_min {$minStokOp}", (int)$min_stok_value);
         }
         
-        // Apply harga beli filter
+        // Apply harga beli filter (SECURE - prevents SQL injection)
         if ($harga_beli_operator && $harga_beli_value !== '') {
-            $this->itemModel->where("tbl_m_item.harga_beli {$harga_beli_operator}", format_angka_db($harga_beli_value));
+            $allowedOps = ['=', '<', '>', '<=', '>=', '!='];
+            $hargaBeliOp = in_array($harga_beli_operator, $allowedOps) ? $harga_beli_operator : '=';
+            $this->itemModel->where("tbl_m_item.harga_beli {$hargaBeliOp}", format_angka_db($harga_beli_value));
         }
         
-        // Apply harga jual filter
+        // Apply harga jual filter (SECURE - prevents SQL injection)
         if ($harga_jual_operator && $harga_jual_value !== '') {
-            $this->itemModel->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
+            $allowedOps = ['=', '<', '>', '<=', '>=', '!='];
+            $hargaJualOp = in_array($harga_jual_operator, $allowedOps) ? $harga_jual_operator : '=';
+            $this->itemModel->where("tbl_m_item.harga_jual {$hargaJualOp}", format_angka_db($harga_jual_value));
         }
 
         $data = [
@@ -244,7 +262,6 @@ class Item extends BaseController
             }
 
             $data = [
-                'id_supplier' => $id_supplier,
                 'kode'        => $this->itemModel->generateKode($id_kategori, $tipe),
                 'barcode'     => $barcode,
                 'item'        => $item,
@@ -252,6 +269,7 @@ class Item extends BaseController
                 'id_kategori' => $id_kategori,
                 'id_merk'     => $id_merk,
                 'id_supplier' => $id_supplier,
+                'id_satuan'   => 0,
                 'jml_min'     => $jml_min,
                 'harga_beli'  => format_angka_db($harga_beli),
                 'harga_jual'  => format_angka_db($harga_jual),
@@ -811,19 +829,25 @@ class Item extends BaseController
                 ->groupEnd();
         }
         
-        // Apply min stock filter
+        // Apply min stock filter (SECURE - prevents SQL injection)
         if ($min_stok_operator && $min_stok_value !== '') {
-            $this->itemModel->where("tbl_m_item.jml_min {$min_stok_operator}", $min_stok_value);
+            $allowedOps = ['=', '<', '>', '<=', '>=', '!='];
+            $minStokOp = in_array($min_stok_operator, $allowedOps) ? $min_stok_operator : '=';
+            $this->itemModel->where("tbl_m_item.jml_min {$minStokOp}", (int)$min_stok_value);
         }
         
-        // Apply harga beli filter
+        // Apply harga beli filter (SECURE - prevents SQL injection)
         if ($harga_beli_operator && $harga_beli_value !== '') {
-            $this->itemModel->where("tbl_m_item.harga_beli {$harga_beli_operator}", format_angka_db($harga_beli_value));
+            $allowedOps = ['=', '<', '>', '<=', '>=', '!='];
+            $hargaBeliOp = in_array($harga_beli_operator, $allowedOps) ? $harga_beli_operator : '=';
+            $this->itemModel->where("tbl_m_item.harga_beli {$hargaBeliOp}", format_angka_db($harga_beli_value));
         }
         
-        // Apply harga jual filter
+        // Apply harga jual filter (SECURE - prevents SQL injection)
         if ($harga_jual_operator && $harga_jual_value !== '') {
-            $this->itemModel->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
+            $allowedOps = ['=', '<', '>', '<=', '>=', '!='];
+            $hargaJualOp = in_array($harga_jual_operator, $allowedOps) ? $harga_jual_operator : '=';
+            $this->itemModel->where("tbl_m_item.harga_jual {$hargaJualOp}", format_angka_db($harga_jual_value));
         }
 
         // Get all filtered data (no pagination)
