@@ -1160,33 +1160,21 @@ class Pelanggan extends BaseController
                 // Generate email from username
                 $email = $username . '@koperasi.local';
 
-                // Create password hash (default password same as username)
-                $password = password_hash($username, PASSWORD_BCRYPT);
+                // Create password hash (default password: 123456)
+                $password = password_hash('123456', PASSWORD_BCRYPT);
 
                 // Insert into IonAuth users table
                 $userData = [
                     'username' => $username,
                     'email' => $email,
                     'password' => $password,
-                    'first_name' => $pelanggan->nama ?? '',
-                    'last_name' => '',
                     'active' => '1',
                     'created_on' => date('Y-m-d H:i:s'),
                     'updated_on' => date('Y-m-d H:i:s')
                 ];
 
-                $insertResult = $db->table('tbl_ion_users')->insert($userData);
-                
-                // Get the inserted ID
+                $db->table('tbl_ion_users')->insert($userData);
                 $newUserId = $db->insertID();
-                
-                // Validate that user was created
-                if (!$insertResult || !$newUserId) {
-                    // Get last error for debugging
-                    $error = $db->error();
-                    log_message('error', 'Failed to create user account. Error: ' . json_encode($error));
-                    throw new \Exception('Failed to insert user account. DB Error: ' . ($error['message'] ?? 'Unknown error'));
-                }
 
                 // Link user to pelanggan
                 $this->pelangganModel->update($id, ['id_user' => $newUserId]);
@@ -1202,7 +1190,7 @@ class Pelanggan extends BaseController
 
                 return $this->response->setJSON([
                     'success' => true,
-                    'message' => "Akun anggota berhasil diaktifkan dan user login telah dibuat. Username: {$username}, Password: {$username}",
+                    'message' => "Akun anggota berhasil diaktifkan dan user login telah dibuat. Username: {$username}, Password: 123456",
                     'auto_created' => true,
                     'username' => $username
                 ]);
