@@ -115,7 +115,7 @@ class PurchaseReport extends BaseController
                 tbl_trans_beli.*,
                 tbl_m_supplier.nama as supplier_nama,
                 tbl_m_supplier.alamat as supplier_alamat,
-                tbl_m_supplier.telepon as supplier_telepon,
+                tbl_m_supplier.no_tlp as supplier_no_tlp,
                 tbl_m_karyawan.nama as penerima_nama
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')

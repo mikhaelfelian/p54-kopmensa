@@ -47,7 +47,7 @@
                             </tr>
                             <tr>
                                 <td><strong>Telepon</strong></td>
-                                <td>: <?= $purchase->supplier_telepon ?? '-' ?></td>
+                                <td>: <?= $purchase->supplier_no_tlp ?? '-' ?></td>
                             </tr>
                         </table>
                     </div>

@@ -87,16 +87,20 @@ helper('shift');
                         <td>Pendapatan:</td>
                         <td class="text-right"><?= format_angka($salesSummary['total_sales'], 0) ?></td>
                     </tr>
+                    <tr>
+                        <td colspan="2" class="text-center bg-light"><strong>Metode Pembayaran:</strong></td>
+                    </tr>
                     <?php if (!empty($salesSummary['payment_methods'])): ?>
-                    <tr>
-                        <td colspan="2" class="text-center"><strong>Metode Pembayaran:</strong></td>
-                    </tr>
-                    <?php foreach ($salesSummary['payment_methods'] as $payment): ?>
-                    <tr>
-                        <td class="pl-4"><?= esc($payment['method']) ?>:</td>
-                        <td class="text-right"><?= format_angka($payment['amount'], 0) ?> (<?= $payment['count'] ?>x)</td>
-                    </tr>
-                    <?php endforeach; ?>
+                        <?php foreach ($salesSummary['payment_methods'] as $payment): ?>
+                        <tr>
+                            <td class="pl-4"><?= esc($payment['method']) ?>:</td>
+                            <td class="text-right"><?= format_angka($payment['amount'], 0) ?> (<?= $payment['count'] ?>x)</td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">- Tidak ada data pembayaran -</td>
+                        </tr>
                     <?php endif; ?>
                     <tr>
                         <td>Kas Kecil Masuk:</td>
