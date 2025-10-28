@@ -1160,8 +1160,8 @@ class Pelanggan extends BaseController
                 // Generate email from username
                 $email = $username . '@koperasi.local';
 
-                // Create password hash (default password: 123456)
-                $password = password_hash('123456', PASSWORD_BCRYPT);
+                // Create password hash (default password equals username)
+                $password = password_hash($username, PASSWORD_BCRYPT);
 
                 // Insert into IonAuth users table
                 $userData = [
@@ -1173,8 +1173,17 @@ class Pelanggan extends BaseController
                     'updated_on' => date('Y-m-d H:i:s')
                 ];
 
-                $db->table('tbl_ion_users')->insert($userData);
+                $builderUsers = $db->table('tbl_ion_users');
+                $insertOk = $builderUsers->insert($userData);
                 $newUserId = $db->insertID();
+                if ($insertOk === false || empty($newUserId)) {
+                    $dbError = $db->error();
+                    $db->transRollback();
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Gagal membuat akun user: ' . ($dbError['message'] ?? 'Unknown error')
+                    ]);
+                }
 
                 // Link user to pelanggan
                 $this->pelangganModel->update($id, ['id_user' => $newUserId]);
@@ -1184,42 +1193,38 @@ class Pelanggan extends BaseController
 
                 $db->transComplete();
 
-                if ($db->transStatus() === false) {
-                    throw new \Exception('Failed to create user account');
-                }
-
                 return $this->response->setJSON([
                     'success' => true,
-                    'message' => "Akun anggota berhasil diaktifkan dan user login telah dibuat. Username: {$username}, Password: 123456",
+                    'message' => "Akun anggota berhasil diaktifkan dan user login telah dibuat. Username: {$username}, Password: {$username}",
                     'auto_created' => true,
                     'username' => $username
                 ]);
 
             } else if (!empty($id_user) && $id_user != 0 && $id_user != '0') {
                 // Update existing user active status
-                $builder = $db->table('tbl_ion_users');
-                $updateResult = $builder->where('id', $id_user)
-                                        ->set('active', $status)
-                                        ->update();
+            $builder = $db->table('tbl_ion_users');
+            $updateResult = $builder->where('id', $id_user)
+                                    ->set('active', $status)
+                                    ->update();
 
-                if ($updateResult !== false) {
+            if ($updateResult !== false) {
                     // Update status_blokir in pelanggan table
                     $this->pelangganModel->update($id, [
                         'status_blokir' => ($status == '1' ? '0' : '1')
                     ]);
 
-                    $action = $status == '1' ? 'diaktifkan' : 'diblokir';
-                    return $this->response->setJSON([
-                        'success' => true,
+                $action = $status == '1' ? 'diaktifkan' : 'diblokir';
+                return $this->response->setJSON([
+                    'success' => true,
                         'message' => "Akun berhasil {$action}",
                         'auto_created' => false
-                    ]);
-                } else {
-                    return $this->response->setJSON([
-                        'success' => false,
-                        'message' => 'Gagal mengubah status akun'
-                    ]);
-                }
+                ]);
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengubah status akun'
+                ]);
+            }
             } else {
                 // Deactivating but no user exists - just update pelanggan status
                 $this->pelangganModel->update($id, ['status_blokir' => '1']);
