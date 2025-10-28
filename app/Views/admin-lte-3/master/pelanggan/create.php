@@ -50,6 +50,18 @@
                     <small class="form-text text-muted">Auto-generated or enter custom code</small>
                 </div>
 
+                <div class="form-group <?= (!empty($psnGagal['no_agt']) ? 'has-error' : '') ?>">
+                    <label class="control-label">Nomor Anggota</label>
+                    <?= form_input([
+                        'id' => 'no_agt',
+                        'name' => 'no_agt',
+                        'class' => 'form-control rounded-0' . (!empty($psnGagal['no_agt']) ? ' is-invalid' : ''),
+                        'placeholder' => 'Isikan nomor anggota (opsional) ...',
+                        'value' => old('no_agt')
+                    ]) ?>
+                    <small class="form-text text-muted">Nomor anggota koperasi</small>
+                </div>
+
                 <div class="form-group <?= (!empty($psnGagal['nama']) ? 'has-error' : '') ?>">
                     <label class="control-label">Nama*</label>
                     <?= form_input([

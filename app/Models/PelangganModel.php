@@ -20,7 +20,7 @@ class PelangganModel extends Model
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'id_user', 'kode', 'nama', 'no_telp', 'alamat', 'kota', 
+        'id_user', 'kode', 'no_agt', 'nama', 'no_telp', 'alamat', 'kota', 
         'provinsi', 'tipe', 'status', 'is_blocked', 'limit_belanja', 'status_hps', 'status_blokir', 'limit'
     ];
 
