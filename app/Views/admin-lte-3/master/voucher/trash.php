@@ -19,9 +19,6 @@
                         <a href="<?= base_url('master/voucher') ?>" class="btn btn-sm btn-secondary rounded-0">
                             <i class="fas fa-arrow-left"></i> Kembali
                         </a>
-                        <button type="button" class="btn btn-sm btn-success rounded-0" onclick="restoreAll()">
-                            <i class="fas fa-trash-restore"></i> Pulihkan Semua
-                        </button>
                         <button type="button" class="btn btn-sm btn-danger rounded-0" onclick="deletePermanentAll()">
                             <i class="fas fa-trash"></i> Hapus Permanen Semua
                         </button>
@@ -36,9 +33,9 @@
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th width="5%">
+                                <!-- <th width="5%">
                                     <input type="checkbox" id="select-all-trash" onchange="toggleAllTrash()">
-                                </th>
+                                </th> -->
                                 <th width="5%">No</th>
                                 <th width="15%">Kode</th>
                                 <th width="10%">Jumlah</th>
@@ -54,9 +51,9 @@
                                 <?php $no = 1;
                                 foreach ($vouchers as $voucher): ?>
                                     <tr>
-                                        <td>
+                                        <!-- <td>
                                             <input type="checkbox" class="trash-checkbox" value="<?= $voucher->id ?>">
-                                        </td>
+                                        </td> -->
                                         <td><?= $no++ ?></td>
                                         <td><?= esc($voucher->kode) ?></td>
                                         <td><?= esc($voucher->jml) ?></td>
