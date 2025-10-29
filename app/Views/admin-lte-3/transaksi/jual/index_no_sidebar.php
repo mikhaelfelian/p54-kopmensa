@@ -57,7 +57,7 @@
                             <option value="">Semua Kasir</option>
                             <?php if (isset($cashiers) && !empty($cashiers)): ?>
                                 <?php foreach ($cashiers as $cashier): ?>
-                                    <option value="<?= $cashier->id ?>" <?= $cashierFilter == $cashier->id ? 'selected' : '' ?>>
+                                    <option value="<?= $cashier->id ?>" <?= (isset($cashierFilter) && $cashierFilter == $cashier->id) ? 'selected' : '' ?>>
                                         <?= esc($cashier->first_name . ' ' . $cashier->last_name) ?>
                                     </option>
                                 <?php endforeach; ?>
