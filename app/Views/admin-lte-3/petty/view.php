@@ -300,7 +300,7 @@ function printTransaction() {
     
     printWindow.document.close();
     printWindow.focus();
-    printWindow.print();
+    // Print functionality disabled - use new unified print system
     printWindow.close();
 }
 

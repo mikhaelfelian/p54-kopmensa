@@ -194,16 +194,14 @@
                                                     onclick="viewTransaction(<?= $row->id ?>)" title="Detail">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
+                                                <button type="button" class="btn btn-success btn-sm"
+                                                    onclick="showPrintOptions('jual', <?= $row->id ?>)" title="Print">
+                                                    <i class="fas fa-print"></i>
+                                                </button>
                                                 <?php if (isset($row->status) && $row->status == '0'): ?>
                                                     <button type="button" class="btn btn-warning btn-sm"
                                                         onclick="editTransaction(<?= $row->id ?>)" title="Edit">
                                                         <i class="fas fa-edit"></i>
-                                                    </button>
-                                                <?php endif; ?>
-                                                <?php if (isset($row->status) && $row->status == '1'): ?>
-                                                    <button type="button" class="btn btn-success btn-sm"
-                                                        onclick="showPrintOptions(<?= $row->id ?>)" title="Cetak">
-                                                        <i class="fas fa-print"></i>
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
@@ -655,109 +653,6 @@
     // Global variables
     let currentTransactionData = null;
 
-    function showPrintOptions(id) {
-        // Store transaction ID for printing
-        $('#printTransactionId').val(id);
-        
-        // Fetch transaction data and store it globally
-        $.ajax({
-            url: '<?= base_url('transaksi/jual/get-transaction-for-print') ?>/' + id,
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    currentTransactionData = response.transaction;
-                    // Open print options modal
-                    $('#printOptionsModal').modal('show');
-                } else {
-                    toastr.error('Gagal memuat data transaksi: ' + response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                toastr.error('Gagal memuat data transaksi: ' + error);
-            }
-        });
-    }
-
-    function printReceipt(type, transactionData) {
-        // If no transaction data provided, fetch it
-        if (!transactionData) {
-            const transactionId = $('#printTransactionId').val();
-            if (!transactionId) {
-                toastr.error('Transaksi tidak ditemukan.');
-                return;
-            }
-
-            // Fetch transaction data first
-            $.ajax({
-                url: '<?= base_url('transaksi/jual/get-transaction-for-print') ?>/' + transactionId,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        const data = response.transaction;
-                        
-                        if (type === 'pdf') {
-                            printToPDF(data);
-                        } else if (type === 'printer') {
-                            printToPrinter(data);
-                        }
-                        
-                        $('#printOptionsModal').modal('hide'); // Close print options modal
-                    } else {
-                        toastr.error('Gagal memuat data transaksi: ' + response.message);
-                    }
-                },
-                error: function(xhr, status, error) {
-                    toastr.error('Gagal memuat data transaksi: ' + error);
-                }
-            });
-        } else {
-            // Use provided transaction data
-            if (type === 'pdf') {
-                printToPDF(transactionData);
-            } else if (type === 'printer') {
-                printToPrinter(transactionData);
-            }
-        }
-    }
-
-    function printToPDF(transactionData) {
-        // Create URL with query parameters
-        const url = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
-        const params = new URLSearchParams();
-        
-        // Add transaction data
-        params.append('transactionData', JSON.stringify(transactionData));
-        params.append('printType', 'pdf');
-        params.append('showButtons', 'true');
-        
-        // Open in new window
-        const printWindow = window.open(url + '?' + params.toString(), '_blank', 'width=800,height=600');
-        
-        if (!printWindow) {
-            toastr.error('Pop-up blocked. Please allow pop-ups for this site.');
-        }
-    }
-
-    function printToPrinter(transactionData) {
-        // Create URL with query parameters
-        const url = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
-        const params = new URLSearchParams();
-        
-        // Add transaction data
-        params.append('transactionData', JSON.stringify(transactionData));
-        params.append('printType', 'printer');
-        params.append('showButtons', 'true');
-        
-        // Open in new window
-        const printWindow = window.open(url + '?' + params.toString(), '_blank', 'width=400,height=600');
-        
-        if (!printWindow) {
-            toastr.error('Pop-up blocked. Please allow pop-ups for this site.');
-        }
-    }
-
     function openSO() {
         // Redirect to sales order creation page
         window.location.href = '<?= base_url('transaksi/jual/create') ?>';
@@ -859,51 +754,7 @@
     }
 </script>
 
-<!-- Print Options Modal -->
-<div class="modal fade" id="printOptionsModal" tabindex="-1" role="dialog" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="printOptionsModalLabel">Pilih Metode Cetak</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="row">
-          <div class="col-md-6">
-            <div class="card text-center">
-              <div class="card-body">
-                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
-                <h6>Cetak ke PDF</h6>
-                <p class="text-muted">Simpan sebagai file PDF atau cetak via browser</p>
-                <button type="button" class="btn btn-danger btn-block" onclick="printReceipt('pdf', currentTransactionData)">
-                  <i class="fas fa-file-pdf"></i> PDF
-                </button>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card text-center">
-              <div class="card-body">
-                <i class="fas fa-print fa-3x text-success mb-3"></i>
-                <h6>Cetak ke Printer</h6>
-                <p class="text-muted">Cetak langsung ke dot matrix printer</p>
-                <button type="button" class="btn btn-success btn-block" onclick="printReceipt('printer', currentTransactionData)">
-                  <i class="fas fa-print"></i> Printer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Hidden field to store transaction ID -->
-        <input type="hidden" id="printTransactionId" value="">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Include Print Options Modal -->
+<?= $this->include('admin-lte-3/components/print_options_modal') ?>
 
 <?= $this->endSection() ?>

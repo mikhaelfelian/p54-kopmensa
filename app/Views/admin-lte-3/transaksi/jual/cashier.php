@@ -332,15 +332,6 @@ helper('form');
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-info" onclick="printReceipt('pdf')">
-                    <i class="fas fa-file-pdf"></i> Print PDF
-                </button>
-                <button type="button" class="btn btn-success" onclick="printReceipt('printer')">
-                    <i class="fas fa-print"></i> Print Receipt
-                </button>
-                <button type="button" class="btn btn-primary" id="printReceipt">
-                    <i class="fas fa-print"></i> Cetak Struk
-                </button>
             </div>
         </div>
     </div>
@@ -360,54 +351,6 @@ helper('form');
             <div class="modal-body">
                 <div id="variantList">
                     <!-- Variants will be loaded here -->
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Print Options Modal -->
-<div class="modal fade" id="printOptionsModal" tabindex="-1" role="dialog" aria-labelledby="printOptionsModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="printOptionsModalLabel">Pilih Metode Cetak</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
-                                <h6>Cetak ke PDF</h6>
-                                <p class="text-muted">Simpan sebagai file PDF atau cetak via browser</p>
-                                <button type="button" class="btn btn-danger btn-block"
-                                    onclick="printReceipt('pdf', window.currentPrintData)">
-                                    <i class="fas fa-file-pdf"></i> PDF
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-print fa-3x text-success mb-3"></i>
-                                <h6>Cetak ke Printer</h6>
-                                <p class="text-muted">Cetak langsung ke dot matrix printer</p>
-                                <button type="button" class="btn btn-success btn-block"
-                                    onclick="printReceipt('printer', window.currentPrintData)">
-                                    <i class="fas fa-print"></i> Printer
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -1407,7 +1350,6 @@ helper('form');
         $('#newTransaction').on('click', newTransaction);
         $('#holdTransaction').on('click', holdTransaction);
         $('#cancelTransaction').on('click', cancelTransaction);
-        $('#printReceipt').on('click', showPrinterModal);
         $('#showDraftList').on('click', showDraftList);
 
         // Payment Methods Modal
@@ -3320,11 +3262,6 @@ helper('form');
                         
                         $('#finalPaymentMethod').html(paymentSummary);
                         $('#completeModal').modal('show');
-
-                        // Store transaction info for receipt printing
-                        window.lastTransaction = {
-                            id: response.transaction_id,
-                            no_nota: response.no_nota,
                             total: response.total,
                             change: response.change,
                             voucher_info: voucherInfo
@@ -3508,80 +3445,6 @@ helper('form');
         if (confirm('Yakin ingin membatalkan transaksi ini?')) {
             currentDraftId = null; // Clear current draft ID
             newTransaction();
-        }
-    }
-
-    /**
-     * Print function that supports both PDF and dot matrix printers
-     * @param {string} type - 'pdf' for browser PDF, 'printer' for dot matrix
-     * @param {object} transactionData - Transaction data to print
-     */
-    function printReceipt(type = 'pdf', transactionData = null) {
-        // If no transaction data provided, use current transaction
-        if (!transactionData) {
-            transactionData = {
-                no_nota: $('#noNotaDisplay').text() || 'DRAFT',
-                customer_name: $('#selectedCustomerName').val() || 'Umum',
-                customer_type: $('#selectedCustomerType').val() || 'umum',
-                items: cart,
-                subtotal: parseFloat($('#subtotalDisplay').text().replace(/[^\d]/g, '')) || 0,
-                discount_amount: parseFloat($('#discountAmount').val()) || 0,
-            discount_type: $('#discountType').val(),
-                voucher: $('#voucherCode').val() || '',
-                ppn: PPN_PERCENTAGE,
-                total: parseFloat($('#grandTotalDisplay').text().replace(/[^\d]/g, '')) || 0,
-                payment_methods: paymentMethods,
-                date: new Date().toLocaleString('id-ID'),
-                outlet: $('#warehouse_id option:selected').text() || 'Outlet'
-            };
-        }
-
-        if (type === 'pdf') {
-            printToPDF(transactionData);
-        } else {
-            printToPrinter(transactionData);
-        }
-    }
-
-    /**
-     * Print to PDF using browser's print functionality
-     */
-    function printToPDF(transactionData) {
-        // Create URL with query parameters
-        const url = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
-        const params = new URLSearchParams();
-
-        // Add transaction data
-        params.append('transactionData', JSON.stringify(transactionData));
-        params.append('printType', 'pdf');
-        params.append('showButtons', 'true');
-
-        // Open in new window
-        const printWindow = window.open(url + '?' + params.toString(), '_blank', 'width=800,height=600');
-
-        if (!printWindow) {
-            toastr.error('Pop-up blocked. Please allow pop-ups for this site.');
-        }
-    }
-
-    /**
-     * Print to dot matrix printer using HTML
-     */
-    function printToPrinter(transactionData) {
-        // Create URL with query parameters
-        const url = '<?= base_url('transaksi/jual/print-receipt-view') ?>';
-        const params = new URLSearchParams();
-
-        // Add transaction data
-        params.append('transactionData', JSON.stringify(transactionData));
-        params.append('printType', 'printer');
-        params.append('showButtons', 'true');
-
-        // Open in new window
-        const printWindow = window.open(url + '?' + params.toString(), '_blank', 'width=400,height=600');
-
-        if (!printWindow) {
-            toastr.error('Pop-up blocked. Please allow pop-ups for this site.');
         }
     }
 
@@ -3784,10 +3647,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         });
     }
 
-    function showPrinterModal() {
-        $('#printerModal').modal('show');
-    }
-
     function testPrinterConnection() {
         const selectedPrinter = $('#printerSelect').val();
         const $btn = $('#testPrinter');
@@ -3819,35 +3678,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                 // Reset button state
                 $btn.prop('disabled', false);
                 $icon.removeClass('fa-spinner fa-spin').addClass('fa-plug');
-            }
-        });
-    }
-
-    function printReceiptWithPrinter() {
-        const selectedPrinter = $('#printerSelect').val();
-        const transactionId = getCurrentTransactionId(); // You'll need to implement this
-
-        if (!transactionId) {
-            toastr.error('Tidak ada transaksi yang aktif');
-            return;
-        }
-
-        $.ajax({
-            url: '<?= base_url('transaksi/jual/print-receipt') ?>/' + transactionId,
-            type: 'POST',
-            data: {
-                printer_id: selectedPrinter
-            },
-            success: function (response) {
-                if (response.success) {
-                    toastr.success('Struk berhasil dicetak');
-                    $('#printerModal').modal('hide');
-                } else {
-                    toastr.error('Gagal mencetak struk: ' + response.message);
-                }
-            },
-            error: function () {
-                toastr.error('Gagal mencetak struk');
             }
         });
     }
@@ -3969,7 +3799,6 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
     // Event listeners for printer modal
     $(document).ready(function () {
         $('#testPrinter').on('click', testPrinterConnection);
-        $('#confirmPrint').on('click', printReceiptWithPrinter);
     });
 
     // Load available printers
@@ -4581,97 +4410,10 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
     }
 
     /**
-     * Print all drafts
+     * Print all drafts - DISABLED
      */
     function printAllDrafts() {
-        $.ajax({
-            url: '<?= base_url('transaksi/jual/get-drafts') ?>',
-            type: 'GET',
-            dataType: 'json',
-            success: function (response) {
-                if (response.success && response.drafts && response.drafts.length > 0) {
-                    // Use AJAX to get formatted HTML for each draft
-                    const draftPromises = response.drafts.map(draft => {
-                        const draftData = {
-                            no_nota: draft.no_nota,
-                            customer_name: 'Draft',
-                            customer_type: 'draft',
-                            items: [], // We don't have item details in the list
-                            subtotal: draft.jml_gtotal * (100 / (100 + PPN_PERCENTAGE)),
-                            discount: 0,
-                            voucher: '',
-                            ppn: PPN_PERCENTAGE,
-                            total: draft.jml_gtotal,
-                            payment_methods: [],
-                            date: new Date(draft.created_at).toLocaleString('id-ID'),
-                            outlet: draft.outlet_name || 'Draft'
-                        };
-
-                        return $.ajax({
-                            url: '<?= base_url('transaksi/jual/print-receipt-view') ?>',
-                            type: 'POST',
-                            data: {
-                                transactionData: JSON.stringify(draftData),
-                                printType: 'pdf',
-                                showButtons: false
-                            }
-                        });
-                    });
-
-                    // Wait for all drafts to be processed
-                    Promise.all(draftPromises).then(draftResponses => {
-                        const allDraftsHTML = draftResponses.map(response =>
-                            `<div style="page-break-after: always; margin-bottom: 20px;">${response}</div>`
-                        ).join('');
-
-                        // Create print window for all drafts
-                        const printWindow = window.open('', '_blank', 'width=800,height=600');
-                        printWindow.document.write(`
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <title>All Drafts - Print</title>
-                            <style>
-                                @media print {
-                                    body { margin: 0; padding: 10px; }
-                                    .no-print { display: none; }
-                                }
-                                .draft-item { margin-bottom: 20px; }
-                                .btn { 
-                                    background: #007bff; 
-                                    color: white; 
-                                    padding: 10px 20px; 
-                                    border: none; 
-                                    border-radius: 5px; 
-                                    cursor: pointer; 
-                                    margin: 5px;
-                                }
-                                .btn:hover { background: #0056b3; }
-                            </style>
-                        </head>
-                        <body>
-                            <div class="no-print" style="text-align: center; margin-bottom: 20px;">
-                                <h3>Print All Drafts</h3>
-                                <button class="btn" onclick="window.print()">Print All</button>
-                                <button class="btn" onclick="window.close()">Close</button>
-                            </div>
-                            ${allDraftsHTML}
-                        </body>
-                        </html>
-                    `);
-
-                        printWindow.document.close();
-                    }).catch(error => {
-                        toastr.error('Gagal memproses draft untuk print');
-                    });
-                } else {
-                    toastr.warning('Tidak ada draft untuk dicetak');
-                }
-            },
-            error: function (xhr, status, error) {
-                toastr.error('Gagal memuat daftar draft: ' + error);
-            }
-        });
+        toastr.warning('Print functionality has been disabled. Please use the new unified print system.');
     }
 </script>
 <?= $this->endSection() ?>

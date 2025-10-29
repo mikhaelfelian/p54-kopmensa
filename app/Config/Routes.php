@@ -651,7 +651,6 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('po/detail/(:num)', 'TransBeliPO::detail/$1');
     $routes->get('po/edit/(:num)', 'TransBeliPO::edit/$1');
     $routes->post('po/update/(:num)', 'TransBeliPO::update/$1');
-    $routes->get('po/print/(:num)', 'TransBeliPO::print/$1');
     $routes->post('po/cart_add/(:num)', 'TransBeliPO::cart_add/$1');
     $routes->get('po/cart_delete/(:num)', 'TransBeliPO::cart_delete/$1');
     $routes->post('po/proses/(:num)', 'TransBeliPO::proses/$1');
@@ -667,7 +666,6 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('beli/detail/(:num)', 'TransBeli::detail/$1');
     $routes->get('beli/edit/(:num)', 'TransBeli::edit/$1');
     $routes->post('beli/update/(:num)', 'TransBeli::update/$1');
-    $routes->get('beli/print/(:num)', 'TransBeli::print/$1');
     $routes->post('beli/cart_add/(:num)', 'TransBeli::cart_add/$1');
     $routes->get('beli/cart_add/(:num)', 'TransBeli::cart_add_redirect/$1');
     $routes->post('beli/cart_update/(:num)', 'TransBeli::cart_update/$1');
@@ -699,10 +697,6 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('jual/get-drafts', 'TransJual::getDrafts');
     $routes->get('jual/get-draft/(:num)', 'TransJual::getDraft/$1');
     $routes->post('jual/delete-draft/(:num)', 'TransJual::deleteDraft/$1');
-
-    // Print transaction data route
-    $routes->get('jual/get-transaction-for-print/(:num)', 'TransJual::getTransactionForPrint/$1');
-    $routes->get('jual/print-receipt-view', 'TransJual::printReceiptView');
 
     // Session refresh endpoint
     $routes->get('jual/refresh-session', 'TransJual::refreshSession');
@@ -761,6 +755,23 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('po/items-search', 'TransBeliPO::itemsSearch');
     $routes->get('po/suppliers-by-item/(:num)', 'TransBeliPO::suppliersByItem/$1');
     $routes->get('po/details-json/(:num)', 'TransBeliPO::detailsJson/$1');
+});
+
+/*
+ * UNIFIED PRINT ROUTES
+ * Three standardized print outputs for all transaction types
+ */
+$routes->group('print', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function ($routes) {
+    // Receipt (Thermal/Dot Matrix) - for POS receipts
+    $routes->get('receipt/(:any)/(:num)', 'PrintController::receipt/$1/$2');
+    
+    // Invoice (A4 PDF) - for formal invoices
+    $routes->get('invoice/(:any)/(:num)', 'PrintController::invoice/$1/$2');
+    
+    // Report - Daily summary or single transaction
+    $routes->get('report/(:any)/daily', 'PrintController::report/$1/daily'); // Daily summary
+    $routes->get('report/(:any)/(:num)', 'PrintController::report/$1/$2');   // Single transaction
+    $routes->get('report/(:any)', 'PrintController::report/$1');             // Default to daily
 });
 
 // Public API routes
@@ -834,18 +845,6 @@ $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'aut
 
     // API Tokens route
     $routes->get('api-tokens', 'Pengaturan::apiTokens');
-
-    // Printer management routes
-    $routes->group('printer', ['namespace' => 'App\Controllers\Pengaturan'], function ($routes) {
-        $routes->get('/', 'Printer::index');
-        $routes->get('create', 'Printer::create');
-        $routes->post('store', 'Printer::store');
-        $routes->get('edit/(:num)', 'Printer::edit/$1');
-        $routes->post('update/(:num)', 'Printer::update/$1');
-        $routes->get('delete/(:num)', 'Printer::delete/$1');
-        $routes->get('set-default/(:num)', 'Printer::setDefault/$1');
-        $routes->get('test/(:num)', 'Printer::testConnection/$1');
-    });
 
     // PU Menu management routes
     $routes->group('pu-menu', ['namespace' => 'App\Controllers\Pengaturan'], function ($routes) {

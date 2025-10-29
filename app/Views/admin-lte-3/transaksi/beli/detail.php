@@ -24,9 +24,6 @@
                     <a href="<?= base_url('transaksi/beli/edit/' . $transaksi->id) ?>" class="btn btn-primary btn-sm rounded-0">
                         <i class="fas fa-edit mr-1"></i> Edit
                     </a>
-                    <a href="<?= base_url('transaksi/beli/print/' . $transaksi->id) ?>" class="btn btn-info btn-sm rounded-0" target="_blank">
-                        <i class="fas fa-print mr-1"></i> Cetak
-                    </a>
                 </div>
             </div>
             <div class="card-body">

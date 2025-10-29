@@ -15,9 +15,6 @@
     <div class="card-header">
         <h3 class="card-title">Informasi PO</h3>
         <div class="card-tools">
-            <button type="button" class="btn btn-tool" onclick="window.print()">
-                <i class="fas fa-print"></i>
-            </button>
         </div>
     </div>
     <div class="card-body">
@@ -99,9 +96,6 @@
     <div class="card-footer">
         <a href="<?= base_url('transaksi/po') ?>" class="btn btn-default rounded-0">
             <i class="fas fa-arrow-left"></i> Kembali
-        </a>
-        <a href="<?= base_url("transaksi/po/print/{$po->id}") ?>" class="btn btn-success rounded-0" target="_blank">
-            <i class="fas fa-print"></i> Cetak
         </a>
         <?php if ($po->status == 0): ?>
             <a href="<?= base_url("transaksi/po/edit/{$po->id}") ?>" class="btn btn-warning rounded-0">

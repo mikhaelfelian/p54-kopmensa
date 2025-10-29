@@ -158,10 +158,7 @@
 <?= $this->section('script') ?>
 <script>
 $(document).ready(function() {
-    // Print functionality if needed
-    $('#btnPrint').click(function() {
-        window.print();
-    });
+    // Initialize page
 });
 </script>
 <?= $this->endSection() ?>

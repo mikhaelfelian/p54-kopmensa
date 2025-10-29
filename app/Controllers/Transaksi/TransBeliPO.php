@@ -936,138 +936,15 @@ class TransBeliPO extends BaseController
     }
 
     /**
-     * Generate PDF for Purchase Order
+     * Print PO (DISABLED - Use new unified print system)
      * 
      * @param int $id PO ID to print
      * @return mixed
      */
     public function print($id)
-    {            
-        // Header
-        // Fetch pengaturan (settings) from database
-        $pengaturan = $this->pengaturanModel->first();
-
-        // Use pengaturan values or fallback defaults
-        $judul      = $pengaturan->judul ?? '';
-        $alamat     = $pengaturan->alamat ?? '';
-        $judul_app  = $pengaturan->judul_app ?? 'PURCHASE ORDER';
-        $kota       = $pengaturan->kota ?? 'Semarang';
-        $apt_apa    = $pengaturan->apt_apa ?? '';
-        $apt_sipa   = $pengaturan->apt_sipa ?? '';
-        
-        try {
-            // Get PO data with relations
-            $po = $this->transBeliPOModel->getWithRelations(['id' => $id])->first();
-            if (!$po) {
-                throw new \Exception('PO tidak ditemukan');
-            }
-
-            // Get PO details
-            $po_details = $this->transBeliPODetModel->select('
-                    tbl_trans_beli_po_det.*,
-                    tbl_m_item.kode as kode,
-                    tbl_m_item.item as deskripsi
-                ')
-                ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_po_det.id_item')
-                ->where('id_pembelian', $id)
-                ->findAll();
-
-            // Initialize PDF
-            $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-            
-            // Set document information
-            $pdf->SetCreator($judul_app);
-            $pdf->SetAuthor($judul);
-            $pdf->SetTitle('Purchase Order - ' . $po->no_nota);
-            
-            // Set margins
-            $pdf->SetMargins(20, 20, 20);
-            $pdf->SetHeaderMargin(0);
-            $pdf->SetFooterMargin(0);
-            
-            // Remove default header/footer
-            $pdf->setPrintHeader(false);
-            $pdf->setPrintFooter(false);
-            
-            // Add page
-            $pdf->AddPage();
-            
-            // Set font
-            $pdf->SetFont('helvetica', 'B', 12);
-
-            $pdf->Cell(120, 6, $judul, 0, 0, 'L');
-            $pdf->Cell(50, 6, $judul_app, 0, 1, 'R');
-            
-            $pdf->SetFont('helvetica', '', 10);
-            $pdf->Cell(170, 5, $alamat, 0, 1, 'L');
-            $pdf->Line(20, 33, 190, 33);
-            $pdf->Ln(5);
-
-            // APA & SIPA (if available)
-            if (!empty($apt_apa)) {
-                $pdf->Cell(15, 5, 'APA', 0, 0);
-                $pdf->Cell(5, 5, ':', 0, 0);
-                $pdf->Cell(170, 5, $apt_apa, 0, 1);
-            }
-            
-            if (!empty($apt_sipa)) {
-                $pdf->Cell(15, 5, 'SIPA', 0, 0);
-                $pdf->Cell(5, 5, ':', 0, 0);
-                $pdf->Cell(170, 5, $apt_sipa, 0, 1);
-            }
-            
-            if (!empty($apt_apa) || !empty($apt_sipa)) {
-                $pdf->Ln(5);
-            }
-
-            // Supplier Info & PO Details
-            $pdf->Cell(20, 5, 'Kepada Yth.', 0, 1);
-            $pdf->Cell(100, 5, $po->supplier ?? 'N/A', 0, 0);
-            $pdf->Cell(25, 5, 'No. PO', 0, 0);
-            $pdf->Cell(5, 5, ':', 0, 0);
-            $pdf->Cell(40, 5, $po->no_nota, 0, 1);
-            
-            $pdf->Cell(100, 5, '', 0, 0);
-            $pdf->Cell(25, 5, 'Tanggal', 0, 0);
-            $pdf->Cell(5, 5, ':', 0, 0);
-            $pdf->Cell(40, 5, date('Y-m-d', strtotime($po->tgl_masuk)), 0, 1);
-            
-            $pdf->Cell(100, 5, '', 0, 0);
-            $pdf->Cell(25, 5, 'Oleh', 0, 0);
-            $pdf->Cell(5, 5, ':', 0, 0);
-            $pdf->Cell(40, 5, '', 0, 1);
-            $pdf->Ln(5);
-
-            // Table Header
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->Cell(35, 7, 'KODE', 1, 0, 'C');
-            $pdf->Cell(85, 7, 'DESKRIPSI', 1, 0, 'C');
-            $pdf->Cell(20, 7, 'JML', 1, 0, 'C');
-            $pdf->Cell(30, 7, 'KETERANGAN', 1, 1, 'C');
-
-            // Table Content
-            $pdf->SetFont('helvetica', '', 10);
-            foreach ($po_details as $item) {
-                $pdf->Cell(35, 7, $item->kode ?? 'N/A', 1, 0, 'L');
-                $pdf->Cell(85, 7, $item->deskripsi ?? 'N/A', 1, 0, 'L');
-                $pdf->Cell(20, 7, $item->jml ?? '0', 1, 0, 'C');
-                $pdf->Cell(30, 7, $item->keterangan ?? '', 1, 1, 'L');
-            }
-
-            // Footer
-            $pdf->Ln(20);
-            $pdf->Cell(85, 5, 'Pemesan', 0, 0, 'C');
-            $pdf->Cell(85, 5, $kota . ', ' . date('d F Y', strtotime($po->tgl_masuk)), 0, 1, 'C');
-            
-            $pdf->Ln(20);
-            $pdf->Cell(85, 5, $apt_apa ?: 'Pemesan', 0, 1, 'C');
-
-            // Output PDF
-            $pdf->Output('PO_' . $po->no_nota . '.pdf', 'I');
-            exit;
-        } catch (\Exception $e) {
-            return redirect()->back()
-                           ->with('error', 'Gagal mencetak PO: ' . $e->getMessage());
-        }
+    {
+        // Print functionality disabled - use new unified print system
+        return redirect()->to('transaksi/po')
+                        ->with('error', 'Print functionality has been disabled. Please use the new unified print system.');
     }
-} 
+}
