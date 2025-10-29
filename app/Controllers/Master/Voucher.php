@@ -43,6 +43,7 @@ class Voucher extends BaseController
             'perPage'       => $perPage,
             'keyword'       => $keyword,
             'summary'       => $this->voucherModel->getVoucherSummary(),
+            'trashCount'    => $this->voucherModel->onlyDeleted()->countAllResults(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -404,27 +405,140 @@ class Voucher extends BaseController
         }
     }
 
-    public function delete($id)
+    /**
+     * Soft delete voucher
+     */
+    /**
+     * Soft delete voucher (mark as deleted, without removing permanently)
+     */
+    public function delete($id = null)
     {
+        if (!$id) {
+            return redirect()->to(base_url('master/voucher'))
+                ->with('error', 'ID voucher tidak ditemukan');
+        }
+
         $voucher = $this->voucherModel->find($id);
-        
+
         if (!$voucher) {
             return redirect()->to(base_url('master/voucher'))
                 ->with('error', 'Data voucher tidak ditemukan');
         }
 
-        // Check if voucher has been used
-        if ($voucher->jml_keluar > 0) {
+        // Voucher yang sudah pernah digunakan tidak boleh dihapus
+        if (isset($voucher->jml_keluar) && $voucher->jml_keluar > 0) {
             return redirect()->to(base_url('master/voucher'))
                 ->with('error', 'Voucher tidak dapat dihapus karena sudah digunakan');
         }
 
-        if ($this->voucherModel->delete($id)) {
+        try {
+            // Soft delete: CodeIgniter4 automatically fills deleted_at column
+            if ($this->voucherModel->delete($id)) {
+                return redirect()->to(base_url('master/voucher'))
+                    ->with('success', 'Voucher berhasil dipindahkan ke arsip (soft delete)');
+            } else {
+                return redirect()->to(base_url('master/voucher'))
+                    ->with('error', 'Gagal menghapus voucher');
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Voucher::delete] ' . $e->getMessage());
             return redirect()->to(base_url('master/voucher'))
-                ->with('success', 'Data voucher berhasil dihapus');
-        } else {
+                ->with('error', 'Terjadi kesalahan saat menghapus voucher');
+        }
+    }
+
+    /**
+     * Show trash (deleted vouchers)
+     */
+    public function trash()
+    {
+        $currentPage = $this->request->getVar('page_voucher') ?? 1;
+        $perPage = 10;
+        $keyword = $this->request->getVar('keyword');
+
+        $query = $this->voucherModel->onlyDeleted();
+        
+        if ($keyword) {
+            $query->groupStart()
+                  ->like('kode', $keyword)
+                  ->orLike('keterangan', $keyword)
+                  ->groupEnd();
+        }
+
+        $data = [
+            'title'         => 'Arsip Voucher',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'vouchers'      => $query->paginate($perPage, 'voucher'),
+            'pager'         => $this->voucherModel->pager,
+            'currentPage'   => $currentPage,
+            'perPage'       => $perPage,
+            'keyword'       => $keyword,
+            'breadcrumbs'   => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/voucher') . '">Voucher</a></li>
+                <li class="breadcrumb-item active">Arsip</li>
+            '
+        ];
+
+        return view($this->theme->getThemePath() . '/master/voucher/trash', $data);
+    }
+
+    /**
+     * Restore soft-deleted voucher
+     */
+    public function restore($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('master/voucher')
+                ->with('error', 'ID voucher tidak ditemukan');
+        }
+
+        $voucher = $this->voucherModel->onlyDeleted()->find($id);
+        if (!$voucher) {
+            return redirect()->to('master/voucher')
+                ->with('error', 'Voucher tidak ditemukan di trash');
+        }
+
+        try {
+            // Set deleted_at to null (restore)
+            $this->voucherModel->update($id, ['deleted_at' => null]);
+            return redirect()->to(base_url('master/voucher/trash'))
+                ->with('success', 'Voucher berhasil dipulihkan');
+        } catch (\Exception $e) {
+            log_message('error', '[Voucher::restore] ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal memulihkan voucher');
+        }
+    }
+
+    /**
+     * Permanently delete voucher
+     */
+    public function delete_permanent($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('master/voucher')
+                ->with('error', 'ID voucher tidak ditemukan');
+        }
+
+        $voucher = $this->voucherModel->onlyDeleted()->find($id);
+        if (!$voucher) {
+            return redirect()->to('master/voucher')
+                ->with('error', 'Voucher tidak ditemukan di trash');
+        }
+
+        try {
+            if (!$this->voucherModel->delete($id, true)) {
+                throw new \RuntimeException('Gagal menghapus permanen data voucher');
+            }
             return redirect()->to(base_url('master/voucher'))
-                ->with('error', 'Gagal menghapus data voucher');
+                ->with('success', 'Data voucher berhasil dihapus permanen');
+        } catch (\Exception $e) {
+            log_message('error', '[Voucher::delete_permanent] ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Gagal menghapus permanen data voucher');
         }
     }
 
@@ -500,7 +614,7 @@ class Voucher extends BaseController
                     // Check if voucher has been used
                     if ($voucher && $voucher->jml_keluar > 0) {
                         $failedCount++;
-                        $errors[] = "Voucher ID {$id} tidak dapat dihapus (sudah digunakan)";
+                        $errors[] = "Voucher {$voucher->kode} gagal terhapus karena terpakai";
                         continue;
                     }
                     
@@ -518,7 +632,7 @@ class Voucher extends BaseController
 
             $message = "Berhasil menghapus {$deletedCount} voucher";
             if ($failedCount > 0) {
-                $message .= ", {$failedCount} voucher gagal dihapus";
+                $message .= ", {$failedCount} voucher gagal terhapus karena terpakai";
             }
 
             return $this->response->setJSON([

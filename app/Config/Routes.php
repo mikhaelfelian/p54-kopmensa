@@ -328,6 +328,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('voucher/import', 'Voucher::importCsv');
     $routes->get('voucher/template', 'Voucher::downloadTemplate');
     $routes->get('voucher/export', 'Voucher::exportExcel');
+    $routes->get('voucher/trash', 'Voucher::trash');
+    $routes->get('voucher/restore/(:num)', 'Voucher::restore/$1');
+    $routes->get('voucher/delete_permanent/(:num)', 'Voucher::delete_permanent/$1');
 });
 
 // Merk routes

@@ -19,6 +19,11 @@
                         <a href="<?= base_url('master/voucher/export') ?>" class="btn btn-sm btn-warning rounded-0">
                             <i class="fas fa-file-export"></i> EXPORT
                         </a>
+                        <?php if (isset($trashCount) && $trashCount > 0): ?>
+                            <a href="<?= base_url('master/voucher/trash') ?>" class="btn btn-sm btn-danger rounded-0">
+                                <i class="fas fa-trash"></i> Arsip (<?= $trashCount ?>)
+                            </a>
+                        <?php endif ?>
                         <button type="button" id="bulk-delete-btn" class="btn btn-sm btn-danger rounded-0" style="display: none;">
                             <i class="fas fa-trash-alt"></i> Hapus <span id="selected-count">0</span> Terpilih
                         </button>
@@ -311,7 +316,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(data.message);
                 window.location.reload();
             } else {
-                alert('Error: ' + data.message);
+                let errorMessage = 'Error: ' + data.message;
+                if (data.errors && data.errors.length > 0) {
+                    errorMessage += '\n\nDetail error:\n' + data.errors.join('\n');
+                }
+                alert(errorMessage);
                 bulkDeleteBtn.disabled = false;
                 bulkDeleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Hapus <span id="selected-count">' + itemIds.length + '</span> Terpilih';
             }

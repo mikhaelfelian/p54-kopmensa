@@ -18,12 +18,13 @@ class VoucherModel extends Model
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'object';
-    protected $useSoftDeletes   = false;
+    protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
         'id_user',
         'created_at',
         'updated_at',
+        'deleted_at',
         'kode',
         'jml',
         'jml_keluar',
@@ -41,6 +42,7 @@ class VoucherModel extends Model
     protected $dateFormat    = 'datetime';
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';
 
     // Validation
     protected $validationRules      = [
