@@ -25,7 +25,6 @@ use App\Models\VoucherModel;
 use App\Models\PengaturanModel;
 use App\Models\KategoriModel;
 use App\Models\ShiftModel;
-use App\Services\PrinterService;
 
 
 class TransJual extends BaseController
@@ -46,7 +45,6 @@ class TransJual extends BaseController
     protected $pengaturanModel;
     protected $kategoriModel;
     protected $shiftModel;
-    protected $printerService;
     protected $ionAuth;
     protected $db;
 
@@ -70,7 +68,6 @@ class TransJual extends BaseController
         $this->pengaturanModel     = new PengaturanModel();
         $this->kategoriModel       = new KategoriModel();
         $this->shiftModel          = new ShiftModel();
-        $this->printerService      = new PrinterService();
         $this->ionAuth             = new \IonAuth\Libraries\IonAuth();
         $this->db                  = \Config\Database::connect();
     }
@@ -251,6 +248,7 @@ class TransJual extends BaseController
         $status   = $this->request->getVar('status');
         $dateFrom = $this->request->getVar('date_from');
         $dateTo   = $this->request->getVar('date_to');
+        $cashierFilter = $this->request->getVar('cashier_filter') ?? '';
 
         // Build query
         $builder = $this->transJualModel;
@@ -328,6 +326,7 @@ class TransJual extends BaseController
             'status'            => $status,
             'dateFrom'          => $dateFrom,
             'dateTo'            => $dateTo,
+            'cashierFilter'     => $cashierFilter,
             'totalSales'        => $totalSales->jml_gtotal ?? 0,
             'totalTransactions' => $totalTransactions,
             'customers'         => $customers,
@@ -1480,74 +1479,6 @@ class TransJual extends BaseController
     }
 
     /**
-     * Print receipt for transaction
-     */
-    public function printReceipt($transactionId = null)
-    {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
-        }
-
-        try {
-            // Get transaction data
-            $transaction = $this->transJualModel->find($transactionId);
-            
-            if (!$transaction) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Transaksi tidak ditemukan']);
-            }
-            
-            // Get transaction details
-            $items = $this->transJualDetModel->where('id_trans_jual', $transactionId)->findAll();
-            
-            // Get customer info
-            $customer = null;
-            if ($transaction->id_pelanggan) {
-                $customer = $this->pelangganModel->find($transaction->id_pelanggan);
-            }
-
-            // Get kasir info
-            $kasir = $this->karyawanModel->find($transaction->id_karyawan);
-
-            // Prepare data for printing
-            $printData = [
-                'no_nota' => $transaction->no_nota,
-                'tgl_masuk' => $transaction->created_at,
-                'kasir' => $kasir ? $kasir->nama : 'Unknown',
-                'customer_name' => $customer ? $customer->nama : null,
-                'jml_subtotal' => $transaction->jml_subtotal,
-                'jml_diskon' => $transaction->jml_diskon,
-                'jml_ppn' => $transaction->jml_ppn,
-                'jml_gtotal' => $transaction->jml_gtotal,
-                'items' => []
-            ];
-
-            // Format items for printing
-            foreach ($items as $item) {
-                $printData['items'][] = [
-                    'name' => $item->nama_item,
-                    'quantity' => $item->qty,
-                    'price' => $item->harga_jual,
-                    'total' => $item->jml_total
-                ];
-            }
-
-            // Print receipt
-            $this->printerService->printReceipt($printData);
-
-            return $this->response->setJSON([
-                'success' => true,
-                'message' => 'Struk berhasil dicetak'
-            ]);
-
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Gagal mencetak struk: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
      * Get list of draft transactions
      */
     public function getDrafts()
@@ -1745,94 +1676,6 @@ class TransJual extends BaseController
     }
 
     /**
-     * Get transaction data for printing
-     */
-    public function getTransactionForPrint($transactionId)
-    {
-        if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(405)->setJSON(['success' => false, 'message' => 'Method Not Allowed']);
-        }
-
-        try {
-            // Get transaction data
-            $transaction = $this->transJualModel->find($transactionId);
-            
-            if (!$transaction) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Transaksi tidak ditemukan']);
-            }
-            
-            // Get transaction details - using correct column names
-            $items = $this->transJualDetModel
-                ->select('tbl_trans_jual_det.*')
-                ->where('id_penjualan', $transactionId)
-                ->findAll();
-            
-            // Get payment methods
-            $paymentMethods = $this->transJualPlatModel
-                ->where('id_penjualan', $transactionId)
-                ->findAll();
-            
-            // Get outlet name
-            $outlet = null;
-            if ($transaction->id_gudang) {
-                $outlet = $this->gudangModel->find($transaction->id_gudang);
-            }
-            
-            // Get customer info
-            $customer = null;
-            if ($transaction->id_pelanggan) {
-                $customer = $this->pelangganModel->find($transaction->id_pelanggan);
-            }
-
-            // Prepare data for printing
-            $printData = [
-                'no_nota' => $transaction->no_nota,
-                'customer_name' => $customer ? $customer->nama : 'Umum', // Fixed: using 'nama' instead of 'nama_pelanggan'
-                'customer_type' => $customer ? $customer->tipe : 'umum', // Fixed: using 'tipe' instead of 'tipe_pelanggan'
-                'outlet' => $outlet ? $outlet->nama : 'Outlet', // Fixed: using 'nama' instead of 'nama_gudang'
-                'date' => date('d/m/Y H:i', strtotime($transaction->created_at)),
-                'subtotal' => $transaction->jml_subtotal,
-                'discount' => $transaction->jml_diskon > 0 ? ($transaction->jml_diskon / $transaction->jml_subtotal) * 100 : 0,
-                'voucher' => $transaction->voucher_code ?? '',
-                'ppn' => 11, // 11% PPN
-                'total' => $transaction->jml_gtotal,
-                'items' => [],
-                'payment_methods' => [],
-                'payment_note' => $transaction->catatan_pembayaran ?? $transaction->payment_note ?? ''
-            ];
-
-            // Format items for printing - using correct column names
-            foreach ($items as $item) {
-                $printData['items'][] = [
-                    'name' => $item->produk, // Using 'produk' instead of 'nama_item'
-                    'quantity' => $item->jml, // Using 'jml' instead of 'qty'
-                    'price' => $item->harga, // Using 'harga' instead of 'harga_jual'
-                    'total' => $item->subtotal // Using 'subtotal' instead of 'jml_total'
-                ];
-            }
-
-            // Format payment methods for printing
-            foreach ($paymentMethods as $payment) {
-                $printData['payment_methods'][] = [
-                    'type' => $payment->platform, // Fixed: using 'platform' instead of 'type'
-                    'amount' => $payment->nominal // Fixed: using 'nominal' instead of 'amount'
-                ];
-            }
-
-            return $this->response->setJSON([
-                'success' => true,
-                'transaction' => $printData
-            ]);
-
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Gagal memuat data transaksi: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
      * Search customer by id_user, kode, nama, or no_telp
      */
     public function searchCustomer()
@@ -1895,52 +1738,6 @@ class TransJual extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Gagal memuat data customer: ' . $e->getMessage()
-            ]);
-        }
-    }
-
-
-
-    /**
-     * Display shared print receipt view
-     */
-    public function printReceiptView()
-    {
-        // Get GET data (changed from POST to GET)
-        $transactionDataJson = $this->request->getGet('transactionData');
-        $printType = $this->request->getGet('printType') ?? 'pdf';
-        $showButtons = $this->request->getGet('showButtons') ?? true;
-
-        if (!$transactionDataJson) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Transaction data is required']);
-        }
-
-        try {
-            // Decode JSON data
-            $transactionData = json_decode($transactionDataJson);
-            
-            if (!$transactionData) {
-                return $this->response->setJSON(['success' => false, 'message' => 'Invalid transaction data format']);
-            }
-
-            // Convert to object if it's an array
-            if (is_array($transactionData)) {
-                $transactionData = (object) $transactionData;
-            }
-
-            // Render the shared print view
-            $data = [
-                'transactionData' => $transactionData,
-                'printType' => $printType,
-                'showButtons' => $showButtons
-            ];
-
-            return view('admin-lte-3/transaksi/jual/print_receipt', $data);
-
-        } catch (\Exception $e) {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Gagal memuat view print: ' . $e->getMessage()
             ]);
         }
     }
