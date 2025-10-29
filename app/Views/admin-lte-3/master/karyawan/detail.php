@@ -30,7 +30,7 @@
                         <b>Kode</b> <a class="float-right"><?= esc($karyawan->kode) ?></a>
                     </li>
                     <li class="list-group-item">
-                        <b>NIK</b> <a class="float-right"><?= esc($karyawan->nik) ?></a>
+                        <b>NIP</b> <a class="float-right"><?= esc($karyawan->nik) ?></a>
                     </li>
                 </ul>
             </div>

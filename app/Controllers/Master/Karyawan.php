@@ -58,6 +58,7 @@ class Karyawan extends BaseController
             'currentPage'    => $currentPage,
             'perPage'        => $perPage,
             'search'         => $search,
+            'trashCount'     => $this->karyawanModel->onlyDeleted()->countAllResults(),
             'breadcrumbs'    => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -436,11 +437,14 @@ class Karyawan extends BaseController
     /**
      * Delete employee data
      */
+    /**
+     * Soft delete employee data
+     */
     public function delete($id = null)
     {
         if (!$id) {
             return redirect()->to('master/karyawan')
-                           ->with('error', 'ID karyawan tidak ditemukan');
+                ->with('error', 'ID karyawan tidak ditemukan');
         }
 
         try {
@@ -449,24 +453,18 @@ class Karyawan extends BaseController
                 throw new \RuntimeException('Data karyawan tidak ditemukan');
             }
 
-            // Delete IonAuth user if exists
-            if (!empty($karyawan->id_user)) {
-                $this->db->table('tbl_ion_users')
-                        ->where('id', $karyawan->id_user)
-                        ->delete();
-            }
-
+            // Soft delete (CodeIgniter's soft delete will set deleted_at)
             if (!$this->karyawanModel->delete($id)) {
-                throw new \RuntimeException('Gagal menghapus data karyawan');
+                throw new \RuntimeException('Gagal menghapus (soft delete) data karyawan');
             }
 
             return redirect()->to(base_url('master/karyawan'))
-                           ->with('success', 'Data karyawan dan user login berhasil dihapus');
+                ->with('success', 'Data karyawan berhasil dihapus (soft delete)');
 
         } catch (\Exception $e) {
             log_message('error', '[Karyawan::delete] ' . $e->getMessage());
             return redirect()->back()
-                           ->with('error', 'Gagal menghapus data karyawan');
+                ->with('error', 'Gagal menghapus data karyawan');
         }
     }
 
@@ -759,16 +757,21 @@ class Karyawan extends BaseController
         }
 
         try {
-            // Use CI4 native restore
-            $this->karyawanModel->update($id, ['deleted_at' => null]);
+            // Use raw query to update deleted_at and status_hps
+            $this->db->table('tbl_m_karyawan')
+                    ->where('id', $id)
+                    ->update([
+                        'deleted_at' => null,
+                    ]);
 
             return redirect()->to(base_url('master/karyawan/trash'))
                            ->with('success', 'Data karyawan berhasil dikembalikan');
 
         } catch (\Exception $e) {
             log_message('error', '[Karyawan::restore] ' . $e->getMessage());
-            return redirect()->back()
-                           ->with('error', 'Gagal mengembalikan data karyawan');
+            echo $e->getMessage();
+            // return redirect()->to(base_url('master/karyawan/trash'))
+            //                ->with('error', 'Gagal mengembalikan data karyawan - ');
         }
     }
 

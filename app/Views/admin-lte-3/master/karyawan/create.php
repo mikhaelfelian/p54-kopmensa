@@ -31,16 +31,16 @@
                                 'readonly' => true
                             ]) ?>
                         </div>
-                        <!-- NIK -->
+                        <!-- NIP -->
                         <div class="form-group">
-                            <label>NIK <span class="text-danger">*</span></label>
+                            <label>NIP <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <?= form_input([
                                     'name' => 'nik',
                                     'id' => 'nik',
                                     'type' => 'text',
                                     'class' => 'form-control rounded-0 ' . ($validation->hasError('nik') ? 'is-invalid' : ''),
-                                    'placeholder' => 'Nomor Identitas...',
+                                    'placeholder' => 'Nomor Induk Pegawai...',
                                     'value' => old('nik')
                                 ]) ?>
                                 <div class="invalid-feedback">

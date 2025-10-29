@@ -355,8 +355,12 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('karyawan/delete/(:num)', 'Karyawan::delete/$1');
     $routes->post('karyawan/bulk_delete', 'Karyawan::bulk_delete');
     $routes->get('karyawan/detail/(:num)', 'Karyawan::detail/$1');
+    $routes->get('karyawan/trash', 'Karyawan::trash');
+    $routes->get('karyawan/restore/(:num)', 'Karyawan::restore/$1');
+    $routes->get('karyawan/delete_permanent/(:num)', 'Karyawan::delete_permanent/$1');
     $routes->get('karyawan/import', 'Karyawan::importForm');
     $routes->post('karyawan/import', 'Karyawan::importCsv');
+    $routes->get('karyawan/export', 'Karyawan::exportExcel');
     $routes->get('karyawan/template', 'Karyawan::downloadTemplate');
 });
 
