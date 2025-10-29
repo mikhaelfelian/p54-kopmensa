@@ -70,7 +70,7 @@
                     <i class="fas fa-cash-register"></i> Kasir - Transaksi Penjualan
                 </h3>
                 <div class="card-tools">
-                    <a href="<?= base_url('transaksi/jual/cashier') ?>" class="btn btn-primary btn-sm">
+                    <a href="<?= base_url('transaksi/jual/create') ?>" class="btn btn-primary btn-sm">
                         <i class="fas fa-plus"></i> Transaksi Baru
                     </a>
                 </div>
