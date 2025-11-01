@@ -2352,7 +2352,10 @@ helper('form');
                             <!-- Product Icon -->
                             <div class="product-icon me-3" style="flex-shrink: 0;">
                             ${product.foto
-                        ? `<img src="${base_url}/${product.foto}" alt="${itemName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="rounded-0">`
+                        ? `<img src="${base_url.replace(/\/$/, '')}/${product.foto.replace(/^\//, '')}" alt="${itemName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="rounded-0" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="product-image-placeholder" style="width: 40px; height: 40px; background: #e9ecef; display: none; align-items: center; justify-content: center;">
+                                        <i class="fas fa-cube text-muted" style="font-size: 18px;"></i>
+                                    </div>`
                         : `<div class="product-image-placeholder" style="width: 40px; height: 40px; background: #e9ecef; display: flex; align-items: center; justify-content: center;">
                                         <i class="fas fa-cube text-muted" style="font-size: 18px;"></i>
                                     </div>`
@@ -2559,7 +2562,10 @@ helper('form');
                                     <!-- Product Icon -->
                                     <div class="product-icon me-3" style="flex-shrink: 0;">
                                         ${product.foto
-                                            ? `<img src="${base_url}/${product.foto}" alt="${itemName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="rounded-0">`
+                                            ? `<img src="${base_url.replace(/\/$/, '')}/${product.foto.replace(/^\//, '')}" alt="${itemName}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" class="rounded-0" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="product-image-placeholder" style="width: 40px; height: 40px; background: #e9ecef; display: none; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-cube text-muted" style="font-size: 18px;"></i>
+                                                </div>`
                                             : `<div class="product-image-placeholder" style="width: 40px; height: 40px; background: #e9ecef; display: flex; align-items: center; justify-content: center;">
                                                 <i class="fas fa-cube text-muted" style="font-size: 18px;"></i>
                                             </div>`
@@ -3612,6 +3618,11 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 
     // Printer functionality
     function loadPrinters() {
+        // Check if printer select element exists
+        if (!$('#printerSelect').length) {
+            return; // Exit if printer select doesn't exist
+        }
+
         $.ajax({
             url: '<?= base_url('pengaturan/printer') ?>',
             type: 'GET',
@@ -3637,8 +3648,14 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     }
                 });
             },
-            error: function () {
-                // Failed to load printers
+            error: function (xhr, status, error) {
+                // Silently handle 404 errors - printer endpoint may not exist
+                if (xhr.status === 404) {
+                    // Printer endpoint not found, silently ignore
+                    return;
+                }
+                // For other errors, log but don't show to user
+                console.log('Failed to load printers:', status);
             }
         });
     }
@@ -3667,8 +3684,13 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
                     toastr.error('Test printer gagal: ' + response.message);
                 }
             },
-            error: function () {
-                toastr.error('Gagal melakukan test printer');
+            error: function (xhr, status, error) {
+                // Handle 404 errors gracefully
+                if (xhr.status === 404) {
+                    toastr.warning('Fitur printer tidak tersedia');
+                } else {
+                    toastr.error('Gagal melakukan test printer');
+                }
             },
             complete: function () {
                 // Reset button state
@@ -3797,8 +3819,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         $('#testPrinter').on('click', testPrinterConnection);
     });
 
-    // Load available printers
-    loadPrinters();
+    // Note: loadPrinters() is already called above, no need to call again
 
     // Manual customer search function (searches tbl_m_pelanggan)
     function searchAnggota() {
