@@ -3262,10 +3262,6 @@ helper('form');
                         
                         $('#finalPaymentMethod').html(paymentSummary);
                         $('#completeModal').modal('show');
-                            total: response.total,
-                            change: response.change,
-                            voucher_info: voucherInfo
-                        };
 
                         toastr.success(response.message);
                     }
