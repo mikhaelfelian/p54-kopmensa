@@ -259,12 +259,13 @@ class TransJualModel extends Model
     }
 
     /**
-     * Get sales transactions by shift (placeholder - shift_id not yet implemented in sales table)
+     * Get sales transactions by shift
      */
     public function getSalesByShift($shift_id)
     {
-        // TODO: Add shift_id field to tbl_trans_jual table
-        // For now, return empty array
-        return [];
+        return $this->where('id_shift', $shift_id)
+                    ->where('status', '1')
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
     }
 }

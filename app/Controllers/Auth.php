@@ -145,6 +145,24 @@ class Auth extends BaseController
             ]);
         }
 
+        // Check for active shift after successful login
+        $user = $this->ionAuth->user()->row();
+        $shiftModel = new \App\Models\ShiftModel();
+        
+        // Check if user has an active shift that blocks login
+        if ($shiftModel->hasActiveShiftBlockingLogin($user->id)) {
+            $activeShift = $shiftModel->getUserActiveShift($user->id);
+            
+            // Store shift info in session for continue prompt
+            session()->set('pending_shift_id', $activeShift['id']);
+            session()->set('pending_shift_code', $activeShift['shift_code']);
+            
+            return redirect()->to('/auth/continue-shift-prompt')->with('toastr', [
+                'type' => 'warning',
+                'message' => 'Anda memiliki shift aktif. Silakan lanjutkan atau tutup shift terlebih dahulu.'
+            ]);
+        }
+
         return redirect()->to('/dashboard')->with('toastr', [
             'type' => 'success',
             'message' => 'Login successful!'
@@ -215,6 +233,25 @@ class Auth extends BaseController
             ]);
         }
 
+        // Check for active shift after successful login
+        $user = $this->ionAuth->user()->row();
+        $shiftModel = new \App\Models\ShiftModel();
+        
+        // Check if user has an active shift that blocks login
+        if ($shiftModel->hasActiveShiftBlockingLogin($user->id)) {
+            $activeShift = $shiftModel->getUserActiveShift($user->id);
+            
+            // Store shift info in session for continue prompt
+            session()->set('pending_shift_id', $activeShift['id']);
+            session()->set('pending_shift_code', $activeShift['shift_code']);
+            session()->set('pending_outlet_id', $outlet);
+            
+            return redirect()->to('/auth/continue-shift-prompt')->with('toastr', [
+                'type' => 'warning',
+                'message' => 'Anda memiliki shift aktif. Silakan lanjutkan atau tutup shift terlebih dahulu.'
+            ]);
+        }
+
         $outlet_name = $this->gudangModel->find($outlet)->nama;
 
         // Store outlet info in session for kasir
@@ -225,6 +262,37 @@ class Auth extends BaseController
             'type' => 'success',
             'message' => 'Login kasir successful!'
         ]);
+    }
+
+    /**
+     * Show continue shift prompt page
+     */
+    public function continue_shift()
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            return redirect()->to('/auth/login');
+        }
+
+        $pendingShiftId = session()->get('pending_shift_id');
+        if (!$pendingShiftId) {
+            return redirect()->to('/dashboard');
+        }
+
+        $shiftModel = new \App\Models\ShiftModel();
+        $shift = $shiftModel->getShiftWithDetails($pendingShiftId);
+
+        if (!$shift || $shift['status'] !== 'open') {
+            session()->remove(['pending_shift_id', 'pending_shift_code', 'pending_outlet_id']);
+            return redirect()->to('/dashboard');
+        }
+
+        $data = [
+            'title' => 'Lanjutkan Shift',
+            'Pengaturan' => $this->pengaturan,
+            'shift' => $shift
+        ];
+
+        return view($this->theme->getThemePath() . '/auth/continue_shift', $data);
     }
 
     public function logout()

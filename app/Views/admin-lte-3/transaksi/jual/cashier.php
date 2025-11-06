@@ -164,7 +164,7 @@ helper('form');
                             <label for="scanAnggota">Scan QR Code Customer</label>
                             <div class="input-group">
                                 <input type="text" class="form-control form-control-sm" id="scanAnggota"
-                                    placeholder="Scan QR code atau ketik nomor kartu/nama customer">
+                                    placeholder="Scan QR code atau ketik nomor anggota saja">
                                 <div class="input-group-append">
                                     <button type="button" class="btn btn-outline-secondary btn-sm" id="openQrScanner">
                                         <i class="fas fa-camera"></i>
@@ -176,7 +176,7 @@ helper('form');
                             </div>
                             <small class="text-muted">
                                 <i class="fas fa-info-circle"></i>
-                                Scan QR code atau ketik nomor kartu/nama customer
+                                GUNAKAN DENGAN MEMASUKKAN KODE ANGGOTA SAJA
                             </small>
 
                             <!-- QR Scanner Modal -->
@@ -3826,7 +3826,7 @@ ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
         let searchTerm = $('#scanAnggota').val().trim();
 
         if (!searchTerm) {
-            toastr.warning('Masukkan nomor kartu, nama, atau scan QR code customer');
+            toastr.warning('Masukkan nomor kode anggota atau scan QR code customer');
             return;
         }
 

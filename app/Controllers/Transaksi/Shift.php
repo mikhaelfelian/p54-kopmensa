@@ -8,7 +8,7 @@ use App\Models\GudangModel;
 use App\Models\PettyModel;
 use App\Models\TransJualModel;
 
-class ShiftController extends BaseController
+class Shift extends BaseController
 {
     protected $shiftModel;
     protected $gudangModel;
@@ -28,6 +28,16 @@ class ShiftController extends BaseController
     public function index()
     {
         $outlet_id = session()->get('outlet_id');
+        $user_id = $this->ionAuth->user()->row()->id;
+        
+        // Check if user has an active shift
+        $activeShift = $this->shiftModel->getUserActiveShift($user_id);
+        if ($activeShift) {
+            // Get outlet name for active shift
+            $gudangModel = new \App\Models\GudangModel();
+            $outlet = $gudangModel->find($activeShift['outlet_id']);
+            $activeShift['outlet_name'] = $outlet ? $outlet->nama : 'N/A';
+        }
         
         if ($outlet_id) {
             // If user has outlet_id in session, show shifts for that outlet
@@ -84,7 +94,8 @@ class ShiftController extends BaseController
         $data = array_merge($this->data, [
             'title' => 'Shift Management',
             'shifts' => $processedShifts,
-            'current_outlet_id' => $outlet_id
+            'current_outlet_id' => $outlet_id,
+            'activeShift' => $activeShift
         ]);
         
         return view('admin-lte-3/shift/index', $data);
@@ -100,6 +111,9 @@ class ShiftController extends BaseController
         $user_id = $this->ionAuth->user()->row()->id;
         $existingShifts = [];
         
+        // Check if user has an active shift
+        $activeShift = $this->shiftModel->getUserActiveShift($user_id);
+        
         // Check if user has any shifts for today
         $today = date('Y-m-d');
         $todayShifts = $this->shiftModel
@@ -114,7 +128,8 @@ class ShiftController extends BaseController
         $data = array_merge($this->data, [
             'title' => 'Buka Shift Baru',
             'outlets' => $this->gudangModel->getOutletsForDropdown(),
-            'existingShifts' => $existingShifts
+            'existingShifts' => $existingShifts,
+            'activeShift' => $activeShift
         ]);
         
         return view('admin-lte-3/shift/open', $data);
@@ -288,11 +303,55 @@ class ShiftController extends BaseController
             ];
         }
 
+        // Get complete payment breakdown
+        $paymentBreakdown = [];
+        try {
+            $paymentBreakdown = $this->shiftModel->getShiftPaymentBreakdown($shift_id);
+        } catch (\Exception $e) {
+            log_message('error', 'Payment breakdown error: ' . $e->getMessage());
+            $paymentBreakdown = [
+                'payment_methods' => [],
+                'total_refund' => 0
+            ];
+        }
+
+        // Get transaction totals from database
+        $db = \Config\Database::connect();
+        $transactionStats = $db->table('tbl_trans_jual')
+            ->select('
+                COUNT(*) as total_transactions,
+                COALESCE(SUM(jml_gtotal), 0) as total_revenue,
+                COALESCE(SUM(jml_bayar), 0) as total_payment_received
+            ')
+            ->where('id_shift', $shift_id)
+            ->where('status', '1')
+            ->get()
+            ->getRowArray();
+        
+        // Get refund total if column exists
+        $transactionStats['total_refund'] = 0;
+        try {
+            $refundQuery = $db->query("SHOW COLUMNS FROM tbl_trans_jual LIKE 'jml_refund'");
+            if ($refundQuery->getNumRows() > 0) {
+                $refundResult = $db->table('tbl_trans_jual')
+                    ->select('COALESCE(SUM(jml_refund), 0) as total_refund')
+                    ->where('id_shift', $shift_id)
+                    ->where('status', '1')
+                    ->get()
+                    ->getRowArray();
+                $transactionStats['total_refund'] = (float)($refundResult['total_refund'] ?? 0);
+            }
+        } catch (\Exception $e) {
+            // Column doesn't exist, refund total is 0
+        }
+
         $data = array_merge($this->data, [
             'title' => 'Tutup Shift',
             'shift' => $shift,
             'pettySummary' => $pettySummary,
-            'salesSummary' => $salesSummary
+            'salesSummary' => $salesSummary,
+            'paymentBreakdown' => $paymentBreakdown,
+            'transactionStats' => $transactionStats
         ]);
         
         return view('admin-lte-3/shift/close', $data);
@@ -312,6 +371,7 @@ class ShiftController extends BaseController
         $shift_id = $this->request->getPost('shift_id');
         $counted_cash = $this->request->getPost('counted_cash');
         $notes = $this->request->getPost('notes');
+        $catatan_shift = $this->request->getPost('catatan_shift');
 
         // Clean the counted_cash value - remove any formatting and convert to decimal
         if (is_string($counted_cash)) {
@@ -361,9 +421,46 @@ class ShiftController extends BaseController
         if ($this->validate($rules)) {
             $user_close_id = $this->ionAuth->user()->row()->id;
 
-            if ($this->shiftModel->closeShift($shift_id, $user_close_id, $counted_cash_formatted, $notes)) {
-                session()->setFlashdata('success', 'Shift berhasil ditutup');
+            // Update shift with catatan_shift
+            $shiftData = $this->shiftModel->find($shift_id);
+            if (!$shiftData) {
+                session()->setFlashdata('error', 'Shift tidak ditemukan');
                 return redirect()->to('/transaksi/shift');
+            }
+
+            // Recalculate sales_cash_total from actual transactions
+            $db = \Config\Database::connect();
+            $cashSalesTotal = $db->table('tbl_trans_jual_plat tjp')
+                ->select('COALESCE(SUM(tjp.nominal), 0) as total_cash')
+                ->join('tbl_trans_jual tj', 'tj.id = tjp.id_penjualan', 'inner')
+                ->join('tbl_m_platform p', 'p.id = tjp.id_platform', 'left')
+                ->where('tj.id_shift', $shift_id)
+                ->where('tj.status', '1')
+                ->where('(p.platform LIKE "%tunai%" OR p.platform LIKE "%cash%" OR tjp.platform LIKE "%tunai%" OR tjp.platform LIKE "%cash%")')
+                ->get()
+                ->getRowArray();
+
+            $actualSalesCashTotal = (float)($cashSalesTotal['total_cash'] ?? 0);
+
+            $expected_cash = $shiftData['open_float'] + $actualSalesCashTotal + $shiftData['petty_in_total'] - $shiftData['petty_out_total'];
+            $diff_cash = $counted_cash_formatted - $expected_cash;
+
+            $updateData = [
+                'user_close_id' => $user_close_id,
+                'end_at' => date('Y-m-d H:i:s'),
+                'counted_cash' => $counted_cash_formatted,
+                'sales_cash_total' => $actualSalesCashTotal, // Update with actual cash sales
+                'expected_cash' => $expected_cash,
+                'diff_cash' => $diff_cash,
+                'status' => 'closed',
+                'notes' => $notes,
+                'catatan_shift' => $catatan_shift
+            ];
+
+            if ($this->shiftModel->update($shift_id, $updateData)) {
+                session()->setFlashdata('success', 'Shift berhasil ditutup');
+                // Redirect to print report page
+                return redirect()->to('/transaksi/shift/print/' . $shift_id);
             } else {
                 session()->setFlashdata('error', 'Gagal menutup shift');
             }
@@ -493,8 +590,13 @@ class ShiftController extends BaseController
             return redirect()->to('/transaksi/shift');
         }
         
-        $shift = $shift_id ?? null;
-        $shift = $this->shiftModel->getShiftWithDetails($shift_id = null);
+        // Validate shift_id
+        if (empty($shift_id)) {
+            session()->setFlashdata('error', 'Shift ID tidak valid');
+            return redirect()->to('/transaksi/shift');
+        }
+        
+        $shift = $this->shiftModel->getShiftWithDetails($shift_id);
         if (!$shift) {
             session()->setFlashdata('error', 'Shift tidak ditemukan');
             return redirect()->to('/transaksi/shift');
@@ -879,6 +981,302 @@ class ShiftController extends BaseController
                 'message' => 'Gagal menutup shift'
             ]);
         }
+    }
+
+    /**
+     * Continue existing shift (reconnect to open shift)
+     */
+    public function continue_shift($shift_id = null)
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            session()->setFlashdata('error', 'Session telah berakhir. Silakan login kembali.');
+            return redirect()->to('/auth/login');
+        }
+
+        // Get shift_id from parameter, request, or user's active shift
+        if (empty($shift_id)) {
+            $shift_id = $this->request->getGet('shift_id') ?? $this->request->getPost('shift_id');
+        }
+        
+        // If still no shift_id, try to get from user's active shift
+        if (empty($shift_id)) {
+            $user_id = $this->ionAuth->user()->row()->id;
+            $activeShift = $this->shiftModel->getUserActiveShift($user_id);
+            if ($activeShift) {
+                $shift_id = $activeShift['id'];
+            }
+        }
+
+        if (empty($shift_id)) {
+            session()->setFlashdata('error', 'Shift ID tidak ditemukan');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        $user_id = $this->ionAuth->user()->row()->id;
+        $shift = $this->shiftModel->find($shift_id);
+
+        if (!$shift) {
+            session()->setFlashdata('error', 'Shift tidak ditemukan');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Handle both array and object formats
+        $shift_user_open_id = is_array($shift) ? $shift['user_open_id'] : $shift->user_open_id;
+        $shift_status = is_array($shift) ? $shift['status'] : $shift->status;
+        $shift_code = is_array($shift) ? $shift['shift_code'] : $shift->shift_code;
+
+        // Verify shift belongs to user and is open
+        if ($shift_user_open_id != $user_id) {
+            session()->setFlashdata('error', 'Anda tidak memiliki akses ke shift ini');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        if ($shift_status !== 'open') {
+            session()->setFlashdata('error', 'Shift ini sudah ditutup');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Recreate session for shift
+        $this->recreateSessionForShift($shift);
+        
+        session()->setFlashdata('success', 'Shift berhasil dilanjutkan: ' . $shift_code);
+        return redirect()->to('/transaksi/jual/cashier');
+    }
+
+    /**
+     * Print shift report
+     */
+    public function printShiftReport($shift_id)
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            session()->setFlashdata('error', 'Session telah berakhir. Silakan login kembali.');
+            return redirect()->to('/auth/login');
+        }
+
+        $shift = $this->shiftModel->getShiftWithDetails($shift_id);
+        if (!$shift) {
+            session()->setFlashdata('error', 'Shift tidak ditemukan');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        // Get payment breakdown
+        $paymentBreakdown = $this->shiftModel->getShiftPaymentBreakdown($shift_id);
+
+        // Get transaction statistics
+        $db = \Config\Database::connect();
+        $transactionStats = $db->table('tbl_trans_jual')
+            ->select('
+                COUNT(*) as total_transactions,
+                COALESCE(SUM(jml_gtotal), 0) as total_revenue,
+                COALESCE(SUM(jml_bayar), 0) as total_payment_received
+            ')
+            ->where('id_shift', $shift_id)
+            ->where('status', '1')
+            ->get()
+            ->getRowArray();
+        
+        // Get refund total if column exists
+        $transactionStats['total_refund'] = 0;
+        try {
+            $refundQuery = $db->query("SHOW COLUMNS FROM tbl_trans_jual LIKE 'jml_refund'");
+            if ($refundQuery->getNumRows() > 0) {
+                $refundResult = $db->table('tbl_trans_jual')
+                    ->select('COALESCE(SUM(jml_refund), 0) as total_refund')
+                    ->where('id_shift', $shift_id)
+                    ->where('status', '1')
+                    ->get()
+                    ->getRowArray();
+                $transactionStats['total_refund'] = (float)($refundResult['total_refund'] ?? 0);
+            }
+        } catch (\Exception $e) {
+            // Column doesn't exist, refund total is 0
+        }
+
+        // Get Pengaturan for footer
+        $pengaturanModel = new \App\Models\PengaturanModel();
+        $pengaturan = $pengaturanModel->asObject()->where('id', 1)->first();
+
+        $data = array_merge($this->data, [
+            'title' => 'Laporan Shift',
+            'shift' => $shift,
+            'paymentBreakdown' => $paymentBreakdown,
+            'transactionStats' => $transactionStats,
+            'Pengaturan' => $pengaturan
+        ]);
+
+        // Check if PDF export requested
+        $format = $this->request->getGet('format');
+        if ($format === 'pdf') {
+            // Generate PDF using TCPDF
+            $this->generateShiftReportPDF($shift, $paymentBreakdown, $transactionStats, $pengaturan);
+            return; // PDF is output directly
+        }
+
+        // Default: POS thermal format
+        return view('admin-lte-3/shift/print_shift_report', $data);
+    }
+
+    /**
+     * Generate PDF report for shift
+     */
+    private function generateShiftReportPDF($shift, $paymentBreakdown, $transactionStats, $pengaturan)
+    {
+        // Load TCPDF
+        require_once(APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php');
+        
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        
+        // Set document information
+        $pdf->SetCreator($pengaturan->judul_app ?? 'KOPMENSA POS');
+        $pdf->SetAuthor($pengaturan->nama_perusahaan ?? 'KOPMENSA');
+        $pdf->SetTitle('Laporan Shift - ' . $shift['shift_code']);
+        $pdf->SetSubject('Shift Report');
+        
+        // Remove default header/footer
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        
+        // Set margins
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->SetAutoPageBreak(true, 15);
+        
+        // Add page
+        $pdf->AddPage();
+        
+        // Header
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 10, strtoupper($pengaturan->nama_perusahaan ?? 'KOPMENSA'), 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(0, 5, $pengaturan->alamat ?? '', 0, 1, 'C');
+        if (!empty($pengaturan->no_telp)) {
+            $pdf->Cell(0, 5, 'Telp: ' . $pengaturan->no_telp, 0, 1, 'C');
+        }
+        $pdf->Ln(5);
+        $pdf->Line(15, $pdf->GetY(), 195, $pdf->GetY());
+        $pdf->Ln(5);
+        
+        // Report title
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 8, 'LAPORAN SHIFT', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(0, 5, $shift['shift_code'], 0, 1, 'C');
+        $pdf->Ln(3);
+        
+        // Shift Information
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->Cell(0, 6, 'INFORMASI SHIFT', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        
+        $info = [
+            'Kasir' => ($shift['user_open_name'] ?? '') . ' ' . ($shift['user_open_lastname'] ?? ''),
+            'Outlet' => $shift['outlet_name'] ?? 'N/A',
+            'Waktu Buka' => date('d/m/Y H:i', strtotime($shift['start_at'])),
+            'Waktu Tutup' => !empty($shift['end_at']) ? date('d/m/Y H:i', strtotime($shift['end_at'])) : '-'
+        ];
+        
+        foreach ($info as $label => $value) {
+            $pdf->Cell(50, 6, $label . ':', 0, 0, 'L');
+            $pdf->Cell(0, 6, $value, 0, 1, 'L');
+        }
+        $pdf->Ln(3);
+        
+        // Financial Summary
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->Cell(0, 6, 'RINGKASAN KEUANGAN', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        
+        $financial = [
+            'Uang Modal (Opening Float)' => 'Rp ' . number_format($shift['open_float'], 0, ',', '.'),
+            'Total Transaksi' => ($transactionStats['total_transactions'] ?? 0) . ' transaksi',
+            'Total Pendapatan' => 'Rp ' . number_format($transactionStats['total_revenue'] ?? 0, 0, ',', '.')
+        ];
+        
+        foreach ($financial as $label => $value) {
+            $pdf->Cell(80, 6, $label . ':', 0, 0, 'L');
+            $pdf->Cell(0, 6, $value, 0, 1, 'R');
+        }
+        $pdf->Ln(3);
+        
+        // Payment Methods
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->Cell(0, 6, 'METODE PEMBAYARAN', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        
+        if (!empty($paymentBreakdown['payment_methods'])) {
+            $pdf->SetFillColor(240, 240, 240);
+            $pdf->Cell(100, 6, 'Metode', 1, 0, 'L', true);
+            $pdf->Cell(40, 6, 'Jumlah', 1, 0, 'R', true);
+            $pdf->Cell(40, 6, 'Transaksi', 1, 1, 'C', true);
+            
+            foreach ($paymentBreakdown['payment_methods'] as $payment) {
+                $pdf->Cell(100, 6, $payment['payment_method_name'] ?? $payment['payment_method_type'] ?? 'Unknown', 1, 0, 'L');
+                $pdf->Cell(40, 6, 'Rp ' . number_format($payment['total_amount'], 0, ',', '.'), 1, 0, 'R');
+                $pdf->Cell(40, 6, $payment['transaction_count'] . 'x', 1, 1, 'C');
+            }
+        } else {
+            $pdf->Cell(0, 6, '- Tidak ada transaksi -', 0, 1, 'C');
+        }
+        
+        if (($paymentBreakdown['total_refund'] ?? 0) > 0) {
+            $pdf->SetTextColor(255, 0, 0);
+            $pdf->Cell(100, 6, 'Total Refund:', 1, 0, 'L');
+            $pdf->Cell(80, 6, '-Rp ' . number_format($paymentBreakdown['total_refund'], 0, ',', '.'), 1, 1, 'R');
+            $pdf->SetTextColor(0, 0, 0);
+        }
+        $pdf->Ln(3);
+        
+        // Petty Cash
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->Cell(0, 6, 'KAS KECIL', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        
+        $petty = [
+            'Kas Kecil Masuk' => '+Rp ' . number_format($shift['petty_in_total'], 0, ',', '.'),
+            'Kas Kecil Keluar' => '-Rp ' . number_format($shift['petty_out_total'], 0, ',', '.')
+        ];
+        
+        foreach ($petty as $label => $value) {
+            $pdf->Cell(80, 6, $label . ':', 0, 0, 'L');
+            $pdf->Cell(0, 6, $value, 0, 1, 'R');
+        }
+        $pdf->Ln(3);
+        
+        // Closing Summary
+        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->Cell(0, 6, 'PENUTUPAN', 0, 1, 'L');
+        $pdf->SetFont('helvetica', '', 10);
+        
+        $closing = [
+            'Uang Diharapkan' => 'Rp ' . number_format($shift['expected_cash'], 0, ',', '.'),
+            'Uang Dihitung' => 'Rp ' . number_format($shift['counted_cash'] ?? 0, 0, ',', '.'),
+            'Selisih' => 'Rp ' . number_format($shift['diff_cash'] ?? 0, 0, ',', '.')
+        ];
+        
+        foreach ($closing as $label => $value) {
+            $pdf->Cell(80, 6, $label . ':', 0, 0, 'L');
+            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->Cell(0, 6, $value, 0, 1, 'R');
+            $pdf->SetFont('helvetica', '', 10);
+        }
+        $pdf->Ln(3);
+        
+        // Notes
+        if (!empty($shift['catatan_shift'])) {
+            $pdf->SetFont('helvetica', 'B', 11);
+            $pdf->Cell(0, 6, 'CATATAN', 0, 1, 'L');
+            $pdf->SetFont('helvetica', '', 10);
+            $pdf->MultiCell(0, 6, $shift['catatan_shift'], 0, 'L');
+            $pdf->Ln(3);
+        }
+        
+        // Footer
+        $pdf->SetY(-20);
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 5, 'Dicetak: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
+        $pdf->Cell(0, 5, $pengaturan->footer_nota ?? 'Terima Kasih', 0, 1, 'C');
+        
+        // Output PDF
+        $pdf->Output('Shift_Report_' . $shift['shift_code'] . '.pdf', 'I');
     }
 }
 

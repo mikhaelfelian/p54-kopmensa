@@ -13,6 +13,29 @@
         </div>
     </div>
     <div class="card-body">
+        <?php if (!empty($activeShift)): ?>
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <h5><i class="fas fa-exclamation-triangle"></i> Anda Memiliki Shift Aktif!</h5>
+                <p class="mb-2">
+                    <strong>Kode Shift:</strong> <?= esc($activeShift['shift_code']) ?><br>
+                    <strong>Waktu Buka:</strong> <?= date('d/m/Y H:i', strtotime($activeShift['start_at'])) ?>
+                </p>
+                <p class="mb-2"><strong>Anda tidak dapat membuka shift baru sampai shift aktif ditutup atau disetujui.</strong></p>
+                <div class="mt-2">
+                    <a href="<?= base_url('transaksi/shift/continue/' . $activeShift['id']) ?>" 
+                       class="btn btn-success btn-sm rounded-0">
+                        <i class="fas fa-play"></i> Lanjutkan Shift
+                    </a>
+                    <a href="<?= base_url('transaksi/shift/close/' . $activeShift['id']) ?>" 
+                       class="btn btn-warning btn-sm rounded-0">
+                        <i class="fas fa-stop"></i> Tutup Shift
+                    </a>
+                </div>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        <?php endif; ?>
         <div class="row">
             <div class="col-md-6">
                 <?= form_open('transaksi/shift/open', ['id' => 'openShiftForm']) ?>
@@ -37,9 +60,14 @@
                     </div>
 
                     <div class="form-group">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" <?= !empty($activeShift) ? 'disabled' : '' ?>>
                             <i class="fas fa-play"></i> Buka Shift
                         </button>
+                        <?php if (!empty($activeShift)): ?>
+                            <small class="form-text text-danger">
+                                <i class="fas fa-info-circle"></i> Tutup shift aktif terlebih dahulu untuk membuka shift baru
+                            </small>
+                        <?php endif; ?>
                     </div>
                 <?= form_close() ?>
             </div>

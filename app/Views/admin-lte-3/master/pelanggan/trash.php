@@ -58,10 +58,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if (!empty($pelanggans)): ?>
+                    <?php if (!empty($pelanggan)): ?>
                         <?php
                         $no = ($perPage * ($currentPage - 1)) + 1;
-                        foreach ($pelanggans as $pelanggan):
+                        foreach ($pelanggan as $pelanggan):
                             ?>
                             <tr>
                                 <td class="text-center" width="3%"><?= $no++ ?>.</td>
@@ -70,18 +70,15 @@
                                 <td width="30%"><?= esc($pelanggan->alamat) ?></td>
                                 <td class="text-center" width="12%">
                                     <div class="btn-group">
-                                        <a href="<?= base_url("master/customer/detail/{$pelanggan->id}") ?>"
-                                            class="btn btn-info btn-sm rounded-0">
-                                            <i class="fas fa-eye"></i>
+                                        <a href="<?= base_url("master/customer/restore/{$pelanggan->id}") ?>"
+                                            class="btn btn-success btn-sm rounded-0"
+                                            onclick="return confirm('Yakin ingin memulihkan pelanggan ini?')">
+                                            <i class="fas fa-trash-restore"></i> Pulihkan
                                         </a>
-                                        <a href="<?= base_url("master/customer/edit/{$pelanggan->id}") ?>"
-                                            class="btn btn-warning btn-sm rounded-0">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="<?= base_url("master/customer/delete/{$pelanggan->id}") ?>"
+                                        <a href="<?= base_url("master/customer/delete_permanent/{$pelanggan->id}") ?>"
                                             class="btn btn-danger btn-sm rounded-0"
-                                            onclick="return confirm('Apakah anda yakin ingin menghapus data ini?')">
-                                            <i class="fas fa-trash"></i>
+                                            onclick="return confirm('Yakin ingin menghapus permanen pelanggan ini? Tindakan ini tidak dapat dibatalkan.')">
+                                            <i class="fas fa-trash"></i> Hapus
                                         </a>
                                     </div>
                                 </td>

@@ -14,6 +14,7 @@ class ShiftModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'shift_code',
+        'nama_shift',
         'outlet_id',
         'user_open_id',
         'user_close_id',
@@ -29,6 +30,8 @@ class ShiftModel extends Model
         'diff_cash',
         'status',
         'notes',
+        'catatan_shift',
+        'approved_at',
         'created_at',
         'updated_at'
     ];
@@ -162,7 +165,7 @@ class ShiftModel extends Model
                 COALESCE(SUM(jml_gtotal), 0) as total_sales,
                 COALESCE(SUM(jml_bayar), 0) as total_payment
             ')
-            ->where('shift_id', $shift_id)
+            ->where('id_shift', $shift_id)
             ->where('status !=', '0') // Exclude draft transactions
             ->get()
             ->getRowArray();
@@ -174,7 +177,7 @@ class ShiftModel extends Model
                 COUNT(*) as count
             ')
             ->join('tbl_trans_jual t', 't.id = p.id_penjualan', 'inner')
-            ->where('t.shift_id', $shift_id)
+            ->where('t.id_shift', $shift_id)
             ->where('t.status !=', '0')
             ->groupBy('p.platform')
             ->get()
@@ -221,7 +224,7 @@ class ShiftModel extends Model
                 GROUP_CONCAT(p.platform SEPARATOR ", ") as metode_pembayaran
             ')
             ->join('tbl_trans_jual_plat p', 'p.id_penjualan = t.id', 'left')
-            ->where('t.shift_id', $shift_id)
+            ->where('t.id_shift', $shift_id)
             ->where('t.status !=', '0') // Exclude draft transactions
             ->groupBy('t.id')
             ->orderBy('t.created_at', 'DESC')
@@ -279,7 +282,7 @@ class ShiftModel extends Model
     /**
      * Close shift
      */
-    public function closeShift($shift_id, $user_close_id, $counted_cash, $notes = '')
+    public function closeShift($shift_id, $user_close_id, $counted_cash, $notes = '', $catatan_shift = '')
     {
         $shift = $this->find($shift_id);
         if (!$shift) {
@@ -289,7 +292,7 @@ class ShiftModel extends Model
         $expected_cash = $shift['open_float'] + $shift['sales_cash_total'] + $shift['petty_in_total'] - $shift['petty_out_total'];
         $diff_cash = $counted_cash - $expected_cash;
 
-        return $this->update($shift_id, [
+        $updateData = [
             'user_close_id' => $user_close_id,
             'end_at' => date('Y-m-d H:i:s'),
             'counted_cash' => $counted_cash,
@@ -297,7 +300,13 @@ class ShiftModel extends Model
             'diff_cash' => $diff_cash,
             'status' => 'closed',
             'notes' => $notes
-        ]);
+        ];
+
+        if (!empty($catatan_shift)) {
+            $updateData['catatan_shift'] = $catatan_shift;
+        }
+
+        return $this->update($shift_id, $updateData);
     }
 
     /**
@@ -307,7 +316,8 @@ class ShiftModel extends Model
     {
         return $this->update($shift_id, [
             'user_approve_id' => $user_approve_id,
-            'status' => 'approved'
+            'status' => 'approved',
+            'approved_at' => date('Y-m-d H:i:s')
         ]);
     }
 
@@ -486,5 +496,88 @@ class ShiftModel extends Model
         }
 
         return $prefix . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get complete payment breakdown for a shift
+     * Returns detailed payment method totals from transactions
+     */
+    public function getShiftPaymentBreakdown($shift_id)
+    {
+        $db = \Config\Database::connect();
+        
+        // Get payment method breakdown from tbl_trans_jual_plat
+        $paymentBreakdown = $db->table('tbl_trans_jual_plat tjp')
+            ->select('
+                tjp.id_platform,
+                p.platform as payment_method_name,
+                tjp.platform as payment_method_type,
+                SUM(tjp.nominal) as total_amount,
+                COUNT(DISTINCT tjp.id_penjualan) as transaction_count,
+                COUNT(tjp.id) as payment_count
+            ')
+            ->join('tbl_trans_jual tj', 'tj.id = tjp.id_penjualan', 'inner')
+            ->join('tbl_m_platform p', 'p.id = tjp.id_platform', 'left')
+            ->where('tj.id_shift', $shift_id)
+            ->where('tj.status', '1') // Only finalized transactions
+            ->groupBy('tjp.id_platform', 'tjp.platform', 'p.platform')
+            ->orderBy('total_amount', 'DESC')
+            ->get()
+            ->getResultArray();
+
+        // Get refund totals (if jml_refund column exists)
+        $refundTotal = 0;
+        try {
+            $refundQuery = $db->query("SHOW COLUMNS FROM tbl_trans_jual LIKE 'jml_refund'");
+            if ($refundQuery->getNumRows() > 0) {
+                $refundResult = $db->table('tbl_trans_jual')
+                    ->select('COALESCE(SUM(jml_refund), 0) as total_refund')
+                    ->where('id_shift', $shift_id)
+                    ->where('status', '1')
+                    ->get()
+                    ->getRowArray();
+                $refundTotal = (float)($refundResult['total_refund'] ?? 0);
+            }
+        } catch (\Exception $e) {
+            // Column doesn't exist, refund total is 0
+            $refundTotal = 0;
+        }
+
+        return [
+            'payment_methods' => $paymentBreakdown,
+            'total_refund' => $refundTotal
+        ];
+    }
+
+    /**
+     * Get user's active shift (open shift for a user)
+     */
+    public function getUserActiveShift($user_id)
+    {
+        return $this->where('user_open_id', $user_id)
+                    ->where('status', 'open')
+                    ->orderBy('start_at', 'DESC')
+                    ->first();
+    }
+
+    /**
+     * Check if user has an active shift that prevents new login
+     */
+    public function hasActiveShiftBlockingLogin($user_id)
+    {
+        $activeShift = $this->getUserActiveShift($user_id);
+        
+        if (!$activeShift) {
+            return false;
+        }
+
+        // Check if shift is approved (allows new login)
+        // If approved_at is set, user can login again
+        if (!empty($activeShift['approved_at'])) {
+            return false;
+        }
+
+        // If shift is open and not approved, block login
+        return true;
     }
 }

@@ -658,56 +658,43 @@ class Pelanggan extends BaseController
     public function trash()
     {
         $currentPage = $this->request->getVar('page_pelanggan') ?? 1;
-        $perPage = $this->pengaturan->pagination_limit ?? 10;
+        $perPage     = $this->pengaturan->pagination_limit ?? 10;
+        $search      = $this->request->getVar('search');
 
-        // Start with the model query
-        $query = $this->pelangganModel;
+        $model = $this->pelangganModel;
+        $model->onlyDeleted();
 
-        // Use withDeleted() to include soft-deleted items
-        $query->withDeleted();
-
-        // Show items where status_hps = '1' OR deleted_at IS NOT NULL
-        $query->groupStart()
-            ->where('status_hps', '1')
-            ->orWhere('deleted_at IS NOT NULL', null, false)
-            ->groupEnd();
-
-        // Filter by name/code
-        $search = $this->request->getVar('search');
         if ($search) {
-            $query->groupStart()
-                ->like('nama', $search)
-                ->orLike('kode', $search)
-                ->groupEnd();
+            $model->groupStart()
+                  ->like('nama', $search)
+                  ->orLike('kode', $search)
+                  ->groupEnd();
         }
 
-        // Order by deleted_at descending
-        $query->orderBy('deleted_at', 'DESC');
+        // Use pagination on onlyDeleted customers
+        $pelanggan = $model
+            ->orderBy('deleted_at', 'DESC')
+            ->paginate($perPage, 'pelanggan', $currentPage);
 
-        // Get total records for pagination
-        $total = $query->countAllResults(false);
-
-        // Get trash count
-        $trashCount = $this->pelangganModel->countArchived();
+        $pager = $model->pager;
 
         $data = [
-            'title'          => 'Trash Pelanggan',
-            'Pengaturan'     => $this->pengaturan,
-            'user'           => $this->ionAuth->user()->row(),
-            'pelanggan'      => $query->paginate($perPage, 'pelanggan'),
-            'pager'          => $this->pelangganModel->pager,
-            'currentPage'    => $currentPage,
-            'perPage'        => $perPage,
-            'total'          => $total,
-            'search'         => $search,
-            'trashCount'     => $trashCount,
-            'breadcrumbs'    => '
+            'title'        => 'Trash Pelanggan',
+            'Pengaturan'   => $this->pengaturan,
+            'user'         => $this->ionAuth->user()->row(),
+            'pelanggan'    => $pelanggan,
+            'pager'        => $pager,
+            'search'       => $search,
+            'currentPage'  => $currentPage,
+            'perPage'      => $perPage,
+            'trashCount'   => $model->countArchived ? $model->countArchived() : null,
+            'breadcrumbs'  => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/customer') . '">Pelanggan</a></li>
                 <li class="breadcrumb-item active">Trash</li>
             '
         ];
-
+        
         return $this->view($this->theme->getThemePath() . '/master/pelanggan/trash', $data);
     }
 

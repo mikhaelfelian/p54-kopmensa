@@ -525,6 +525,47 @@ if (!function_exists('generateUsername')) {
     }
 }
 
+if (!function_exists('statusShift')) {
+    /**
+     * Get shift status configuration with badge class, icon, and text
+     * 
+     * @param string|null $status Shift status (open, closed, approved, void)
+     * @return array Array containing 'class', 'icon', and 'text' keys
+     */
+    function statusShift(?string $status): array
+    {
+        $statusConfig = [
+            'open' => [
+                'class' => 'badge-success',
+                'icon' => 'fa-play-circle',
+                'text' => 'Aktif'
+            ],
+            'closed' => [
+                'class' => 'badge-warning',
+                'icon' => 'fa-stop-circle',
+                'text' => 'Ditutup'
+            ],
+            'approved' => [
+                'class' => 'badge-info',
+                'icon' => 'fa-check-circle',
+                'text' => 'Disetujui'
+            ],
+            'void' => [
+                'class' => 'badge-danger',
+                'icon' => 'fa-times-circle',
+                'text' => 'Batal'
+            ]
+        ];
+
+        $status = $status ?? 'unknown';
+        return $statusConfig[$status] ?? [
+            'class' => 'badge-secondary',
+            'icon' => 'fa-question-circle',
+            'text' => 'Unknown'
+        ];
+    }
+}
+
 
 
 

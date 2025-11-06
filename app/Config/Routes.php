@@ -378,24 +378,32 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
 
 // Shift Management Routes
 $routes->group('transaksi/shift', ['namespace' => 'App\Controllers\Transaksi', 'filter' => 'auth'], function ($routes) {
-    $routes->get('/', 'ShiftController::index');
-    $routes->get('open', 'ShiftController::showOpenForm');
-    $routes->post('open', 'ShiftController::storeShift');
-    $routes->get('close/(:num)', 'ShiftController::closeShift/$1');
-    $routes->post('close', 'ShiftController::processClose');
-    $routes->get('reopen/(:num)', 'ShiftController::reopen/$1');
-    $routes->get('approve/(:num)', 'ShiftController::approveShift/$1');
-    $routes->get('view/(:num)', 'ShiftController::viewShift/$1');
-    $routes->get('check-status', 'ShiftController::checkShiftStatus');
-    $routes->get('summary', 'ShiftController::getShiftSummary');
-    $routes->get('dashboard', 'ShiftController::dashboard');
-    $routes->get('count', 'ShiftController::getCount');
-    $routes->get('amount', 'ShiftController::getTotalAmount');
+    $routes->get('/', 'Shift::index');
+    $routes->get('open', 'Shift::showOpenForm');
+    $routes->post('open', 'Shift::storeShift');
+    $routes->get('close/(:num)', 'Shift::closeShift/$1');
+    $routes->post('close', 'Shift::processClose');
+    $routes->get('reopen/(:num)', 'Shift::reopen/$1');
+    $routes->get('continue/(:num)', 'Shift::continue_shift/$1');
+    $routes->get('continue', 'Shift::continue_shift');
+    $routes->get('approve/(:num)', 'Shift::approveShift/$1');
+    $routes->get('view/(:num)', 'Shift::viewShift/$1');
+    $routes->get('print/(:num)', 'Shift::printShiftReport/$1');
+    $routes->get('check-status', 'Shift::checkShiftStatus');
+    $routes->get('summary', 'Shift::getShiftSummary');
+    $routes->get('dashboard', 'Shift::dashboard');
+    $routes->get('count', 'Shift::getCount');
+    $routes->get('amount', 'Shift::getTotalAmount');
 
     // API routes for AJAX calls
-    $routes->post('api/open', 'ShiftController::apiOpenShift');
-    $routes->post('api/close', 'ShiftController::apiCloseShift');
-    $routes->post('api/recover', 'ShiftController::recoverSession');
+    $routes->post('api/open', 'Shift::apiOpenShift');
+    $routes->post('api/close', 'Shift::apiCloseShift');
+    $routes->post('api/recover', 'Shift::recoverSession');
+});
+
+// Auth routes for continue shift prompt
+$routes->group('auth', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function ($routes) {
+    $routes->get('continue-shift-prompt', 'Auth::continueShiftPrompt');
 });
 
 // Petty Cash Routes under transaksi/
@@ -863,6 +871,13 @@ $routes->post('api/qr-scan', 'Transaksi\\TransJual::processQrScan');
 // untuk test
 $routes->get('home/test', 'Home::test');
 $routes->get('home/test2', 'Home::test2');
+
+// Util Controller - Utility functions (no auth required)
+$routes->group('util', ['namespace' => 'App\Controllers'], function ($routes) {
+    $routes->get('/', 'Util::index');
+    $routes->get('migrate', 'Util::migrate');
+    $routes->get('cli', 'Util::cli');
+});
 
 
 
