@@ -166,13 +166,7 @@
                                                          <a href="<?= base_url('transaksi/shift/print/' . (is_array($shift) ? $shift['id'] : $shift->id)) ?>" class="btn btn-info btn-block mb-2" target="_blank">
                                  <i class="fas fa-print mr-2"></i>
                                  Cetak Laporan
-                             </a>
-                             
-                                                           <a href="<?= base_url('transaksi/shift/edit/' . (is_array($shift) ? $shift['id'] : $shift->id)) ?>" class="btn btn-primary btn-block mb-2">
-                                 <i class="fas fa-edit mr-2"></i>
-                                 Edit Shift
-                             </a>
-                            
+                             </a>                            
                             <a href="<?= base_url('transaksi/shift') ?>" class="btn btn-secondary btn-block">
                                 <i class="fas fa-arrow-left mr-2"></i>
                                 Kembali
