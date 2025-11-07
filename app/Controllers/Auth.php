@@ -157,7 +157,7 @@ class Auth extends BaseController
             session()->set('pending_shift_id', $activeShift['id']);
             session()->set('pending_shift_code', $activeShift['shift_code']);
             
-            return redirect()->to('/auth/continue-shift-prompt')->with('toastr', [
+            return redirect()->to('/transaksi/shift/continue')->with('toastr', [
                 'type' => 'warning',
                 'message' => 'Anda memiliki shift aktif. Silakan lanjutkan atau tutup shift terlebih dahulu.'
             ]);
@@ -246,7 +246,8 @@ class Auth extends BaseController
             session()->set('pending_shift_code', $activeShift['shift_code']);
             session()->set('pending_outlet_id', $outlet);
             
-            return redirect()->to('/auth/continue-shift-prompt')->with('toastr', [
+            // Redirect to continue shift page
+            return redirect()->to('/transaksi/shift/continue/' . $activeShift['id'])->with('toastr', [
                 'type' => 'warning',
                 'message' => 'Anda memiliki shift aktif. Silakan lanjutkan atau tutup shift terlebih dahulu.'
             ]);
