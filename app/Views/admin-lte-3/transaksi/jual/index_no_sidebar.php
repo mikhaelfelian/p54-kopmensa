@@ -90,6 +90,8 @@
                                 <th>No. Nota</th>
                                 <th>Pelanggan</th>
                                 <th>Kasir</th>
+                                <th>Metode Pembayaran</th>
+                                <th>Nama Toko</th>
                                 <th class="text-right">Total</th>
                                 <th>Status</th>
                                 <th>Status Bayar</th>
@@ -109,55 +111,74 @@
                                     <tr>
                                         <td class="text-center"><?= $startNumber + $index + 1 ?></td>
                                         <td>
-                                            <strong><?= esc(isset($row->no_nota) ? $row->no_nota : 'Unknown') ?></strong><br/>
-                                            <small class="text-muted"><?= tgl_indo6($row->created_at) ?></small><br/>
-                                            <small class="text-muted"><?= esc($row->user_name ?? 'Umum') ?></small>
+                                            <strong><?= esc($row->no_nota ?? 'Unknown') ?></strong><br/>
+                                            <small class="text-muted"><?= tgl_indo8($row->tgl_masuk ?? $row->created_at ?? date('Y-m-d H:i:s')) ?></small>
                                         </td>
                                         <td>
                                             <?php
-                                            $customerName = 'Umum';
-                                            if ($row->id_pelanggan) {
-                                                foreach ($customers as $customer) {
-                                                    if ($customer->id == $row->id_pelanggan) {
-                                                        $customerName = isset($customer->nama) ? $customer->nama : 'Unknown';
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                            echo esc($customerName);
-                                            ?>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            $cashierName = 'Unknown';
-                                            if (isset($row->user_id) && $row->user_id) {
-                                                if (isset($cashiers) && is_array($cashiers)) {
-                                                    foreach ($cashiers as $cashier) {
-                                                        if ($cashier->id == $row->user_id) {
-                                                            $firstName = $cashier->first_name ?? '';
-                                                            $lastName = $cashier->last_name ?? '';
-                                                            $cashierName = trim($firstName . ' ' . $lastName);
-                                                            if (empty($cashierName)) {
-                                                                $cashierName = $cashier->username ?? 'User';
-                                                            }
+                                            // Use joined data if available, otherwise fallback to lookup
+                                            $customerName = $row->nama_pelanggan ?? 'Umum';
+                                            $noAnggota = $row->no_anggota ?? '';
+                                            
+                                            if (empty($customerName) || $customerName === 'Umum') {
+                                                if ($row->id_pelanggan) {
+                                                    foreach ($customers as $customer) {
+                                                        if ($customer->id == $row->id_pelanggan) {
+                                                            $customerName = $customer->nama ?? 'Unknown';
+                                                            $noAnggota = $customer->kode ?? '';
                                                             break;
                                                         }
                                                     }
                                                 }
-                                                
-                                                // If still unknown and we have user_id, show user ID
-                                                if ($cashierName === 'Unknown') {
-                                                    $cashierName = 'User ID: ' . $row->user_id;
+                                            }
+                                            
+                                            echo esc($customerName);
+                                            if (!empty($noAnggota)) {
+                                                echo '<br/><small class="text-muted">No. Anggota: ' . esc($noAnggota) . '</small>';
+                                            }
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <?php
+                                            // Use joined data if available
+                                            $cashierName = $row->nama_kasir ?? null;
+                                            
+                                            if (empty($cashierName)) {
+                                                // Fallback to lookup
+                                                if (isset($row->id_user) && $row->id_user) {
+                                                    if (isset($cashiers) && is_array($cashiers)) {
+                                                        foreach ($cashiers as $cashier) {
+                                                            if ($cashier->id == $row->id_user) {
+                                                                $firstName = $cashier->first_name ?? '';
+                                                                $lastName = $cashier->last_name ?? '';
+                                                                $cashierName = trim($firstName . ' ' . $lastName);
+                                                                if (empty($cashierName)) {
+                                                                    $cashierName = $cashier->username ?? 'User';
+                                                                }
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    if (empty($cashierName)) {
+                                                        $cashierName = $row->username_kasir ?? 'User ID: ' . $row->id_user;
+                                                    }
+                                                } else {
+                                                    $cashierName = 'System';
                                                 }
-                                            } else {
-                                                $cashierName = 'System';
                                             }
                                             echo esc($cashierName);
                                             ?>
                                         </td>
+                                        <td>
+                                            <?= esc($row->metode_pembayaran ?? '-') ?>
+                                        </td>
+                                        <td>
+                                            <?= esc($row->nama_toko ?? '-') ?>
+                                        </td>
                                         <td class="text-right">
                                             <strong>Rp
-                                                <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?></strong>
+                                                <?= number_format($row->jml_gtotal ?? 0, 0, ',', '.') ?></strong>
                                         </td>
                                         <td>
                                             <?php

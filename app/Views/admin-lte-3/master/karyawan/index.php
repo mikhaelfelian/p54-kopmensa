@@ -211,16 +211,19 @@ document.addEventListener('DOMContentLoaded', function() {
         bulkDeleteBtn.disabled = true;
         bulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
 
-        // Send AJAX request
+        // Send AJAX request using FormData with proper array notation
+        const formData = new FormData();
+        itemIds.forEach(id => {
+            formData.append('item_ids[]', id);
+        });
+        formData.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+
         fetch('<?= base_url('master/karyawan/bulk_delete') ?>', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: new URLSearchParams({
-                'item_ids': itemIds
-            })
+            body: formData
         })
         .then(response => response.json())
         .then(data => {

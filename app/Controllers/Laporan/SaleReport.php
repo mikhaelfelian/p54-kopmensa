@@ -48,6 +48,7 @@ class SaleReport extends BaseController
         $builder = $this->transJualModel->select('
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
+                tbl_m_pelanggan.kode as pelanggan_kode,
                 tbl_m_gudang.nama as gudang_nama,
                 tbl_m_karyawan.nama as sales_nama,
                 tbl_m_shift.shift_code as shift_nama,
@@ -60,7 +61,8 @@ class SaleReport extends BaseController
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
             ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
             ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
-            ->where('tbl_trans_jual.status_nota', '1');
+            ->where('tbl_trans_jual.status_nota', '1')
+            ->where('tbl_trans_jual.status', '1'); // Synchronize with cashier data
 
         // Apply filters
         if ($startDate && $endDate) {
@@ -82,8 +84,24 @@ class SaleReport extends BaseController
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
 
+        // Get payment methods for each transaction
+        $transactionIds = array_column($sales, 'id');
+        $paymentMethods = [];
+        if (!empty($transactionIds)) {
+            $db = \Config\Database::connect();
+            $paymentData = $db->table('tbl_trans_jual_plat')
+                ->select('id_penjualan, GROUP_CONCAT(CONCAT(platform, " (", FORMAT(nominal, 0), ")") SEPARATOR ", ") as metode_pembayaran')
+                ->whereIn('id_penjualan', $transactionIds)
+                ->groupBy('id_penjualan')
+                ->get()
+                ->getResult();
+            
+            foreach ($paymentData as $pm) {
+                $paymentMethods[$pm->id_penjualan] = $pm->metode_pembayaran;
+            }
+        }
 
-        // Calculate summary
+        // Calculate summary and attach payment methods
         $totalSales = 0;
         $totalItems = 0;
         $totalTransactions = count($sales);
@@ -94,6 +112,15 @@ class SaleReport extends BaseController
             // For sales, show username if sales_nama is not available
             if (empty($sale->sales_nama) || $sale->sales_nama === '-') {
                 $sale->sales_nama = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
+            }
+            
+            // Attach payment methods
+            $sale->metode_pembayaran = $paymentMethods[$sale->id] ?? '-';
+            
+            // Set member name (use "Umum" for general customers)
+            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
+                $sale->pelanggan_nama = 'Umum';
+                $sale->pelanggan_kode = '';
             }
         }
 
@@ -132,6 +159,7 @@ class SaleReport extends BaseController
         $sale = $this->transJualModel->select('
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
+                tbl_m_pelanggan.kode as pelanggan_kode,
                 tbl_m_pelanggan.alamat as pelanggan_alamat,
                 tbl_m_pelanggan.no_telp as pelanggan_telepon,
                 tbl_m_gudang.nama as gudang_nama,
@@ -157,6 +185,7 @@ class SaleReport extends BaseController
                 tbl_trans_jual_det.*,
                 tbl_m_item.item as item_nama,
                 tbl_m_item.kode as item_kode,
+                tbl_m_item.status_ppn,
                 tbl_m_satuan.SatuanBesar as satuan_nama
             ')
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_jual_det.id_item', 'left')
@@ -169,9 +198,25 @@ class SaleReport extends BaseController
             $item->satuan_nama = $item->satuan_nama ?? '-';
             $item->item_nama = $item->item_nama ?? '-';
             $item->item_kode = $item->item_kode ?? '-';
+            // Set PPN status label
+            $item->keterangan_pajak = ($item->status_ppn == '1') ? 'PPN' : 'Non-PPN';
         }
 
-        // Format payment method for display
+        // Get payment methods from tbl_trans_jual_plat
+        $db = \Config\Database::connect();
+        $paymentData = $db->table('tbl_trans_jual_plat')
+            ->select('platform, nominal, keterangan')
+            ->where('id_penjualan', $id)
+            ->get()
+            ->getResult();
+        
+        $paymentMethods = [];
+        foreach ($paymentData as $pm) {
+            $paymentMethods[] = $pm->platform . ' (' . number_format($pm->nominal, 0, ',', '.') . ')';
+        }
+        $sale->metode_pembayaran = !empty($paymentMethods) ? implode(', ', $paymentMethods) : '-';
+        
+        // Format payment method for display (fallback to old method if no platform data)
         $paymentMethodMap = [
             '1' => 'Cash',
             '2' => 'Transfer',
@@ -183,10 +228,14 @@ class SaleReport extends BaseController
             'debit' => 'Kartu Debit'
         ];
         
-        $sale->metode_bayar_formatted = $paymentMethodMap[$sale->metode_bayar] ?? $sale->metode_bayar ?? '-';
+        $sale->metode_bayar_formatted = $sale->metode_pembayaran !== '-' ? $sale->metode_pembayaran : ($paymentMethodMap[$sale->metode_bayar] ?? $sale->metode_bayar ?? '-');
         
         // Ensure proper fallbacks for missing data
-        $sale->pelanggan_nama = $sale->pelanggan_nama ?? '-';
+        // Set member name (use "Umum" for general customers)
+        if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
+            $sale->pelanggan_nama = 'Umum';
+            $sale->pelanggan_kode = '';
+        }
         $sale->pelanggan_alamat = $sale->pelanggan_alamat ?? '-';
         $sale->pelanggan_telepon = $sale->pelanggan_telepon ?? '-';
         
@@ -231,6 +280,7 @@ class SaleReport extends BaseController
         $builder = $this->transJualModel->select('
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
+                tbl_m_pelanggan.kode as pelanggan_kode,
                 tbl_m_gudang.nama as gudang_nama,
                 tbl_m_karyawan.nama as sales_nama,
                 tbl_m_shift.shift_code as shift_nama,
@@ -243,7 +293,8 @@ class SaleReport extends BaseController
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
             ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
             ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
-            ->where('tbl_trans_jual.status_nota', '1');
+            ->where('tbl_trans_jual.status_nota', '1')
+            ->where('tbl_trans_jual.status', '1'); // Synchronize with cashier data
 
         // Apply filters
         if ($startDate && $endDate) {
@@ -265,6 +316,34 @@ class SaleReport extends BaseController
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
 
+        // Get payment methods for each transaction
+        $transactionIds = array_column($sales, 'id');
+        $paymentMethods = [];
+        if (!empty($transactionIds)) {
+            $db = \Config\Database::connect();
+            $paymentData = $db->table('tbl_trans_jual_plat')
+                ->select('id_penjualan, GROUP_CONCAT(CONCAT(platform, " (", FORMAT(nominal, 0), ")") SEPARATOR ", ") as metode_pembayaran')
+                ->whereIn('id_penjualan', $transactionIds)
+                ->groupBy('id_penjualan')
+                ->get()
+                ->getResult();
+            
+            foreach ($paymentData as $pm) {
+                $paymentMethods[$pm->id_penjualan] = $pm->metode_pembayaran;
+            }
+        }
+
+        // Attach payment methods and set member info
+        foreach ($sales as $sale) {
+            $sale->metode_pembayaran = $paymentMethods[$sale->id] ?? '-';
+            
+            // Set member name (use "Umum" for general customers)
+            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
+                $sale->pelanggan_nama = 'Umum';
+                $sale->pelanggan_kode = '';
+            }
+        }
+
         // Create Excel file
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -276,12 +355,14 @@ class SaleReport extends BaseController
         $sheet->setCellValue('A4', 'No');
         $sheet->setCellValue('B4', 'Tanggal');
         $sheet->setCellValue('C4', 'No. Nota');
-        $sheet->setCellValue('D4', 'Pelanggan');
-        $sheet->setCellValue('E4', 'Gudang');
-        $sheet->setCellValue('F4', 'Sales');
-        $sheet->setCellValue('G4', 'Shift');
-        $sheet->setCellValue('H4', 'Username');
-        $sheet->setCellValue('I4', 'Total');
+        $sheet->setCellValue('D4', 'Nama Anggota');
+        $sheet->setCellValue('E4', 'No. Anggota');
+        $sheet->setCellValue('F4', 'Metode Pembayaran');
+        $sheet->setCellValue('G4', 'Gudang');
+        $sheet->setCellValue('H4', 'Sales');
+        $sheet->setCellValue('I4', 'Shift');
+        $sheet->setCellValue('J4', 'Username');
+        $sheet->setCellValue('K4', 'Total');
 
         $row = 5;
         $total = 0;
@@ -297,15 +378,29 @@ class SaleReport extends BaseController
                 $salesDisplayName = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
             }
             
+            // Set member name and ID (use "Umum" for general customers)
+            $memberName = $sale->pelanggan_nama ?? 'Umum';
+            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
+                $memberName = 'Umum';
+            }
+            $memberId = $sale->pelanggan_kode ?? '';
+            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
+                $memberId = '';
+            }
+            
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($sale->tgl_masuk)));
             $sheet->setCellValue('C' . $row, $sale->no_nota);
-            $sheet->setCellValue('D' . $row, $sale->pelanggan_nama ?? '-');
-            $sheet->setCellValue('E' . $row, $sale->gudang_nama ?? '-');
-            $sheet->setCellValue('F' . $row, $salesDisplayName);
-            $sheet->setCellValue('G' . $row, $sale->shift_nama ?? '-');
-            $sheet->setCellValue('H' . $row, $userDisplayName);
-            $sheet->setCellValue('I' . $row, number_format($sale->jml_gtotal ?? 0, 0, ',', '.'));
+            $sheet->setCellValue('D' . $row, $memberName);
+            $sheet->setCellValue('E' . $row, $memberId);
+            $sheet->setCellValue('F' . $row, $sale->metode_pembayaran ?? '-');
+            $sheet->setCellValue('G' . $row, $sale->gudang_nama ?? '-');
+            $sheet->setCellValue('H' . $row, $salesDisplayName);
+            $sheet->setCellValue('I' . $row, $sale->shift_nama ?? '-');
+            $sheet->setCellValue('J' . $row, $userDisplayName);
+            // Use actual numeric value for Total column
+            $sheet->setCellValue('K' . $row, (float)($sale->jml_gtotal ?? 0));
+            $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0');
             
             $total += $sale->jml_gtotal ?? 0;
             $row++;
@@ -313,10 +408,11 @@ class SaleReport extends BaseController
 
         // Add total
         $sheet->setCellValue('A' . $row, 'TOTAL');
-        $sheet->setCellValue('I' . $row, number_format($total, 0, ',', '.'));
+        $sheet->setCellValue('K' . $row, (float)$total);
+        $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0');
 
         // Auto size columns
-        foreach (range('A', 'I') as $col) {
+        foreach (range('A', 'K') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 

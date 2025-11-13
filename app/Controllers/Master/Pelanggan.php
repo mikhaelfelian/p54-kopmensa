@@ -38,6 +38,9 @@ class Pelanggan extends BaseController
         $per_page   = 10;
         $query      = $this->request->getVar('keyword') ?? '';
 
+        // Filter only active (non-archived) members
+        $this->pelangganModel->where('status_hps', '0');
+
         // Apply search filter if keyword exists
         if ($query) {
             $this->pelangganModel->groupStart()
@@ -48,8 +51,14 @@ class Pelanggan extends BaseController
                 ->groupEnd();
         }
 
-        // Get trash count
-        $trashCount = $this->pelangganModel->onlyDeleted()->countAllResults();
+        // Get trash count (use clone to avoid affecting main query)
+        $trashCount = (clone $this->pelangganModel)
+            ->withDeleted()
+            ->groupStart()
+                ->where('status_hps', '1')
+                ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd()
+            ->countAllResults();
 
         $data = [
             'title'         => 'Data Pelanggan',
@@ -591,12 +600,15 @@ class Pelanggan extends BaseController
         }
 
         // Get purchase history (transactions) from TransJual
+        // Note: tbl_trans_jual.id_pelanggan references tbl_m_pelanggan.id (not id_user)
         $transactions = [];
         try {
             $db = \Config\Database::connect();
             $transactions = $db->table('tbl_trans_jual')
-                ->where('id_pelanggan', $pelanggan->id_user) // Using id_user from pelanggan
-                ->orderBy('tgl_masuk', 'DESC')
+                ->select('tbl_trans_jual.*, tbl_m_platform_bayar.nama as metode_pembayaran')
+                ->join('tbl_m_platform_bayar', 'tbl_m_platform_bayar.id = tbl_trans_jual.id_platform_bayar', 'left')
+                ->where('tbl_trans_jual.id_pelanggan', $pelanggan->id) // Use id from pelanggan table
+                ->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')
                 ->limit(50) // Limit to last 50 transactions
                 ->get()
                 ->getResult();
@@ -1177,11 +1189,12 @@ class Pelanggan extends BaseController
                     ]);
                 }
 
-                // Link user to pelanggan
-                $this->pelangganModel->update($id, ['id_user' => $newUserId]);
-
-                // Also update status_blokir to '0' (not blocked)
-                $this->pelangganModel->update($id, ['status_blokir' => '0']);
+                // Link user to pelanggan and update status
+                $this->pelangganModel->update($id, [
+                    'id_user' => $newUserId,
+                    'status' => '1', // Active
+                    'status_blokir' => '0' // Not blocked
+                ]);
 
                 $db->transComplete();
 
@@ -1207,9 +1220,10 @@ class Pelanggan extends BaseController
                     ]);
                 }
 
-                // Update status_blokir in pelanggan table
+                // Update status and status_blokir in pelanggan table
                 $this->pelangganModel->update($id, [
-                    'status_blokir' => ($status == '1' ? '0' : '1')
+                    'status' => $status, // Active/Inactive
+                    'status_blokir' => ($status == '1' ? '0' : '1') // Blocked when inactive
                 ]);
 
                 $db->transComplete();
@@ -1222,7 +1236,10 @@ class Pelanggan extends BaseController
                 ]);
             } else {
                 // Blocking but no user exists - just update pelanggan status
-                $this->pelangganModel->update($id, ['status_blokir' => '1']);
+                $this->pelangganModel->update($id, [
+                    'status' => '0', // Inactive
+                    'status_blokir' => '1' // Blocked
+                ]);
                 
                 $db->transComplete();
                 

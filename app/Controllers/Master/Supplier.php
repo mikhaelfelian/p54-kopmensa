@@ -979,16 +979,219 @@ class Supplier extends BaseController
         if (!$this->request->isAJAX()) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Invalid request'
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
+        // Get item_ids - handle both item_ids[] and item_ids formats
         $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
+        }
 
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
+        }
+
+        // Ensure itemIds is an array and not empty
         if (empty($itemIds) || !is_array($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Tidak ada data yang dipilih untuk dihapus'
+                'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Filter out any empty values and ensure all are numeric
+        $itemIds = array_filter(array_map('intval', $itemIds));
+        
+        if (empty($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $archivedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->supplierModel->archive($id)) {
+                        $archivedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal mengarsipkan data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error mengarsipkan data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil mengarsipkan {$archivedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal diarsipkan";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'archived_count' => $archivedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors,
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat mengarsipkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Bulk restore archived suppliers
+     */
+    public function bulk_restore()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Get item_ids - handle both item_ids[] and item_ids formats
+        $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
+        }
+
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
+        }
+
+        // Ensure itemIds is an array and not empty
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dipulihkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Filter out any empty values and ensure all are numeric
+        $itemIds = array_filter(array_map('intval', $itemIds));
+        
+        if (empty($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dipulihkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $restoredCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    if ($this->supplierModel->restore($id)) {
+                        $restoredCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal memulihkan data ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error memulihkan data ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil memulihkan {$restoredCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dipulihkan";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'restored_count' => $restoredCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors,
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Restore] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memulihkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Permanently delete selected archived suppliers
+     */
+    public function bulk_delete_permanent()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Get item_ids - handle both item_ids[] and item_ids formats
+        $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
+        }
+
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
+        }
+
+        // Ensure itemIds is an array and not empty
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus permanen',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Filter out any empty values and ensure all are numeric
+        $itemIds = array_filter(array_map('intval', $itemIds));
+        
+        if (empty($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus permanen',
+                'csrfHash' => csrf_hash()
             ]);
         }
 
@@ -999,19 +1202,19 @@ class Supplier extends BaseController
 
             foreach ($itemIds as $id) {
                 try {
-                    if ($this->supplierModel->delete($id)) {
+                    if ($this->supplierModel->purge($id)) {
                         $deletedCount++;
                     } else {
                         $failedCount++;
-                        $errors[] = "Gagal menghapus data ID: {$id}";
+                        $errors[] = "Gagal menghapus permanen data ID: {$id}";
                     }
                 } catch (\Exception $e) {
                     $failedCount++;
-                    $errors[] = "Error menghapus data ID {$id}: " . $e->getMessage();
+                    $errors[] = "Error menghapus permanen data ID {$id}: " . $e->getMessage();
                 }
             }
 
-            $message = "Berhasil menghapus {$deletedCount} data";
+            $message = "Berhasil menghapus permanen {$deletedCount} data";
             if ($failedCount > 0) {
                 $message .= ", {$failedCount} data gagal dihapus";
             }
@@ -1021,14 +1224,89 @@ class Supplier extends BaseController
                 'message' => $message,
                 'deleted_count' => $deletedCount,
                 'failed_count' => $failedCount,
-                'errors' => $errors
+                'errors' => $errors,
+                'csrfHash' => csrf_hash()
             ]);
 
         } catch (\Exception $e) {
-            log_message('error', '[Bulk Delete] ' . $e->getMessage());
+            log_message('error', '[Bulk Delete Permanent] ' . $e->getMessage());
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menghapus permanen data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Permanently delete all archived suppliers
+     */
+    public function delete_all_permanent()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            // Get all archived suppliers (status_hps='1' OR deleted_at IS NOT NULL)
+            $archivedSuppliers = $this->supplierModel
+                ->withDeleted()
+                ->groupStart()
+                    ->where('status_hps', '1')
+                    ->orWhere('deleted_at IS NOT NULL', null, false)
+                ->groupEnd()
+                ->findAll();
+
+            if (empty($archivedSuppliers)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada data yang diarsipkan untuk dihapus',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($archivedSuppliers as $supplier) {
+                try {
+                    if ($this->supplierModel->purge($supplier->id)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus permanen data ID: {$supplier->id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus permanen data ID {$supplier->id}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Berhasil menghapus permanen {$deletedCount} data";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} data gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors,
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Delete All Permanent] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus permanen semua data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
             ]);
         }
     }

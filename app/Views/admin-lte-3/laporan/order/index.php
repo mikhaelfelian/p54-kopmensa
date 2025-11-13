@@ -19,6 +19,10 @@
                     <i class="fas fa-shopping-bag mr-1"></i> Laporan Pesanan
                 </h3>
                 <div class="card-tools">
+                    <a href="<?= base_url('laporan/order/export_detail_items') ?>?invoice_number=<?= $invoiceNumber ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&status=<?= $status ?>" 
+                       class="btn btn-info btn-sm rounded-0">
+                        <i class="fas fa-list mr-1"></i> Export Detail Item
+                    </a>
                     <a href="<?= base_url('laporan/order/export') ?>?invoice_number=<?= $invoiceNumber ?>&start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&status=<?= $status ?>" 
                        class="btn btn-success btn-sm rounded-0">
                         <i class="fas fa-file-excel mr-1"></i> Export Excel

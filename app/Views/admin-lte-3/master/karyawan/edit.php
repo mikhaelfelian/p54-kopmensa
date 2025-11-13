@@ -27,8 +27,7 @@
                                 'name' => 'kode',
                                 'type' => 'text',
                                 'class' => 'form-control rounded-0',
-                                'value' => $karyawan->kode,
-                                'readonly' => true
+                                'value' => $karyawan->kode
                             ]) ?>
                         </div>
                         <!-- NIP -->

@@ -100,7 +100,7 @@
                                         <?= ($row->status == '1') ? 'Aktif' : 'Tidak Aktif' ?>
                                     </span>
                                 </td>
-                                <td><?= date('d/m/Y H:i', strtotime($row->deleted_at)) ?></td>
+                                <td><?= tgl_indo8($row->deleted_at) ?></td>
                                 <td>
                                     <div class="btn-group">
                                         <a href="<?= base_url("master/item/restore/{$row->id}") ?>"

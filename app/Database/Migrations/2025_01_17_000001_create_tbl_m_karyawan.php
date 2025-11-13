@@ -42,6 +42,10 @@ class CreateTblMKaryawan extends Migration
                 'type' => 'DATETIME',
                 'null' => true,
             ],
+            'deleted_at' => [
+                'type' => 'DATETIME',
+                'null' => true,
+            ],
             'kode' => [
                 'type'       => 'VARCHAR',
                 'constraint' => 10,

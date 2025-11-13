@@ -186,7 +186,8 @@ class Karyawan extends BaseController
             // Prepare user data for ion_auth
             $user_email    = $email ?: strtolower(str_replace(' ', '', $nama)) . '@example.com';
             $user_username = $username ?: strtolower(str_replace(' ', '', $nama));
-            $user_password = $password ?: 'password123'; // Default password, should be changed
+            // Ensure password is always set - use provided password or default
+            $user_password = $password ?: 'password123';
             $additional_data = [
                 'first_name' => $nama,
                 'last_name'  => $nama,
@@ -206,7 +207,7 @@ class Karyawan extends BaseController
                     ->with('error', 'User dengan email atau username tersebut sudah terdaftar.');
             }
 
-            // Create user first
+            // Create user first - IonAuth register() handles password hashing automatically
             $user_id = $this->ionAuth->register($user_username, $user_password, $user_email, $additional_data, [$group]);
             if (!$user_id) {
                 log_message('error', '[Karyawan::store] Gagal membuat user ion_auth: ' . implode(', ', $this->ionAuth->errors_array()));
@@ -214,6 +215,9 @@ class Karyawan extends BaseController
                     ->withInput()
                     ->with('error', 'Gagal membuat user login. Silakan cek data user.');
             }
+
+            // Ensure user is activated (IonAuth register may create inactive users by default)
+            $this->ionAuth->activate($user_id);
 
             // Get group description for jabatan
             $groups = $this->ionAuth->group($id_user_group)->row();
@@ -349,7 +353,7 @@ class Karyawan extends BaseController
                     $ionAuthData['phone'] = $no_hp;
                 }
 
-                // Update password if provided
+                // Update password if provided - use IonAuth's update method for proper password hashing
                 if (!empty($password)) {
                     // Validate password confirmation
                     if ($password !== $password_confirm) {
@@ -358,22 +362,26 @@ class Karyawan extends BaseController
                                        ->with('error', 'Password dan konfirmasi password tidak sama');
                     }
 
-                    // Hash the password
-                    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-                    $ionAuthData['password'] = $hashedPassword;
+                    // Use IonAuth's update method which handles password hashing correctly
+                    $passwordUpdated = $this->ionAuth->update($karyawan->id_user, ['password' => $password]);
+                    if (!$passwordUpdated) {
+                        log_message('error', '[Karyawan::update] Gagal mengupdate password: ' . implode(', ', $this->ionAuth->errors_array()));
+                        return redirect()->back()
+                                       ->withInput()
+                                       ->with('error', 'Gagal mengupdate password user');
+                    }
                 }
 
-                // Update IonAuth user data if there's data to update
+                // Update other IonAuth user data if there's data to update
                 if (!empty($ionAuthData)) {
-                    $this->db->table('tbl_ion_users')
-                            ->where('id', $karyawan->id_user)
-                            ->set($ionAuthData)
-                            ->update();
+                    // Use IonAuth's update method for proper data handling
+                    $this->ionAuth->update($karyawan->id_user, $ionAuthData);
                 }
             }
 
             $data = [
                 'id_user_group'   => $this->request->getPost('id_user_group'),
+                'kode'            => $this->request->getPost('kode'),
                 'nik'             => $this->request->getPost('nik'),
                 'nama'            => $this->request->getPost('nama'),
                 'jns_klm'         => $this->request->getPost('jns_klm'),
@@ -611,9 +619,32 @@ class Karyawan extends BaseController
             ]);
         }
 
+        // Get item_ids - handle both item_ids[] and item_ids formats
         $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
+        }
 
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
+        }
+
+        // Ensure itemIds is an array and not empty
         if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Filter out any empty values and ensure all are numeric
+        $itemIds = array_filter(array_map('intval', $itemIds));
+        
+        if (empty($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Tidak ada data yang dipilih untuk dihapus',

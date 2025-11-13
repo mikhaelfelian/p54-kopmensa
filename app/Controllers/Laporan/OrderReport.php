@@ -303,4 +303,191 @@ class OrderReport extends BaseController
         $writer->save('php://output');
         exit;
     }
+
+    /**
+     * Export detailed itemized spending per invoice to Excel
+     */
+    public function export_detail_items()
+    {
+        $invoiceNumber = $this->request->getGet('invoice_number');
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
+        $idGudang = $this->request->getGet('id_gudang');
+        $idPelanggan = $this->request->getGet('id_pelanggan');
+        $status = $this->request->getGet('status');
+
+        $builder = $this->transJualModel->select('
+                tbl_trans_jual.*,
+                tbl_m_gudang.nama as gudang_nama,
+                tbl_m_karyawan.nama as sales_nama,
+                tbl_m_pelanggan.nama as pelanggan_nama,
+                tbl_m_pelanggan.kode as pelanggan_kode
+            ')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
+            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
+            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->where('tbl_trans_jual.deleted_at IS NULL');
+
+        // Apply filters
+        if ($invoiceNumber) {
+            $builder->like('tbl_trans_jual.no_nota', $invoiceNumber);
+        }
+
+        if ($startDate && $endDate) {
+            $builder->where('DATE(tbl_trans_jual.tgl_masuk) >=', $startDate)
+                   ->where('DATE(tbl_trans_jual.tgl_masuk) <=', $endDate);
+        }
+
+        if ($idGudang) {
+            $builder->where('tbl_trans_jual.id_gudang', $idGudang);
+        }
+
+        if ($idPelanggan) {
+            $builder->where('tbl_trans_jual.id_pelanggan', $idPelanggan);
+        }
+
+        if ($status !== null && $status !== '') {
+            $builder->where('tbl_trans_jual.status_nota', $status);
+        }
+
+        $orders = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
+
+        // Create Excel export
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set headers
+        $sheet->setCellValue('A1', 'LAPORAN DETAIL ITEM PESANAN PER INVOICE');
+        $sheet->setCellValue('A2', 'Periode: ' . date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)));
+        if ($invoiceNumber) {
+            $sheet->setCellValue('A3', 'No. Invoice: ' . $invoiceNumber);
+        }
+
+        $row = 5;
+        $grandTotal = 0;
+
+        foreach ($orders as $order) {
+            // Invoice header
+            $sheet->setCellValue('A' . $row, 'No. Invoice:');
+            $sheet->setCellValue('B' . $row, $order->no_nota);
+            $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true);
+            $row++;
+
+            $sheet->setCellValue('A' . $row, 'Tanggal:');
+            $sheet->setCellValue('B' . $row, date('d/m/Y H:i', strtotime($order->tgl_masuk)));
+            $row++;
+
+            $sheet->setCellValue('A' . $row, 'Gudang:');
+            $sheet->setCellValue('B' . $row, $order->gudang_nama ?? '-');
+            $row++;
+
+            $sheet->setCellValue('A' . $row, 'Pelanggan:');
+            $sheet->setCellValue('B' . $row, ($order->pelanggan_nama ?: 'Umum') . ($order->pelanggan_kode ? ' (' . $order->pelanggan_kode . ')' : ''));
+            $row++;
+
+            $sheet->setCellValue('A' . $row, 'Sales:');
+            $sheet->setCellValue('B' . $row, $order->sales_nama ?? '-');
+            $row++;
+
+            $sheet->setCellValue('A' . $row, 'Status:');
+            $sheet->setCellValue('B' . $row, $order->status_nota == '1' ? 'Completed' : 'Pending');
+            $row++;
+
+            // Item headers
+            $row++;
+            $sheet->setCellValue('A' . $row, 'No');
+            $sheet->setCellValue('B' . $row, 'Kode Item');
+            $sheet->setCellValue('C' . $row, 'Nama Item');
+            $sheet->setCellValue('D' . $row, 'Satuan');
+            $sheet->setCellValue('E' . $row, 'Qty');
+            $sheet->setCellValue('F' . $row, 'Harga');
+            $sheet->setCellValue('G' . $row, 'Subtotal');
+            $sheet->getStyle('A' . $row . ':G' . $row)->getFont()->setBold(true);
+            $sheet->getStyle('A' . $row . ':G' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('CCCCCC');
+            $row++;
+
+            // Get order details
+            $orderDetails = $this->transJualDetModel->select('
+                    tbl_trans_jual_det.*,
+                    tbl_m_item.kode as item_kode,
+                    tbl_m_item.item as item_nama,
+                    tbl_m_satuan.SatuanBesar as satuan_nama
+                ')
+                ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_jual_det.id_item', 'left')
+                ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_jual_det.id_satuan', 'left')
+                ->where('tbl_trans_jual_det.id_penjualan', $order->id)
+                ->findAll();
+
+            $itemNo = 1;
+            $invoiceSubtotal = 0;
+            foreach ($orderDetails as $detail) {
+                $sheet->setCellValue('A' . $row, $itemNo++);
+                $sheet->setCellValue('B' . $row, $detail->item_kode ?? '-');
+                $sheet->setCellValue('C' . $row, $detail->item_nama ?? '-');
+                $sheet->setCellValue('D' . $row, $detail->satuan_nama ?? '-');
+                $sheet->setCellValue('E' . $row, (float)($detail->jml ?? 0));
+                $sheet->setCellValue('F' . $row, (float)($detail->harga ?? 0));
+                $sheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0');
+                $sheet->setCellValue('G' . $row, (float)($detail->subtotal ?? 0));
+                $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+                
+                $invoiceSubtotal += (float)($detail->subtotal ?? 0);
+                $row++;
+            }
+
+            // Invoice totals
+            $row++;
+            $sheet->setCellValue('F' . $row, 'Subtotal:');
+            $sheet->setCellValue('G' . $row, (float)$invoiceSubtotal);
+            $sheet->getStyle('F' . $row . ':G' . $row)->getFont()->setBold(true);
+            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $row++;
+
+            if (($order->jml_diskon ?? 0) > 0) {
+                $sheet->setCellValue('F' . $row, 'Diskon:');
+                $sheet->setCellValue('G' . $row, (float)($order->jml_diskon ?? 0));
+                $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+                $row++;
+            }
+
+            if (($order->jml_ppn ?? 0) > 0) {
+                $sheet->setCellValue('F' . $row, 'PPN:');
+                $sheet->setCellValue('G' . $row, (float)($order->jml_ppn ?? 0));
+                $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+                $row++;
+            }
+
+            $sheet->setCellValue('F' . $row, 'TOTAL:');
+            $sheet->setCellValue('G' . $row, (float)($order->jml_gtotal ?? 0));
+            $sheet->getStyle('F' . $row . ':G' . $row)->getFont()->setBold(true);
+            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $grandTotal += (float)($order->jml_gtotal ?? 0);
+            $row += 2; // Add spacing between invoices
+        }
+
+        // Grand total
+        if ($row > 5) {
+            $row++;
+            $sheet->setCellValue('F' . $row, 'GRAND TOTAL:');
+            $sheet->setCellValue('G' . $row, (float)$grandTotal);
+            $sheet->getStyle('F' . $row . ':G' . $row)->getFont()->setBold(true)->setSize(12);
+            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        }
+
+        // Auto-size columns
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Export
+        $filename = 'Laporan_Detail_Item_Pesanan_' . ($invoiceNumber ? $invoiceNumber . '_' : '') . date('Y-m-d', strtotime($startDate)) . '_to_' . date('Y-m-d', strtotime($endDate)) . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
 }

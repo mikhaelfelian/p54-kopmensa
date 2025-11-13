@@ -250,29 +250,76 @@ class TransJual extends BaseController
         $dateTo   = $this->request->getVar('date_to');
         $cashierFilter = $this->request->getVar('cashier_filter') ?? '';
 
-        // Build query
-        $builder = $this->transJualModel;
+        // Build query with joins to get store name, customer info, and cashier name
+        $builder = $this->db->table('tbl_trans_jual')
+            ->select('tbl_trans_jual.*, 
+                tbl_m_gudang.nama as nama_toko,
+                tbl_m_pelanggan.kode as no_anggota,
+                tbl_m_pelanggan.nama as nama_pelanggan,
+                CONCAT(tbl_ion_users.first_name, " ", tbl_ion_users.last_name) as nama_kasir,
+                tbl_ion_users.username as username_kasir')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
+            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left');
         
         if ($search) {
-            $builder = $builder->like('no_nota', $search)
-                              ->orLike('id_pelanggan', $search);
+            $builder->groupStart()
+                ->like('tbl_trans_jual.no_nota', $search)
+                ->orLike('tbl_trans_jual.id_pelanggan', $search)
+                ->orLike('tbl_m_pelanggan.nama', $search)
+                ->orLike('tbl_m_pelanggan.kode', $search)
+                ->groupEnd();
         }
         
         if ($status !== null && $status !== '') {
-            $builder = $builder->where('status', $status);
+            $builder->where('tbl_trans_jual.status', $status);
         }
         
         if ($dateFrom) {
-            $builder = $builder->where('DATE(created_at) >=', $dateFrom);
+            $builder->where('DATE(tbl_trans_jual.created_at) >=', $dateFrom);
         }
         
         if ($dateTo) {
-            $builder = $builder->where('DATE(created_at) <=', $dateTo);
+            $builder->where('DATE(tbl_trans_jual.created_at) <=', $dateTo);
         }
 
+        if ($cashierFilter) {
+            $builder->where('tbl_trans_jual.id_user', $cashierFilter);
+        }
+
+        // Get total count for pagination
+        $totalRows = $builder->countAllResults(false);
+        
         // Get paginated results
-        $transactions = $builder->orderBy('created_at', 'DESC')
-                               ->paginate($perPage, 'transjual');
+        $transactions = $builder->orderBy('tbl_trans_jual.created_at', 'DESC')
+                               ->limit($perPage, ($currentPage - 1) * $perPage)
+                               ->get()
+                               ->getResult();
+
+        // Get payment methods for each transaction
+        $transactionIds = array_column($transactions, 'id');
+        $paymentMethods = [];
+        if (!empty($transactionIds)) {
+            $paymentData = $this->db->table('tbl_trans_jual_plat')
+                ->select('id_penjualan, GROUP_CONCAT(CONCAT(platform, " (", FORMAT(nominal, 0), ")") SEPARATOR ", ") as metode_pembayaran')
+                ->whereIn('id_penjualan', $transactionIds)
+                ->groupBy('id_penjualan')
+                ->get()
+                ->getResult();
+            
+            foreach ($paymentData as $pm) {
+                $paymentMethods[$pm->id_penjualan] = $pm->metode_pembayaran;
+            }
+        }
+
+        // Attach payment methods to transactions
+        foreach ($transactions as $transaction) {
+            $transaction->metode_pembayaran = $paymentMethods[$transaction->id] ?? '-';
+        }
+
+        // Create pagination manually since we're using custom query
+        $pager = \Config\Services::pager();
+        $pager->store('transjual', $currentPage, $perPage, $totalRows);
 
         // Get summary data
         $totalSales = $this->transJualModel->selectSum('jml_gtotal')
@@ -319,7 +366,7 @@ class TransJual extends BaseController
             'Pengaturan'        => $this->pengaturan,
             'user'              => $this->ionAuth->user()->row(),
             'transactions'      => $transactions,
-            'pager'             => $this->transJualModel->pager,
+            'pager'             => $pager,
             'currentPage'       => $currentPage,
             'perPage'           => $perPage,
             'search'            => $search,
@@ -352,7 +399,21 @@ class TransJual extends BaseController
      */
     public function getTransactionDetails($id)
     {
-        $transaction = $this->transJualModel->find($id);
+        // Get transaction with joins to get store name, customer info, and cashier name
+        $transaction = $this->db->table('tbl_trans_jual')
+            ->select('tbl_trans_jual.*, 
+                tbl_m_gudang.nama as nama_toko,
+                tbl_m_pelanggan.kode as no_anggota,
+                tbl_m_pelanggan.nama as nama_pelanggan,
+                CONCAT(tbl_ion_users.first_name, " ", tbl_ion_users.last_name) as nama_kasir,
+                tbl_ion_users.username as username_kasir')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
+            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
+            ->where('tbl_trans_jual.id', $id)
+            ->get()
+            ->getRow();
+            
         if (!$transaction) {
             if ($this->request->isAJAX()) {
                 return $this->response->setJSON(['error' => 'Transaction not found']);
@@ -363,6 +424,15 @@ class TransJual extends BaseController
 
         $details = $this->transJualDetModel->getDetailsWithItem($id);
         $platforms = $this->transJualPlatModel->getPlatformsWithInfo($id);
+
+        // Get payment methods as formatted string
+        $paymentMethods = [];
+        if (!empty($platforms)) {
+            foreach ($platforms as $platform) {
+                $paymentMethods[] = $platform->platform . ' (' . number_format($platform->nominal, 0, ',', '.') . ')';
+            }
+        }
+        $transaction->metode_pembayaran = !empty($paymentMethods) ? implode(', ', $paymentMethods) : '-';
 
         // If AJAX request, return JSON
         if ($this->request->isAJAX()) {
@@ -917,6 +987,8 @@ class TransJual extends BaseController
         $discountPercent    = $this->request->getPost('discount_percent') ?: 0;
         $voucherCode        = $this->request->getPost('voucher_code') ?: null;
         $voucherDiscount    = $this->request->getPost('voucher_discount') ?: 0;
+        $voucherType        = $this->request->getPost('voucher_type') ?: null;
+        $voucherDiscountAmount = $this->request->getPost('voucher_discount_amount') ?: 0;
         $paymentMethods     = $this->request->getPost('payment_methods') ?: [];
         $totalAmountReceived = $this->request->getPost('total_amount_received') ?: 0;
         $grandTotal         = $this->request->getPost('grand_total') ?: 0;
@@ -943,8 +1015,12 @@ class TransJual extends BaseController
                 return $this->response->setJSON(['error' => 'Metode pembayaran harus diisi']);
             }
 
-            // Enforce blocked-member rule for Piutang Anggota
-            $guardResult = $this->paymentGuard->allowPayment($customerId ? (int) $customerId : null, $paymentMethods);
+            // Enforce blocked-member rule for Piutang Anggota and validate spending limit
+            $guardResult = $this->paymentGuard->allowPayment(
+                $customerId ? (int) $customerId : null, 
+                $paymentMethods,
+                (float) $grandTotal // Pass transaction amount for limit validation
+            );
             if (!$guardResult['allowed']) {
                 return $this->response->setJSON(['error' => $guardResult['message']]);
             }
@@ -1002,11 +1078,16 @@ class TransJual extends BaseController
             // Calculate diskon (discount %)
             $discountAmount = $jml_total * ($discountPercent / 100);
 
-            // Calculate voucher (assume voucherDiscount is percent, adjust if nominal)
+            // Calculate voucher - handle both percentage and nominal vouchers
             $voucherAmount = 0;
-            if ($voucherDiscount > 0) {
-                // If voucherDiscount is percent (e.g. 10 for 10%)
-                $voucherAmount = $jml_total * ($voucherDiscount / 100);
+            if (!empty($voucherCode) && $voucherDiscount > 0) {
+                if ($voucherType === 'nominal' && $voucherDiscountAmount > 0) {
+                    // Nominal voucher - use the provided discount amount
+                    $voucherAmount = (float) $voucherDiscountAmount;
+                } else if ($voucherType === 'persen' || empty($voucherType)) {
+                    // Percentage voucher - calculate from percentage
+                    $voucherAmount = $jml_total * ($voucherDiscount / 100);
+                }
             }
 
             // jml_diskon = total diskon (voucher + diskon % or nominal)

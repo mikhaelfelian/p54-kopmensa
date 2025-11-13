@@ -140,7 +140,9 @@
                                 <th width="5%">No</th>
                                 <th>Tanggal</th>
                                 <th>No. Nota</th>
-                                <th>Pelanggan</th>
+                                <th>Nama Anggota</th>
+                                <th>No. Anggota</th>
+                                <th>Metode Pembayaran</th>
                                 <th>Gudang</th>
                                 <th>Sales</th>
                                 <th>Total</th>
@@ -150,7 +152,7 @@
                         <tbody>
                             <?php if (empty($sales)): ?>
                                 <tr>
-                                    <td colspan="8" class="text-center">Tidak ada data penjualan</td>
+                                    <td colspan="10" class="text-center">Tidak ada data penjualan</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($sales as $index => $sale): ?>
@@ -162,7 +164,9 @@
                                                 <?= $sale->no_nota ?>
                                             </a>
                                         </td>
-                                        <td><?= $sale->pelanggan_nama ?? '-' ?></td>
+                                        <td><?= esc($sale->pelanggan_nama ?? 'Umum') ?></td>
+                                        <td><?= esc($sale->pelanggan_kode ?? '') ?></td>
+                                        <td><?= esc($sale->metode_pembayaran ?? '-') ?></td>
                                         <td><?= $sale->gudang_nama ?? '-' ?></td>
                                         <td><?= $sale->sales_nama ?? '-' ?></td>
                                         <td class="text-right"><?= number_format($sale->jml_gtotal ?? 0, 0, ',', '.') ?></td>
@@ -179,7 +183,7 @@
                         <?php if (!empty($sales)): ?>
                             <tfoot>
                                 <tr class="bg-light">
-                                    <th colspan="6" class="text-right">TOTAL</th>
+                                    <th colspan="8" class="text-right">TOTAL</th>
                                     <th class="text-right"><?= number_format($totalSales, 0, ',', '.') ?></th>
                                     <th></th>
                                 </tr>

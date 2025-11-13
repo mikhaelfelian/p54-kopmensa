@@ -160,8 +160,12 @@
                                         <td class="text-right"><?= number_format($purchase->jml_gtotal ?? 0, 0, ',', '.') ?></td>
                                         <td>
                                             <a href="<?= base_url('laporan/purchase/detail/' . $purchase->id) ?>" 
-                                               class="btn btn-info btn-sm rounded-0">
+                                               class="btn btn-info btn-sm rounded-0" title="Detail">
                                                 <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="<?= base_url('laporan/purchase/detail_items/' . $purchase->id) ?>" 
+                                               class="btn btn-secondary btn-sm rounded-0" title="Detail Item">
+                                                <i class="fas fa-list"></i>
                                             </a>
                                         </td>
                                     </tr>

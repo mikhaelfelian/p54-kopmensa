@@ -116,10 +116,12 @@ class PurchaseReport extends BaseController
                 tbl_m_supplier.nama as supplier_nama,
                 tbl_m_supplier.alamat as supplier_alamat,
                 tbl_m_supplier.no_tlp as supplier_no_tlp,
-                tbl_m_karyawan.nama as penerima_nama
+                tbl_m_karyawan.nama as penerima_nama,
+                tbl_m_gudang.nama as gudang_nama
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli.id_gudang', 'left')
             ->where('tbl_trans_beli.id', $id)
             ->first();
 
@@ -216,11 +218,14 @@ class PurchaseReport extends BaseController
 
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($purchase->tgl_masuk)));
-            $sheet->setCellValue('C' . $row, $purchase->no_nota);
+            // Ensure invoice number is displayed as text (not converted to number)
+            $sheet->setCellValueExplicit('C' . $row, (string)($purchase->no_nota ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValue('D' . $row, $purchase->supplier_nama ?? '-');
             $sheet->setCellValue('E' . $row, $purchase->penerima_nama ?? '-');
             $sheet->setCellValue('F' . $row, $status);
-            $sheet->setCellValue('G' . $row, number_format($purchase->jml_gtotal ?? 0, 0, ',', '.'));
+            // Use actual numeric value for Total column
+            $sheet->setCellValue('G' . $row, (float)($purchase->jml_gtotal ?? 0));
+            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
             
             $total += $purchase->jml_gtotal ?? 0;
             $row++;
@@ -228,7 +233,8 @@ class PurchaseReport extends BaseController
 
         // Add total
         $sheet->setCellValue('A' . $row, 'TOTAL');
-        $sheet->setCellValue('G' . $row, number_format($total, 0, ',', '.'));
+        $sheet->setCellValue('G' . $row, (float)$total);
+        $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
 
         // Auto size columns
         foreach (range('A', 'G') as $col) {
@@ -245,5 +251,110 @@ class PurchaseReport extends BaseController
 
         $writer->save('php://output');
         exit;
+    }
+
+    /**
+     * Show detailed item purchase per invoice
+     */
+    public function detail_items($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('laporan/purchase')->with('error', 'ID Pembelian tidak valid');
+        }
+
+        $purchase = $this->transBeliModel->select('
+                tbl_trans_beli.*,
+                tbl_m_supplier.nama as supplier_nama,
+                tbl_m_supplier.alamat as supplier_alamat,
+                tbl_m_supplier.no_tlp as supplier_no_tlp,
+                tbl_m_karyawan.nama as penerima_nama,
+                tbl_m_gudang.nama as gudang_nama
+            ')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
+            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli.id_gudang', 'left')
+            ->where('tbl_trans_beli.id', $id)
+            ->first();
+
+        if (!$purchase) {
+            return redirect()->to('laporan/purchase')->with('error', 'Data pembelian tidak ditemukan');
+        }
+
+        $items = $this->transBeliDetModel->select('
+                tbl_trans_beli_det.*,
+                tbl_m_item.item as item_nama,
+                tbl_m_item.kode as item_kode,
+                tbl_m_satuan.SatuanBesar as satuan_nama
+            ')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_det.id_item', 'left')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_beli_det.id_satuan', 'left')
+            ->where('id_pembelian', $id)
+            ->findAll();
+
+        $data = [
+            'title' => 'Detail Item Pembelian - ' . $purchase->no_nota,
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'purchase' => $purchase,
+            'items' => $items,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('laporan/purchase') . '">Laporan Pembelian</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('laporan/purchase/detail/' . $id) . '">Detail</a></li>
+                <li class="breadcrumb-item active">Detail Item</li>
+            '
+        ];
+
+        return $this->view($this->theme->getThemePath() . '/laporan/purchase/detail_items', $data);
+    }
+
+    /**
+     * Print purchase invoice
+     */
+    public function print_invoice($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('laporan/purchase')->with('error', 'ID Pembelian tidak valid');
+        }
+
+        $purchase = $this->transBeliModel->select('
+                tbl_trans_beli.*,
+                tbl_m_supplier.nama as supplier_nama,
+                tbl_m_supplier.alamat as supplier_alamat,
+                tbl_m_supplier.no_tlp as supplier_no_tlp,
+                tbl_m_supplier.npwp as supplier_npwp,
+                tbl_m_karyawan.nama as penerima_nama,
+                tbl_m_gudang.nama as gudang_nama
+            ')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
+            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli.id_gudang', 'left')
+            ->where('tbl_trans_beli.id', $id)
+            ->first();
+
+        if (!$purchase) {
+            return redirect()->to('laporan/purchase')->with('error', 'Data pembelian tidak ditemukan');
+        }
+
+        $items = $this->transBeliDetModel->select('
+                tbl_trans_beli_det.*,
+                tbl_m_item.item as item_nama,
+                tbl_m_item.kode as item_kode,
+                tbl_m_satuan.SatuanBesar as satuan_nama
+            ')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_det.id_item', 'left')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_beli_det.id_satuan', 'left')
+            ->where('id_pembelian', $id)
+            ->findAll();
+
+        $data = [
+            'title' => 'Cetak Faktur Pembelian - ' . $purchase->no_nota,
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'purchase' => $purchase,
+            'items' => $items
+        ];
+
+        return $this->view($this->theme->getThemePath() . '/laporan/purchase/print_invoice', $data);
     }
 }

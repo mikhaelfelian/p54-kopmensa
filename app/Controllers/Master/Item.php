@@ -655,18 +655,26 @@ class Item extends BaseController
 
     public function restore($id)
     {
-        $data = [
-            'status_hps' => '0',
-            'deleted_at' => null
-        ];
+        // Use builder pattern (CI4 style) to restore item regardless of soft-delete status
+        // This works with status_hps='1' archived items
+        try {
+            $updated = $this->itemModel->builder()
+                ->where('id', $id)
+                ->set(['status_hps' => '0', 'deleted_at' => null])
+                ->update();
 
-        if ($this->itemModel->update($id, $data)) {
-            return redirect()->to(base_url('master/item/trash'))
-                ->with('success', 'Data item berhasil dikembalikan');
+            if ($updated) {
+                return redirect()->to(base_url('master/item/trash'))
+                    ->with('success', 'Data item berhasil dikembalikan');
+            } else {
+                return redirect()->back()
+                    ->with('error', 'Gagal mengembalikan data item');
+            }
+        } catch (\Exception $e) {
+            log_message('error', '[Item::restore] ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat mengembalikan data item');
         }
-
-        return redirect()->back()
-            ->with('error', 'Gagal mengembalikan data item');
     }
 
     public function delete_permanent($id)
@@ -707,9 +715,32 @@ class Item extends BaseController
             ]);
         }
 
+        // Get item_ids - handle both item_ids[] and item_ids formats
         $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
+        }
 
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
+        }
+
+        // Ensure itemIds is an array and not empty
         if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Filter out any empty values and ensure all are numeric
+        $itemIds = array_filter(array_map('intval', $itemIds));
+        
+        if (empty($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Tidak ada data yang dipilih untuk diarsipkan',
@@ -761,9 +792,32 @@ class Item extends BaseController
             ]);
         }
 
+        // Get item_ids - handle both item_ids[] and item_ids formats
         $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
+        }
 
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
+        }
+
+        // Ensure itemIds is an array and not empty
         if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dipulihkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Filter out any empty values and ensure all are numeric
+        $itemIds = array_filter(array_map('intval', $itemIds));
+        
+        if (empty($itemIds)) {
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Tidak ada data yang dipilih untuk dipulihkan',
@@ -800,6 +854,194 @@ class Item extends BaseController
             return $this->response->setJSON([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memulihkan data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Permanently delete selected archived items
+     */
+    public function bulk_delete_permanent()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Get item_ids - handle both item_ids[] and item_ids formats
+        $itemIds = $this->request->getPost('item_ids');
+        if (empty($itemIds)) {
+            // Try PHP array format with brackets
+            $allPost = $this->request->getPost();
+            $itemIds = $allPost['item_ids'] ?? [];
+        }
+
+        // If itemIds is a comma-separated string, convert to array
+        if (is_string($itemIds) && !empty($itemIds)) {
+            $itemIds = explode(',', $itemIds);
+        }
+
+        // Ensure itemIds is an array and not empty
+        if (empty($itemIds) || !is_array($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus permanen',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        // Filter out any empty values and ensure all are numeric
+        $itemIds = array_filter(array_map('intval', $itemIds));
+        
+        if (empty($itemIds)) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Tidak ada data yang dipilih untuk dihapus permanen',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $this->db->transStart();
+
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($itemIds as $id) {
+                try {
+                    // Permanently delete using hard delete (force=true)
+                    if ($this->itemModel->delete($id, true)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus permanen item ID: {$id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus permanen item ID {$id}: " . $e->getMessage();
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menghapus permanen item',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            $message = "Berhasil menghapus permanen {$deletedCount} item";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} item gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors,
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Bulk Delete Permanent] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus permanen data: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Permanently delete all archived items
+     */
+    public function delete_all_permanent()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $this->db->transStart();
+
+            // Get all archived items (status_hps='1' OR deleted_at IS NOT NULL)
+            $archivedItems = $this->itemModel
+                ->withDeleted()
+                ->groupStart()
+                    ->where('status_hps', '1')
+                    ->orWhere('deleted_at IS NOT NULL', null, false)
+                ->groupEnd()
+                ->findAll();
+
+            if (empty($archivedItems)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada data yang diarsipkan untuk dihapus',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            $deletedCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($archivedItems as $item) {
+                try {
+                    // Permanently delete using hard delete (force=true)
+                    if ($this->itemModel->delete($item->id, true)) {
+                        $deletedCount++;
+                    } else {
+                        $failedCount++;
+                        $errors[] = "Gagal menghapus permanen item ID: {$item->id}";
+                    }
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Error menghapus permanen item ID {$item->id}: " . $e->getMessage();
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal menghapus permanen semua item',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            $message = "Berhasil menghapus permanen {$deletedCount} item";
+            if ($failedCount > 0) {
+                $message .= ", {$failedCount} item gagal dihapus";
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $message,
+                'deleted_count' => $deletedCount,
+                'failed_count' => $failedCount,
+                'errors' => $errors,
+                'csrfHash' => csrf_hash()
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', '[Delete All Permanent] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus permanen semua data: ' . $e->getMessage(),
                 'csrfHash' => csrf_hash()
             ]);
         }
@@ -861,6 +1103,7 @@ class Item extends BaseController
         $kat = $this->request->getVar('kategori');
         $merk = $this->request->getVar('merk');
         $stok = $this->request->getVar('stok');
+        $supplier = $this->request->getVar('supplier');
         $query = $this->request->getVar('keyword') ?? '';
         
         // Min stock filter
@@ -886,6 +1129,9 @@ class Item extends BaseController
         }
         if ($stok !== null && $stok !== '') {
             $this->itemModel->where('tbl_m_item.status_stok', $stok);
+        }
+        if ($supplier) {
+            $this->itemModel->where('tbl_m_item.id_supplier', $supplier);
         }
         if ($query) {
             $this->itemModel->groupStart()
@@ -918,9 +1164,10 @@ class Item extends BaseController
         }
 
         // Get all filtered data (no pagination)
-        $items = $this->itemModel->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
+        $items = $this->itemModel->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk, tbl_m_supplier.nama as supplier_nama')
             ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
             ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_m_item.id_supplier', 'left')
             ->orderBy('tbl_m_item.id', 'DESC')
             ->findAll();
 
@@ -930,13 +1177,13 @@ class Item extends BaseController
 
         // Set title
         $sheet->setCellValue('A1', 'DATA ITEM');
-        $sheet->mergeCells('A1:H1');
+        $sheet->mergeCells('A1:M1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
         // Set headers
         $headers = [
-            'No', 'Kode', 'Barcode', 'Nama Item', 'Kategori', 'Merk', 'Deskripsi', 
+            'No', 'Kode', 'Barcode', 'Nama Item', 'Kategori', 'Merk', 'Supplier', 'Deskripsi', 
             'Stok Min', 'Harga Beli', 'Harga Jual', 'Status Stok', 'Status Item'
         ];
 
@@ -958,19 +1205,20 @@ class Item extends BaseController
             $sheet->setCellValue('D' . $row, $item->item);
             $sheet->setCellValue('E' . $row, $item->kategori);
             $sheet->setCellValue('F' . $row, $item->merk);
-            $sheet->setCellValue('G' . $row, $item->deskripsi);
-            $sheet->setCellValue('H' . $row, $item->jml_min);
-            $sheet->setCellValue('I' . $row, format_angka($item->harga_beli));
-            $sheet->setCellValue('J' . $row, format_angka($item->harga_jual));
-            $sheet->setCellValue('K' . $row, $item->status_stok == '1' ? 'Stockable' : 'Non Stockable');
-            $sheet->setCellValue('L' . $row, $item->status == '1' ? 'Aktif' : 'Non Aktif');
+            $sheet->setCellValue('G' . $row, $item->supplier_nama ?? '-');
+            $sheet->setCellValue('H' . $row, $item->deskripsi);
+            $sheet->setCellValue('I' . $row, $item->jml_min);
+            $sheet->setCellValue('J' . $row, format_angka($item->harga_beli));
+            $sheet->setCellValue('K' . $row, format_angka($item->harga_jual));
+            $sheet->setCellValue('L' . $row, $item->status_stok == '1' ? 'Stockable' : 'Non Stockable');
+            $sheet->setCellValue('M' . $row, $item->status == '1' ? 'Aktif' : 'Non Aktif');
             
             $row++;
             $no++;
         }
 
         // Auto size columns
-        foreach (range('A', 'L') as $col) {
+        foreach (range('A', 'M') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -982,7 +1230,7 @@ class Item extends BaseController
                 ],
             ],
         ];
-        $sheet->getStyle('A3:L' . ($row - 1))->applyFromArray($styleArray);
+        $sheet->getStyle('A3:M' . ($row - 1))->applyFromArray($styleArray);
 
         // Set filename
         $filename = 'Data_Item_' . date('Y-m-d_H-i-s') . '.xlsx';

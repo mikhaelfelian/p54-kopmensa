@@ -39,8 +39,14 @@
                             </tr>
                             <tr>
                                 <td><strong>Pelanggan</strong></td>
-                                <td>: <?= $sale->pelanggan_nama ?? '-' ?></td>
+                                <td>: <?= esc($sale->pelanggan_nama ?? 'Umum') ?></td>
                             </tr>
+                            <?php if (!empty($sale->pelanggan_kode)): ?>
+                            <tr>
+                                <td><strong>No. Anggota</strong></td>
+                                <td>: <?= esc($sale->pelanggan_kode) ?></td>
+                            </tr>
+                            <?php endif; ?>
                             <tr>
                                 <td><strong>Alamat</strong></td>
                                 <td>: <?= $sale->pelanggan_alamat ?? '-' ?></td>
@@ -101,6 +107,7 @@
                                 <th>Kode Item</th>
                                 <th>Nama Item</th>
                                 <th>Satuan</th>
+                                <th>Keterangan Pajak</th>
                                 <th class="text-center">Qty</th>
                                 <th class="text-right">Harga</th>
                                 <th class="text-right">Subtotal</th>
@@ -109,7 +116,7 @@
                         <tbody>
                             <?php if (empty($items)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center">Tidak ada item</td>
+                                    <td colspan="8" class="text-center">Tidak ada item</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($items as $index => $item): ?>
@@ -118,6 +125,13 @@
                                         <td><?= $item->item_kode ?? '-' ?></td>
                                         <td><?= $item->item_nama ?? '-' ?></td>
                                         <td><?= $item->satuan_nama ?? '-' ?></td>
+                                        <td>
+                                            <?php if (($item->status_ppn ?? '0') == '1'): ?>
+                                                <span class="badge badge-success">PPN</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-secondary">Non-PPN</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td class="text-center"><?= number_format($item->jml ?? 0, 0, ',', '.') ?></td>
                                         <td class="text-right"><?= number_format($item->harga ?? 0, 0, ',', '.') ?></td>
                                         <td class="text-right"><?= number_format($item->subtotal ?? 0, 0, ',', '.') ?></td>
@@ -128,23 +142,23 @@
                         <?php if (!empty($items)): ?>
                             <tfoot>
                                 <tr class="bg-light">
-                                    <th colspan="6" class="text-right">Subtotal</th>
+                                    <th colspan="7" class="text-right">Subtotal</th>
                                     <th class="text-right"><?= number_format($sale->jml_subtotal ?? 0, 0, ',', '.') ?></th>
                                 </tr>
                                 <?php if (($sale->jml_diskon ?? 0) > 0): ?>
                                     <tr>
-                                        <th colspan="6" class="text-right">Diskon</th>
+                                        <th colspan="7" class="text-right">Diskon</th>
                                         <th class="text-right">-<?= number_format($sale->jml_diskon ?? 0, 0, ',', '.') ?></th>
                                     </tr>
                                 <?php endif; ?>
                                 <?php if (($sale->jml_ppn ?? 0) > 0): ?>
                                     <tr>
-                                        <th colspan="6" class="text-right">PPN</th>
+                                        <th colspan="7" class="text-right">PPN</th>
                                         <th class="text-right"><?= number_format($sale->jml_ppn ?? 0, 0, ',', '.') ?></th>
                                     </tr>
                                 <?php endif; ?>
                                 <tr class="bg-primary text-white">
-                                    <th colspan="6" class="text-right">TOTAL</th>
+                                    <th colspan="7" class="text-right">TOTAL</th>
                                     <th class="text-right"><?= number_format($sale->jml_gtotal ?? 0, 0, ',', '.') ?></th>
                                 </tr>
                             </tfoot>

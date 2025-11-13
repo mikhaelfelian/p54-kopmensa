@@ -2234,7 +2234,8 @@ helper('form');
                             code: product.kode,
                             price: product.harga_jual || 0,
                             quantity: 1,
-                            total: product.harga_jual || 0
+                            total: product.harga_jual || 0,
+                            supplier: product.supplier_nama || product.supplier || ''
                         };
 
                         cart.push(cartItem);
@@ -2333,6 +2334,9 @@ helper('form');
                     stockBadgeText = 'Stockable';
                 }
 
+                // Get supplier name
+                const supplierName = product.supplier_nama || product.supplier || '';
+                
                 // Product name with code (like in your image)
                 const displayName = productCode ? `${itemName}-${productCode}` : itemName;
 
@@ -2372,6 +2376,9 @@ helper('form');
                                             <div class="product-desc" style="font-size: 12px; color: #666; text-align: left;">
                                                 ${description ? description : ''}
                                             </div>
+                                            ${supplierName ? `<div class="product-supplier" style="font-size: 11px; color: #888; text-align: left; margin-top: 2px;">
+                                                <i class="fas fa-truck"></i> Supplier: ${supplierName}
+                                            </div>` : ''}
                                             <div class="d-flex align-items-center" style="margin-top: 4px;">
                                                 <div class="product-stock" style="font-size: 11px; color: ${stockTextColor}; text-align: left;">
                                                     <i class="fas fa-boxes"></i> Stok: ${stockDisplay} PCS
@@ -2709,7 +2716,10 @@ helper('form');
             <div class="cart-item">
                 <div class="cart-item-left">
                     <span class="cart-item-qty">${item.quantity}</span>
-                    <span class="cart-item-name">${item.name}</span>
+                    <div>
+                        <span class="cart-item-name">${item.name}</span>
+                        ${item.supplier ? `<br/><small style="font-size: 11px; color: #888;"><i class="fas fa-truck"></i> ${item.supplier}</small>` : ''}
+                    </div>
                 </div>
                 <div class="cart-item-right">
                     <span class="cart-item-subtotal">Rp ${numberFormat(item.total)}</span>
@@ -3504,34 +3514,60 @@ helper('form');
             </div>`;
         });
 
-        // Payment block
+        // Payment block - show all payment methods
         let paymentHTML = '';
         let totalPayment = 0;
         let change = 0;
         if (payment_methods && payment_methods.length > 0) {
-            paymentHTML += `<div style="font-family:monospace;">Tender</div>`;
+            paymentHTML += `<div style="font-family:monospace;font-weight:bold;">Metode Pembayaran:</div>`;
             payment_methods.forEach(pm => {
-                let methodName = '';
-                if (pm.type === '1') methodName = 'Cash';
-                else if (pm.type === '2') methodName = 'Non Tunai';
-                else if (pm.type === '3') methodName = 'Piutang';
-                else methodName = 'Other';
+                let methodName = pm.platform || pm.name || '';
+                if (!methodName) {
+                    // Fallback to type-based naming
+                    if (pm.type === '1' || pm.type === 'cash') methodName = 'Tunai';
+                    else if (pm.type === '2' || pm.type === 'non_tunai') methodName = 'Non Tunai';
+                    else if (pm.type === '3' || pm.type === 'piutang' || pm.type === 'credit') methodName = 'Piutang';
+                    else if (pm.type === 'voucher') methodName = 'Voucher';
+                    else methodName = pm.type || 'Lainnya';
+                }
+                const amount = parseFloat(pm.amount || pm.nominal || 0);
+                const notes = pm.keterangan || pm.notes || '';
                 paymentHTML += `<div style="font-family:monospace;">
-                    ${padRight(methodName, 8)}${padLeft(numberFormat(pm.amount), 24)}
+                    ${padRight(methodName, 16)}${padLeft(numberFormat(amount), 16)}
                 </div>`;
-                totalPayment += parseFloat(pm.amount);
+                if (notes) {
+                    paymentHTML += `<div style="font-family:monospace;font-size:11px;padding-left:4px;">${notes}</div>`;
+                }
+                totalPayment += amount;
             });
             change = totalPayment - total;
+            if (change < 0) change = 0;
+        } else {
+            // Fallback if no payment methods provided
+            paymentHTML += `<div style="font-family:monospace;">
+                ${padRight('Tunai', 16)}${padLeft(numberFormat(total), 16)}
+            </div>`;
+            totalPayment = total;
+            change = 0;
         }
+
+        // Get member number from customer data if available
+        const memberNumber = transactionData.customer_code || transactionData.no_anggota || '';
+        const storeName = transactionData.store_name || transactionData.nama_toko || outlet || '-';
+        const paymentNotes = transactionData.payment_notes || transactionData.catatan || '';
 
         // Compose HTML
         return `
 <div style="font-family:monospace; font-size:13px; max-width:300px; margin:auto;">
-${padRight('Date', 12)}: ${dateStr || '-'}<br>
-${padRight('Order Number', 12)}: ${no_nota || '-'}<br>
-${padRight('Sales Type', 12)}: ${sales_type}<br>
-${padRight('User', 12)}: ${user || cashier || '-'}<br>
-${padRight('Cashier', 12)}: ${cashier || user || '-'}<br>
+<div style="text-align:center;font-weight:bold;margin-bottom:8px;">${storeName}</div>
+<hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
+${padRight('No. Nota', 12)}: ${no_nota || '-'}<br>
+${padRight('Tanggal', 12)}: ${dateStr || '-'}<br>
+${padRight('Waktu', 12)}: ${dateStr ? dateStr.split(' ')[1] || '' : '-'}<br>
+${padRight('Kasir', 12)}: ${cashier || user || '-'}<br>
+${customer_name && customer_name !== 'Umum' ? `${padRight('Pelanggan', 12)}: ${customer_name}<br>` : ''}
+${memberNumber ? `${padRight('No. Anggota', 12)}: ${memberNumber}<br>` : ''}
+${paymentNotes ? `${padRight('Catatan', 12)}: ${paymentNotes}<br>` : ''}
 <hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
 <div style="text-align:center;font-weight:bold;">** REPRINT BILL **</div>
 <hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
@@ -3549,6 +3585,7 @@ ${paymentHTML}
 ${padRight('Change', 8)}${padLeft(numberFormat(change), 24)}
 </div>
 <hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
+<div style="text-align:center;font-size:11px;margin-top:8px;">Terima Kasih</div>
 </div>
         `;
     }

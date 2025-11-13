@@ -450,6 +450,9 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('supplier/trash', 'Supplier::trash');
     $routes->get('supplier/restore/(:num)', 'Supplier::restore/$1');
     $routes->get('supplier/delete_permanent/(:num)', 'Supplier::deletePermanent/$1');
+    $routes->post('supplier/bulk_restore', 'Supplier::bulk_restore');
+    $routes->post('supplier/bulk_delete_permanent', 'Supplier::bulk_delete_permanent');
+    $routes->post('supplier/delete_all_permanent', 'Supplier::delete_all_permanent');
     $routes->get('supplier/export', 'Supplier::export');
     $routes->get('supplier/import', 'Supplier::importForm');
     $routes->post('supplier/import', 'Supplier::importCsv');
@@ -578,6 +581,8 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->post('item/delete_price/(:num)', 'Item::delete_price/$1');
     $routes->post('item/bulk_delete', 'Item::bulk_delete');
     $routes->post('item/bulk_restore', 'Item::bulk_restore');
+    $routes->post('item/bulk_delete_permanent', 'Item::bulk_delete_permanent');
+    $routes->post('item/delete_all_permanent', 'Item::delete_all_permanent');
     $routes->get('item/export_excel', 'Item::export_to_excel');
     $routes->post('item/store_variant/(:num)', 'Item::store_variant/$1');
     $routes->get('item/get_variants/(:num)', 'Item::get_variants/$1');
@@ -802,6 +807,8 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
     // Purchase Report Routes
     $routes->get('purchase', 'PurchaseReport::index');
     $routes->get('purchase/detail/(:num)', 'PurchaseReport::detail/$1');
+    $routes->get('purchase/detail_items/(:num)', 'PurchaseReport::detail_items/$1');
+    $routes->get('purchase/print_invoice/(:num)', 'PurchaseReport::print_invoice/$1');
     $routes->get('purchase/export_excel', 'PurchaseReport::export_excel');
 
     // Stock Report Routes
@@ -827,6 +834,7 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
     $routes->get('order', 'OrderReport::index');
     $routes->get('order/detail/(:num)', 'OrderReport::detail/$1');
     $routes->get('order/export', 'OrderReport::export');
+    $routes->get('order/export_detail_items', 'OrderReport::export_detail_items');
 
     // All-in-One Turnover Report Routes
     $routes->get('all-in-one-turnover', 'AllInOneTurnoverReport::index');

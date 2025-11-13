@@ -170,12 +170,14 @@ class PelangganModel extends Model
     /**
      * Search customer by id_user, kode, nama, or no_telp
      * Prioritizes exact matches on id_user first
+     * Excludes archived members (status_hps='0')
      */
     public function searchCustomer($searchTerm)
     {
         // First try exact match on id_user
         $exactIdUser = $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit, status_blokir')
                     ->where('status', '1')
+                    ->where('status_hps', '0') // Exclude archived members
                     ->where('id_user', $searchTerm)
                     ->first();
         
@@ -186,6 +188,7 @@ class PelangganModel extends Model
         // If no exact match, search with LIKE conditions
         return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit, status_blokir')
                     ->where('status', '1')
+                    ->where('status_hps', '0') // Exclude archived members
                     ->groupStart()
                         ->like('id_user', $searchTerm)
                         ->orLike('kode', $searchTerm)
@@ -201,12 +204,14 @@ class PelangganModel extends Model
 
     /**
      * Get customer by id_user
+     * Excludes archived members (status_hps='0')
      */
     public function getCustomerByIdUser($idUser)
     {
         return $this->select('id, id_user, kode, nama, no_telp, alamat, kota, provinsi, tipe, status, limit, status_blokir')
                     ->where('id_user', $idUser)
                     ->where('status', '1')
+                    ->where('status_hps', '0') // Exclude archived members
                     ->first();
     }
 
