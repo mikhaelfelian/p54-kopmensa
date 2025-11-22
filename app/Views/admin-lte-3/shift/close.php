@@ -102,21 +102,36 @@ helper('shift');
                                 <td class="text-right"><strong class="text-success"><?= format_angka($transactionStats['total_revenue'] ?? 0, 0) ?></strong></td>
                             </tr>
                             <tr class="bg-light">
-                                <td colspan="2" class="text-center"><strong>METODE PEMBAYARAN</strong></td>
+                                <td colspan="2" class="text-center"><strong>RINGKASAN METODE PEMBAYARAN</strong></td>
                             </tr>
                             <?php if (!empty($paymentBreakdown['payment_methods'])): ?>
-                                <?php foreach ($paymentBreakdown['payment_methods'] as $payment): ?>
+                                <?php 
+                                $totalPaymentAmount = 0;
+                                $totalPaymentTransactions = 0;
+                                foreach ($paymentBreakdown['payment_methods'] as $payment): 
+                                    $totalPaymentAmount += (float)($payment['total_amount'] ?? 0);
+                                    $totalPaymentTransactions += (int)($payment['transaction_count'] ?? 0);
+                                ?>
                                 <tr>
                                     <td class="pl-3">
                                         <i class="fas fa-circle" style="font-size: 6px;"></i> 
                                         <?= esc($payment['payment_method_name'] ?? $payment['payment_method_type'] ?? 'Unknown') ?>
                                     </td>
                                     <td class="text-right">
-                                        <?= format_angka($payment['total_amount'], 0) ?> 
-                                        <small class="text-muted">(<?= $payment['transaction_count'] ?>x)</small>
+                                        <strong><?= format_angka($payment['total_amount'], 0) ?></strong> 
+                                        <br>
+                                        <small class="text-muted"><?= $payment['transaction_count'] ?> transaksi</small>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
+                                <tr class="table-info">
+                                    <td><strong>Total Semua Pembayaran:</strong></td>
+                                    <td class="text-right">
+                                        <strong><?= format_angka($totalPaymentAmount, 0) ?></strong>
+                                        <br>
+                                        <small class="text-muted"><?= $totalPaymentTransactions ?> transaksi</small>
+                                    </td>
+                                </tr>
                             <?php else: ?>
                                 <tr>
                                     <td colspan="2" class="text-center text-muted">- Tidak ada transaksi -</td>
