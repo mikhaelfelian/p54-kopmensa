@@ -3659,12 +3659,13 @@ helper('form');
 
         // Get member number from customer data if available
         const memberNumber = transactionData.customer_code || transactionData.no_anggota || '';
-        const storeName = transactionData.store_name || transactionData.nama_toko || outlet || '-';
+        const storeName = transactionData.store_name || transactionData.nama_toko || outlet || COMPANY_NAME;
         const paymentNotes = transactionData.payment_notes || transactionData.catatan || '';
 
         // Compose HTML
         return `
 <div style="font-family:monospace; font-size:13px; max-width:300px; margin:auto;">
+${COMPANY_LOGO ? `<div style="text-align:center;margin-bottom:8px;"><img src="${COMPANY_LOGO}" alt="Logo" style="max-height:60px;max-width:100%;object-fit:contain;"></div>` : ''}
 <div style="text-align:center;font-weight:bold;margin-bottom:8px;">${storeName}</div>
 <hr style="border:0;border-top:1px dashed #000;margin:4px 0;">
 ${padRight('No. Nota', 12)}: ${no_nota || '-'}<br>
