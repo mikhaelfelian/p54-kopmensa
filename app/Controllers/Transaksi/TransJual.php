@@ -1184,6 +1184,33 @@ class TransJual extends BaseController
                     throw new \Exception("Item dengan ID {$item['id']} tidak ditemukan");
                 }
 
+                // Check stock for stockable items
+                $isStockable = true;
+                if (isset($itemDetails->status_stok)) {
+                    $isStockable = ((int) $itemDetails->status_stok) === 1;
+                } elseif (isset($itemDetails->is_stockable)) {
+                    $isStockable = ((int) $itemDetails->is_stockable) === 1;
+                }
+
+                if ($isStockable && $warehouseId) {
+                    // Get current stock for this item in this warehouse
+                    $currentStock = $this->itemStokModel
+                        ->where('id_item', $item['id'])
+                        ->where('id_gudang', $warehouseId)
+                        ->first();
+                    
+                    $availableStock = $currentStock ? (int)($currentStock->jml ?? 0) : 0;
+                    $requestedQuantity = (int)($item['quantity'] ?? 0);
+
+                    if ($availableStock <= 0) {
+                        throw new \Exception("Item '{$itemDetails->item}' tidak dapat dijual karena stok habis");
+                    }
+
+                    if ($requestedQuantity > $availableStock) {
+                        throw new \Exception("Stok '{$itemDetails->item}' tidak mencukupi. Stok tersedia: {$availableStock}, diminta: {$requestedQuantity}");
+                    }
+                }
+
                 $detailData = [
                     'id_penjualan'   => $transactionId,
                     'id_item'        => $item['id'],
