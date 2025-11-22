@@ -1075,6 +1075,10 @@ helper('form');
     let currentTransactionId = null;
     let paymentMethods = [];
     const PPN_PERCENTAGE = <?= $Pengaturan->ppn ?>; // Dynamic PPN from settings (included in price)
+    
+    // Logo path from Pengaturan
+    const COMPANY_LOGO = '<?= !empty($Pengaturan->logo_header) ? base_url("public/file/app/" . $Pengaturan->logo_header) : (!empty($Pengaturan->logo) ? base_url("public/file/app/" . $Pengaturan->logo) : "") ?>';
+    const COMPANY_NAME = '<?= esc($Pengaturan->judul_app ?? $Pengaturan->judul ?? "Perusahaan") ?>';
 
     // Global AJAX error handler for authentication issues
     $(document).ajaxError(function (event, xhr, settings) {
@@ -2217,12 +2221,36 @@ helper('form');
             success: function (response) {
                 if (response.items && response.items.length > 0) {
                     const product = response.items[0]; // Get first matching product
+                    const stock = product.stok || 0;
+                    const statusStok = product.status_stok || '1';
+
+                    // Store product stock info in cache
+                    productStockCache[product.id] = {
+                        stock: stock,
+                        statusStok: statusStok
+                    };
+
+                    // Check stock before adding
+                    const isStockable = (statusStok === '1' || statusStok === 1);
+                    if (isStockable && stock <= 0) {
+                        toastr.error('Stok habis! Produk tidak dapat dijual.');
+                        $('#productSearch').val('');
+                        return;
+                    }
 
                     // Check if product already in cart by ID
                     const existingItemIndex = cart.findIndex(item => item.id === product.id);
 
                     if (existingItemIndex !== -1) {
-                        // Product already exists - increment quantity
+                        // Product already exists - check stock before incrementing
+                        if (isStockable && stock > 0) {
+                            const newQuantity = cart[existingItemIndex].quantity + 1;
+                            if (newQuantity > stock) {
+                                toastr.error(`Stok tidak mencukupi! Stok tersedia: ${stock}`);
+                                $('#productSearch').val('');
+                                return;
+                            }
+                        }
                         cart[existingItemIndex].quantity += 1;
                         cart[existingItemIndex].total = cart[existingItemIndex].quantity * cart[existingItemIndex].price;
                         toastr.success(`Quantity ${product.item} ditambah: ${cart[existingItemIndex].quantity}`);
@@ -2235,7 +2263,9 @@ helper('form');
                             price: product.harga_jual || 0,
                             quantity: 1,
                             total: product.harga_jual || 0,
-                            supplier: product.supplier_nama || product.supplier || ''
+                            supplier: product.supplier_nama || product.supplier || '',
+                            stock: stock,
+                            statusStok: statusStok
                         };
 
                         cart.push(cartItem);
@@ -2291,11 +2321,17 @@ helper('form');
                 const isBlocked = (stock <= 0 && statusStok === '1');
                 const isNonStockable = (statusStok === '0');
 
+                // Store product stock info in cache
+                productStockCache[product.id] = {
+                    stock: stock,
+                    statusStok: statusStok
+                };
+
                 // Determine background color, opacity, and cursor
                 let bgColor = '#f8f9fa';
                 let opacity = 1;
                 let cursorStyle = 'pointer';
-                let onClickAction = `onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})"`;
+                let onClickAction = `onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price}, ${stock}, '${statusStok}')"`;
 
                 if (isBlocked) {
                     bgColor = '#ffebee';
@@ -2538,6 +2574,12 @@ helper('form');
                         const isNonStockable = (statusStok === '0');
                         const isBlocked = (stock <= 0 && statusStok === '1');
                         
+                        // Store product stock info in cache
+                        productStockCache[product.id] = {
+                            stock: stock,
+                            statusStok: statusStok
+                        };
+                        
                         let stockBadgeClass = '';
                         let stockBadgeText = '';
                         let stockDisplay = isNonStockable ? 'Non-Stockable' : stock;
@@ -2564,7 +2606,7 @@ helper('form');
                         // Same design as the main product grid (displayProducts)
                         return `
                         <div class="col-12 mb-2">
-                            <div class="product-grid-item border-bottom py-3 px-2" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price})" style="cursor: pointer; background: #f8f9fa;">
+                            <div class="product-grid-item border-bottom py-3 px-2" onclick="checkVariant(${product.id}, '${itemName.replace(/'/g, "\\'")}', '${product.kode}', ${price}, ${stock}, '${statusStok}')" style="cursor: pointer; background: #f8f9fa;">
                                 <div class="d-flex align-items-start">
                                     <!-- Product Icon -->
                                     <div class="product-icon me-3" style="flex-shrink: 0;">
@@ -2632,7 +2674,12 @@ helper('form');
     }
 
     // Function to check for variants and handle add to cart
-    function checkVariant(productId, productName, productCode, price) {
+    function checkVariant(productId, productName, productCode, price, stock, statusStok) {
+        // Check stock first
+        if (!checkStockBeforeAdd(productId, productName, productCode, price, stock, statusStok)) {
+            return;
+        }
+
         $.ajax({
             url: '<?= base_url('transaksi/jual/get_variants') ?>/' + productId,
             type: 'GET',
@@ -2657,7 +2704,7 @@ helper('form');
                     $('#variantModal').modal('show');
                 } else {
                     // No variants, add directly
-                    addToCart(productId, productName, productCode, price);
+                    addToCart(productId, productName, productCode, price, stock, statusStok);
                 }
             },
             error: function (xhr, status, error) {
@@ -2669,7 +2716,7 @@ helper('form');
                     }, 2000);
                 } else {
                     // Other errors - try to add product directly without variants
-                    addToCart(productId, productName, productCode, price);
+                    addToCart(productId, productName, productCode, price, stock, statusStok);
                 }
             }
         });
@@ -2677,15 +2724,46 @@ helper('form');
 
     // Function to add selected variant to cart
     function selectVariantToCart(productId, productName, productCode, variantId, variantName, variantPrice) {
-        addToCart(productId + '-' + variantId, productName + ' - ' + variantName, productCode, variantPrice);
+        // Get stock info from cache for the base product
+        const cachedProduct = productStockCache[productId];
+        const stock = cachedProduct ? cachedProduct.stock : 0;
+        const statusStok = cachedProduct ? cachedProduct.statusStok : '1';
+        addToCart(productId + '-' + variantId, productName + ' - ' + variantName, productCode, variantPrice, stock, statusStok);
         $('#variantModal').modal('hide');
     }
 
-    function addToCart(productId, productName, productCode, price) {
+    function addToCart(productId, productName, productCode, price, stock, statusStok) {
+        // Get stock info from cache if not provided
+        if (stock === undefined || statusStok === undefined) {
+            const cachedProduct = productStockCache[productId];
+            if (cachedProduct) {
+                stock = cachedProduct.stock || 0;
+                statusStok = cachedProduct.statusStok || '1';
+            } else {
+                // Default values if not in cache
+                stock = 0;
+                statusStok = '1';
+            }
+        }
+
+        // Check stock before adding
+        if (!checkStockBeforeAdd(productId, productName, productCode, price, stock, statusStok)) {
+            return;
+        }
+
         // Check if product already in cart
         const existingItem = cart.find(item => item.id === productId);
 
         if (existingItem) {
+            // Check if adding more would exceed stock (for stockable items)
+            const isStockable = (statusStok === '1' || statusStok === 1);
+            if (isStockable && stock > 0) {
+                const newQuantity = existingItem.quantity + 1;
+                if (newQuantity > stock) {
+                    toastr.error(`Stok tidak mencukupi! Stok tersedia: ${stock}`);
+                    return;
+                }
+            }
             existingItem.quantity += 1;
             existingItem.total = existingItem.quantity * existingItem.price;
 
@@ -2696,7 +2774,9 @@ helper('form');
                 code: productCode,
                 price: price,
                 quantity: 1,
-                total: price
+                total: price,
+                stock: stock,
+                statusStok: statusStok
             });
 
         }
@@ -2756,14 +2836,40 @@ helper('form');
     }
 
     function updateQuantity(index, change) {
-        cart[index].quantity = Math.max(1, cart[index].quantity + change);
+        const item = cart[index];
+        const newQuantity = Math.max(1, item.quantity + change);
+        
+        // Check stock if item is stockable
+        if (item.statusStok === '1' || item.statusStok === 1) {
+            const availableStock = item.stock || 0;
+            if (availableStock > 0 && newQuantity > availableStock) {
+                toastr.error(`Stok tidak mencukupi! Stok tersedia: ${availableStock}`);
+                return;
+            }
+        }
+        
+        cart[index].quantity = newQuantity;
         cart[index].total = cart[index].quantity * cart[index].price;
         updateCartDisplay();
         calculateTotal();
     }
 
     function updateQuantityInput(index, value) {
-        cart[index].quantity = Math.max(1, parseInt(value) || 1);
+        const item = cart[index];
+        const newQuantity = Math.max(1, parseInt(value) || 1);
+        
+        // Check stock if item is stockable
+        if (item.statusStok === '1' || item.statusStok === 1) {
+            const availableStock = item.stock || 0;
+            if (availableStock > 0 && newQuantity > availableStock) {
+                toastr.error(`Stok tidak mencukupi! Stok tersedia: ${availableStock}`);
+                // Reset to current quantity
+                $(`#quantityInput_${index}`).val(item.quantity);
+                return;
+            }
+        }
+        
+        cart[index].quantity = newQuantity;
         cart[index].total = cart[index].quantity * cart[index].price;
         updateCartDisplay();
         calculateTotal();
