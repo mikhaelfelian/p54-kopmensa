@@ -17,6 +17,13 @@
             <div class="card-header">
                 <h3 class="card-title">Data Stok Opname</h3>
                 <div class="card-tools">
+                    <a href="<?= base_url('gudang/opname/export_excel') ?>?tgl=<?= $tgl ?? '' ?>&ket=<?= $ket ?? '' ?>&tipe=<?= $tipe ?? '' ?>&status=<?= $status ?? '' ?>" 
+                       class="btn btn-info btn-sm mr-1">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </a>
+                    <a href="<?= base_url('gudang/opname/import') ?>" class="btn btn-warning btn-sm mr-1">
+                        <i class="fas fa-file-upload"></i> Import Excel
+                    </a>
                     <a href="<?= base_url('gudang/opname/create') ?>" class="btn btn-success btn-sm">
                         <i class="fas fa-plus"></i> Tambah Opname
                     </a>
@@ -151,19 +158,26 @@
                                             <?php endif ?>
                                         </small>
                                     </td>
-                                    <td style="width: 100px;" class="text-left">
+                                    <td style="width: 150px;" class="text-left">
                                         <div class="btn-group">
                                             <a href="<?= base_url("gudang/opname/detail/{$row->id}") ?>"
-                                                class="btn btn-info btn-sm rounded-0">
+                                                class="btn btn-info btn-sm rounded-0" data-toggle="tooltip"
+                                                title="Detail">
                                                 <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="<?= base_url("gudang/opname/export_detail/{$row->id}") ?>"
+                                                class="btn btn-success btn-sm rounded-0" data-toggle="tooltip"
+                                                title="Export Detail Excel">
+                                                <i class="fas fa-file-excel"></i>
                                             </a>
                                             <?php if ($row->status == '0'): ?>
                                                 <a href="<?= base_url("gudang/opname/edit/{$row->id}") ?>"
-                                                    class="btn btn-warning btn-sm rounded-0">
+                                                    class="btn btn-warning btn-sm rounded-0" data-toggle="tooltip"
+                                                    title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <a href="<?= base_url("gudang/opname/input/{$row->id}") ?>"
-                                                    class="btn btn-success btn-sm rounded-0" data-toggle="tooltip"
+                                                    class="btn btn-primary btn-sm rounded-0" data-toggle="tooltip"
                                                     title="Input Item">
                                                     <i class="fas fa-plus"></i>
                                                 </a>

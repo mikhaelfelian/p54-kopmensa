@@ -889,4 +889,526 @@ class Opname extends BaseController
             ]);
         }
     }
+
+    /**
+     * Export SO data to Excel
+     */
+    public function export_excel()
+    {
+        // Get filter parameters (same as index)
+        $keyword = $this->request->getGet('keyword');
+        $tgl = $this->request->getGet('tgl');
+        $ket = $this->request->getGet('ket');
+        $tipe = $this->request->getGet('tipe');
+        $status = $this->request->getGet('status');
+
+        // Build query with filters (same as index)
+        $builder = $this->utilSOModel;
+        
+        if ($tgl) {
+            try {
+                $dateObj = new \DateTime($tgl);
+                $formattedDate = $dateObj->format('Y-m-d');
+                $builder = $builder->where('DATE(created_at)', $formattedDate);
+            } catch (\Exception $e) {
+                log_message('error', 'Invalid date format in opname filter: ' . $tgl);
+            }
+        }
+        
+        if ($ket) {
+            $builder = $builder->like('keterangan', $ket);
+        }
+        
+        if ($tipe) {
+            if ($tipe == 'Gudang') {
+                $builder = $builder->where('tipe', '1');
+            } elseif ($tipe == 'Outlet') {
+                $builder = $builder->where('tipe', '2');
+            }
+        }
+        
+        if ($status !== null && $status !== '') {
+            $builder = $builder->where('status', $status);
+        }
+
+        // Get all data (no pagination for export)
+        $opnameData = $builder->orderBy('created_at', 'DESC')->findAll();
+
+        // Create Excel spreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set title
+        $sheet->setCellValue('A1', 'LAPORAN STOK OPNAME');
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Set headers
+        $headerRow = 3;
+        $sheet->setCellValue('A' . $headerRow, 'No');
+        $sheet->setCellValue('B' . $headerRow, 'Tanggal Opname');
+        $sheet->setCellValue('C' . $headerRow, 'Tipe');
+        $sheet->setCellValue('D' . $headerRow, 'Lokasi');
+        $sheet->setCellValue('E' . $headerRow, 'User');
+        $sheet->setCellValue('F' . $headerRow, 'Keterangan');
+        $sheet->setCellValue('G' . $headerRow, 'Status');
+        $sheet->setCellValue('H' . $headerRow, 'Tanggal Dibuat');
+
+        // Style headers
+        $sheet->getStyle('A' . $headerRow . ':H' . $headerRow)->getFont()->setBold(true);
+        $sheet->getStyle('A' . $headerRow . ':H' . $headerRow)->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('CCCCCC');
+
+        // Add data
+        $row = $headerRow + 1;
+        $no = 1;
+        foreach ($opnameData as $opname) {
+            // Get user name
+            $userName = 'Unknown User';
+            if ($opname->id_user) {
+                $user = $this->ionAuth->user($opname->id_user)->row();
+                if ($user) {
+                    $userName = trim($user->first_name . ' ' . $user->last_name);
+                    if (empty($userName)) {
+                        $userName = $user->username ?? 'Unknown User';
+                    }
+                }
+            }
+
+            // Get location name
+            $locationName = 'N/A';
+            if ($opname->id_gudang) {
+                $gudang = $this->gudangModel->find($opname->id_gudang);
+                if ($gudang) {
+                    $locationName = $gudang->nama ?? 'N/A';
+                }
+            }
+
+            // Determine type
+            $typeName = 'Unknown';
+            if ($opname->tipe == '1') {
+                $typeName = 'Gudang';
+            } elseif ($opname->tipe == '2') {
+                $typeName = 'Outlet';
+            }
+
+            // Status
+            $statusName = $opname->status == '1' ? 'Selesai' : 'Draft';
+
+            $sheet->setCellValue('A' . $row, $no++);
+            $sheet->setCellValue('B' . $row, $opname->tgl_masuk ? date('d/m/Y', strtotime($opname->tgl_masuk)) : '-');
+            $sheet->setCellValue('C' . $row, $typeName);
+            $sheet->setCellValue('D' . $row, $locationName);
+            $sheet->setCellValue('E' . $row, $userName);
+            $sheet->setCellValue('F' . $row, $opname->keterangan ?? '-');
+            $sheet->setCellValue('G' . $row, $statusName);
+            $sheet->setCellValue('H' . $row, $opname->created_at ? date('d/m/Y H:i', strtotime($opname->created_at)) : '-');
+            
+            $row++;
+        }
+
+        // Auto size columns
+        foreach (range('A', 'H') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Add borders
+        $styleArray = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A' . $headerRow . ':H' . ($row - 1))->applyFromArray($styleArray);
+
+        // Export
+        $filename = 'Laporan_Stok_Opname_' . date('Y-m-d_His') . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    /**
+     * Export detailed SO with items to Excel
+     */
+    public function export_detail_excel($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('gudang/opname')->with('error', 'ID Opname tidak valid');
+        }
+
+        // Get opname data
+        $opname = $this->utilSOModel->find($id);
+        if (!$opname) {
+            return redirect()->to('gudang/opname')->with('error', 'Data opname tidak ditemukan');
+        }
+
+        // Get user name
+        $userName = 'Unknown User';
+        if ($opname->id_user) {
+            $user = $this->ionAuth->user($opname->id_user)->row();
+            if ($user) {
+                $userName = trim($user->first_name . ' ' . $user->last_name);
+                if (empty($userName)) {
+                    $userName = $user->username ?? 'Unknown User';
+                }
+            }
+        }
+
+        // Get location name
+        $locationName = 'N/A';
+        $typeName = 'Unknown';
+        if ($opname->id_gudang) {
+            $gudang = $this->gudangModel->find($opname->id_gudang);
+            if ($gudang) {
+                $locationName = $gudang->nama ?? 'N/A';
+            }
+        }
+        if ($opname->tipe == '1') {
+            $typeName = 'Gudang';
+        } elseif ($opname->tipe == '2') {
+            $typeName = 'Outlet';
+        }
+
+        // Get opname details (items)
+        $opnameDetails = $this->utilSODetModel
+            ->where('id_so', $id)
+            ->orderBy('id', 'ASC')
+            ->findAll();
+
+        // Create Excel spreadsheet
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set title
+        $sheet->setCellValue('A1', 'DETAIL STOK OPNAME');
+        $sheet->mergeCells('A1:H1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        // Opname header info
+        $row = 3;
+        $sheet->setCellValue('A' . $row, 'Tanggal Opname:');
+        $sheet->setCellValue('B' . $row, $opname->tgl_masuk ? date('d/m/Y', strtotime($opname->tgl_masuk)) : '-');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Tipe:');
+        $sheet->setCellValue('B' . $row, $typeName);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Lokasi:');
+        $sheet->setCellValue('B' . $row, $locationName);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'User:');
+        $sheet->setCellValue('B' . $row, $userName);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Keterangan:');
+        $sheet->setCellValue('B' . $row, $opname->keterangan ?? '-');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Status:');
+        $sheet->setCellValue('B' . $row, $opname->status == '1' ? 'Selesai' : 'Draft');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row += 2;
+
+        // Item headers
+        $headerRow = $row;
+        $sheet->setCellValue('A' . $headerRow, 'No');
+        $sheet->setCellValue('B' . $headerRow, 'Kode Item');
+        $sheet->setCellValue('C' . $headerRow, 'Nama Item');
+        $sheet->setCellValue('D' . $headerRow, 'Satuan');
+        $sheet->setCellValue('E' . $headerRow, 'Stok Sistem');
+        $sheet->setCellValue('F' . $headerRow, 'Stok Opname');
+        $sheet->setCellValue('G' . $headerRow, 'Selisih');
+        $sheet->setCellValue('H' . $headerRow, 'Keterangan');
+
+        // Style headers
+        $sheet->getStyle('A' . $headerRow . ':H' . $headerRow)->getFont()->setBold(true);
+        $sheet->getStyle('A' . $headerRow . ':H' . $headerRow)->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('CCCCCC');
+
+        // Add item data
+        $row = $headerRow + 1;
+        $no = 1;
+        foreach ($opnameDetails as $detail) {
+            $selisih = (float)($detail->jml_so ?? 0) - (float)($detail->jml_sys ?? 0);
+
+            $sheet->setCellValue('A' . $row, $no++);
+            $sheet->setCellValue('B' . $row, $detail->kode ?? '-');
+            $sheet->setCellValue('C' . $row, $detail->item ?? '-');
+            $sheet->setCellValue('D' . $row, $detail->satuan ?? '-');
+            $sheet->setCellValue('E' . $row, (float)($detail->jml_sys ?? 0));
+            $sheet->setCellValue('F' . $row, (float)($detail->jml_so ?? 0));
+            $sheet->setCellValue('G' . $row, $selisih);
+            $sheet->setCellValue('H' . $row, $detail->keterangan ?? '-');
+            
+            // Format number columns
+            $sheet->getStyle('E' . $row . ':G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            
+            $row++;
+        }
+
+        // Auto size columns
+        foreach (range('A', 'H') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Add borders
+        $styleArray = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A' . $headerRow . ':H' . ($row - 1))->applyFromArray($styleArray);
+
+        // Export
+        $filename = 'Detail_Stok_Opname_' . ($opname->kode ?? $id) . '_' . date('Y-m-d_His') . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+
+    /**
+     * Show Excel import form
+     */
+    public function importForm()
+    {
+        $data = [
+            'title'       => 'Import Data Stok Opname',
+            'Pengaturan'  => $this->pengaturan,
+            'user'        => $this->ionAuth->user()->row(),
+            'gudang'      => $this->gudangModel->where('status', '1')->where('status_otl', '0')->where('status_hps', '0')->findAll(),
+            'outlet'      => $this->gudangModel->where('status', '1')->where('status_otl', '1')->where('status_hps', '0')->findAll(),
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Gudang</li>
+                <li class="breadcrumb-item"><a href="' . base_url('gudang/opname') . '">Opname</a></li>
+                <li class="breadcrumb-item active">Import Excel</li>
+            '
+        ];
+
+        return view(get_active_theme() . '/gudang/opname/import', $data);
+    }
+
+    /**
+     * Process Excel import
+     */
+    public function importExcel()
+    {
+        $file = $this->request->getFile('excel_file');
+
+        if (!$file || !$file->isValid()) {
+            return redirect()->back()
+                ->with('error', 'File Excel tidak valid');
+        }
+
+        // Validation rules
+        $rules = [
+            'excel_file' => [
+                'rules' => 'uploaded[excel_file]|ext_in[excel_file,xlsx,xls]|max_size[excel_file,5120]',
+                'errors' => [
+                    'uploaded' => 'File Excel harus diupload',
+                    'ext_in' => 'File harus berformat Excel (.xlsx atau .xls)',
+                    'max_size' => 'Ukuran file maksimal 5MB'
+                ]
+            ]
+        ];
+
+        if (!$this->validate($rules)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
+        }
+
+        try {
+            // Read Excel file
+            helper('excel');
+            $tempPath = $file->getTempName();
+            $excelData = readExcelFile($tempPath, 2); // Start from row 2 (skip header)
+            
+            if (empty($excelData)) {
+                return redirect()->back()
+                    ->with('error', 'File Excel kosong atau format tidak sesuai');
+            }
+
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+
+            $this->db->transStart();
+
+            foreach ($excelData as $index => $row) {
+                try {
+                    // Expected columns: Tanggal Opname, Tipe (Gudang/Outlet), Lokasi (ID or Name), Keterangan, Status (0/1)
+                    // Row format: [Tanggal, Tipe, Lokasi, Keterangan, Status]
+                    if (count($row) < 3) {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": Data tidak lengkap";
+                        continue;
+                    }
+
+                    $tglOpname = trim($row[0] ?? '');
+                    $tipe = trim($row[1] ?? '');
+                    $lokasi = trim($row[2] ?? '');
+                    $keterangan = trim($row[3] ?? '');
+                    $status = isset($row[4]) ? trim($row[4]) : '0';
+
+                    // Validate required fields
+                    if (empty($tglOpname)) {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": Tanggal Opname harus diisi";
+                        continue;
+                    }
+
+                    // Determine tipe
+                    $tipeValue = '1'; // Default to Gudang
+                    if (stripos($tipe, 'outlet') !== false) {
+                        $tipeValue = '2';
+                    } elseif (stripos($tipe, 'gudang') !== false) {
+                        $tipeValue = '1';
+                    }
+
+                    // Find location (gudang/outlet) by name or ID
+                    $idGudang = null;
+                    if (is_numeric($lokasi)) {
+                        $idGudang = (int)$lokasi;
+                    } else {
+                        // Search by name
+                        $gudang = $this->gudangModel
+                            ->where('nama', $lokasi)
+                            ->where('status', '1')
+                            ->where('status_hps', '0')
+                            ->first();
+                        if ($gudang) {
+                            $idGudang = $gudang->id;
+                        }
+                    }
+
+                    if (!$idGudang) {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": Lokasi tidak ditemukan: " . $lokasi;
+                        continue;
+                    }
+
+                    // Convert date format
+                    $tglOpnameFormatted = null;
+                    try {
+                        $dateObj = new \DateTime($tglOpname);
+                        $tglOpnameFormatted = $dateObj->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Try alternative date formats
+                        $tglOpnameFormatted = date('Y-m-d', strtotime(str_replace('/', '-', $tglOpname)));
+                        if ($tglOpnameFormatted == '1970-01-01') {
+                            $errorCount++;
+                            $errors[] = "Baris " . ($index + 2) . ": Format tanggal tidak valid: " . $tglOpname;
+                            continue;
+                        }
+                    }
+
+                    // Prepare data
+                    $opnameData = [
+                        'id_user' => $this->ionAuth->user()->row()->id,
+                        'tgl_masuk' => $tglOpnameFormatted,
+                        'tipe' => $tipeValue,
+                        'id_gudang' => $idGudang,
+                        'keterangan' => $keterangan,
+                        'status' => ($status == '1' || strtolower($status) == 'selesai') ? '1' : '0',
+                        'reset' => '0'
+                    ];
+
+                    if ($this->utilSOModel->insert($opnameData)) {
+                        $successCount++;
+                    } else {
+                        $errorCount++;
+                        $errors[] = "Baris " . ($index + 2) . ": " . implode(', ', $this->utilSOModel->errors());
+                    }
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Baris " . ($index + 2) . ": " . $e->getMessage();
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                return redirect()->back()
+                    ->with('error', 'Gagal mengimpor data. Transaksi dibatalkan.');
+            }
+
+            $message = "Import selesai. Berhasil: {$successCount}, Gagal: {$errorCount}";
+            if (!empty($errors)) {
+                $message .= "\n\nError details:\n" . implode("\n", array_slice($errors, 0, 10));
+                if (count($errors) > 10) {
+                    $message .= "\n... dan " . (count($errors) - 10) . " error lainnya";
+                }
+            }
+
+            if ($errorCount > 0) {
+                session()->setFlashdata('warning', $message);
+            } else {
+                session()->setFlashdata('success', $message);
+            }
+
+            return redirect()->to('gudang/opname');
+
+        } catch (\Exception $e) {
+            log_message('error', '[Opname::importExcel] ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan saat mengimpor data: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download Excel template for import
+     */
+    public function downloadTemplate()
+    {
+        helper('excel');
+        
+        $headers = ['Tanggal Opname', 'Tipe (Gudang/Outlet)', 'Lokasi (ID atau Nama)', 'Keterangan', 'Status (0=Draft, 1=Selesai)'];
+        $sampleData = [
+            [
+                date('Y-m-d'),
+                'Gudang',
+                '1',
+                'Stock opname bulanan',
+                '0'
+            ],
+            [
+                date('Y-m-d', strtotime('+1 day')),
+                'Outlet',
+                '2',
+                'Stock opname outlet',
+                '1'
+            ]
+        ];
+
+        $filename = 'Template_Import_Stok_Opname.xlsx';
+        $filepath = createExcelTemplate($headers, $sampleData, $filename);
+
+        return $this->response->download($filepath, null);
+    }
 } 

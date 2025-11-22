@@ -103,15 +103,27 @@
     </div>
 
     <div class="invoice-header">
-        <?php if (!empty($Pengaturan->logo) || !empty($Pengaturan->logo_header)): ?>
-            <img src="<?= base_url('public/file/app/' . ($Pengaturan->logo_header ?? $Pengaturan->logo)) ?>" 
-                 alt="Logo" style="max-height: 60px; margin-bottom: 10px;">
+        <?php 
+        $logoPath = null;
+        if (!empty($Pengaturan->logo_header)) {
+            $logoPath = 'public/file/app/' . $Pengaturan->logo_header;
+        } elseif (!empty($Pengaturan->logo)) {
+            $logoPath = 'public/file/app/' . $Pengaturan->logo;
+        }
+        
+        if ($logoPath && file_exists(FCPATH . $logoPath)): ?>
+            <img src="<?= base_url($logoPath) ?>" 
+                 alt="Logo" 
+                 style="max-height: 60px; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;"
+                 onerror="this.style.display='none';">
         <?php endif; ?>
         <h2>FAKTUR PEMBELIAN</h2>
-        <p><?= $Pengaturan->judul_app ?? $Pengaturan->judul ?? 'Perusahaan' ?></p>
-        <p><?= $Pengaturan->alamat ?? '' ?></p>
+        <p><?= esc($Pengaturan->judul_app ?? $Pengaturan->judul ?? 'Perusahaan') ?></p>
+        <?php if (!empty($Pengaturan->alamat)): ?>
+            <p><?= esc($Pengaturan->alamat) ?></p>
+        <?php endif; ?>
         <?php if (!empty($Pengaturan->kota)): ?>
-            <p><?= $Pengaturan->kota ?></p>
+            <p><?= esc($Pengaturan->kota) ?></p>
         <?php endif; ?>
     </div>
 

@@ -632,6 +632,11 @@ $routes->group('gudang', ['namespace' => 'App\Controllers\Gudang', 'filter' => '
 
     // Opname / Stock Opname
     $routes->get('opname', 'Opname::index');
+    $routes->get('opname/export_excel', 'Opname::export_excel');
+    $routes->get('opname/export_detail/(:num)', 'Opname::export_detail_excel/$1');
+    $routes->get('opname/import', 'Opname::importForm');
+    $routes->post('opname/import', 'Opname::importExcel');
+    $routes->get('opname/template', 'Opname::downloadTemplate');
     $routes->get('opname/create', 'Opname::create');
     $routes->post('opname/store', 'Opname::store');
     $routes->get('opname/detail/(:num)', 'Opname::detail/$1');

@@ -45,18 +45,57 @@ class Transfer extends BaseController
         $currentPage = $this->request->getVar('page_transfer') ?? 1;
         $perPage = 10;
         $keyword = $this->request->getVar('keyword');
+        
+        // Get filter parameters
+        $startDate = $this->request->getVar('start_date');
+        $endDate = $this->request->getVar('end_date');
+        $statusNota = $this->request->getVar('status_nota');
+        $statusTerima = $this->request->getVar('status_terima');
+        $tipe = $this->request->getVar('tipe');
+        $idGudangAsal = $this->request->getVar('id_gudang_asal');
+        $idGudangTujuan = $this->request->getVar('id_gudang_tujuan');
 
         // Build query with filters
         $builder = $this->transMutasiModel;
         
+        // Keyword search
         if ($keyword) {
             $builder = $builder->groupStart()
                 ->like('no_nota', $keyword)
                 ->orLike('keterangan', $keyword)
                 ->groupEnd();
         }
+        
+        // Date range filter
+        if ($startDate) {
+            $builder->where('DATE(tgl_masuk) >=', date('Y-m-d', strtotime($startDate)));
+        }
+        if ($endDate) {
+            $builder->where('DATE(tgl_masuk) <=', date('Y-m-d', strtotime($endDate)));
+        }
+        
+        // Status filters
+        if ($statusNota !== null && $statusNota !== '') {
+            $builder->where('status_nota', $statusNota);
+        }
+        if ($statusTerima !== null && $statusTerima !== '') {
+            $builder->where('status_terima', $statusTerima);
+        }
+        
+        // Type filter
+        if ($tipe !== null && $tipe !== '') {
+            $builder->where('tipe', $tipe);
+        }
+        
+        // Warehouse filters
+        if ($idGudangAsal) {
+            $builder->where('id_gd_asal', $idGudangAsal);
+        }
+        if ($idGudangTujuan) {
+            $builder->where('id_gd_tujuan', $idGudangTujuan);
+        }
 
-        $transfers = $builder->paginate($perPage, 'transfer');
+        $transfers = $builder->orderBy('tgl_masuk', 'DESC')->paginate($perPage, 'transfer');
         
         // Get user data for each transfer record
         $transfersWithUsers = [];
@@ -114,6 +153,12 @@ class Transfer extends BaseController
             $transfersWithUsers[] = $transfer;
         }
 
+        // Get warehouse list for filter dropdowns
+        $gudangList = $this->gudangModel->where('status', '1')
+            ->where('status_hps', '0')
+            ->orderBy('nama', 'ASC')
+            ->findAll();
+
         $data = [
             'title'       => 'Data Transfer/Mutasi',
             'Pengaturan'  => $this->pengaturan,
@@ -123,6 +168,14 @@ class Transfer extends BaseController
             'currentPage' => $currentPage,
             'perPage'     => $perPage,
             'keyword'     => $keyword,
+            'startDate'   => $startDate,
+            'endDate'     => $endDate,
+            'statusNota'  => $statusNota,
+            'statusTerima' => $statusTerima,
+            'tipe'        => $tipe,
+            'idGudangAsal' => $idGudangAsal,
+            'idGudangTujuan' => $idGudangTujuan,
+            'gudangList'  => $gudangList,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Gudang</li>
