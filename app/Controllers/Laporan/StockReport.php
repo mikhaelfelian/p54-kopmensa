@@ -12,6 +12,7 @@ namespace App\Controllers\Laporan;
 use App\Controllers\BaseController;
 use App\Models\VItemStokModel;
 use App\Models\GudangModel;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class StockReport extends BaseController
 {
@@ -182,7 +183,8 @@ class StockReport extends BaseController
         ];
 
         // Get all data for export (no pagination)
-        $stock = $this->vItemStokModel->searchItems($criteria, 10000, 1);
+        $stockResult = $this->vItemStokModel->searchItems($criteria, 10000, 1);
+        $stock = $stockResult['data'] ?? (is_array($stockResult) ? $stockResult : []);
         
         // Get warehouse name
         $gudangName = 'Semua Gudang';
@@ -191,45 +193,111 @@ class StockReport extends BaseController
             $gudangName = $gudang ? $gudang->nama : 'Gudang Tidak Diketahui';
         }
 
+        // Get active warehouses (status = 1)
+        $activeWarehouses = $this->gudangModel
+            ->where('status', '1')
+            ->where('status_hps', '0')
+            ->orderBy('nama', 'ASC')
+            ->findAll();
+
+        // If no active warehouses found, fallback to warehouses present in stock data
+        if (empty($activeWarehouses)) {
+            $warehouseMap = [];
+            foreach ($stock as $item) {
+                if (!isset($item->id_gudang)) {
+                    continue;
+                }
+                $warehouseMap[$item->id_gudang] = (object) [
+                    'id' => $item->id_gudang,
+                    'nama' => $item->gudang ?? 'Gudang ' . $item->id_gudang,
+                ];
+            }
+            $activeWarehouses = array_values($warehouseMap);
+        }
+
+        $warehouseIds = array_map(static fn ($gudang) => $gudang->id, $activeWarehouses);
+
+        // Prepare data aggregated per item with columns per warehouse
+        $itemsData = [];
+        foreach ($stock as $item) {
+            if (!isset($item->id_item)) {
+                continue;
+            }
+
+            $itemId = $item->id_item;
+            if (!isset($itemsData[$itemId])) {
+                $itemsData[$itemId] = [
+                    'kode'   => $item->kode ?? '',
+                    'item'   => $item->item ?? '',
+                    'stocks' => array_fill_keys($warehouseIds, 0),
+                    'total'  => 0,
+                ];
+            }
+
+            $quantity = (float) ($item->sisa ?? 0);
+            $itemsData[$itemId]['total'] += $quantity;
+
+            $gudangId = $item->id_gudang ?? null;
+            if ($gudangId !== null && array_key_exists($gudangId, $itemsData[$itemId]['stocks'])) {
+                $itemsData[$itemId]['stocks'][$gudangId] += $quantity;
+            }
+        }
+
+        // Sort data by item name for readability
+        $itemsData = array_values($itemsData);
+        usort($itemsData, static function ($a, $b) {
+            return strcasecmp($a['item'], $b['item']);
+        });
+
         // Create Excel file
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
         // Set title
         $sheet->setCellValue('A1', 'LAPORAN STOK - ' . strtoupper($gudangName));
-        $sheet->mergeCells('A1:H1');
+        $headerCount = 3 + count($activeWarehouses) + 1; // No, Kode, Nama + warehouses + Total
+        $lastColumnLetter = Coordinate::stringFromColumnIndex($headerCount);
+        $sheet->mergeCells('A1:' . $lastColumnLetter . '1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
 
         // Set headers
-        $headers = [
-            'No', 'Kode Item', 'Nama Item', 'Gudang', 'SO', 'Stok Masuk', 'Stok Keluar', 'Sisa'
-        ];
-        $col = 'A';
-        $row = 3;
-        foreach ($headers as $header) {
-            $sheet->setCellValue($col . $row, $header);
-            $sheet->getStyle($col . $row)->getFont()->setBold(true);
-            $col++;
+        $headers = ['No', 'Kode Item', 'Nama Item'];
+        foreach ($activeWarehouses as $warehouse) {
+            $headers[] = $warehouse->nama;
+        }
+        $headers[] = 'Total';
+
+        $headerRow = 3;
+        foreach ($headers as $index => $header) {
+            $columnLetter = Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->setCellValue($columnLetter . $headerRow, $header);
+            $sheet->getStyle($columnLetter . $headerRow)->getFont()->setBold(true);
         }
 
         // Set data
         $row = 4;
         $no = 1;
-        foreach ($stock as $item) {
+        foreach ($itemsData as $itemData) {
             $sheet->setCellValue('A' . $row, $no++);
-            $sheet->setCellValue('B' . $row, $item->kode);
-            $sheet->setCellValue('C' . $row, $item->item);
-            $sheet->setCellValue('D' . $row, $item->gudang);
-            $sheet->setCellValue('E' . $row, $item->so ?? 0);
-            $sheet->setCellValue('F' . $row, $item->stok_masuk ?? 0);
-            $sheet->setCellValue('G' . $row, $item->stok_keluar ?? 0);
-            $sheet->setCellValue('H' . $row, $item->sisa ?? 0);
+            $sheet->setCellValue('B' . $row, $itemData['kode']);
+            $sheet->setCellValue('C' . $row, $itemData['item']);
+
+            $columnIndex = 4; // Column D onwards for warehouses
+            foreach ($warehouseIds as $warehouseId) {
+                $columnLetter = Coordinate::stringFromColumnIndex($columnIndex);
+                $sheet->setCellValue($columnLetter . $row, $itemData['stocks'][$warehouseId] ?? 0);
+                $columnIndex++;
+            }
+
+            // Total column
+            $totalColumnLetter = Coordinate::stringFromColumnIndex($columnIndex);
+            $sheet->setCellValue($totalColumnLetter . $row, $itemData['total']);
             $row++;
         }
 
         // Auto-size columns
-        foreach (range('A', 'H') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        for ($i = 1; $i <= $headerCount; $i++) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
         }
 
         // Add borders
@@ -240,7 +308,7 @@ class StockReport extends BaseController
                 ],
             ],
         ];
-        $sheet->getStyle('A3:H' . ($row - 1))->applyFromArray($styleArray);
+        $sheet->getStyle('A3:' . $lastColumnLetter . ($row - 1))->applyFromArray($styleArray);
 
         // Create response
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
