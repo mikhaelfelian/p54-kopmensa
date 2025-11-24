@@ -607,19 +607,8 @@
         </div>`;
         }
 
-        if ((transaction.voucher_code && transaction.voucher_code !== '') ||
-            (transaction.voucher_discount_amount && Number(transaction.voucher_discount_amount) > 0) ||
-            (transaction.voucher_discount && Number(transaction.voucher_discount) > 0)) {
-
-            const voucherLabel = transaction.voucher_code ? transaction.voucher_code : 'Voucher';
-            const voucherType = transaction.voucher_type
-                ? transaction.voucher_type.toUpperCase()
-                : (transaction.voucher_discount && Number(transaction.voucher_discount) > 0 ? 'PERSEN' : 'NOMINAL');
-
-            const voucherValue = transaction.voucher_discount_amount && Number(transaction.voucher_discount_amount) > 0
-                ? `Rp ${numberFormat(transaction.voucher_discount_amount)}`
-                : `${numberFormat(transaction.voucher_discount || 0)}%`;
-
+        const voucherInfo = resolveVoucherInfo(transaction, platforms);
+        if (voucherInfo) {
             html += `
         <hr>
         <h6>Voucher</h6>
@@ -634,9 +623,9 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>${voucherLabel}</td>
-                        <td>${voucherType}</td>
-                        <td class="text-right">${voucherValue}</td>
+                        <td>${voucherInfo.code}</td>
+                        <td>${voucherInfo.type}</td>
+                        <td class="text-right">${voucherInfo.value}</td>
                     </tr>
                 </tbody>
             </table>
@@ -668,6 +657,87 @@
 
     function numberFormat(number) {
         return new Intl.NumberFormat('id-ID').format(number || 0);
+    }
+
+    function formatPercent(number) {
+        return new Intl.NumberFormat('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(number || 0);
+    }
+
+    function resolveVoucherInfo(transaction, platforms = []) {
+        if (!transaction) {
+            return null;
+        }
+
+        const code = transaction.voucher_code && transaction.voucher_code !== '' ? transaction.voucher_code : '-';
+        const voucherPlatform = (platforms || []).find(platform => (platform.jenis_voucher && platform.jenis_voucher !== ''));
+        const nominalValue = parseNumericValue(transaction.voucher_discount_amount ?? voucherPlatform?.nominal);
+        const percentValue = parseNumericValue(transaction.voucher_discount ?? voucherPlatform?.platform_persen);
+        const hasNominal = nominalValue > 0;
+        const hasPercent = percentValue > 0;
+
+        if (!transaction.voucher_code && !voucherPlatform && !hasNominal && !hasPercent) {
+            return null;
+        }
+
+        const typeCandidates = (voucherPlatform?.jenis_voucher || transaction.voucher_type || transaction.jenis_voucher || '').toString().trim().toLowerCase();
+        const percentKeywords = ['persen', 'percent', 'percentage', '%'];
+        const nominalKeywords = ['nominal', 'amount', 'fixed', 'rupiah'];
+
+        let resolvedType = 'NOMINAL';
+        let displayValue = `Rp ${numberFormat(nominalValue)}`;
+
+        if (percentKeywords.includes(typeCandidates)) {
+            resolvedType = 'PERSEN';
+            displayValue = `${formatPercent(percentValue > 0 ? percentValue : nominalValue)}%`;
+        } else if (nominalKeywords.includes(typeCandidates)) {
+            resolvedType = 'NOMINAL';
+        } else if (hasPercent) {
+            resolvedType = 'PERSEN';
+            displayValue = `${formatPercent(percentValue)}%`;
+        } else if (hasNominal) {
+            resolvedType = 'NOMINAL';
+        }
+
+        if (resolvedType === 'NOMINAL') {
+            const valueToUse = hasNominal ? nominalValue : parseNumericValue(voucherPlatform?.nominal);
+            displayValue = `Rp ${numberFormat(valueToUse)}`;
+        }
+
+        if (resolvedType === 'PERSEN') {
+            const percentToUse = hasPercent ? percentValue : parseNumericValue(voucherPlatform?.platform_persen ?? transaction.voucher_discount);
+            displayValue = `${formatPercent(percentToUse)}%`;
+        }
+
+        return {
+            code,
+            type: resolvedType,
+            value: displayValue
+        };
+    }
+
+    function parseNumericValue(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        const stringValue = value.toString().trim();
+        if (stringValue === '') {
+            return 0;
+        }
+
+        const normalized = stringValue
+            .replace(/[^0-9,.-]/g, '')
+            .replace(/\./g, '')
+            .replace(',', '.');
+
+        const parsed = parseFloat(normalized);
+        return isNaN(parsed) ? 0 : parsed;
     }
 
     function createTransaction() {

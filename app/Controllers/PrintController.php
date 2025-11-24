@@ -324,6 +324,7 @@ class PrintController extends BaseController
 
         // Payment method
         $paymentSummaryText = $this->formatPaymentSummaryText($transaction->payments ?? [], $transaction->metode_bayar ?? null, false);
+        $voucherInfo = $this->getVoucherInfo($transaction);
         if ($paymentSummaryText) {
             $html .= '<div class="info-row">';
             $html .= '<span class="info-label">Payment:</span>';
@@ -380,6 +381,11 @@ class PrintController extends BaseController
         
         if (isset($transaction->jml_diskon) && $transaction->jml_diskon > 0) {
             $html .= '<tr><td class="label">Discount</td><td class="value">(' . number_format($transaction->jml_diskon, 0) . ')</td></tr>';
+        }
+        
+        if ($voucherInfo) {
+            $voucherValue = '-' . $voucherInfo['value'];
+            $html .= '<tr><td class="label">Voucher (' . $voucherInfo['code'] . ')</td><td class="value">' . $voucherValue . '</td></tr>';
         }
         
         if (isset($transaction->jml_ppn) && $transaction->jml_ppn > 0) {
@@ -517,6 +523,7 @@ class PrintController extends BaseController
         
         // Right column - Payment info
         $invoicePaymentSummary = $this->formatPaymentSummaryText($transaction->payments ?? [], $transaction->metode_bayar ?? null);
+        $invoiceVoucherInfo = $this->getVoucherInfo($transaction);
         if ($invoicePaymentSummary) {
             $pdf->SetXY($rightX, $currentY);
             $pdf->Cell(30, 5, 'Payment', 0, 0);
@@ -588,6 +595,13 @@ class PrintController extends BaseController
             $pdf->SetX($labelX);
             $pdf->Cell(35, 5, 'Discount', 0, 0, 'L');
             $pdf->Cell(35, 5, '(' . number_format($transaction->jml_diskon, 0) . ')', 0, 1, 'R');
+        }
+        
+        if ($invoiceVoucherInfo) {
+            $voucherValue = '-' . $invoiceVoucherInfo['value'];
+            $pdf->SetX($labelX);
+            $pdf->Cell(35, 5, 'Voucher (' . $invoiceVoucherInfo['code'] . ')', 0, 0, 'L');
+            $pdf->Cell(35, 5, $voucherValue, 0, 1, 'R');
         }
         
         if (isset($transaction->jml_ppn) && $transaction->jml_ppn > 0) {
@@ -847,6 +861,10 @@ class PrintController extends BaseController
                 
                 $paymentDetail = $this->formatPaymentSummaryText($trans->payments ?? [], $trans->metode_bayar ?? null);
                 $html .= '<tr><td>Payment</td><td>: <span class="payment-method">' . ($paymentDetail ?: '-') . '</span></td></tr>';
+                $voucherInfo = $this->getVoucherInfo($trans);
+                if ($voucherInfo) {
+                    $html .= '<tr><td>Voucher</td><td>: ' . $voucherInfo['code'] . ' (' . $voucherInfo['value'] . ')</td></tr>';
+                }
                 $html .= '</table>';
                 $html .= '</div>';
                 
@@ -1128,6 +1146,14 @@ class PrintController extends BaseController
             $pdf->Cell(33, 5, '(' . number_format($transaction->jml_diskon, 0) . ')', 0, 1, 'R');
         }
         
+        $reportVoucherInfo = $this->getVoucherInfo($transaction);
+        if ($reportVoucherInfo) {
+            $voucherValue = '-' . $reportVoucherInfo['value'];
+            $pdf->SetX(202);
+            $pdf->Cell(50, 5, 'Voucher (' . $reportVoucherInfo['code'] . ')', 0, 0);
+            $pdf->Cell(33, 5, $voucherValue, 0, 1, 'R');
+        }
+        
         if (isset($transaction->jml_ppn) && $transaction->jml_ppn > 0) {
             $pdf->SetX(202);
             $pdf->Cell(50, 5, 'Tax (PPN ' . ($transaction->ppn ?? 0) . '%)', 0, 0);
@@ -1235,6 +1261,107 @@ class PrintController extends BaseController
         }
 
         return implode(', ', $parts);
+    }
+    
+    /**
+     * Build voucher info array for consistent rendering.
+     *
+     * @param object $transaction
+     * @return array|null
+     */
+    private function getVoucherInfo($transaction): ?array
+    {
+        $voucherPayment = null;
+        if (!empty($transaction->payments)) {
+            foreach ($transaction->payments as $payment) {
+                if (!empty($payment->jenis_voucher)) {
+                    $voucherPayment = $payment;
+                    break;
+                }
+            }
+        }
+
+        $code = $transaction->voucher_code ?? null;
+        $amount = $this->normalizeVoucherNumber($transaction->voucher_discount_amount ?? ($voucherPayment->nominal ?? null));
+        $percent = $this->normalizeVoucherNumber($transaction->voucher_discount ?? ($voucherPayment->platform_persen ?? null));
+
+        $rawType = strtolower(trim((string)($voucherPayment->jenis_voucher ?? $transaction->voucher_type ?? '')));
+        $hasNominal = $amount > 0;
+        $hasPercent = $percent > 0;
+
+        if (!$code && !$hasNominal && !$hasPercent && !$rawType) {
+            return null;
+        }
+
+        $percentKeywords = ['persen', 'percent', 'percentage', '%'];
+        $nominalKeywords = ['nominal', 'amount', 'fixed', 'rupiah'];
+
+        $type = 'NOMINAL';
+        $isAmount = true;
+        $value = 'Rp ' . number_format($amount, 0, ',', '.');
+
+        if ($rawType && in_array($rawType, $percentKeywords, true)) {
+            $type = 'PERSEN';
+            $isAmount = false;
+            $value = $this->formatPercentValue($percent > 0 ? $percent : $amount) . '%';
+        } elseif ($rawType && in_array($rawType, $nominalKeywords, true)) {
+            $type = 'NOMINAL';
+            $isAmount = true;
+            $value = 'Rp ' . number_format($amount, 0, ',', '.');
+        } elseif ($hasPercent && !$hasNominal) {
+            $type = 'PERSEN';
+            $isAmount = false;
+            $value = $this->formatPercentValue($percent) . '%';
+        } elseif ($hasNominal && !$hasPercent) {
+            $type = 'NOMINAL';
+            $isAmount = true;
+            $value = 'Rp ' . number_format($amount, 0, ',', '.');
+        } elseif ($hasPercent) {
+            $type = 'PERSEN';
+            $isAmount = false;
+            $value = $this->formatPercentValue($percent) . '%';
+        }
+
+        return [
+            'code' => $code ?? '-',
+            'type' => strtoupper($type),
+            'value' => $value,
+            'is_amount' => $isAmount
+        ];
+    }
+
+    /**
+     * Format percent with up to 2 decimals, trimmed zeros.
+     */
+    private function formatPercentValue($value): string
+    {
+        $formatted = number_format((float)$value, 2, '.', ',');
+        $formatted = rtrim(rtrim($formatted, '0'), '.');
+        return $formatted === '' ? '0' : $formatted;
+    }
+
+    /**
+     * Normalize voucher numeric values from mixed string formats.
+     */
+    private function normalizeVoucherNumber($value): float
+    {
+        if ($value === null) {
+            return 0.0;
+        }
+        if (is_numeric($value)) {
+            return (float)$value;
+        }
+
+        $stringValue = trim((string)$value);
+        if ($stringValue === '') {
+            return 0.0;
+        }
+
+        $normalized = preg_replace('/[^0-9,.\-]/', '', $stringValue);
+        $normalized = str_replace('.', '', $normalized);
+        $normalized = str_replace(',', '.', $normalized);
+
+        return $normalized === '' ? 0.0 : (float)$normalized;
     }
 
     /**

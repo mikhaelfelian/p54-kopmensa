@@ -429,7 +429,7 @@ class TransJual extends BaseController
         $paymentMethods = [];
         if (!empty($platforms)) {
             foreach ($platforms as $platform) {
-                $paymentMethods[] = $platform->platform . ' (' . number_format($platform->nominal, 0, ',', '.') . ')';
+                $paymentMethods[] = $platform->platform . ' (' . format_angka($platform->nominal) . ')';
             }
         }
         $transaction->metode_pembayaran = !empty($paymentMethods) ? implode(', ', $paymentMethods) : '-';
@@ -443,6 +443,8 @@ class TransJual extends BaseController
                 'platforms'   => $platforms,
             ]);
         }
+
+        // pre($transaction);
 
         // If direct browser access, redirect to main transaction list with search
         return redirect()->to(base_url('transaksi/jual?search=' . $transaction->no_nota));

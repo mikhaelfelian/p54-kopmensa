@@ -480,7 +480,8 @@ helper('form');
                 
                 <!-- Cash Options Section -->
                 <div class="mt-3 pt-3 border-top">
-                    <h6 class="mb-3">Uang Tunai Options</h6>
+                    <h6 class="mb-1">Uang Tunai Options</h6>
+                    <small id="cashPlatformInfo" class="text-muted d-block mb-2"></small>
                     <div class="row mb-3">
                         <div class="col-12">
                             <button type="button" class="btn btn-outline-primary btn-sm w-100" id="uangPas">
@@ -1370,7 +1371,7 @@ helper('form');
             setTimeout(() => {
                 const firstPaymentRow = $('[data-payment-id="1"]');
                 if (firstPaymentRow.length) {
-                    firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                    setDefaultPlatformForRow(firstPaymentRow);
                     firstPaymentRow.find('.payment-amount').val('0'); // Default amount
                     firstPaymentRow.find('.payment-note').val(''); // Default empty note
                 }
@@ -1585,12 +1586,18 @@ helper('form');
             toastr.warning('Jumlah tidak valid');
             return;
         }
+
+        const targetPlatformId = getSystemPlatformId();
+        if (!targetPlatformId) {
+            toastr.error('Platform Tunai default tidak ditemukan');
+            return;
+        }
         
         // Find the first cash payment method (platform_id = 1)
         let cashPaymentRow = null;
         $('.payment-method-row').each(function() {
             const platformId = $(this).find('.payment-platform').val();
-            if (platformId === '1') { // Cash platform
+            if (platformId === targetPlatformId) { // Default cash-like platform
                 cashPaymentRow = $(this);
                 return false; // Break loop
             }
@@ -1601,7 +1608,7 @@ helper('form');
             addPaymentMethod();
             // Get the newly added payment method row
             cashPaymentRow = $('.payment-method-row').last();
-            cashPaymentRow.find('.payment-platform').val('1'); // Set to cash
+            cashPaymentRow.find('.payment-platform').val(targetPlatformId); // Set to default platform
         }
         
         // Set the amount in the cash payment row
@@ -1612,7 +1619,7 @@ helper('form');
             calculatePaymentTotals();
             
             // Show success message
-            toastr.success(`Jumlah tunai Rp ${numberFormat(amount)} telah diset`);
+            toastr.success(`Jumlah ${getSystemPlatformName()} Rp ${numberFormat(amount)} telah diset`);
             
             // Highlight the button briefly if provided
             if (buttonElement) {
@@ -1636,6 +1643,66 @@ helper('form');
     // Payment Methods Functions
     // Store outlet platforms globally
     let outletPlatforms = <?= json_encode($platforms ?? []) ?>;
+    let systemPlatformCache = null;
+
+    function refreshSystemPlatformMeta() {
+        const sysPlatforms = (outletPlatforms || []).filter(platform => String(platform.status_sys ?? '0') === '1');
+        systemPlatformCache = sysPlatforms.length ? sysPlatforms[sysPlatforms.length - 1] : null;
+
+        const infoEl = $('#cashPlatformInfo');
+        if (infoEl.length) {
+            if (systemPlatformCache) {
+                infoEl.text(`Menggunakan platform ${systemPlatformCache.platform} untuk tombol cepat`);
+            } else {
+                infoEl.text('Menggunakan platform Tunai default.');
+            }
+        }
+    }
+
+    function getSystemPlatformId() {
+        if (systemPlatformCache) {
+            return String(systemPlatformCache.id);
+        }
+
+        const platforms = outletPlatforms || [];
+        for (let i = platforms.length - 1; i >= 0; i--) {
+            if (String(platforms[i].status_sys ?? '0') === '1') {
+                return String(platforms[i].id);
+            }
+        }
+
+        return '1';
+    }
+
+    function getSystemPlatformName() {
+        if (systemPlatformCache) {
+            return systemPlatformCache.platform;
+        }
+        const fallbackId = getSystemPlatformId();
+        const match = (outletPlatforms || []).find(platform => String(platform.id) === String(fallbackId));
+        return match ? match.platform : 'Tunai';
+    }
+
+    function setDefaultPlatformForRow($row) {
+        if (!$row || !$row.length) {
+            return;
+        }
+        const defaultId = getSystemPlatformId();
+        const platformSelect = $row.find('.payment-platform');
+        if (!platformSelect.val()) {
+            platformSelect.val(defaultId);
+        }
+    }
+
+    function ensureDefaultPlatformForInitialRow() {
+        const firstRow = $('[data-payment-id="1"]');
+        if (firstRow.length) {
+            setDefaultPlatformForRow(firstRow);
+        }
+    }
+
+    refreshSystemPlatformMeta();
+    ensureDefaultPlatformForInitialRow();
     
     // Load platforms for selected outlet
     function loadOutletPlatforms() {
@@ -1659,12 +1726,16 @@ helper('form');
                 if (response.success && response.platforms) {
                     outletPlatforms = response.platforms;
                     toastr.info(`Memuat ${outletPlatforms.length} platform pembayaran`);
+                    refreshSystemPlatformMeta();
+                    ensureDefaultPlatformForInitialRow();
                 }
             },
             error: function() {
                 // Fallback to default platforms on error
                 outletPlatforms = <?= json_encode($platforms ?? []) ?>;
                 console.log('Error loading outlet platforms, using defaults');
+                refreshSystemPlatformMeta();
+                ensureDefaultPlatformForInitialRow();
             }
         });
     }
@@ -1714,9 +1785,9 @@ helper('form');
 
         // Initialize the first payment method
         if (paymentCounter === 1) {
-            // Set default platform for first payment method (Cash)
+            // Set default platform for first payment method (system platform)
             const firstPaymentRow = $(`[data-payment-id="${paymentCounter}"]`);
-            firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+            setDefaultPlatformForRow(firstPaymentRow);
             firstPaymentRow.find('.payment-amount').val('0'); // Default amount
             firstPaymentRow.find('.payment-note').val(''); // Default empty note
         }
@@ -1737,7 +1808,7 @@ helper('form');
         setTimeout(() => {
             const firstPaymentRow = $('[data-payment-id="1"]');
             if (firstPaymentRow.length) {
-                firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                setDefaultPlatformForRow(firstPaymentRow);
                 firstPaymentRow.find('.payment-amount').val('0'); // Default amount
                 firstPaymentRow.find('.payment-note').val(''); // Default empty note
             }
@@ -1859,6 +1930,11 @@ helper('form');
                         discountAmount = response.discount_amount || 0;
                         discountText = `Rp ${numberFormat(response.discount_amount)}`;
                     }
+
+                    const voucherPercentValue = response.jenis_voucher === 'persen'
+                        ? parseFloat(response.discount) || 0
+                        : 0;
+                    const voucherNominalValue = discountAmount;
                     
                     // Update the amount input with discount amount
                     paymentRow.find('.payment-amount').val(discountAmount);
@@ -1879,6 +1955,8 @@ helper('form');
                     // Store voucher data
                     paymentRow.data('voucher-id', response.voucher_id);
                     paymentRow.data('voucher-discount', discountAmount);
+                    paymentRow.data('voucher-nominal', voucherNominalValue);
+                    paymentRow.data('voucher-percent', voucherPercentValue);
                     paymentRow.data('voucher-code', originalVoucherCode);
                     
                     // Safely store voucher type with validation
@@ -1923,7 +2001,7 @@ helper('form');
         paymentRow.find('.voucher-info').remove();
         
         // Clear voucher data
-        paymentRow.removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+        paymentRow.removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type', 'voucher-nominal', 'voucher-percent']);
         
         // Show amount input again
         paymentRow.find('.payment-amount').show();
@@ -1978,7 +2056,7 @@ helper('form');
         
         // Clear voucher data if this was a voucher payment
         if (paymentRow.data('voucher-id')) {
-            paymentRow.removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+            paymentRow.removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type', 'voucher-nominal', 'voucher-percent']);
         }
         
         paymentRow.remove();
@@ -3126,6 +3204,8 @@ helper('form');
             // Validate payment methods
             let hasValidPayment = false;
 
+            const defaultCashPlatformId = getSystemPlatformId();
+
             $('.payment-method-row').each(function () {
                 const platformId = $(this).find('.payment-platform').val();
                 const amount = parseFloat($(this).find('.payment-amount').val()) || 0;
@@ -3139,7 +3219,7 @@ helper('form');
                         // Vouchers are NOT payment methods - they are discounts
                         // Don't add them to paymentMethods array
                         // They are already handled in the voucher discount calculation
-                    } else if (platformId === '1') {
+                    } else if (String(platformId) === String(defaultCashPlatformId)) {
                         paymentType = '1'; // Backend expects '1' for cash
                         hasValidPayment = true;
                         const note = $(this).find('.payment-note').val() || '';
@@ -3231,20 +3311,24 @@ helper('form');
             if ($(this).val() === '4') { // Hardcoded voucher value
                 const paymentRow = $(this).closest('.payment-method-row');
                 const voucherCode = paymentRow.data('voucher-code');
-                const voucherDiscount = paymentRow.data('voucher-discount');
+                const voucherNominal = paymentRow.data('voucher-nominal') ?? paymentRow.data('voucher-discount') ?? 0;
+                const voucherPercentStored = paymentRow.data('voucher-percent') ?? 0;
                 const voucherId = paymentRow.data('voucher-id');
                 const voucherType = paymentRow.data('voucher-type'); // Get voucher type from payment row data
                 
-                console.log('Voucher data found:', { voucherCode, voucherDiscount, voucherId, voucherType });
+                let voucherPercent = parseFloat(voucherPercentStored) || 0;
+                const adjustedNominal = parseFloat(voucherNominal) || 0;
+                if ((!voucherPercent || voucherPercent <= 0) && adjustedNominal > 0 && grandTotal > 0) {
+                    voucherPercent = (adjustedNominal / grandTotal) * 100;
+                }
+
+                console.log('Voucher data found:', { voucherCode, adjustedNominal, voucherPercent, voucherId, voucherType });
                 
-                if (voucherCode && voucherDiscount > 0) {
-                    // Backend expects voucher_discount as percentage, not amount
-                    // Calculate percentage: (discount amount / grand total) * 100
-                    const voucherPercentage = (voucherDiscount / grandTotal) * 100;
-                    
+                if (voucherCode && adjustedNominal > 0) {
                     voucherInfo = {
                         voucher_code: voucherCode,
-                        voucher_discount: voucherPercentage, // Send as percentage
+                        voucher_discount: voucherPercent, // percentage value
+                        voucher_discount_amount: adjustedNominal,
                         voucher_id: voucherId,
                         voucher_type: voucherType || 'persen' // Use stored voucher type or default to 'persen'
                     };
@@ -3281,7 +3365,8 @@ helper('form');
         }
         
         // Calculate adjusted grand total after voucher discount
-        const transactionAdjustedTotal = grandTotal - (voucherInfo ? voucherInfo.voucher_discount * grandTotal / 100 : 0);
+        const voucherAmountValue = voucherInfo ? (voucherInfo.voucher_discount_amount || 0) : 0;
+        const transactionAdjustedTotal = Math.max(0, grandTotal - voucherAmountValue);
         
         if (isDraft === false && totalPaymentAmount < transactionAdjustedTotal) {
             toastr.error(`Jumlah bayar (${formatCurrency(totalPaymentAmount)}) kurang dari total setelah voucher (${formatCurrency(transactionAdjustedTotal)})`);
@@ -3300,6 +3385,7 @@ helper('form');
             discount_percent: discountPercent, // Backend expects this field
             voucher_code: voucherInfo ? voucherInfo.voucher_code : null,
             voucher_discount: voucherInfo ? voucherInfo.voucher_discount : 0,
+            voucher_discount_amount: voucherInfo ? voucherInfo.voucher_discount_amount : 0,
             voucher_id: voucherInfo ? voucherInfo.voucher_id : null,
             voucher_type: voucherInfo ? voucherInfo.voucher_type : null, // Add voucher type
             payment_methods: isDraft ? [] : paymentMethods,
@@ -3457,7 +3543,7 @@ helper('form');
         $('.payment-note').val('');
         // Clear voucher data from all payment rows
         $('.payment-method-row').each(function() {
-            $(this).removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+            $(this).removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type', 'voucher-nominal', 'voucher-percent']);
         });
         
         // Reset payment methods to default
@@ -3470,7 +3556,7 @@ helper('form');
         setTimeout(() => {
             const firstPaymentRow = $('[data-payment-id="1"]');
             if (firstPaymentRow.length) {
-                firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                setDefaultPlatformForRow(firstPaymentRow);
                 firstPaymentRow.find('.payment-amount').val('0'); // Default amount
                 firstPaymentRow.find('.payment-note').val(''); // Default empty note
             }
@@ -3519,7 +3605,7 @@ helper('form');
         
         // Clear voucher data from all payment rows
         $('.payment-method-row').each(function() {
-            $(this).removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type']);
+            $(this).removeData(['voucher-id', 'voucher-discount', 'voucher-code', 'voucher-type', 'voucher-nominal', 'voucher-percent']);
         });
 
         // Reset payment methods
@@ -3532,7 +3618,7 @@ helper('form');
         setTimeout(() => {
             const firstPaymentRow = $('[data-payment-id="1"]');
             if (firstPaymentRow.length) {
-                firstPaymentRow.find('.payment-platform').val('1'); // Default to Cash
+                setDefaultPlatformForRow(firstPaymentRow);
                 firstPaymentRow.find('.payment-amount').val('0'); // Default amount
                 firstPaymentRow.find('.payment-note').val(''); // Default empty note
             }
