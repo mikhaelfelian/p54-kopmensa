@@ -90,7 +90,7 @@ class TransJualPlatModel extends Model
     public function getPlatformsWithInfo($penjualanId = null)
     {
         $builder = $this->db->table('tbl_trans_jual_plat tjp');
-        $builder->select('tjp.*, mp.platform as nama_platform, mp.keterangan as keterangan_platform');
+        $builder->select('tjp.*, mp.platform as nama_platform, mp.kode as platform_kode, mp.keterangan as keterangan_platform');
         $builder->join('tbl_m_platform mp', 'mp.id = tjp.id_platform', 'left');
         
         if ($penjualanId) {

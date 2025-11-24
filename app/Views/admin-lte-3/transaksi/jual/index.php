@@ -579,15 +579,55 @@
                 <tbody>`;
 
             platforms.forEach(platform => {
+                const displayName = platform.nama_platform || platform.platform || '-';
+                const kode = platform.platform_kode || platform.kode || '';
+                const platformLabel = kode ? `${kode} / ${displayName}` : displayName;
+
                 html += `
                 <tr>
-                    <td>${platform.platform}</td>
+                    <td>${platformLabel}</td>
                     <td class="text-right">Rp ${numberFormat(platform.nominal)}</td>
-                    <td>${platform.keterangan || '-'}</td>
+                    <td>${platform.keterangan || platform.keterangan_platform || '-'}</td>
                 </tr>`;
             });
 
             html += `
+                </tbody>
+            </table>
+        </div>`;
+        }
+
+        if ((transaction.voucher_code && transaction.voucher_code !== '') ||
+            (transaction.voucher_discount_amount && Number(transaction.voucher_discount_amount) > 0) ||
+            (transaction.voucher_discount && Number(transaction.voucher_discount) > 0)) {
+
+            const voucherLabel = transaction.voucher_code ? transaction.voucher_code : 'Voucher';
+            const voucherType = transaction.voucher_type
+                ? transaction.voucher_type.toUpperCase()
+                : (transaction.voucher_discount && Number(transaction.voucher_discount) > 0 ? 'PERSEN' : 'NOMINAL');
+
+            const voucherValue = transaction.voucher_discount_amount && Number(transaction.voucher_discount_amount) > 0
+                ? `Rp ${numberFormat(transaction.voucher_discount_amount)}`
+                : `${numberFormat(transaction.voucher_discount || 0)}%`;
+
+            html += `
+        <hr>
+        <h6>Voucher</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Jenis</th>
+                        <th>Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>${voucherLabel}</td>
+                        <td>${voucherType}</td>
+                        <td class="text-right">${voucherValue}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>`;
