@@ -89,7 +89,7 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-info">
                             <div class="inner">
-                                <h3><?= number_format($totalTransactions, 0, ',', '.') ?></h3>
+                                <h3><?= format_angka($totalTransactions) ?></h3>
                                 <p>Total Transaksi</p>
                             </div>
                             <div class="icon">
@@ -100,7 +100,7 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-success">
                             <div class="inner">
-                                <h3><?= number_format($totalSales, 0, ',', '.') ?></h3>
+                                <h3><?= format_angka($totalSales) ?></h3>
                                 <p>Total Penjualan</p>
                             </div>
                             <div class="icon">
@@ -111,7 +111,7 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-warning">
                             <div class="inner">
-                                <h3><?= $totalTransactions > 0 ? number_format($totalSales / $totalTransactions, 0, ',', '.') : 0 ?></h3>
+                                <h3><?= $totalTransactions > 0 ? format_angka($totalSales / $totalTransactions) : 0 ?></h3>
                                 <p>Rata-rata per Transaksi</p>
                             </div>
                             <div class="icon">
@@ -139,37 +139,43 @@
                             <tr>
                                 <th width="5%">No</th>
                                 <th>Tanggal</th>
-                                <th>No. Nota</th>
-                                <th>Nama Anggota</th>
-                                <th>No. Anggota</th>
-                                <th>Metode Pembayaran</th>
-                                <th>Gudang</th>
-                                <th>Sales</th>
-                                <th>Total</th>
+                                <th>Pelanggan</th>
+                                <?php if (!empty($platforms)): ?>
+                                    <?php foreach ($platforms as $platform): ?>
+                                        <th class="text-right"><?= esc($platform->platform) ?></th>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                                <?php if (!empty($vouchers)): ?>
+                                    <?php foreach ($vouchers as $voucher): ?>
+                                        <th class="text-right"><?= esc($voucher->kode ?? 'Voucher ' . $voucher->id) ?></th>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                                <th class="text-right">Subtotal</th>
                                 <th width="10%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($sales)): ?>
                                 <tr>
-                                    <td colspan="10" class="text-center">Tidak ada data penjualan</td>
+                                    <td colspan="<?= 5 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-center">Tidak ada data penjualan</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($sales as $index => $sale): ?>
                                     <tr>
                                         <td><?= $index + 1 ?></td>
-                                        <td><?= date('d/m/Y', strtotime($sale->tgl_masuk)) ?></td>
-                                        <td>
-                                            <a href="<?= base_url('laporan/sale/detail/' . $sale->id) ?>" class="text-primary">
-                                                <?= $sale->no_nota ?>
-                                            </a>
-                                        </td>
-                                        <td><?= esc($sale->pelanggan_nama ?? 'Umum') ?></td>
-                                        <td><?= esc($sale->pelanggan_kode ?? '') ?></td>
-                                        <td><?= esc($sale->metode_pembayaran ?? '-') ?></td>
-                                        <td><?= $sale->gudang_nama ?? '-' ?></td>
-                                        <td><?= $sale->sales_nama ?? '-' ?></td>
-                                        <td class="text-right"><?= number_format($sale->jml_gtotal ?? 0, 0, ',', '.') ?></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($sale->tgl_masuk)) ?></td>
+                                        <td><?= esc($sale->pelanggan_nama ?? 'Umum') ?><?= !empty($sale->pelanggan_kode) ? ' (' . esc($sale->pelanggan_kode) . ')' : '' ?></td>
+                                        <?php if (!empty($platforms)): ?>
+                                            <?php foreach ($platforms as $platform): ?>
+                                                <td class="text-right"><?= format_angka($sale->platform_amounts[$platform->id] ?? 0) ?></td>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($vouchers)): ?>
+                                            <?php foreach ($vouchers as $voucher): ?>
+                                                <td class="text-right"><?= format_angka($sale->voucher_amounts[$voucher->id] ?? 0) ?></td>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                        <td class="text-right"><?= format_angka($sale->jml_gtotal ?? 0) ?></td>
                                         <td>
                                             <a href="<?= base_url('laporan/sale/detail/' . $sale->id) ?>" 
                                                class="btn btn-info btn-sm rounded-0">
@@ -183,8 +189,8 @@
                         <?php if (!empty($sales)): ?>
                             <tfoot>
                                 <tr class="bg-light">
-                                    <th colspan="8" class="text-right">TOTAL</th>
-                                    <th class="text-right"><?= number_format($totalSales, 0, ',', '.') ?></th>
+                                    <th colspan="<?= 3 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-right">TOTAL</th>
+                                    <th class="text-right"><?= format_angka($totalSales) ?></th>
                                     <th></th>
                                 </tr>
                             </tfoot>

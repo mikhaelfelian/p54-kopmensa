@@ -672,43 +672,39 @@
         }
 
         const code = transaction.voucher_code && transaction.voucher_code !== '' ? transaction.voucher_code : '-';
-        const voucherPlatform = (platforms || []).find(platform => (platform.jenis_voucher && platform.jenis_voucher !== ''));
-        const nominalValue = parseNumericValue(transaction.voucher_discount_amount ?? voucherPlatform?.nominal);
-        const percentValue = parseNumericValue(transaction.voucher_discount ?? voucherPlatform?.platform_persen);
-        const hasNominal = nominalValue > 0;
-        const hasPercent = percentValue > 0;
+        const voucherPayment = (platforms || []).find(platform => (platform.jenis_voucher && platform.jenis_voucher !== ''));
+        const amount = parseNumericValue(transaction.voucher_discount_amount ?? (voucherPayment?.nominal ?? 0));
+        const percent = parseNumericValue(transaction.voucher_discount ?? (voucherPayment?.platform_persen ?? 0));
+        const rawType = (voucherPayment?.jenis_voucher || transaction.voucher_type || '').toString().trim().toLowerCase();
 
-        if (!transaction.voucher_code && !voucherPlatform && !hasNominal && !hasPercent) {
+        const hasNominal = amount > 0;
+        const hasPercent = percent > 0;
+
+        if (!code && !hasNominal && !hasPercent && !rawType) {
             return null;
         }
 
-        const typeCandidates = (voucherPlatform?.jenis_voucher || transaction.voucher_type || transaction.jenis_voucher || '').toString().trim().toLowerCase();
         const percentKeywords = ['persen', 'percent', 'percentage', '%'];
         const nominalKeywords = ['nominal', 'amount', 'fixed', 'rupiah'];
 
         let resolvedType = 'NOMINAL';
-        let displayValue = `Rp ${numberFormat(nominalValue)}`;
+        let displayValue = 'Rp ' + numberFormat(amount);
 
-        if (percentKeywords.includes(typeCandidates)) {
+        if (rawType && percentKeywords.includes(rawType)) {
             resolvedType = 'PERSEN';
-            displayValue = `${formatPercent(percentValue > 0 ? percentValue : nominalValue)}%`;
-        } else if (nominalKeywords.includes(typeCandidates)) {
+            displayValue = `${formatPercentValue(hasPercent ? percent : amount)}%`;
+        } else if (rawType && nominalKeywords.includes(rawType)) {
             resolvedType = 'NOMINAL';
+            displayValue = `Rp ${numberFormat(amount)}`;
+        } else if (hasPercent && !hasNominal) {
+            resolvedType = 'PERSEN';
+            displayValue = `${formatPercentValue(percent)}%`;
+        } else if (hasNominal && !hasPercent) {
+            resolvedType = 'NOMINAL';
+            displayValue = `Rp ${numberFormat(amount)}`;
         } else if (hasPercent) {
             resolvedType = 'PERSEN';
-            displayValue = `${formatPercent(percentValue)}%`;
-        } else if (hasNominal) {
-            resolvedType = 'NOMINAL';
-        }
-
-        if (resolvedType === 'NOMINAL') {
-            const valueToUse = hasNominal ? nominalValue : parseNumericValue(voucherPlatform?.nominal);
-            displayValue = `Rp ${numberFormat(valueToUse)}`;
-        }
-
-        if (resolvedType === 'PERSEN') {
-            const percentToUse = hasPercent ? percentValue : parseNumericValue(voucherPlatform?.platform_persen ?? transaction.voucher_discount);
-            displayValue = `${formatPercent(percentToUse)}%`;
+            displayValue = `${formatPercentValue(percent)}%`;
         }
 
         return {
@@ -716,6 +712,12 @@
             type: resolvedType,
             value: displayValue
         };
+    }
+
+    function formatPercentValue(value) {
+        const numeric = parseFloat(value) || 0;
+        const formatted = numeric.toFixed(2).replace(/\.?0+$/, '');
+        return formatted === '' ? '0' : formatted.replace('.', ',');
     }
 
     function parseNumericValue(value) {
