@@ -1074,6 +1074,7 @@ helper('form');
     let currentDraftId = null; // Store current draft ID when loading a draft
     let currentTransactionId = null;
     let paymentMethods = [];
+    let productStockCache = {}; // Cache for product stock information
     const PPN_PERCENTAGE = <?= $Pengaturan->ppn ?>; // Dynamic PPN from settings (included in price)
     
     // Logo path from Pengaturan
