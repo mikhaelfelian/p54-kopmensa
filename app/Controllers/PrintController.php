@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use App\Models\PengaturanModel;
 use App\Models\TransJualModel;
+use App\Models\TransJualPlatModel;
 use App\Models\TransBeliModel;
 use App\Models\TransBeliPOModel;
 use TCPDF;
@@ -21,6 +22,7 @@ class PrintController extends BaseController
 {
     protected $pengaturanModel;
     protected $transJualModel;
+    protected $transJualPlatModel;
     protected $transBeliModel;
     protected $transBeliPOModel;
 
@@ -28,6 +30,7 @@ class PrintController extends BaseController
     {
         $this->pengaturanModel = new PengaturanModel();
         $this->transJualModel = new TransJualModel();
+        $this->transJualPlatModel = new TransJualPlatModel();
         $this->transBeliModel = new TransBeliModel();
         $this->transBeliPOModel = new TransBeliPOModel();
     }
@@ -166,6 +169,7 @@ class PrintController extends BaseController
                     // Get transaction details
                     $transJualDetModel = new \App\Models\TransJualDetModel();
                     $transaction->details = $transJualDetModel->getDetailsWithItem($id);
+                    $transaction->payments = $this->transJualPlatModel->getPlatformsWithInfo($id);
                 }
                 return $transaction;
                 
@@ -177,6 +181,7 @@ class PrintController extends BaseController
                     // Get transaction details
                     $transBeliDetModel = new \App\Models\TransBeliDetModel();
                     $transaction->details = $transBeliDetModel->getWithItem($id);
+                    $transaction->payments = [];
                 }
                 return $transaction;
                 
@@ -195,6 +200,7 @@ class PrintController extends BaseController
                         ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_po_det.id_item', 'left')
                         ->where('id_pembelian', $id)
                         ->findAll();
+                    $transaction->payments = [];
                 }
                 return $transaction;
                 
@@ -317,10 +323,23 @@ class PrintController extends BaseController
         }
 
         // Payment method
-        if (isset($transaction->metode_bayar) && $transaction->metode_bayar) {
+        $paymentSummaryText = $this->formatPaymentSummaryText($transaction->payments ?? [], $transaction->metode_bayar ?? null, false);
+        if ($paymentSummaryText) {
             $html .= '<div class="info-row">';
             $html .= '<span class="info-label">Payment:</span>';
-            $html .= '<span>' . strtoupper($transaction->metode_bayar) . '</span>';
+            $html .= '<span>' . $paymentSummaryText . '</span>';
+            $html .= '</div>';
+        }
+        if (!empty($transaction->payments)) {
+            $html .= '<div class="info-row" style="flex-direction: column; align-items: flex-start; padding-top:4px;">';
+            foreach ($transaction->payments as $payment) {
+                $label = $payment->nama_platform ?? $payment->platform ?? 'Payment';
+                $amount = number_format((float)($payment->nominal ?? 0), 0, ',', '.');
+                $html .= '<span style="width:100%; display:flex; justify-content:space-between;">';
+                $html .= '<span>' . $label . '</span>';
+                $html .= '<span>Rp ' . $amount . '</span>';
+                $html .= '</span>';
+            }
             $html .= '</div>';
         }
 
@@ -497,11 +516,12 @@ class PrintController extends BaseController
         }
         
         // Right column - Payment info
-        if (isset($transaction->metode_bayar) && $transaction->metode_bayar) {
+        $invoicePaymentSummary = $this->formatPaymentSummaryText($transaction->payments ?? [], $transaction->metode_bayar ?? null);
+        if ($invoicePaymentSummary) {
             $pdf->SetXY($rightX, $currentY);
             $pdf->Cell(30, 5, 'Payment', 0, 0);
             $pdf->Cell(5, 5, ':', 0, 0);
-            $pdf->Cell(0, 5, strtoupper($transaction->metode_bayar), 0, 1);
+            $pdf->Cell(0, 5, $invoicePaymentSummary, 0, 1);
         }
         
         // Cashier
@@ -586,6 +606,18 @@ class PrintController extends BaseController
         $pdf->Cell(35, 6, 'TOTAL', 0, 0, 'L');
         $pdf->Cell(35, 6, 'Rp ' . number_format($transaction->jml_gtotal ?? 0, 0), 0, 1, 'R');
         
+        if (!empty($transaction->payments)) {
+            $pdf->Ln(2);
+            $pdf->SetFont('courier', '', 9);
+            foreach ($transaction->payments as $payment) {
+                $label = $payment->nama_platform ?? $payment->platform ?? 'Payment';
+                $amount = number_format((float)($payment->nominal ?? 0), 0, ',', '.');
+                $pdf->SetX($labelX);
+                $pdf->Cell(35, 5, $label, 0, 0, 'L');
+                $pdf->Cell(35, 5, 'Rp ' . $amount, 0, 1, 'R');
+            }
+        }
+        
         // Payment details if available
         if (isset($transaction->jml_bayar) && $transaction->jml_bayar > 0) {
             $pdf->SetLineWidth(0.3);
@@ -655,6 +687,7 @@ class PrintController extends BaseController
                 ->where('tbl_trans_jual.status', '1')
                 ->orderBy('tbl_trans_jual.tgl_masuk', 'ASC')
                 ->findAll();
+            $this->attachPaymentsToTransactions($transactions);
         } elseif ($type === 'beli') {
             $transactions = $this->transBeliModel
                 ->select('tbl_trans_beli.*, tbl_ion_users.first_name as user_name, tbl_m_supplier.nama as supplier_name')
@@ -766,12 +799,23 @@ class PrintController extends BaseController
                 $totalTransactions++;
                 
                 // Count by payment method
-                $payment = $trans->metode_bayar ?? 'CASH';
-                if (!isset($paymentSummary[$payment])) {
-                    $paymentSummary[$payment] = ['count' => 0, 'amount' => 0];
-                }
-                $paymentSummary[$payment]['count']++;
-                $paymentSummary[$payment]['amount'] += $trans->jml_gtotal ?? 0;
+                    if (!empty($trans->payments)) {
+                        foreach ($trans->payments as $paymentItem) {
+                            $label = $paymentItem->nama_platform ?? $paymentItem->platform ?? 'Pembayaran';
+                            if (!isset($paymentSummary[$label])) {
+                                $paymentSummary[$label] = ['count' => 0, 'amount' => 0];
+                            }
+                            $paymentSummary[$label]['count']++;
+                            $paymentSummary[$label]['amount'] += $paymentItem->nominal ?? 0;
+                        }
+                    } else {
+                        $payment = strtoupper($trans->metode_bayar ?? 'CASH');
+                        if (!isset($paymentSummary[$payment])) {
+                            $paymentSummary[$payment] = ['count' => 0, 'amount' => 0];
+                        }
+                        $paymentSummary[$payment]['count']++;
+                        $paymentSummary[$payment]['amount'] += $trans->jml_gtotal ?? 0;
+                    }
                 
                 // Count by user
                 $user = $trans->user_name ?? 'Unknown';
@@ -801,7 +845,8 @@ class PrintController extends BaseController
                     $html .= '<tr><td>Supplier</td><td>: ' . $trans->supplier_name . '</td></tr>';
                 }
                 
-                $html .= '<tr><td>Payment</td><td>: <span class="payment-method">' . strtoupper($trans->metode_bayar ?? 'CASH') . '</span></td></tr>';
+                $paymentDetail = $this->formatPaymentSummaryText($trans->payments ?? [], $trans->metode_bayar ?? null);
+                $html .= '<tr><td>Payment</td><td>: <span class="payment-method">' . ($paymentDetail ?: '-') . '</span></td></tr>';
                 $html .= '</table>';
                 $html .= '</div>';
                 
@@ -816,7 +861,7 @@ class PrintController extends BaseController
             
             foreach ($paymentSummary as $method => $data) {
                 $html .= '<div class="info-row">';
-                $html .= '<span>' . strtoupper($method) . ' (' . $data['count'] . 'x)</span>';
+                $html .= '<span>' . $method . ' (' . $data['count'] . 'x)</span>';
                 $html .= '<span class="bold">' . number_format($data['amount'], 0) . '</span>';
                 $html .= '</div>';
             }
@@ -973,7 +1018,8 @@ class PrintController extends BaseController
         $pdf->Cell(30, 4, 'Payment Method', 0, 0);
         $pdf->Cell(3, 4, ':', 0, 0);
         $pdf->SetFont('helvetica', 'B', 8);
-        $pdf->Cell(0, 4, strtoupper($transaction->metode_bayar ?? 'CASH'), 0, 1);
+        $reportPaymentSummary = $this->formatPaymentSummaryText($transaction->payments ?? [], $transaction->metode_bayar ?? null);
+        $pdf->Cell(0, 4, $reportPaymentSummary ?: '-', 0, 1);
         
         // Second row
         $pdf->SetFont('helvetica', '', 8);
@@ -1097,6 +1143,17 @@ class PrintController extends BaseController
         $pdf->Cell(50, 6, 'GRAND TOTAL', 0, 0);
         $pdf->Cell(33, 6, 'Rp ' . number_format($transaction->jml_gtotal ?? 0, 0), 0, 1, 'R');
         
+        if (!empty($transaction->payments)) {
+            $pdf->SetFont('helvetica', '', 8);
+            foreach ($transaction->payments as $payment) {
+                $label = $payment->nama_platform ?? $payment->platform ?? 'Payment';
+                $amount = number_format((float)($payment->nominal ?? 0), 0, ',', '.');
+                $pdf->SetX(202);
+                $pdf->Cell(50, 5, $label, 0, 0, 'L');
+                $pdf->Cell(33, 5, 'Rp ' . $amount, 0, 1, 'R');
+            }
+        }
+        
         if (isset($transaction->jml_bayar) && $transaction->jml_bayar > 0) {
             $pdf->SetLineWidth(0.2);
             $pdf->Line(202, $pdf->GetY() + 1, 285, $pdf->GetY() + 1);
@@ -1150,5 +1207,72 @@ class PrintController extends BaseController
         $pdf->Cell(0, 3, 'This is a computer-generated document. For internal use only.', 0, 1, 'C');
         
         return $pdf;
+    }
+
+    /**
+     * Build readable payment summary text.
+     *
+     * @param array|null $payments
+     * @param string|null $fallback
+     * @param bool $includeAmount
+     * @return string
+     */
+    private function formatPaymentSummaryText(?array $payments, ?string $fallback = null, bool $includeAmount = true): string
+    {
+        if (empty($payments)) {
+            return $fallback ? strtoupper($fallback) : '';
+        }
+
+        $parts = [];
+        foreach ($payments as $payment) {
+            $label = $payment->nama_platform ?? $payment->platform ?? $payment->platform_name ?? 'Payment';
+            if ($includeAmount) {
+                $amount = number_format((float)($payment->nominal ?? 0), 0, ',', '.');
+                $parts[] = $label . ' (Rp ' . $amount . ')';
+            } else {
+                $parts[] = $label;
+            }
+        }
+
+        return implode(', ', $parts);
+    }
+
+    /**
+     * Attach payment collections to each transaction and return summary map.
+     *
+     * @param array $transactions
+     * @return array
+     */
+    private function attachPaymentsToTransactions(array &$transactions): array
+    {
+        if (empty($transactions)) {
+            return [];
+        }
+
+        $transactionIds = array_column($transactions, 'id');
+        if (empty($transactionIds)) {
+            return [];
+        }
+
+        $db = \Config\Database::connect();
+        $builder = $db->table('tbl_trans_jual_plat tjp');
+        $payments = $builder
+            ->select('tjp.id_penjualan, tjp.nominal, COALESCE(mp.platform, tjp.platform) as platform_name')
+            ->join('tbl_m_platform mp', 'mp.id = tjp.id_platform', 'left')
+            ->whereIn('tjp.id_penjualan', $transactionIds)
+            ->get()
+            ->getResult();
+
+        $map = [];
+        foreach ($payments as $payment) {
+            $payment->nama_platform = $payment->platform_name;
+            $map[$payment->id_penjualan][] = $payment;
+        }
+
+        foreach ($transactions as $transaction) {
+            $transaction->payments = $map[$transaction->id] ?? [];
+        }
+
+        return $map;
     }
 }

@@ -61,6 +61,14 @@
             <?= form_close() ?>
         </div>
     </div>
+    <div class="col-md-6">
+        <?= view('admin-lte-3/master/outlet/partials/platform_manager', [
+            'outlet'             => $outlet,
+            'assignedPlatforms'  => $assignedPlatforms ?? [],
+            'availablePlatforms' => $availablePlatforms ?? [],
+            'embedded'           => true,
+        ]) ?>
+    </div>
 </div>
 
 <?= $this->endSection() ?>

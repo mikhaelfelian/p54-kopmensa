@@ -69,18 +69,21 @@ class OutletPlatformModel extends Model
     public function getAvailablePlatforms($id_outlet)
     {
         $db = \Config\Database::connect();
-        
-        return $db->table('tbl_m_platform')
-                  ->select('tbl_m_platform.*')
-                  ->where('tbl_m_platform.status', '1')
-                  ->whereNotIn('tbl_m_platform.id', function($builder) use ($id_outlet) {
-                      return $builder->select('id_platform')
-                                    ->from('tbl_outlet_platform')
-                                    ->where('id_outlet', $id_outlet)
-                                    ->where('status', '1');
-                  })
-                  ->get()
-                  ->getResult();
+        $id_outlet = (int) $id_outlet;
+
+        return $db->table('tbl_m_platform mp')
+            ->select('mp.*')
+            ->join(
+                'tbl_outlet_platform op',
+                'op.id_platform = mp.id AND op.id_outlet = ' . $id_outlet . ' AND op.status = "1"',
+                'left'
+            )
+            ->where('mp.status', '1')
+            ->where('mp.status_hps', '0')
+            ->where('op.id IS NULL', null, false)
+            ->orderBy('mp.platform', 'ASC')
+            ->get()
+            ->getResult();
     }
 }
 
