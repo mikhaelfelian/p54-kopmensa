@@ -2674,6 +2674,21 @@ helper('form');
         });
     }
 
+    // Function to check stock before adding product to cart
+    function checkStockBeforeAdd(productId, productName, productCode, price, stock, statusStok) {
+        // Check if product is stockable
+        const isStockable = (statusStok === '1' || statusStok === 1);
+        
+        // If stockable and stock is 0 or less, prevent adding to cart
+        if (isStockable && stock <= 0) {
+            toastr.error('Stok habis! Produk tidak dapat dijual.');
+            return false;
+        }
+        
+        // Product can be added (either non-stockable or has stock)
+        return true;
+    }
+
     // Function to check for variants and handle add to cart
     function checkVariant(productId, productName, productCode, price, stock, statusStok) {
         // Check stock first
