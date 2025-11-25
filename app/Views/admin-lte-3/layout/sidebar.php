@@ -748,7 +748,7 @@
                                     class="nav-link <?= isMenuActive('laporan/sale') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-shopping-cart nav-icon"></i>
-                                    <p>Laporan Penjualan</p>
+                                    <p>Penjualan</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -756,7 +756,7 @@
                                     class="nav-link <?= isMenuActive('laporan/item-sale') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-box nav-icon"></i>
-                                    <p>Laporan Penjualan Item</p>
+                                    <p>Penjualan Item</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -764,7 +764,7 @@
                                     class="nav-link <?= isMenuActive('laporan/stock') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-boxes nav-icon"></i>
-                                    <p>Laporan Stok Item</p>
+                                    <p>Stok Item</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -772,7 +772,7 @@
                                     class="nav-link <?= isMenuActive('laporan/purchase') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-shopping-bag nav-icon"></i>
-                                    <p>Laporan Pembelian</p>
+                                    <p>Pembelian</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -780,7 +780,7 @@
                                     class="nav-link <?= isMenuActive('laporan/shift-omzet') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-chart-line nav-icon"></i>
-                                    <p>Laporan Omzet Shift</p>
+                                    <p>Omzet Shift</p>
                                 </a>
                             </li>
                         </ul>
