@@ -2048,13 +2048,13 @@ class TransJual extends BaseController
             $jml_kurang = ($transaction->jml_bayar > $jml_gtotal) ? ($transaction->jml_bayar - $jml_gtotal) : 0;
 
             $this->transJualModel->update($id, [
-                'jml_gtotal' => $jml_gtotal,
-                'jml_subtotal' => $jml_subtotal,
-                'jml_ppn' => $jml_ppn,
-                'jml_kurang' => $jml_kurang,
-                'status' => '3',
-                'status_retur' => '1',
-                'updated_at' => date('Y-m-d H:i:s')
+                'jml_gtotal'    => $jml_gtotal,
+                'jml_subtotal'  => $jml_subtotal,
+                'jml_ppn'       => $jml_ppn,
+                'jml_kurang'    => $jml_kurang,
+                'status'        => '3',
+                'status_retur'  => '1',
+                'updated_at'    => date('Y-m-d H:i:s'),
             ]);
 
             foreach ($details as $detail) {
@@ -2065,23 +2065,23 @@ class TransJual extends BaseController
                     $this->updateStock($detail->id_item, $warehouseId, $detail->jml, 'increase');
 
                     $historyData = [
-                        'id_item' => $detail->id_item,
-                        'id_satuan' => $detail->id_satuan,
-                        'id_gudang' => $warehouseId,
-                        'id_user' => $this->ionAuth->user()->row()->id,
+                        'id_item'      => $detail->id_item,
+                        'id_satuan'    => $detail->id_satuan,
+                        'id_gudang'    => $warehouseId,
+                        'id_user'      => $this->ionAuth->user()->row()->id,
                         'id_pelanggan' => $transaction->id_pelanggan,
                         'id_penjualan' => $id,
-                        'tgl_masuk' => date('Y-m-d H:i:s'),
-                        'no_nota' => $transaction->no_nota,
-                        'kode' => $detail->kode ?? $item->kode ?? '',
-                        'item' => $detail->produk ?? $item->item ?? '',
-                        'keterangan' => 'Retur Penjualan - ' . $transaction->no_nota,
-                        'nominal' => $detail->harga ?? 0,
-                        'jml' => $detail->jml ?? 0,
-                        'jml_satuan' => $detail->jml_satuan ?? 1,
-                        'satuan' => $detail->satuan ?? 'PCS',
-                        'status' => '3',
-                        'sp' => null
+                        'tgl_masuk'    => date('Y-m-d H:i:s'),
+                        'no_nota'      => $transaction->no_nota,
+                        'kode'         => $detail->kode ?? $item->kode ?? '',
+                        'item'         => $detail->produk ?? $item->item ?? '',
+                        'keterangan'   => 'Retur Penjualan - ' . $transaction->no_nota,
+                        'nominal'      => $detail->harga ?? 0,
+                        'jml'          => $detail->jml ?? 0,
+                        'jml_satuan'   => $detail->jml_satuan ?? 1,
+                        'satuan'       => $detail->satuan ?? 'PCS',
+                        'status'       => '3',
+                        'sp'           => null
                     ];
                     $this->itemHistModel->insert($historyData);
                 }
