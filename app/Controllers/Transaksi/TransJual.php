@@ -1908,4 +1908,258 @@ class TransJual extends BaseController
             ]);
         }
     }
+
+    public function retur($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON([
+                'success' => false,
+                'message' => 'Method Not Allowed'
+            ]);
+        }
+        try {
+            // Get transaction
+            $transaction = $this->transJualModel->find($id);
+            
+            if (!$transaction) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan'
+                ]);
+            }
+
+            // Validate transaction is completed
+            if ($transaction->status != '1') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Hanya transaksi yang sudah selesai yang dapat diretur'
+                ]);
+            }
+
+            if ($transaction->status_retur === '1') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Retur telah disetujui untuk transaksi ini'
+                ]);
+            }
+
+            if ($transaction->status_retur === '0' && (float)($transaction->jml_retur ?? 0) != 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Retur sudah diajukan dan menunggu persetujuan'
+                ]);
+            }
+
+            $returAmount = -abs((float)($transaction->jml_gtotal ?? 0));
+
+            if ($returAmount == 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Nominal retur tidak valid'
+                ]);
+            }
+
+            $this->transJualModel->update($id, [
+                'jml_retur' => $returAmount,
+                'status_retur' => '0',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Permintaan retur berhasil disimpan dan menunggu persetujuan.'
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Retur request failed: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal memproses retur: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function approveRetur($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON([
+                'success' => false,
+                'message' => 'Method Not Allowed'
+            ]);
+        }
+
+        $group_id = session()->get('group_id');
+        if ($group_id != 1 && $group_id != 2) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Hanya superadmin yang dapat menyetujui retur'
+            ]);
+        }
+
+        $this->db->transStart();
+
+        try {
+            $transaction = $this->transJualModel->find($id);
+
+            if (!$transaction) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan'
+                ]);
+            }
+
+            if ($transaction->status_retur === '1') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Retur sudah disetujui sebelumnya'
+                ]);
+            }
+
+            $returAmount = (float)($transaction->jml_retur ?? 0);
+            if ($returAmount === 0.0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada data retur yang perlu disetujui'
+                ]);
+            }
+
+            $details = $this->transJualDetModel->where('id_penjualan', $id)->findAll();
+
+            if (empty($details)) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Detail transaksi tidak ditemukan'
+                ]);
+            }
+
+            $jml_gtotal = $transaction->jml_total - $transaction->jml_diskon + $returAmount;
+
+            $pengaturan = $this->pengaturanModel->first();
+            $ppnRate = $pengaturan->ppn ?? 11;
+
+            if ($transaction->status_ppn == 1) {
+                $jml_subtotal = $jml_gtotal / (1 + ($ppnRate / 100));
+                $jml_ppn = $jml_gtotal - $jml_subtotal;
+            } else {
+                $jml_subtotal = $jml_gtotal;
+                $jml_ppn = 0;
+            }
+
+            $jml_kurang = ($transaction->jml_bayar > $jml_gtotal) ? ($transaction->jml_bayar - $jml_gtotal) : 0;
+
+            $this->transJualModel->update($id, [
+                'jml_gtotal' => $jml_gtotal,
+                'jml_subtotal' => $jml_subtotal,
+                'jml_ppn' => $jml_ppn,
+                'jml_kurang' => $jml_kurang,
+                'status' => '3',
+                'status_retur' => '1',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            foreach ($details as $detail) {
+                $item = $this->itemModel->find($detail->id_item);
+
+                if ($item && isset($item->status_stok) && $item->status_stok == '1') {
+                    $warehouseId = $transaction->id_gudang ?? 1;
+                    $this->updateStock($detail->id_item, $warehouseId, $detail->jml, 'increase');
+
+                    $historyData = [
+                        'id_item' => $detail->id_item,
+                        'id_satuan' => $detail->id_satuan,
+                        'id_gudang' => $warehouseId,
+                        'id_user' => $this->ionAuth->user()->row()->id,
+                        'id_pelanggan' => $transaction->id_pelanggan,
+                        'id_penjualan' => $id,
+                        'tgl_masuk' => date('Y-m-d H:i:s'),
+                        'no_nota' => $transaction->no_nota,
+                        'kode' => $detail->kode ?? $item->kode ?? '',
+                        'item' => $detail->produk ?? $item->item ?? '',
+                        'keterangan' => 'Retur Penjualan - ' . $transaction->no_nota,
+                        'nominal' => $detail->harga ?? 0,
+                        'jml' => $detail->jml ?? 0,
+                        'jml_satuan' => $detail->jml_satuan ?? 1,
+                        'satuan' => $detail->satuan ?? 'PCS',
+                        'status' => '3',
+                        'sp' => null
+                    ];
+                    $this->itemHistModel->insert($historyData);
+                }
+            }
+
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \Exception('Database transaction failed');
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Retur berhasil disetujui.'
+            ]);
+
+        } catch (\Exception $e) {
+            $this->db->transRollback();
+            log_message('error', 'Approve retur failed: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menyetujui retur: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function rejectRetur($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON([
+                'success' => false,
+                'message' => 'Method Not Allowed'
+            ]);
+        }
+
+        if (session()->get('group_id') != 1) {
+            return $this->response->setStatusCode(403)->setJSON([
+                'success' => false,
+                'message' => 'Hanya superadmin yang dapat menolak retur'
+            ]);
+        }
+
+        try {
+            $transaction = $this->transJualModel->find($id);
+
+            if (!$transaction) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Transaksi tidak ditemukan'
+                ]);
+            }
+
+            if ((float)($transaction->jml_retur ?? 0) == 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada permintaan retur untuk transaksi ini'
+                ]);
+            }
+
+            $this->transJualModel->update($id, [
+                'jml_retur' => 0,
+                'status_retur' => '2',
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Retur berhasil ditolak.'
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Reject retur failed: ' . $e->getMessage());
+
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Gagal menolak retur: ' . $e->getMessage()
+            ]);
+        }
+    }
 } 

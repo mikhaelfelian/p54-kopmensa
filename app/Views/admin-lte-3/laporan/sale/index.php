@@ -10,6 +10,10 @@
 
 <?= $this->extend(theme_path('main')) ?>
 
+<?= $this->section('css') ?>
+<link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
@@ -19,27 +23,27 @@
                     <i class="fas fa-chart-bar mr-1"></i> Laporan Penjualan
                 </h3>
                 <div class="card-tools">
-                    <a href="<?= base_url('laporan/sale/export_excel') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&id_platform=<?= $idPlatform ?? '' ?>" 
-                       class="btn btn-success btn-sm rounded-0">
+                    <a href="<?= base_url('laporan/sale/export_excel') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&id_platform=<?= $idPlatform ?? '' ?>"
+                        id="exportExcelBtn" class="btn btn-success btn-sm rounded-0">
                         <i class="fas fa-file-excel mr-1"></i> Export Excel
                     </a>
-                    <a href="<?= base_url('laporan/sale/export_pdf') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&id_platform=<?= $idPlatform ?? '' ?>" 
-                       class="btn btn-danger btn-sm rounded-0">
+                    <a href="<?= base_url('laporan/sale/export_pdf') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&id_platform=<?= $idPlatform ?? '' ?>"
+                        id="exportPdfBtn" class="btn btn-danger btn-sm rounded-0">
                         <i class="fas fa-file-pdf mr-1"></i> Export PDF
                     </a>
                 </div>
             </div>
             <div class="card-body">
                 <!-- Filter Form -->
-                <form method="get" action="<?= base_url('laporan/sale') ?>" class="mb-4">
+                <form method="get" action="<?= base_url('laporan/sale') ?>" id="filterForm" class="mb-4">
+                    <input type="hidden" name="start_date" id="start_date" value="<?= $startDate ?>">
+                    <input type="hidden" name="end_date" id="end_date" value="<?= $endDate ?>">
                     <div class="row">
-                        <div class="col-md-2">
-                            <label>Tanggal Mulai</label>
-                            <input type="date" name="start_date" class="form-control form-control-sm" value="<?= $startDate ?>">
-                        </div>
-                        <div class="col-md-2">
-                            <label>Tanggal Akhir</label>
-                            <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $endDate ?>">
+                        <div class="col-md-3">
+                            <label>Periode</label>
+                            <input type="text" id="date_range" class="form-control form-control-sm"
+                                placeholder="Pilih Periode"
+                                value="<?= $startDate && $endDate ? date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)) : '' ?>">
                         </div>
                         <div class="col-md-2">
                             <label>Outlet</label>
@@ -79,7 +83,7 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label>&nbsp;</label>
                             <button type="submit" class="btn btn-primary btn-sm btn-block">
                                 <i class="fas fa-search mr-1"></i> Filter
@@ -155,13 +159,14 @@
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                                 <th class="text-right">Subtotal</th>
+                                <th class="text-right">Retur</th>
                                 <th width="10%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($sales)): ?>
                                 <tr>
-                                    <td colspan="<?= 5 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-center">Tidak ada data penjualan</td>
+                                    <td colspan="<?= 6 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-center">Tidak ada data penjualan</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($sales as $index => $sale): ?>
@@ -180,6 +185,7 @@
                                             <?php endforeach; ?>
                                         <?php endif; ?>
                                         <td class="text-right"><?= format_angka($sale->jml_gtotal ?? 0) ?></td>
+                                        <td class="text-right"><?= format_angka($sale->jml_retur ?? 0) ?></td>
                                         <td>
                                             <a href="<?= base_url('laporan/sale/detail/' . $sale->id) ?>" 
                                                class="btn btn-info btn-sm rounded-0">
@@ -195,6 +201,7 @@
                                 <tr class="bg-light">
                                     <th colspan="<?= 3 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-right">TOTAL</th>
                                     <th class="text-right"><?= format_angka($totalSales) ?></th>
+                                    <th class="text-right"><?= format_angka($totalRetur ?? 0) ?></th>
                                     <th></th>
                                 </tr>
                             </tfoot>
@@ -205,4 +212,71 @@
         </div>
     </div>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
+<script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.js') ?>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    const dateRangeInput = $('#date_range');
+
+    const startMoment = startInput.value ? moment(startInput.value, 'YYYY-MM-DD') : moment();
+    const endMoment = endInput.value ? moment(endInput.value, 'YYYY-MM-DD') : moment();
+
+    dateRangeInput.daterangepicker({
+        startDate: startMoment,
+        endDate: endMoment,
+        locale: {
+            format: 'DD/MM/YYYY',
+            separator: ' - ',
+            applyLabel: 'Terapkan',
+            cancelLabel: 'Batal',
+            fromLabel: 'Dari',
+            toLabel: 'Sampai',
+            customRangeLabel: 'Kustom',
+            weekLabel: 'M',
+            daysOfWeek: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+            monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+            firstDay: 1
+        },
+        opens: 'left',
+        autoUpdateInput: true
+    }, function (start, end) {
+        startInput.value = start.format('YYYY-MM-DD');
+        endInput.value = end.format('YYYY-MM-DD');
+        updateExportLinks();
+    });
+
+    function updateExportLinks() {
+        const params = new URLSearchParams({
+            start_date: startInput.value || '',
+            end_date: endInput.value || '',
+            id_gudang: $('select[name="id_gudang"]').val() || '',
+            id_pelanggan: $('select[name="id_pelanggan"]').val() || '',
+            id_platform: $('select[name="id_platform"]').val() || ''
+        }).toString();
+
+        $('#exportExcelBtn').attr('href', '<?= base_url('laporan/sale/export_excel') ?>?' + params);
+        $('#exportPdfBtn').attr('href', '<?= base_url('laporan/sale/export_pdf') ?>?' + params);
+    }
+
+    $('select[name="id_gudang"], select[name="id_pelanggan"], select[name="id_platform"]').on('change', updateExportLinks);
+
+    $('#filterForm').on('submit', function () {
+        const range = dateRangeInput.val();
+        if (range) {
+            const dates = range.split(' - ');
+            if (dates.length === 2) {
+                startInput.value = moment(dates[0], 'DD/MM/YYYY').format('YYYY-MM-DD');
+                endInput.value = moment(dates[1], 'DD/MM/YYYY').format('YYYY-MM-DD');
+            }
+        }
+    });
+
+    updateExportLinks();
+});
+</script>
 <?= $this->endSection() ?>

@@ -22,12 +22,14 @@ class VItemStokModel extends Model
         'id_item',
         'id_gudang',
         'gudang',
+        'status_otl',
         'kode',
         'item',
         'so',
         'stok_masuk',
         'stok_keluar',
-        'sisa'
+        'sisa',
+        'harga_beli',
     ];
     
     /**
@@ -95,32 +97,52 @@ class VItemStokModel extends Model
      * @param int $page
      * @return array
      */
-    public function getStockOverview($gudangId = null, $keyword = null, $outletType = null, $perPage = 10, $page = 1)
+    public function getStockOverview(
+        $gudangId = null,
+        $keyword = null,
+        $outletType = null,
+        $perPage = 10,
+        $page = 1,
+        $sortBy = 'sisa',
+        $sortOrder = 'DESC'
+    )
     {
-        // Use fallback method directly since v_item_stok view may not exist
-        return $this->getStockOverviewFallback($gudangId, $keyword, $outletType, $perPage, $page);
+        return $this->getStockOverviewFallback($gudangId, $keyword, $outletType, $perPage, $page, $sortBy, $sortOrder);
     }
     
     /**
      * Fallback method when v_item_stok view doesn't exist
      */
-    private function getStockOverviewFallback($gudangId = null, $keyword = null, $outletType = null, $perPage = 10, $page = 1)
+    private function getStockOverviewFallback(
+        $gudangId = null,
+        $keyword = null,
+        $outletType = null,
+        $perPage = 10,
+        $page = 1,
+        $sortBy = 'sisa',
+        $sortOrder = 'DESC'
+    )
     {
         try {
-            $builder = $this->db->table('tbl_m_item_stok')
-                ->select('
-                    tbl_m_item_stok.id_item,
-                    tbl_m_item_stok.id_gudang,
-                    tbl_m_gudang.nama as gudang,
-                    tbl_m_item.kode,
-                    tbl_m_item.item,
-                    tbl_m_item_stok.jml as sisa
-                ')
-                ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'inner')
-                ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'inner')
-                ->where('tbl_m_item_stok.status', '1')
-                ->where('tbl_m_item.status', '1')
-                ->where('tbl_m_gudang.status_hps', '0');
+        $builder = $this->db->table('tbl_m_item_stok')
+            ->select('
+                tbl_m_item_stok.id_item,
+                tbl_m_item_stok.id_gudang,
+                tbl_m_gudang.nama as gudang,
+                tbl_m_gudang.status_otl,
+                tbl_m_item.kode,
+                tbl_m_item.item,
+                COALESCE(tbl_m_item_stok.jml, 0) as so,
+                COALESCE(tbl_m_item_stok.jml, 0) as stok_masuk,
+                0 as stok_keluar,
+                COALESCE(tbl_m_item_stok.jml, 0) as sisa,
+                tbl_m_item.harga_beli
+            ')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'inner')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_m_item_stok.id_gudang', 'inner')
+            ->where('tbl_m_item_stok.status', '1')
+            ->where('tbl_m_item.status', '1')
+            ->where('tbl_m_gudang.status_hps', '0');
 
             if ($gudangId) {
                 $builder->where('tbl_m_item_stok.id_gudang', $gudangId);
@@ -147,19 +169,48 @@ class VItemStokModel extends Model
                     ->groupEnd();
             }
 
+            // Sorting
+            $sortMap = [
+                'kode' => 'tbl_m_item.kode',
+                'item' => 'tbl_m_item.item',
+                'gudang' => 'tbl_m_gudang.nama',
+                'sisa' => 'tbl_m_item_stok.jml',
+                'so' => 'tbl_m_item_stok.jml',
+                'stok_masuk' => 'tbl_m_item_stok.jml',
+                'stok_keluar' => 'tbl_m_item_stok.jml',
+                'harga_beli' => 'tbl_m_item.harga_beli',
+            ];
+            $sortColumn = $sortMap[$sortBy] ?? $sortMap['sisa'];
+            $sortOrder = strtoupper($sortOrder) === 'ASC' ? 'ASC' : 'DESC';
+            $builder->orderBy($sortColumn, $sortOrder);
+
             $result = $builder->get()->getResult();
             
             // Simple pagination
             $total = count($result);
-            $offset = ($page - 1) * $perPage;
-            $items = array_slice($result, $offset, $perPage);
+            if ($perPage && $perPage > 0) {
+                $offset = ($page - 1) * $perPage;
+                $items = array_slice($result, $offset, $perPage);
+                $lastPage = max(1, (int) ceil($total / $perPage));
+            } else {
+                $items = $result;
+                $page = 1;
+                $lastPage = 1;
+            }
+
+            $totalStock = array_sum(array_map(static fn ($item) => (float) ($item->sisa ?? 0), $result));
+            $outOfStockCount = count(array_filter($result, static fn ($item) => (float) ($item->sisa ?? 0) <= 0));
+            $totalStockValue = array_sum(array_map(static fn ($item) => (float) ($item->harga_beli ?? 0) * (float) ($item->sisa ?? 0), $result));
             
             return [
                 'data' => $items,
                 'total' => $total,
                 'per_page' => $perPage,
                 'current_page' => $page,
-                'last_page' => ceil($total / $perPage)
+                'last_page' => $lastPage,
+                'total_stock' => $totalStock,
+                'out_of_stock' => $outOfStockCount,
+                'total_stock_value' => $totalStockValue
             ];
         } catch (\Exception $e) {
             return [

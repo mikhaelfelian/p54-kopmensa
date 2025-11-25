@@ -78,7 +78,7 @@
                     <div class="col-lg-4 col-6">
                         <div class="small-box bg-info">
                             <div class="inner">
-                                <h3><?= format_angka(count($stock)) ?></h3>
+                                <h3><?= format_angka($totalItems ?? count($stock)) ?></h3>
                                 <p>Total Item</p>
                             </div>
                             <div class="icon">
@@ -89,7 +89,7 @@
                     <div class="col-lg-4 col-6">
                         <div class="small-box bg-success">
                             <div class="inner">
-                                <h3><?= format_angka(array_sum(array_map(function($item) { return (float)($item->sisa ?? 0); }, $stock))) ?></h3>
+                                <h3><?= format_angka($totalStockQty ?? array_sum(array_map(function($item) { return (float)($item->sisa ?? 0); }, $stock))) ?></h3>
                                 <p>Total Sisa Stok</p>
                             </div>
                             <div class="icon">
@@ -100,15 +100,21 @@
                     <div class="col-lg-4 col-6">
                         <div class="small-box bg-warning">
                             <div class="inner">
-                                <h3><?= format_angka(count(array_filter($stock, function($item) { return (float)($item->sisa ?? 0) <= 0; }))) ?></h3>
-                                <p>Item Stok Habis/Kosong</p>
+                                <h3><?= format_angka($totalStockValue ?? 0) ?></h3>
+                                <p>Total Nilai Stok</p>
                             </div>
                             <div class="icon">
-                                <i class="fas fa-exclamation-triangle"></i>
+                                <i class="fas fa-money-bill-wave"></i>
                             </div>
                         </div>
                     </div>
                 </div>
+                <?php if (isset($outOfStockCount)): ?>
+                    <div class="alert alert-warning py-2 px-3 small mb-4">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Item stok habis/kosong: <strong><?= format_angka($outOfStockCount) ?></strong>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Stock Table -->
                 <div class="table-responsive">
@@ -119,12 +125,13 @@
                                 <th>Kode Item</th>
                                 <th>Nama Item</th>
                                 <th>Gudang</th>
-                                <th>SO</th>
-                                <th class="text-right">Stok Masuk</th>
-                                <th class="text-right">Stok Keluar</th>
-                                <th class="text-right">Sisa</th>
+                                <!-- <th class="text-right">SO</th> -->
+                                <!-- <th class="text-right">Stok Masuk</th> -->
+                                <!-- <th class="text-right">Stok Keluar</th> -->
+                                <th class="text-right">Stok</th>
+                                <th class="text-right">Nilai (Rp)</th>
                                 <th>Status</th>
-                                <th width="10%">Aksi</th>
+                                <!-- <th width="10%">Aksi</th> -->
                             </tr>
                         </thead>
                         <tbody>
@@ -136,30 +143,25 @@
                                 <?php 
                                 $rowNumber = 1;
                                 foreach ($stock as $item): 
-                                    $kode = $item->kode ?? 'Unknown';
-                                    $itemName = $item->item ?? 'Unknown';
-                                    $gudangName = $item->gudang ?? 'Unknown';
-                                    $so = $item->so ?? null;
-                                    $stokMasuk = (float)($item->stok_masuk ?? 0);
-                                    $stokKeluar = (float)($item->stok_keluar ?? 0);
-                                    $sisa = (float)($item->sisa ?? 0);
-                                    $idItem = (int)($item->id_item ?? 0);
-                                    $idGudang = (int)($item->id_gudang ?? 0);
+                                    $kode        = $item->kode        ?? 'Unknown';
+                                    $itemName    = $item->item        ?? 'Unknown';
+                                    $gudangName  = $item->gudang      ?? 'Unknown';
+                                    $so          = (float)($item->so           ?? 0);
+                                    $stokMasuk   = (float)($item->stok_masuk   ?? 0);
+                                    $stokKeluar  = (float)($item->stok_keluar  ?? 0);
+                                    $sisa        = (float)($item->sisa         ?? 0);
+                                    $nilai       = (float)($item->harga_beli   ?? 0) * $sisa;
+                                    $idItem      = (int)($item->id_item        ?? 0);
+                                    $idGudang    = (int)($item->id_gudang      ?? 0);
                                 ?>
                                     <tr>
                                         <td><?= $rowNumber++ ?></td>
                                         <td><strong><?= esc($kode) ?></strong></td>
                                         <td><?= esc($itemName) ?></td>
                                         <td><?= esc($gudangName) ?></td>
-                                        <td>
-                                            <?php if ($so !== null): ?>
-                                                <span class="badge badge-info"><?= format_angka($so) ?></span>
-                                            <?php else: ?>
-                                                <span class="badge badge-secondary">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="text-right"><?= format_angka($stokMasuk) ?></td>
-                                        <td class="text-right"><?= format_angka($stokKeluar) ?></td>
+                                        <!-- <td class="text-right"><?= format_angka($so) ?></td> -->
+                                        <!-- <td class="text-right"><?= format_angka($stokMasuk) ?></td> -->
+                                        <!-- <td class="text-right"><?= format_angka($stokKeluar) ?></td> -->
                                         <td class="text-right">
                                             <?php 
                                             if ($sisa > 0) {
@@ -171,6 +173,7 @@
                                             }
                                             ?>
                                         </td>
+                                        <td class="text-right"><?= format_angka($nilai) ?></td>
                                         <td>
                                             <?php 
                                             if ($sisa > 0) {
@@ -182,17 +185,42 @@
                                             }
                                             ?>
                                         </td>
-                                        <td>
+                                        <!-- <td>
                                             <a href="<?= base_url('laporan/stock/detail/' . $idItem) ?>?gudang_id=<?= $idGudang ?>" 
                                                class="btn btn-info btn-sm rounded-0">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                        </td>
+                                        </td> -->
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
+                    <?php if (!empty($pagination) && ($pagination['last_page'] ?? 1) > 1): ?>
+                        <?php
+                            $currentPage = $pagination['current_page'] ?? 1;
+                            $lastPage = $pagination['last_page'] ?? 1;
+                            $queryString = !empty($baseQuery) ? $baseQuery . '&' : '';
+                            $paginationBase = base_url('laporan/stock') . '?' . $queryString;
+                            $startPage = max(1, $currentPage - 2);
+                            $endPage = min($lastPage, $currentPage + 2);
+                        ?>
+                        <nav aria-label="Stock pagination" class="mt-3">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item <?= $currentPage <= 1 ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="<?= $currentPage > 1 ? $paginationBase . 'page_stock=' . ($currentPage - 1) : '#' ?>" tabindex="-1">Previous</a>
+                                </li>
+                                <?php for ($i = $startPage; $i <= $endPage; $i++): ?>
+                                    <li class="page-item <?= $i == $currentPage ? 'active' : '' ?>">
+                                        <a class="page-link" href="<?= $paginationBase . 'page_stock=' . $i ?>"><?= $i ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                                <li class="page-item <?= $currentPage >= $lastPage ? 'disabled' : '' ?>">
+                                    <a class="page-link" href="<?= $currentPage < $lastPage ? $paginationBase . 'page_stock=' . ($currentPage + 1) : '#' ?>">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

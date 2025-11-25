@@ -35,39 +35,15 @@ class StockReport extends BaseController
         $gudangId = $this->request->getGet('gudang_id');
         $sortBy = $this->request->getGet('sort_by') ?: 'sisa';
         $sortOrder = $this->request->getGet('sort_order') ?: 'DESC';
+        $perPage = $this->pengaturan->pagination_limit ?? 10;
+        $page = max(1, (int) ($this->request->getGet('page_stock') ?? 1));
 
-        // Build search criteria (simplified - only outlet filter)
-        $criteria = [
-            'gudang_id' => $gudangId,
-            'sort_by' => $sortBy,
-            'sort_order' => $sortOrder
-        ];
-
-        // Get stock data (no pagination limit for full report)
-        $stockResult = $this->vItemStokModel->searchItems($criteria, 10000);
+        $stockResult = $this->vItemStokModel->getStockOverview($gudangId, null, null, $perPage, $page, $sortBy, $sortOrder);
         $stock = $stockResult['data'] ?? [];
-        
-        // Filter by date range (items that had transactions in this period)
-        if ($startDate && $endDate && !empty($stock)) {
-            $db = \Config\Database::connect();
-            $itemIdsWithTransactions = $db->table('tbl_trans_jual_det tjd')
-                ->select('DISTINCT tjd.id_item')
-                ->join('tbl_trans_jual tj', 'tj.id = tjd.id_penjualan')
-                ->where('DATE(tj.tgl_masuk) >=', $startDate)
-                ->where('DATE(tj.tgl_masuk) <=', $endDate)
-                ->get()
-                ->getResultArray();
-            
-            $itemIds = array_column($itemIdsWithTransactions, 'id_item');
-            if (!empty($itemIds)) {
-                $stock = array_filter($stock, function($item) use ($itemIds) {
-                    return isset($item->id_item) && in_array($item->id_item, $itemIds);
-                });
-                $stock = array_values($stock);
-            } else {
-                $stock = []; // No items with transactions in this period
-            }
-        }
+        $totalItems = $stockResult['total'] ?? count($stock);
+        $totalStockQty = $stockResult['total_stock'] ?? array_sum(array_map(static fn ($item) => (float) ($item->sisa ?? 0), $stock));
+        $outOfStockCount = $stockResult['out_of_stock'] ?? count(array_filter($stock, static fn ($item) => (float) ($item->sisa ?? 0) <= 0));
+        $totalStockValue = $stockResult['total_stock_value'] ?? array_sum(array_map(static fn ($item) => (float) ($item->harga_beli ?? 0) * (float) ($item->sisa ?? 0), $stock));
 
         // Get outlet list (only with status_otl='1')
         $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
@@ -77,12 +53,29 @@ class StockReport extends BaseController
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
             'stock' => $stock,
+            'totalItems' => $totalItems,
+            'totalStockQty' => $totalStockQty,
+            'outOfStockCount' => $outOfStockCount,
+            'totalStockValue' => $totalStockValue,
             'startDate' => $startDate,
             'endDate' => $endDate,
             'gudangList' => $gudangList,
             'selectedGudang' => $gudangId,
             'sortBy' => $sortBy,
             'sortOrder' => $sortOrder,
+            'pagination' => [
+                'current_page' => $stockResult['current_page'] ?? $page,
+                'last_page' => $stockResult['last_page'] ?? 1,
+                'total' => $totalItems,
+                'per_page' => $perPage,
+            ],
+            'baseQuery' => http_build_query([
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'gudang_id' => $gudangId,
+                'sort_by' => $sortBy,
+                'sort_order' => $sortOrder,
+            ]),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Laporan</li>
@@ -92,7 +85,7 @@ class StockReport extends BaseController
 
         return $this->view($this->theme->getThemePath() . '/laporan/stock/index', $data);
     }
-    
+
     /**
      * Temporary test method to check data
      */
@@ -167,98 +160,33 @@ class StockReport extends BaseController
         $gudangId = $this->request->getGet('gudang_id');
         $sortBy = $this->request->getGet('sort_by') ?: 'sisa';
         $sortOrder = $this->request->getGet('sort_order') ?: 'DESC';
+        $stockResult = $this->vItemStokModel->getStockOverview($gudangId, null, null, 0, 1, $sortBy, $sortOrder);
+        $stock = $stockResult['data'] ?? [];
+        $gudangName = 'Semua Outlet';
+        if ($gudangId) {
+            $gudang = $this->gudangModel->find($gudangId);
+            $gudangName = $gudang->nama ?? $gudangName;
+        }
 
-        // Build search criteria
-        $criteria = [
-            'gudang_id' => $gudangId,
-            'sort_by' => $sortBy,
-            'sort_order' => $sortOrder
-        ];
-
-        // Get all data for export (no pagination)
-        $stockResult = $this->vItemStokModel->searchItems($criteria, 10000, 1);
-        $stock = $stockResult['data'] ?? (is_array($stockResult) ? $stockResult : []);
-        
-        // Get warehouse name
         $gudangName = 'Semua Gudang';
         if ($gudangId) {
             $gudang = $this->gudangModel->find($gudangId);
-            $gudangName = $gudang ? $gudang->nama : 'Gudang Tidak Diketahui';
+            $gudangName = $gudang->nama ?? $gudangName;
         }
 
-        // Get active warehouses (status = 1)
-        $activeWarehouses = $this->gudangModel
-            ->where('status', '1')
-            ->where('status_hps', '0')
-            ->orderBy('nama', 'ASC')
-            ->findAll();
-
-        // If no active warehouses found, fallback to warehouses present in stock data
-        if (empty($activeWarehouses)) {
-            $warehouseMap = [];
-            foreach ($stock as $item) {
-                if (!isset($item->id_gudang)) {
-                    continue;
-                }
-                $warehouseMap[$item->id_gudang] = (object) [
-                    'id' => $item->id_gudang,
-                    'nama' => $item->gudang ?? 'Gudang ' . $item->id_gudang,
-                ];
-            }
-            $activeWarehouses = array_values($warehouseMap);
-        }
-
-        $warehouseIds = array_map(static fn ($gudang) => $gudang->id, $activeWarehouses);
-
-        // Prepare data aggregated per item with columns per warehouse
-        $itemsData = [];
-        foreach ($stock as $item) {
-            if (!isset($item->id_item)) {
-                continue;
-            }
-
-            $itemId = $item->id_item;
-            if (!isset($itemsData[$itemId])) {
-                $itemsData[$itemId] = [
-                    'kode'   => $item->kode ?? '',
-                    'item'   => $item->item ?? '',
-                    'stocks' => array_fill_keys($warehouseIds, 0),
-                    'total'  => 0,
-                ];
-            }
-
-            $quantity = (float) ($item->sisa ?? 0);
-            $itemsData[$itemId]['total'] += $quantity;
-
-            $gudangId = $item->id_gudang ?? null;
-            if ($gudangId !== null && array_key_exists($gudangId, $itemsData[$itemId]['stocks'])) {
-                $itemsData[$itemId]['stocks'][$gudangId] += $quantity;
-            }
-        }
-
-        // Sort data by item name for readability
-        $itemsData = array_values($itemsData);
-        usort($itemsData, static function ($a, $b) {
-            return strcasecmp($a['item'], $b['item']);
-        });
+        $totalSisa = array_sum(array_map(static fn ($item) => (float) ($item->sisa ?? 0), $stock));
+        $totalNilai = array_sum(array_map(static fn ($item) => (float) ($item->harga_beli ?? 0) * (float) ($item->sisa ?? 0), $stock));
 
         // Create Excel file
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Set title
-        $sheet->setCellValue('A1', 'LAPORAN STOK - ' . strtoupper($gudangName));
-        $headerCount = 3 + count($activeWarehouses) + 1; // No, Kode, Nama + warehouses + Total
+        $sheet->setCellValue('A1', 'LAPORAN STOK ITEM');
+        $headers = ['No', 'Kode Item', 'Nama Item', 'Gudang', 'SO', 'Stok Masuk', 'Stok Keluar', 'Sisa', 'Nilai (Rp)'];
+        $headerCount = count($headers);
         $lastColumnLetter = Coordinate::stringFromColumnIndex($headerCount);
         $sheet->mergeCells('A1:' . $lastColumnLetter . '1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-
-        // Set headers
-        $headers = ['No', 'Kode Item', 'Nama Item'];
-        foreach ($activeWarehouses as $warehouse) {
-            $headers[] = $warehouse->nama;
-        }
-        $headers[] = 'Total';
 
         $headerRow = 3;
         foreach ($headers as $index => $header) {
@@ -270,23 +198,24 @@ class StockReport extends BaseController
         // Set data
         $row = 4;
         $no = 1;
-        foreach ($itemsData as $itemData) {
+        foreach ($stock as $item) {
             $sheet->setCellValue('A' . $row, $no++);
-            $sheet->setCellValue('B' . $row, $itemData['kode']);
-            $sheet->setCellValue('C' . $row, $itemData['item']);
-
-            $columnIndex = 4; // Column D onwards for warehouses
-            foreach ($warehouseIds as $warehouseId) {
-                $columnLetter = Coordinate::stringFromColumnIndex($columnIndex);
-                $sheet->setCellValue($columnLetter . $row, $itemData['stocks'][$warehouseId] ?? 0);
-                $columnIndex++;
-            }
-
-            // Total column
-            $totalColumnLetter = Coordinate::stringFromColumnIndex($columnIndex);
-            $sheet->setCellValue($totalColumnLetter . $row, $itemData['total']);
+            $sheet->setCellValue('B' . $row, $item->kode ?? '');
+            $sheet->setCellValue('C' . $row, $item->item ?? '');
+            $sheet->setCellValue('D' . $row, $item->gudang ?? '');
+            $sheet->setCellValue('E' . $row, (float)($item->so ?? 0));
+            $sheet->setCellValue('F' . $row, (float)($item->stok_masuk ?? 0));
+            $sheet->setCellValue('G' . $row, (float)($item->stok_keluar ?? 0));
+            $sheet->setCellValue('H' . $row, (float)($item->sisa ?? 0));
+            $sheet->setCellValue('I' . $row, (float)($item->harga_beli ?? 0) * (float)($item->sisa ?? 0));
             $row++;
         }
+
+        $sheet->setCellValue('A' . $row, 'TOTAL');
+        $sheet->mergeCells('A' . $row . ':D' . $row);
+        $sheet->setCellValue('H' . $row, $totalSisa);
+        $sheet->setCellValue('I' . $row, $totalNilai);
+        $sheet->getStyle('A' . $row . ':I' . $row)->getFont()->setBold(true);
 
         // Auto-size columns
         for ($i = 1; $i <= $headerCount; $i++) {
@@ -301,7 +230,7 @@ class StockReport extends BaseController
                 ],
             ],
         ];
-        $sheet->getStyle('A3:' . $lastColumnLetter . ($row - 1))->applyFromArray($styleArray);
+        $sheet->getStyle('A3:' . $lastColumnLetter . $row)->applyFromArray($styleArray);
 
         // Create response
         $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
@@ -409,47 +338,15 @@ class StockReport extends BaseController
         $sortBy = $this->request->getGet('sort_by') ?: 'sisa';
         $sortOrder = $this->request->getGet('sort_order') ?: 'DESC';
 
-        $criteria = [
-            'gudang_id' => $gudangId,
-            'sort_by' => $sortBy,
-            'sort_order' => $sortOrder
-        ];
-
-        $stockResult = $this->vItemStokModel->searchItems($criteria, 10000);
+        $stockResult = $this->vItemStokModel->getStockOverview($gudangId, null, null, 0, 1, $sortBy, $sortOrder);
         $stock = $stockResult['data'] ?? [];
-
-        // Filter by date range
-        if ($startDate && $endDate && !empty($stock)) {
-            $db = \Config\Database::connect();
-            $itemIdsWithTransactions = $db->table('tbl_trans_jual_det tjd')
-                ->select('DISTINCT tjd.id_item')
-                ->join('tbl_trans_jual tj', 'tj.id = tjd.id_penjualan')
-                ->where('DATE(tj.tgl_masuk) >=', $startDate)
-                ->where('DATE(tj.tgl_masuk) <=', $endDate)
-                ->get()
-                ->getResultArray();
-            
-            $itemIds = array_column($itemIdsWithTransactions, 'id_item');
-            if (!empty($itemIds)) {
-                $stock = array_filter($stock, function($item) use ($itemIds) {
-                    return isset($item->id_item) && in_array($item->id_item, $itemIds);
-                });
-                $stock = array_values($stock);
-            } else {
-                $stock = [];
-            }
-        }
-
-        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $gudangName = 'Semua Outlet';
         if ($gudangId) {
-            foreach ($gudangList as $g) {
-                if ($g->id == $gudangId) {
-                    $gudangName = $g->nama;
-                    break;
-                }
-            }
+            $gudang = $this->gudangModel->find($gudangId);
+            $gudangName = $gudang->nama ?? $gudangName;
         }
+        $totalSisa = array_sum(array_map(static fn ($item) => (float) ($item->sisa ?? 0), $stock));
+        $totalNilai = array_sum(array_map(static fn ($item) => (float) ($item->harga_beli ?? 0) * (float) ($item->sisa ?? 0), $stock));
 
         // Create PDF
         $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
@@ -490,30 +387,36 @@ class StockReport extends BaseController
         // Table Header
         $pdf->SetFont('helvetica', 'B', 8);
         $pdf->Cell(10, 6, 'No', 1, 0, 'C');
-        $pdf->Cell(30, 6, 'Kode', 1, 0, 'C');
-        $pdf->Cell(80, 6, 'Nama Item', 1, 0, 'C');
-        $pdf->Cell(40, 6, 'Gudang', 1, 0, 'C');
-        $pdf->Cell(30, 6, 'Stok', 1, 0, 'R');
-        $pdf->Cell(30, 6, 'Satuan', 1, 0, 'C');
-        $pdf->Cell(67, 6, 'Keterangan', 1, 1, 'L');
+        $pdf->Cell(25, 6, 'Kode', 1, 0, 'C');
+        $pdf->Cell(55, 6, 'Nama Item', 1, 0, 'C');
+        $pdf->Cell(35, 6, 'Gudang', 1, 0, 'C');
+        $pdf->Cell(20, 6, 'SO', 1, 0, 'R');
+        $pdf->Cell(25, 6, 'Masuk', 1, 0, 'R');
+        $pdf->Cell(25, 6, 'Keluar', 1, 0, 'R');
+        $pdf->Cell(25, 6, 'Sisa', 1, 0, 'R');
+        $pdf->Cell(35, 6, 'Nilai (Rp)', 1, 1, 'R');
 
         // Table Data
         $pdf->SetFont('helvetica', '', 7);
         $no = 1;
         foreach ($stock as $item) {
             $pdf->Cell(10, 5, $no++, 1, 0, 'C');
-            $pdf->Cell(30, 5, substr($item->kode ?? '-', 0, 20), 1, 0, 'L');
-            $pdf->Cell(80, 5, substr($item->item ?? '-', 0, 40), 1, 0, 'L');
-            $pdf->Cell(40, 5, substr($item->gudang ?? '-', 0, 25), 1, 0, 'L');
-            $pdf->Cell(30, 5, format_angka($item->sisa ?? 0), 1, 0, 'R');
-            $pdf->Cell(30, 5, substr($item->satuan ?? '-', 0, 15), 1, 0, 'C');
-            $pdf->Cell(67, 5, substr($item->keterangan ?? '-', 0, 40), 1, 1, 'L');
+            $pdf->Cell(25, 5, substr($item->kode ?? '-', 0, 15), 1, 0, 'L');
+            $pdf->Cell(55, 5, substr($item->item ?? '-', 0, 30), 1, 0, 'L');
+            $pdf->Cell(35, 5, substr($item->gudang ?? '-', 0, 20), 1, 0, 'L');
+            $pdf->Cell(20, 5, format_angka($item->so ?? 0), 1, 0, 'R');
+            $pdf->Cell(25, 5, format_angka($item->stok_masuk ?? 0), 1, 0, 'R');
+            $pdf->Cell(25, 5, format_angka($item->stok_keluar ?? 0), 1, 0, 'R');
+            $pdf->Cell(25, 5, format_angka($item->sisa ?? 0), 1, 0, 'R');
+            $pdf->Cell(35, 5, format_angka((float) ($item->harga_beli ?? 0) * (float) ($item->sisa ?? 0)), 1, 1, 'R');
         }
 
         // Summary
         $pdf->Ln(5);
         $pdf->SetFont('helvetica', 'B', 9);
         $pdf->Cell(0, 5, 'Total Item: ' . count($stock), 0, 1, 'L');
+        $pdf->Cell(0, 5, 'Total Sisa Stok: ' . format_angka($totalSisa), 0, 1, 'L');
+        $pdf->Cell(0, 5, 'Total Nilai Stok: ' . format_angka($totalNilai), 0, 1, 'L');
 
         // Output
         $filename = 'Laporan_Stok_Item_' . date('Y-m-d') . '.pdf';

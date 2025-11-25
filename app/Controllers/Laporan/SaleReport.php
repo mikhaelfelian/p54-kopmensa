@@ -42,15 +42,20 @@ class SaleReport extends BaseController
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
-    public function index()
+    /**
+     * Build sales report data with filters shared by index & exports
+     *
+     * @param array $filters
+     * @return array
+     */
+    private function getReportData(array $filters): array
     {
-        $startDate    = $this->request->getGet('start_date')    ?? date('Y-m-01');
-        $endDate      = $this->request->getGet('end_date')      ?? date('Y-m-t');
-        $idGudang     = $this->request->getGet('id_gudang');
-        $idPelanggan  = $this->request->getGet('id_pelanggan');
-        $idPlatform   = $this->request->getGet('id_platform');
+        $startDate   = $filters['start_date'] ?? date('Y-m-d');
+        $endDate     = $filters['end_date'] ?? date('Y-m-d');
+        $idGudang    = $filters['id_gudang'] ?? null;
+        $idPelanggan = $filters['id_pelanggan'] ?? null;
+        $idPlatform  = $filters['id_platform'] ?? null;
 
-        // Build query
         $builder = $this->transJualModel->select('
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
@@ -67,75 +72,68 @@ class SaleReport extends BaseController
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
             ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
             ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
-            ->where('tbl_trans_jual.status_nota', '1')
-            ->where('tbl_trans_jual.status', '1'); // Synchronize with cashier data
+            ->where('tbl_trans_jual.status_bayar', '1');
 
-        // Apply filters
         if ($startDate && $endDate) {
             $builder->where('tbl_trans_jual.tgl_masuk >=', $startDate . ' 00:00:00')
-                   ->where('tbl_trans_jual.tgl_masuk <=', $endDate . ' 23:59:59');
+                    ->where('tbl_trans_jual.tgl_masuk <=', $endDate . ' 23:59:59');
         }
 
-        if ($idGudang) {
+        if (!empty($idGudang)) {
             $builder->where('tbl_trans_jual.id_gudang', $idGudang);
         }
 
-        if ($idPelanggan) {
+        if (!empty($idPelanggan)) {
             $builder->where('tbl_trans_jual.id_pelanggan', $idPelanggan);
         }
 
-        if ($idPlatform) {
+        if (!empty($idPlatform)) {
             $builder->join('tbl_trans_jual_plat tjp_filter', 'tjp_filter.id_penjualan = tbl_trans_jual.id', 'inner')
                     ->where('tjp_filter.id_platform', $idPlatform)
-                    ->groupBy('tbl_trans_jual.id, tbl_trans_jual.tgl_masuk, tbl_trans_jual.no_nota');
+                    ->groupBy('tbl_trans_jual.id')
+                    ->groupBy('tbl_trans_jual.tgl_masuk')
+                    ->groupBy('tbl_trans_jual.no_nota');
         }
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
 
-        // Get platforms with status='1' for dynamic columns
         $platforms = $this->platformModel->where('status', '1')->findAll();
-        
-        // Get vouchers for dynamic columns
-        $vouchers = $this->voucherModel->findAll();
-        
-        // Get payment methods for each transaction
-        $transactionIds = array_column($sales, 'id');
-        $paymentMethods = [];
-        $paymentBreakdown = []; // Platform ID => Transaction ID => Amount
-        $voucherUsage = []; // Voucher ID => Transaction ID => Amount
-        
+        $vouchers  = $this->voucherModel->findAll();
+
+        $transactionIds  = array_column($sales, 'id');
+        $paymentMethods  = [];
+        $paymentBreakdown = [];
+        $voucherUsage    = [];
+
         if (!empty($transactionIds)) {
             $db = \Config\Database::connect();
-            
-            // Get payment breakdown by platform
+
             $paymentData = $db->table('tbl_trans_jual_plat')
                 ->select('id_penjualan, id_platform, platform, SUM(nominal) as total_nominal')
                 ->whereIn('id_penjualan', $transactionIds)
-                ->groupBy('id_penjualan', 'id_platform', 'platform')
+                ->groupBy('id_penjualan')
+                ->groupBy('id_platform')
+                ->groupBy('platform')
                 ->get()
                 ->getResult();
-            
-            // Build payment methods string and breakdown
+
             foreach ($paymentData as $pm) {
                 $platformId = $pm->id_platform;
                 $existingSummary = $paymentMethods[$pm->id_penjualan] ?? '';
-
-                $paymentMethods[$pm->id_penjualan] = $existingSummary . 
-                    ($existingSummary ? ', ' : '') . 
+                $paymentMethods[$pm->id_penjualan] = $existingSummary .
+                    ($existingSummary ? ', ' : '') .
                     $pm->platform . ' (' . format_angka($pm->total_nominal) . ')';
-                
+
                 if ($platformId === null) {
                     continue;
                 }
 
-                // Store breakdown by platform ID
                 if (!isset($paymentBreakdown[$platformId])) {
                     $paymentBreakdown[$platformId] = [];
                 }
                 $paymentBreakdown[$platformId][$pm->id_penjualan] = (float)$pm->total_nominal;
             }
-            
-            // Get voucher usage per transaction
+
             $voucherData = $db->table('tbl_trans_jual')
                 ->select('id, voucher_code, voucher_discount_amount, voucher_id')
                 ->whereIn('id', $transactionIds)
@@ -148,15 +146,14 @@ class SaleReport extends BaseController
                 ->groupEnd()
                 ->get()
                 ->getResult();
-            
-            // Create a map of voucher_code to voucher_id for lookup
+
             $voucherCodeMap = [];
-            if (!empty($vouchers)) {
-                foreach ($vouchers as $voucher) {
+            foreach ($vouchers as $voucher) {
+                if (!empty($voucher->kode)) {
                     $voucherCodeMap[$voucher->kode] = $voucher->id;
                 }
             }
-            
+
             foreach ($voucherData as $v) {
                 $voucherId = null;
                 if ($v->voucher_id) {
@@ -164,7 +161,7 @@ class SaleReport extends BaseController
                 } elseif ($v->voucher_code && isset($voucherCodeMap[$v->voucher_code])) {
                     $voucherId = $voucherCodeMap[$v->voucher_code];
                 }
-                
+
                 if ($voucherId) {
                     if (!isset($voucherUsage[$voucherId])) {
                         $voucherUsage[$voucherId] = [];
@@ -174,52 +171,68 @@ class SaleReport extends BaseController
             }
         }
 
-        // Calculate summary and attach payment methods
         $totalSales = 0;
-        $totalItems = 0;
+        $totalRetur = 0;
         $totalTransactions = count($sales);
 
         foreach ($sales as $sale) {
+            $sale->jml_retur = (float)($sale->jml_retur ?? 0);
             $totalSales += $sale->jml_gtotal ?? 0;
-            
-            // For sales, show username if sales_nama is not available
+            $totalRetur += $sale->jml_retur;
+
             if (empty($sale->sales_nama) || $sale->sales_nama === '-') {
                 $sale->sales_nama = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
             }
-            
-            // Attach payment methods
+
             $sale->metode_pembayaran = $paymentMethods[$sale->id] ?? '-';
-            
-            // Attach platform breakdown
+
             $sale->platform_amounts = [];
             foreach ($platforms as $platform) {
                 $platformId = $platform->id;
-                if (isset($paymentBreakdown[$platformId]) && isset($paymentBreakdown[$platformId][$sale->id])) {
-                    $sale->platform_amounts[$platformId] = $paymentBreakdown[$platformId][$sale->id];
-                } else {
-                    $sale->platform_amounts[$platformId] = 0;
-                }
+                $sale->platform_amounts[$platformId] = $paymentBreakdown[$platformId][$sale->id] ?? 0;
             }
-            
-            // Attach voucher usage
+
             $sale->voucher_amounts = [];
             foreach ($vouchers as $voucher) {
                 $voucherId = $voucher->id;
-                if (isset($voucherUsage[$voucherId]) && isset($voucherUsage[$voucherId][$sale->id])) {
-                    $sale->voucher_amounts[$voucherId] = $voucherUsage[$voucherId][$sale->id];
-                } else {
-                    $sale->voucher_amounts[$voucherId] = 0;
-                }
+                $sale->voucher_amounts[$voucherId] = $voucherUsage[$voucherId][$sale->id] ?? 0;
             }
-            
-            // Set member name (use "Umum" for general customers)
+
             if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
                 $sale->pelanggan_nama = 'Umum';
                 $sale->pelanggan_kode = '';
             }
         }
 
-        // Get filter options
+        return [
+            'sales'             => $sales,
+            'platforms'         => $platforms,
+            'vouchers'          => $vouchers,
+            'totalSales'        => $totalSales,
+            'totalRetur'        => $totalRetur,
+            'totalTransactions' => $totalTransactions,
+            'filters'           => [
+                'start_date'   => $startDate,
+                'end_date'     => $endDate,
+                'id_gudang'    => $idGudang,
+                'id_pelanggan' => $idPelanggan,
+                'id_platform'  => $idPlatform,
+            ]
+        ];
+    }
+
+    public function index()
+    {
+        $filters = [
+            'start_date'   => $this->request->getGet('start_date') ?? date('Y-m-01'),
+            'end_date'     => $this->request->getGet('end_date') ?? date('Y-m-t'),
+            'id_gudang'    => $this->request->getGet('id_gudang'),
+            'id_pelanggan' => $this->request->getGet('id_pelanggan'),
+            'id_platform'  => $this->request->getGet('id_platform'),
+        ];
+
+        $reportData = $this->getReportData($filters);
+
         $gudangList     = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $pelangganList  = $this->pelangganModel->where('status', '0')->findAll();
         $platformList   = $this->platformModel->where('status', '1')->findAll();
@@ -228,19 +241,20 @@ class SaleReport extends BaseController
             'title'             => 'Laporan Penjualan',
             'Pengaturan'        => $this->pengaturan,
             'user'              => $this->ionAuth->user()->row(),
-            'sales'             => $sales,
-            'totalSales'        => $totalSales,
-            'totalTransactions' => $totalTransactions,
-            'startDate'         => $startDate,
-            'endDate'           => $endDate,
-            'idGudang'          => $idGudang,
-            'idPelanggan'       => $idPelanggan,
-            'idPlatform'        => $idPlatform,
+            'sales'             => $reportData['sales'],
+            'totalSales'        => $reportData['totalSales'],
+            'totalRetur'        => $reportData['totalRetur'],
+            'totalTransactions' => $reportData['totalTransactions'],
+            'startDate'         => $filters['start_date'],
+            'endDate'           => $filters['end_date'],
+            'idGudang'          => $filters['id_gudang'],
+            'idPelanggan'       => $filters['id_pelanggan'],
+            'idPlatform'        => $filters['id_platform'],
             'gudangList'        => $gudangList,
             'pelangganList'     => $pelangganList,
             'platformList'      => $platformList,
-            'platforms'         => $platforms,
-            'vouchers'          => $vouchers,
+            'platforms'         => $reportData['platforms'],
+            'vouchers'          => $reportData['vouchers'],
             'breadcrumbs'       => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Laporan</li>
@@ -367,169 +381,23 @@ class SaleReport extends BaseController
 
     public function export_excel()
     {
-        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
-        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
-        $idGudang = $this->request->getGet('id_gudang');
-        $idPelanggan = $this->request->getGet('id_pelanggan');
-        $idPlatform = $this->request->getGet('id_platform');
+        $filters = [
+            'start_date'   => $this->request->getGet('start_date') ?? date('Y-m-d'),
+            'end_date'     => $this->request->getGet('end_date') ?? date('Y-m-d'),
+            'id_gudang'    => $this->request->getGet('id_gudang'),
+            'id_pelanggan' => $this->request->getGet('id_pelanggan'),
+            'id_platform'  => $this->request->getGet('id_platform'),
+        ];
 
-        // Build query (same as index method)
-        $builder = $this->transJualModel->select('
-                tbl_trans_jual.*,
-                tbl_m_pelanggan.nama as pelanggan_nama,
-                tbl_m_pelanggan.kode as pelanggan_kode,
-                tbl_m_gudang.nama as gudang_nama,
-                tbl_m_karyawan.nama as sales_nama,
-                tbl_m_shift.shift_code as shift_nama,
-                tbl_ion_users.username as username,
-                tbl_ion_users.first_name as user_first_name,
-                tbl_ion_users.last_name as user_last_name
-            ')
-            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
-            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
-            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
-            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
-            ->where('tbl_trans_jual.status_nota', '1')
-            ->where('tbl_trans_jual.status', '1');
+        $startDate = $filters['start_date'];
+        $endDate   = $filters['end_date'];
 
-        // Apply filters
-        if ($startDate && $endDate) {
-            $builder->where('tbl_trans_jual.tgl_masuk >=', $startDate . ' 00:00:00')
-                   ->where('tbl_trans_jual.tgl_masuk <=', $endDate . ' 23:59:59');
-        }
-
-        if ($idGudang) {
-            $builder->where('tbl_trans_jual.id_gudang', $idGudang);
-        }
-
-        if ($idPelanggan) {
-            $builder->where('tbl_trans_jual.id_pelanggan', $idPelanggan);
-        }
-
-        if ($idPlatform) {
-            $builder->join('tbl_trans_jual_plat tjp_filter', 'tjp_filter.id_penjualan = tbl_trans_jual.id', 'inner')
-                    ->where('tjp_filter.id_platform', $idPlatform)
-                    ->groupBy('tbl_trans_jual.id, tbl_trans_jual.tgl_masuk, tbl_trans_jual.no_nota');
-        }
-
-        $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
-
-        // Get platforms with status='1' for dynamic columns
-        $platforms = $this->platformModel->where('status', '1')->findAll();
-        
-        // Get vouchers for dynamic columns
-        $vouchers = $this->voucherModel->findAll();
-        
-        // Get payment methods for each transaction (same as index method)
-        $transactionIds = array_column($sales, 'id');
-        $paymentMethods = [];
-        $paymentBreakdown = []; // Platform ID => Transaction ID => Amount
-        $voucherUsage = []; // Voucher ID => Transaction ID => Amount
-        
-        if (!empty($transactionIds)) {
-            $db = \Config\Database::connect();
-            
-            // Get payment breakdown by platform
-            $paymentData = $db->table('tbl_trans_jual_plat')
-                ->select('id_penjualan, id_platform, platform, SUM(nominal) as total_nominal')
-                ->whereIn('id_penjualan', $transactionIds)
-                ->groupBy('id_penjualan', 'id_platform', 'platform')
-                ->get()
-                ->getResult();
-            
-            // Build payment methods string and breakdown
-            foreach ($paymentData as $pm) {
-                $platformId = $pm->id_platform;
-                $existingSummary = $paymentMethods[$pm->id_penjualan] ?? '';
-
-                $paymentMethods[$pm->id_penjualan] = $existingSummary . 
-                    ($existingSummary ? ', ' : '') . 
-                    $pm->platform . ' (' . format_angka($pm->total_nominal) . ')';
-                
-                if ($platformId === null) {
-                    continue;
-                }
-
-                // Store breakdown by platform ID
-                if (!isset($paymentBreakdown[$platformId])) {
-                    $paymentBreakdown[$platformId] = [];
-                }
-                $paymentBreakdown[$platformId][$pm->id_penjualan] = (float)$pm->total_nominal;
-            }
-            
-            // Get voucher usage per transaction
-            $voucherData = $db->table('tbl_trans_jual')
-                ->select('id, voucher_code, voucher_discount_amount, voucher_id')
-                ->whereIn('id', $transactionIds)
-                ->groupStart()
-                    ->where('voucher_code IS NOT NULL')
-                    ->where('voucher_code !=', '')
-                ->groupEnd()
-                ->orGroupStart()
-                    ->where('voucher_id IS NOT NULL')
-                ->groupEnd()
-                ->get()
-                ->getResult();
-            
-            // Create a map of voucher_code to voucher_id for lookup
-            $voucherCodeMap = [];
-            if (!empty($vouchers)) {
-                foreach ($vouchers as $voucher) {
-                    $voucherCodeMap[$voucher->kode] = $voucher->id;
-                }
-            }
-            
-            foreach ($voucherData as $v) {
-                $voucherId = null;
-                if ($v->voucher_id) {
-                    $voucherId = $v->voucher_id;
-                } elseif ($v->voucher_code && isset($voucherCodeMap[$v->voucher_code])) {
-                    $voucherId = $voucherCodeMap[$v->voucher_code];
-                }
-                
-                if ($voucherId) {
-                    if (!isset($voucherUsage[$voucherId])) {
-                        $voucherUsage[$voucherId] = [];
-                    }
-                    $voucherUsage[$voucherId][$v->id] = (float)($v->voucher_discount_amount ?? 0);
-                }
-            }
-        }
-
-        // Attach platform breakdown and voucher usage to each sale
-        $totalSales = 0;
-        foreach ($sales as $sale) {
-            $totalSales += $sale->jml_gtotal ?? 0;
-            
-            // Attach platform breakdown
-            $sale->platform_amounts = [];
-            foreach ($platforms as $platform) {
-                $platformId = $platform->id;
-                if (isset($paymentBreakdown[$platformId]) && isset($paymentBreakdown[$platformId][$sale->id])) {
-                    $sale->platform_amounts[$platformId] = $paymentBreakdown[$platformId][$sale->id];
-                } else {
-                    $sale->platform_amounts[$platformId] = 0;
-                }
-            }
-            
-            // Attach voucher usage
-            $sale->voucher_amounts = [];
-            foreach ($vouchers as $voucher) {
-                $voucherId = $voucher->id;
-                if (isset($voucherUsage[$voucherId]) && isset($voucherUsage[$voucherId][$sale->id])) {
-                    $sale->voucher_amounts[$voucherId] = $voucherUsage[$voucherId][$sale->id];
-                } else {
-                    $sale->voucher_amounts[$voucherId] = 0;
-                }
-            }
-            
-            // Set member name (use "Umum" for general customers)
-            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
-                $sale->pelanggan_nama = 'Umum';
-                $sale->pelanggan_kode = '';
-            }
-        }
+        $reportData = $this->getReportData($filters);
+        $sales      = $reportData['sales'];
+        $platforms  = $reportData['platforms'];
+        $vouchers   = $reportData['vouchers'];
+        $totalSales = $reportData['totalSales'];
+        $totalRetur = $reportData['totalRetur'];
 
         // Create Excel file
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -539,7 +407,7 @@ class SaleReport extends BaseController
         $sheet->setCellValue('A1', 'LAPORAN PENJUALAN');
         $sheet->setCellValue('A2', 'Periode: ' . date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)));
         
-        // Column headers: No, Tanggal, Pelanggan, [Platforms], [Vouchers], Subtotal
+        // Column headers: No, Tanggal, Pelanggan, [Platforms], [Vouchers], Subtotal, Retur
         $col = 'A';
         $sheet->setCellValue($col++ . '4', 'No');
         $sheet->setCellValue($col++ . '4', 'Tanggal');
@@ -559,9 +427,11 @@ class SaleReport extends BaseController
             $sheet->setCellValue($col++ . '4', $voucher->kode ?? 'Voucher ' . $voucher->id);
         }
         
-        // Subtotal column
+        // Subtotal & retur columns
         $subtotalCol = $col;
         $sheet->setCellValue($col . '4', 'Subtotal');
+        $returCol = ++$col;
+        $sheet->setCellValue($col . '4', 'Retur');
 
         // Data rows
         $row = 5;
@@ -595,6 +465,8 @@ class SaleReport extends BaseController
             // Subtotal
             $sheet->setCellValue($subtotalCol . $row, (float)($sale->jml_gtotal ?? 0));
             $sheet->getStyle($subtotalCol . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->setCellValue($returCol . $row, (float)($sale->jml_retur ?? 0));
+            $sheet->getStyle($returCol . $row)->getNumberFormat()->setFormatCode('#,##0');
             
             $row++;
         }
@@ -628,11 +500,13 @@ class SaleReport extends BaseController
         // Subtotal total
         $sheet->setCellValue($subtotalCol . $row, (float)$totalSales);
         $sheet->getStyle($subtotalCol . $row)->getNumberFormat()->setFormatCode('#,##0');
-        $sheet->getStyle('A' . $row . ':' . $subtotalCol . $row)->getFont()->setBold(true);
+        $sheet->setCellValue($returCol . $row, (float)$totalRetur);
+        $sheet->getStyle($returCol . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('A' . $row . ':' . $returCol . $row)->getFont()->setBold(true);
 
         // Auto size columns
-        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($subtotalCol));
-        for ($i = 1; $i <= \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($subtotalCol); $i++) {
+        $lastColIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($returCol);
+        for ($i = 1; $i <= $lastColIndex; $i++) {
             $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
             $sheet->getColumnDimension($colLetter)->setAutoSize(true);
         }
@@ -653,166 +527,23 @@ class SaleReport extends BaseController
     {
         require_once(APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php');
         
-        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
-        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
-        $idGudang = $this->request->getGet('id_gudang');
-        $idPelanggan = $this->request->getGet('id_pelanggan');
-        $idPlatform = $this->request->getGet('id_platform');
+        $filters = [
+            'start_date'   => $this->request->getGet('start_date') ?? date('Y-m-d'),
+            'end_date'     => $this->request->getGet('end_date') ?? date('Y-m-d'),
+            'id_gudang'    => $this->request->getGet('id_gudang'),
+            'id_pelanggan' => $this->request->getGet('id_pelanggan'),
+            'id_platform'  => $this->request->getGet('id_platform'),
+        ];
 
-        // Build query (same as index)
-        $builder = $this->transJualModel->select('
-                tbl_trans_jual.*,
-                tbl_m_pelanggan.nama as pelanggan_nama,
-                tbl_m_pelanggan.kode as pelanggan_kode,
-                tbl_m_gudang.nama as gudang_nama,
-                tbl_m_karyawan.nama as sales_nama,
-                tbl_m_shift.shift_code as shift_nama,
-                tbl_ion_users.username as username
-            ')
-            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
-            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
-            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
-            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
-            ->where('tbl_trans_jual.status_nota', '1')
-            ->where('tbl_trans_jual.status', '1');
+        $startDate = $filters['start_date'];
+        $endDate   = $filters['end_date'];
 
-        if ($startDate && $endDate) {
-            $builder->where('tbl_trans_jual.tgl_masuk >=', $startDate . ' 00:00:00')
-                   ->where('tbl_trans_jual.tgl_masuk <=', $endDate . ' 23:59:59');
-        }
-
-        if ($idGudang) {
-            $builder->where('tbl_trans_jual.id_gudang', $idGudang);
-        }
-
-        if ($idPelanggan) {
-            $builder->where('tbl_trans_jual.id_pelanggan', $idPelanggan);
-        }
-
-        if ($idPlatform) {
-            $builder->join('tbl_trans_jual_plat tjp_filter', 'tjp_filter.id_penjualan = tbl_trans_jual.id', 'inner')
-                    ->where('tjp_filter.id_platform', $idPlatform)
-                    ->groupBy('tbl_trans_jual.id');
-        }
-
-        $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
-
-        // Get platforms with status='1' for dynamic columns
-        $platforms = $this->platformModel->where('status', '1')->findAll();
-        
-        // Get vouchers for dynamic columns
-        $vouchers = $this->voucherModel->findAll();
-        
-        // Get payment methods for each transaction (same as index method)
-        $transactionIds = array_column($sales, 'id');
-        $paymentMethods = [];
-        $paymentBreakdown = []; // Platform ID => Transaction ID => Amount
-        $voucherUsage = []; // Voucher ID => Transaction ID => Amount
-        
-        if (!empty($transactionIds)) {
-            $db = \Config\Database::connect();
-            
-            // Get payment breakdown by platform
-            $paymentData = $db->table('tbl_trans_jual_plat')
-                ->select('id_penjualan, id_platform, platform, SUM(nominal) as total_nominal')
-                ->whereIn('id_penjualan', $transactionIds)
-                ->groupBy('id_penjualan', 'id_platform', 'platform')
-                ->get()
-                ->getResult();
-            
-            // Build payment methods string and breakdown
-            foreach ($paymentData as $pm) {
-                $platformId = $pm->id_platform;
-                $existingSummary = $paymentMethods[$pm->id_penjualan] ?? '';
-
-                $paymentMethods[$pm->id_penjualan] = $existingSummary . 
-                    ($existingSummary ? ', ' : '') . 
-                    $pm->platform . ' (' . format_angka($pm->total_nominal) . ')';
-                
-                if ($platformId === null) {
-                    continue;
-                }
-
-                // Store breakdown by platform ID
-                if (!isset($paymentBreakdown[$platformId])) {
-                    $paymentBreakdown[$platformId] = [];
-                }
-                $paymentBreakdown[$platformId][$pm->id_penjualan] = (float)$pm->total_nominal;
-            }
-            
-            // Get voucher usage per transaction
-            $voucherData = $db->table('tbl_trans_jual')
-                ->select('id, voucher_code, voucher_discount_amount, voucher_id')
-                ->whereIn('id', $transactionIds)
-                ->groupStart()
-                    ->where('voucher_code IS NOT NULL')
-                    ->where('voucher_code !=', '')
-                ->groupEnd()
-                ->orGroupStart()
-                    ->where('voucher_id IS NOT NULL')
-                ->groupEnd()
-                ->get()
-                ->getResult();
-            
-            // Create a map of voucher_code to voucher_id for lookup
-            $voucherCodeMap = [];
-            if (!empty($vouchers)) {
-                foreach ($vouchers as $voucher) {
-                    $voucherCodeMap[$voucher->kode] = $voucher->id;
-                }
-            }
-            
-            foreach ($voucherData as $v) {
-                $voucherId = null;
-                if ($v->voucher_id) {
-                    $voucherId = $v->voucher_id;
-                } elseif ($v->voucher_code && isset($voucherCodeMap[$v->voucher_code])) {
-                    $voucherId = $voucherCodeMap[$v->voucher_code];
-                }
-                
-                if ($voucherId) {
-                    if (!isset($voucherUsage[$voucherId])) {
-                        $voucherUsage[$voucherId] = [];
-                    }
-                    $voucherUsage[$voucherId][$v->id] = (float)($v->voucher_discount_amount ?? 0);
-                }
-            }
-        }
-
-        // Attach platform breakdown and voucher usage to each sale
-        $totalSales = 0;
-        foreach ($sales as $sale) {
-            $totalSales += $sale->jml_gtotal ?? 0;
-            
-            // Attach platform breakdown
-            $sale->platform_amounts = [];
-            foreach ($platforms as $platform) {
-                $platformId = $platform->id;
-                if (isset($paymentBreakdown[$platformId]) && isset($paymentBreakdown[$platformId][$sale->id])) {
-                    $sale->platform_amounts[$platformId] = $paymentBreakdown[$platformId][$sale->id];
-                } else {
-                    $sale->platform_amounts[$platformId] = 0;
-                }
-            }
-            
-            // Attach voucher usage
-            $sale->voucher_amounts = [];
-            foreach ($vouchers as $voucher) {
-                $voucherId = $voucher->id;
-                if (isset($voucherUsage[$voucherId]) && isset($voucherUsage[$voucherId][$sale->id])) {
-                    $sale->voucher_amounts[$voucherId] = $voucherUsage[$voucherId][$sale->id];
-                } else {
-                    $sale->voucher_amounts[$voucherId] = 0;
-                }
-            }
-            
-            // Set member name (use "Umum" for general customers)
-            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
-                $sale->pelanggan_nama = 'Umum';
-                $sale->pelanggan_kode = '';
-            }
-        }
+        $reportData = $this->getReportData($filters);
+        $sales      = $reportData['sales'];
+        $platforms  = $reportData['platforms'];
+        $vouchers   = $reportData['vouchers'];
+        $totalSales = $reportData['totalSales'];
+        $totalRetur = $reportData['totalRetur'];
 
         // Get filter labels
         $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
@@ -820,9 +551,9 @@ class SaleReport extends BaseController
         $platformList = $this->platformModel->where('status', '1')->findAll();
         
         $gudangName = 'Semua Outlet';
-        if ($idGudang) {
+        if ($filters['id_gudang']) {
             foreach ($gudangList as $g) {
-                if ($g->id == $idGudang) {
+                if ($g->id == $filters['id_gudang']) {
                     $gudangName = $g->nama;
                     break;
                 }
@@ -830,11 +561,11 @@ class SaleReport extends BaseController
         }
         
         $pelangganName = 'Semua Pelanggan';
-        if ($idPelanggan) {
+        if ($filters['id_pelanggan']) {
             $ionAuth = new \IonAuth\Libraries\IonAuth();
             $pelangganUsers = $ionAuth->where('tipe', '2')->users()->result();
             foreach ($pelangganUsers as $p) {
-                if ($p->id == $idPelanggan) {
+                if ($p->id == $filters['id_pelanggan']) {
                     $pelangganName = isset($p->nama) ? $p->nama : (isset($p->first_name) ? $p->first_name : 'Pelanggan ' . $p->id);
                     break;
                 }
@@ -842,9 +573,9 @@ class SaleReport extends BaseController
         }
         
         $platformName = 'Semua Platform';
-        if ($idPlatform) {
+        if ($filters['id_platform']) {
             foreach ($platformList as $p) {
-                if ($p->id == $idPlatform) {
+                if ($p->id == $filters['id_platform']) {
                     $platformName = $p->platform;
                     break;
                 }
@@ -892,8 +623,10 @@ class SaleReport extends BaseController
         $numVouchers = count($vouchers);
         $totalDynamicCols = $numPlatforms + $numVouchers;
         
-        // Base columns: No (10), Tanggal (30), Pelanggan (50), Subtotal (40)
-        $baseWidth = 10 + 30 + 50 + 40; // 130mm
+        $subtotalWidth = 40;
+        $returWidth = 30;
+        // Base columns: No (10), Tanggal (30), Pelanggan (50), Subtotal, Retur
+        $baseWidth = 10 + 30 + 50 + $subtotalWidth + $returWidth;
         $availableWidth = 277 - $baseWidth; // Landscape A4 width minus margins and base columns
         $dynamicColWidth = $totalDynamicCols > 0 ? min(25, $availableWidth / max(1, $totalDynamicCols)) : 0;
         
@@ -914,7 +647,8 @@ class SaleReport extends BaseController
             $pdf->Cell($dynamicColWidth, 6, $voucherLabel, 1, 0, 'C');
         }
         
-        $pdf->Cell(40, 6, 'Subtotal', 1, 1, 'R');
+        $pdf->Cell($subtotalWidth, 6, 'Subtotal', 1, 0, 'R');
+        $pdf->Cell($returWidth, 6, 'Retur', 1, 1, 'R');
 
         // Table Data
         $pdf->SetFont('helvetica', '', 6);
@@ -943,7 +677,8 @@ class SaleReport extends BaseController
             }
             
             // Subtotal
-            $pdf->Cell(40, 5, format_angka($sale->jml_gtotal ?? 0), 1, 1, 'R');
+            $pdf->Cell($subtotalWidth, 5, format_angka($sale->jml_gtotal ?? 0), 1, 0, 'R');
+            $pdf->Cell($returWidth, 5, format_angka($sale->jml_retur ?? 0), 1, 1, 'R');
         }
 
         // Total row
@@ -969,13 +704,15 @@ class SaleReport extends BaseController
             $pdf->Cell($dynamicColWidth, 6, format_angka($totalVoucher), 1, 0, 'R');
         }
         
-        $pdf->Cell(40, 6, format_angka($totalSales), 1, 1, 'R');
+        $pdf->Cell($subtotalWidth, 6, format_angka($totalSales), 1, 0, 'R');
+        $pdf->Cell($returWidth, 6, format_angka($totalRetur), 1, 1, 'R');
 
         // Summary
         $pdf->Ln(5);
         $pdf->SetFont('helvetica', 'B', 9);
         $pdf->Cell(0, 5, 'Total Transaksi: ' . count($sales), 0, 1, 'L');
         $pdf->Cell(0, 5, 'Total Penjualan: ' . format_angka($totalSales), 0, 1, 'L');
+        $pdf->Cell(0, 5, 'Total Retur: ' . format_angka($totalRetur), 0, 1, 'L');
 
         // Output
         $filename = 'Laporan_Penjualan_' . date('Y-m-d') . '.pdf';

@@ -1,5 +1,9 @@
 <?= $this->extend(theme_path('main')) ?>
 
+<?= $this->section('css') ?>
+<link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <div class="card rounded-0">
     <div class="card-header">
@@ -8,11 +12,11 @@
                 <h3 class="card-title">Laporan Penjualan Item</h3>
             </div>
             <div class="col-md-6 text-right">
-                <a href="<?= base_url('laporan/item-sale/export_excel') ?>?<?= http_build_query($_GET) ?>" 
+                <a href="#" id="exportExcelBtn"
                    class="btn btn-sm btn-success rounded-0">
                     <i class="fas fa-file-excel"></i> Export Excel
                 </a>
-                <a href="<?= base_url('laporan/item-sale/export_pdf') ?>?<?= http_build_query($_GET) ?>" 
+                <a href="#" id="exportPdfBtn"
                    class="btn btn-sm btn-danger rounded-0">
                     <i class="fas fa-file-pdf"></i> Export PDF
                 </a>
@@ -32,21 +36,19 @@
                 </div>
             </div>
             <div class="card-body">
-                <form method="GET">
+                <form method="GET" id="filterForm">
+                    <input type="hidden" name="start_date" id="start_date" value="<?= $startDate ?>">
+                    <input type="hidden" name="end_date" id="end_date" value="<?= $endDate ?>">
                     <div class="row">
                         <div class="col-md-3">
-                            <label>Dari Tanggal:</label>
-                            <input type="date" name="start_date" class="form-control form-control-sm" 
-                                   value="<?= $startDate ?>">
-                        </div>
-                        <div class="col-md-3">
-                            <label>Sampai Tanggal:</label>
-                            <input type="date" name="end_date" class="form-control form-control-sm" 
-                                   value="<?= $endDate ?>">
+                            <label>Periode:</label>
+                            <input type="text" id="date_range" class="form-control form-control-sm"
+                                   placeholder="Pilih Periode"
+                                   value="<?= $startDate && $endDate ? date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)) : '' ?>">
                         </div>
                         <div class="col-md-2">
                             <label>Outlet:</label>
-                            <select name="id_gudang" class="form-control form-control-sm">
+                            <select name="id_gudang" id="id_gudang" class="form-control form-control-sm">
                                 <option value="">Semua Outlet</option>
                                 <?php foreach ($gudangList as $gudang): ?>
                                     <option value="<?= $gudang->id ?>" <?= ($idGudang ?? '') == $gudang->id ? 'selected' : '' ?>>
@@ -57,7 +59,7 @@
                         </div>
                         <div class="col-md-2">
                             <label>Urutkan:</label>
-                            <select name="sort_by" class="form-control form-control-sm">
+                            <select name="sort_by" id="sort_by" class="form-control form-control-sm">
                                 <option value="total_qty" <?= ($sortBy ?? 'total_qty') == 'total_qty' ? 'selected' : '' ?>>Qty Terjual</option>
                                 <option value="total_amount" <?= ($sortBy ?? '') == 'total_amount' ? 'selected' : '' ?>>Total Revenue</option>
                                 <option value="total_transactions" <?= ($sortBy ?? '') == 'total_transactions' ? 'selected' : '' ?>>Jumlah Transaksi</option>
@@ -66,7 +68,7 @@
                         </div>
                         <div class="col-md-2">
                             <label>Urutan:</label>
-                            <select name="sort_order" class="form-control form-control-sm">
+                            <select name="sort_order" id="sort_order" class="form-control form-control-sm">
                                 <option value="DESC" <?= ($sortOrder ?? 'DESC') == 'DESC' ? 'selected' : '' ?>>Tertinggi</option>
                                 <option value="ASC" <?= ($sortOrder ?? '') == 'ASC' ? 'selected' : '' ?>>Terendah</option>
                             </select>
@@ -132,6 +134,17 @@
                     </div>
                 </div>
             </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-primary">
+                            <div class="inner">
+                                <h3><?= format_angka($summary['total_ppn']) ?></h3>
+                                <p>Total PPN (<?= $ppnRate ?? $summary['ppn_rate'] ?? '' ?>%)</p>
+                            </div>
+                            <div class="icon">
+                                <i class="fas fa-percent"></i>
+                            </div>
+                        </div>
+                    </div>
         </div>
 
         <!-- Item Sales Table -->
@@ -141,13 +154,15 @@
                     <tr>
                         <th width="3%">No</th>
                         <th width="10%">Kode</th>
-                        <th width="30%">Nama Item</th>
+                        <th width="25%">Nama Item</th>
                         <th width="8%">Satuan</th>
                         <th width="10%" class="text-center">Qty Terjual</th>
-                        <th width="15%" class="text-right">Total Revenue</th>
-                        <th width="12%" class="text-right">Rata-rata Harga</th>
-                        <th width="10%" class="text-center">Transaksi</th>
-                        <th width="2%">Rank</th>
+                        <th width="12%" class="text-right">Total Revenue</th>
+                        <th width="12%" class="text-right">Total PPN</th>
+                        <th width="8%" class="text-center">Status PPN</th>
+                        <th width="8%" class="text-right">Rata-rata Harga</th>
+                        <th width="8%" class="text-center">Transaksi</th>
+                        <th width="6%">Rank</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -168,6 +183,16 @@
                                 </td>
                                 <td class="text-right">
                                     <strong><?= format_angka($item->total_amount) ?></strong>
+                                </td>
+                                <td class="text-right">
+                                    <strong><?= format_angka($item->ppn_value ?? 0) ?></strong>
+                                </td>
+                                <td class="text-center">
+                                    <?php if (($item->status_ppn ?? '0') === '1'): ?>
+                                        <span class="badge badge-success">Include</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-secondary">Non PPN</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="text-right">
                                     <?= format_angka($item->avg_price) ?>
@@ -203,4 +228,71 @@
     </div>
 </div>
 <?= $this->endSection() ?>
+<?= $this->section('js') ?>
+<script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.js') ?>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    const dateRangeInput = $('#date_range');
+    const startMoment = startInput.value ? moment(startInput.value, 'YYYY-MM-DD') : moment().startOf('month');
+    const endMoment = endInput.value ? moment(endInput.value, 'YYYY-MM-DD') : moment().endOf('month');
 
+    dateRangeInput.daterangepicker({
+        startDate: startMoment,
+        endDate: endMoment,
+        locale: {
+            format: 'DD/MM/YYYY',
+            separator: ' - ',
+            applyLabel: 'Terapkan',
+            cancelLabel: 'Batal',
+            fromLabel: 'Dari',
+            toLabel: 'Sampai',
+            customRangeLabel: 'Kustom',
+            weekLabel: 'M',
+            daysOfWeek: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+            monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+            firstDay: 1
+        },
+        opens: 'left',
+        autoUpdateInput: true
+    }, function (start, end) {
+        startInput.value = start.format('YYYY-MM-DD');
+        endInput.value = end.format('YYYY-MM-DD');
+        updateExportLinks();
+    });
+
+    function buildQuery() {
+        const params = new URLSearchParams({
+            start_date: startInput.value || '',
+            end_date: endInput.value || '',
+            id_gudang: $('#id_gudang').val() || '',
+            sort_by: $('#sort_by').val() || '',
+            sort_order: $('#sort_order').val() || ''
+        });
+        return params.toString();
+    }
+
+    function updateExportLinks() {
+        const query = buildQuery();
+        $('#exportExcelBtn').attr('href', '<?= base_url('laporan/item-sale/export_excel') ?>?' + query);
+        $('#exportPdfBtn').attr('href', '<?= base_url('laporan/item-sale/export_pdf') ?>?' + query);
+    }
+
+    $('#id_gudang, #sort_by, #sort_order').on('change', updateExportLinks);
+    updateExportLinks();
+
+    $('#filterForm').on('submit', function () {
+        const range = dateRangeInput.val();
+        if (range) {
+            const dates = range.split(' - ');
+            if (dates.length === 2) {
+                startInput.value = moment(dates[0], 'DD/MM/YYYY').format('YYYY-MM-DD');
+                endInput.value = moment(dates[1], 'DD/MM/YYYY').format('YYYY-MM-DD');
+            }
+        }
+    });
+});
+</script>
+<?= $this->endSection() ?>

@@ -446,6 +446,48 @@ if (!function_exists('statusNota')) {
     }
 }
 
+if (!function_exists('status_bayar')) {
+    /**
+     * Render payment status badge for sales transactions
+     *
+     * @param string|int|null $status Payment status code
+     * @return string HTML badge
+     */
+    function status_bayar($status = '0')
+    {
+        $status = (string)($status ?? '0');
+        $badges = [
+            '0' => '<span class="badge badge-warning">Belum Lunas</span>',
+            '1' => '<span class="badge badge-success">Lunas</span>',
+            '2' => '<span class="badge badge-danger">Kurang</span>',
+        ];
+
+        return $badges[$status] ?? '<span class="badge badge-secondary">Unknown</span>';
+    }
+}
+
+if (!function_exists('status_trx')) {
+    /**
+     * Render transaction status badge
+     *
+     * @param string|int|null $status Transaction status code
+     * @return string HTML badge
+     */
+    function status_trx($status = '0')
+    {
+        $status = (string)($status ?? '0');
+        $badges = [
+            '0' => '<span class="badge badge-secondary">Draft</span>',
+            '1' => '<span class="badge badge-success">Selesai</span>',
+            '2' => '<span class="badge badge-danger">Batal</span>',
+            '3' => '<span class="badge badge-warning">Retur</span>',
+            '4' => '<span class="badge badge-info">Pending</span>',
+        ];
+
+        return $badges[$status] ?? '<span class="badge badge-secondary">Unknown</span>';
+    }
+}
+
 if (!function_exists('tipeMutasi')) {
     /**
      * Mendapatkan label dan badge tipe mutasi transfer.

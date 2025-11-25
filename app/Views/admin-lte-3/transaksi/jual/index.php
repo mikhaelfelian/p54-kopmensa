@@ -10,6 +10,7 @@
 <?= $this->extend(theme_path('main')) ?>
 
 <?= $this->section('content') ?>
+<?php $isSuperAdmin = session()->get('group_id') == 1; ?>
 <!-- CSRF Token -->
 <?= csrf_field() ?>
 
@@ -63,7 +64,7 @@
 
 <!-- Cashier Interface -->
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-md-9">
         <div class="card">
             <div class="card-header">
                 <h3 class="card-title">
@@ -115,8 +116,6 @@
                                 <th>No. Nota</th>
                                 <th>Pelanggan</th>
                                 <th class="text-right">Total</th>
-                                <th>Status</th>
-                                <th>Status Bayar</th>
                                 <th width="12%">Aksi</th>
                             </tr>
                         </thead>
@@ -133,9 +132,10 @@
                                     <tr>
                                         <td class="text-center"><?= $startNumber + $index + 1 ?></td>
                                         <td>
-                                            <strong><?= esc(isset($row->no_nota) ? $row->no_nota : 'Unknown') ?></strong><br/>
-                                            <small class="text-muted"><?= tgl_indo6($row->created_at) ?></small><br/>
-                                            <small class="text-muted"><?= esc($row->user_name ?? 'Umum') ?></small>
+                                            <strong><?= esc(isset($row->no_nota) ? $row->no_nota : 'Unknown') ?></strong><br />
+                                            <small class="text-muted"><?= tgl_indo6($row->created_at) ?></small><br />
+                                            <small class="text-muted"><?= esc($user->username) ?></small><br/>
+                                            <?= status_trx($row->status ?? '0'); ?>
                                         </td>
                                         <td>
                                             <?php
@@ -144,49 +144,26 @@
                                             if ($row->id_pelanggan) {
                                                 foreach ($customers as $customer) {
                                                     if ($customer->id == $row->id_pelanggan) {
-                                                        $customerName = isset($customer->nama) ? $customer->nama : 'Unknown';
+                                                        $customerName = isset($customer->nama) ? $customer->nama : 'Umum';
                                                         break;
                                                     }
                                                 }
                                             }
-                                            echo '<div><strong>Pelanggan: </strong>' . esc($customerName) . '</div>';
-
-                                            // Show Petugas (user who made the transaction)
-                                            if (isset($row->user_name) && !empty($row->user_name)) {
-                                                echo '<div><strong>Petugas: </strong>' . esc($row->user_name) . '</div>';
-                                            } else {
-                                                // Fallback to current logged-in user as Petugas
-                                                if (isset($user) && isset($user->username)) {
-                                                    echo '<div><strong>Petugas: </strong>' . esc($user->username) . '</div>';
-                                                }
-                                            }
+                                            echo '' . esc($customerName) . '';
                                             ?>
                                         </td>
                                         <td class="text-right">
+                                            <?php $rowStatusRetur = $row->status_retur ?? '0'; ?>
                                             <strong>Rp
                                                 <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?></strong>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            $statusBadges = [
-                                                '0' => '<span class="badge badge-secondary">Draft</span>',
-                                                '1' => '<span class="badge badge-success">Selesai</span>',
-                                                '2' => '<span class="badge badge-danger">Batal</span>',
-                                                '3' => '<span class="badge badge-warning">Retur</span>',
-                                                '4' => '<span class="badge badge-info">Pending</span>'
-                                            ];
-                                            echo $statusBadges[isset($row->status) ? $row->status : '0'] ?? '<span class="badge badge-secondary">Unknown</span>';
-                                            ?>
-                                        </td>
-                                        <td>
-                                            <?php
-                                            $paymentStatus = [
-                                                '0' => '<span class="badge badge-warning">Belum Lunas</span>',
-                                                '1' => '<span class="badge badge-success">Lunas</span>',
-                                                '2' => '<span class="badge badge-danger">Kurang</span>'
-                                            ];
-                                            echo $paymentStatus[isset($row->status_bayar) ? $row->status_bayar : '0'] ?? '<span class="badge badge-secondary">Unknown</span>';
-                                            ?>
+                                            <?= br().status_bayar($row->status_bayar ?? '0'); ?>
+                                            <?php if ($rowStatusRetur === '1'): ?>
+                                                <?= br() ?><span class="badge badge-success">Retur Disetujui</span>
+                                            <?php elseif ($rowStatusRetur === '2'): ?>
+                                                <?= br() ?><span class="badge badge-danger">Retur Ditolak</span>
+                                            <?php elseif ($rowStatusRetur === '0' && (float)($row->jml_retur ?? 0) != 0): ?>
+                                                <?= br() ?><span class="badge badge-warning">Retur Pending</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <div class="btn-group">
@@ -202,6 +179,22 @@
                                                     <button type="button" class="btn btn-warning btn-sm"
                                                         onclick="editTransaction(<?= $row->id ?>)" title="Edit">
                                                         <i class="fas fa-edit"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                                <?php if (isset($row->status) && $row->status == '1'): ?>
+                                                    <button type="button" class="btn btn-danger btn-sm"
+                                                        onclick="showReturModal(<?= $row->id ?>)" title="Retur">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                <?php endif; ?>
+                                                <?php if (akses_kasir() != TRUE && (float)($row->jml_retur ?? 0) != 0): ?>
+                                                    <button type="button" class="btn btn-outline-success btn-sm"
+                                                        onclick="approveRetur(<?= $row->id ?>)" title="Approve Retur">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                                        onclick="rejectRetur(<?= $row->id ?>)" title="Reject Retur">
+                                                        <i class="fas fa-times"></i>
                                                     </button>
                                                 <?php endif; ?>
                                             </div>
@@ -222,7 +215,7 @@
     </div>
 
     <!-- Quick Actions Sidebar -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card shadow-sm rounded-0 border-0 mb-4">
             <div class="card-header bg-white border-bottom-0 rounded-0 pb-2 pt-3">
                 <h3 class="card-title font-weight-bold text-dark mb-0" style="font-size:1.25rem;">
@@ -282,7 +275,8 @@
                                 <small><?= isset($row->created_at) ? date('H:i', strtotime($row->created_at)) : '-' ?></small>
                             </div>
                             <p class="mb-1">Rp
-                                <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?></p>
+                                <?= number_format(isset($row->jml_gtotal) ? $row->jml_gtotal : 0, 0, ',', '.') ?>
+                            </p>
                             <small>
                                 <?php
                                 $statusBadges = [
@@ -340,7 +334,8 @@
                                     <option value="">Pilih Pelanggan</option>
                                     <?php foreach ($customers as $customer): ?>
                                         <option value="<?= $customer->id ?>">
-                                            <?= esc(isset($customer->nama) ? $customer->nama : 'Unknown') ?></option>
+                                            <?= esc(isset($customer->nama) ? $customer->nama : 'Unknown') ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -354,7 +349,8 @@
                                     <option value="">Pilih Sales</option>
                                     <?php foreach ($sales as $sale): ?>
                                         <option value="<?= $sale->id ?>">
-                                            <?= esc(isset($sale->nama) ? $sale->nama : 'Unknown') ?></option>
+                                            <?= esc(isset($sale->nama) ? $sale->nama : 'Unknown') ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -366,7 +362,8 @@
                                     <option value="">Pilih Gudang</option>
                                     <?php foreach ($warehouses as $warehouse): ?>
                                         <option value="<?= $warehouse->id ?>">
-                                            <?= esc(isset($warehouse->gudang) ? $warehouse->gudang : 'Unknown') ?></option>
+                                            <?= esc(isset($warehouse->gudang) ? $warehouse->gudang : 'Unknown') ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
@@ -409,6 +406,47 @@
         </div>
     </div>
 </div>
+
+<!-- Retur Confirmation Modal -->
+<div class="modal fade" id="returConfirmModal" tabindex="-1" role="dialog"
+    aria-labelledby="returConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="returConfirmModalLabel">
+                    <i class="fas fa-exclamation-triangle"></i> Konfirmasi Retur Transaksi
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Peringatan!</strong> Tindakan ini tidak dapat dibatalkan.
+                </div>
+                <p>Apakah Anda yakin ingin melakukan retur untuk transaksi ini?</p>
+                <ul class="list-unstyled mb-0">
+                    <li><i class="fas fa-check text-danger"></i> Transaksi akan dibatalkan</li>
+                    <li><i class="fas fa-check text-danger"></i> Stok akan dikembalikan untuk item yang stockable</li>
+                    <li><i class="fas fa-check text-danger"></i> Semua kolom keuangan akan dihitung ulang</li>
+                </ul>
+                <div class="mt-3 p-3 bg-light rounded">
+                    <strong>No. Nota:</strong> <span id="returModalNota">-</span><br>
+                    <strong>Total:</strong> <span id="returModalTotal">-</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Batal
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmReturBtn">
+                    <i class="fas fa-undo"></i> Ya, Proses Retur
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 <?= $this->endSection() ?>
 
 <?= $this->section('js') ?>
@@ -421,6 +459,16 @@
 
         // Generate nota number on page load
         generateNotaNumber();
+
+        // Bind retur modal confirm button
+        $('#confirmReturBtn').on('click', function() {
+            processRetur();
+        });
+
+        // Reset transaction ID when retur modal is closed
+        $('#returConfirmModal').on('hidden.bs.modal', function() {
+            returTransactionId = null;
+        });
 
         // Search functionality
         $('#searchBtn').on('click', function () {
@@ -762,6 +810,129 @@
         window.location.href = '<?= base_url('transaksi/jual/edit') ?>/' + id;
     }
 
+    // Store transaction ID for retur
+    let returTransactionId = null;
+
+    function showReturModal(id) {
+        returTransactionId = id;
+        
+        // Fetch transaction details to show in modal
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/get-details') ?>/' + id,
+            type: 'GET',
+            success: function (response) {
+                if (response.success && response.transaction) {
+                    const transaction = response.transaction;
+                    $('#returModalNota').text(transaction.no_nota || '-');
+                    $('#returModalTotal').text('Rp ' + formatCurrency(transaction.jml_gtotal || 0));
+                    $('#returConfirmModal').modal('show');
+                } else {
+                    toastr.error('Gagal memuat detail transaksi');
+                }
+            },
+            error: function () {
+                // Still show modal even if details fail to load
+                $('#returModalNota').text('-');
+                $('#returModalTotal').text('-');
+                $('#returConfirmModal').modal('show');
+            }
+        });
+    }
+
+    function processRetur() {
+        if (!returTransactionId) {
+            toastr.error('ID transaksi tidak valid');
+            return;
+        }
+
+        // Disable button during processing
+        const $btn = $('#confirmReturBtn');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Memproses...');
+
+        $.ajax({
+            url: '<?= base_url('transaksi/jual/retur') ?>/' + returTransactionId,
+            type: 'POST',
+            dataType: 'json',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+            },
+            success: function (response) {
+                if (response.success) {
+                    $('#returConfirmModal').modal('hide');
+                    toastr.success(response.message || 'Retur berhasil diajukan dan menunggu persetujuan.');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    $btn.prop('disabled', false).html('<i class="fas fa-undo"></i> Ya, Proses Retur');
+                    toastr.error(response.message || 'Gagal memproses retur');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error processing retur:', error);
+                $btn.prop('disabled', false).html('<i class="fas fa-undo"></i> Ya, Proses Retur');
+                let errorMessage = 'Gagal memproses retur';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                toastr.error(errorMessage);
+                if (xhr.status === 401) {
+                    setTimeout(function () {
+                        window.location.href = '<?= base_url('auth/login') ?>';
+                    }, 2000);
+                }
+            }
+        });
+    }
+
+    function submitReturDecision(url, defaultSuccessMessage) {
+        $.ajax({
+            url: url,
+            type: 'POST',
+            dataType: 'json',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                '<?= csrf_header() ?>': '<?= csrf_hash() ?>'
+            },
+            success: function (response) {
+                if (response.success) {
+                    toastr.success(response.message || defaultSuccessMessage);
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    toastr.error(response.message || 'Gagal memproses permintaan');
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Retur approval error:', error);
+                let errorMessage = 'Gagal memproses permintaan';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                toastr.error(errorMessage);
+                if (xhr.status === 401) {
+                    setTimeout(function () {
+                        window.location.href = '<?= base_url('auth/login') ?>';
+                    }, 2000);
+                }
+            }
+        });
+    }
+
+    function approveRetur(id) {
+        if (!confirm('Setujui permintaan retur untuk transaksi ini?')) {
+            return;
+        }
+        submitReturDecision('<?= base_url('transaksi/jual/retur/approve') ?>/' + id, 'Retur berhasil disetujui.');
+    }
+
+    function rejectRetur(id) {
+        if (!confirm('Tolak permintaan retur untuk transaksi ini?')) {
+            return;
+        }
+        submitReturDecision('<?= base_url('transaksi/jual/retur/reject') ?>/' + id, 'Retur berhasil ditolak.');
+    }
+
     // Global variables
     let currentTransactionData = null;
 
@@ -777,7 +948,7 @@
 
     function generateReceiptHTML(transactionData) {
         const { no_nota, customer_name, customer_type, items, subtotal, discount, voucher, ppn, total, payment_methods, date, outlet } = transactionData;
-        
+
         let itemsHTML = '';
         if (items && items.length > 0) {
             items.forEach(item => {
@@ -791,7 +962,7 @@
         } else {
             itemsHTML = '<div class="item">No items available</div>';
         }
-        
+
         let paymentHTML = '';
         if (payment_methods && payment_methods.length > 0) {
             payment_methods.forEach(pm => {
@@ -799,7 +970,7 @@
                 paymentHTML += `<div>${methodName}: ${formatCurrency(pm.amount)}</div>`;
             });
         }
-        
+
         return `
             <div class="receipt">
                 <div class="header">
