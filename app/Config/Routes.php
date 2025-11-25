@@ -808,6 +808,7 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
     $routes->get('sale', 'SaleReport::index');
     $routes->get('sale/detail/(:num)', 'SaleReport::detail/$1');
     $routes->get('sale/export_excel', 'SaleReport::export_excel');
+    $routes->get('sale/export_pdf', 'SaleReport::export_pdf');
 
     // Purchase Report Routes
     $routes->get('purchase', 'PurchaseReport::index');
@@ -815,49 +816,24 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
     $routes->get('purchase/detail_items/(:num)', 'PurchaseReport::detail_items/$1');
     $routes->get('purchase/print_invoice/(:num)', 'PurchaseReport::print_invoice/$1');
     $routes->get('purchase/export_excel', 'PurchaseReport::export_excel');
+    $routes->get('purchase/export_pdf', 'PurchaseReport::export_pdf');
 
     // Stock Report Routes
     $routes->get('stock', 'StockReport::index');
     $routes->get('stock/detail/(:num)', 'StockReport::detail/$1');
     $routes->get('stock/export_excel', 'StockReport::export_excel');
+    $routes->get('stock/export_pdf', 'StockReport::export_pdf');
     $routes->get('stock/test_data', 'StockReport::test_data');
 
-    // Outlet Report Routes
-    $routes->get('outlet', 'OutletReport::index');
-    $routes->get('outlet/detail/(:num)', 'OutletReport::detail/$1');
-    $routes->get('outlet/export_excel', 'OutletReport::export_excel');
+    // Item Sale Report Routes
+    $routes->get('item-sale', 'ItemSaleReport::index');
+    $routes->get('item-sale/export_excel', 'ItemSaleReport::export_excel');
+    $routes->get('item-sale/export_pdf', 'ItemSaleReport::export_pdf');
 
-    // Sales Turnover Report Routes
-    $routes->get('sales-turnover', 'SalesTurnoverReport::index');
-    $routes->get('sales-turnover/export', 'SalesTurnoverReport::export');
-
-    // Product Sales Report Routes
-    $routes->get('product-sales', 'ProductSalesReport::index');
-    $routes->get('product-sales/export', 'ProductSalesReport::export');
-
-    // Order Report Routes
-    $routes->get('order', 'OrderReport::index');
-    $routes->get('order/detail/(:num)', 'OrderReport::detail/$1');
-    $routes->get('order/export', 'OrderReport::export');
-    $routes->get('order/export_detail_items', 'OrderReport::export_detail_items');
-
-    // All-in-One Turnover Report Routes
-    $routes->get('all-in-one-turnover', 'AllInOneTurnoverReport::index');
-    $routes->get('all-in-one-turnover/export', 'AllInOneTurnoverReport::export');
-
-    // Profit Loss Report Routes
-    $routes->get('profit-loss', 'ProfitLossReport::index');
-    $routes->get('profit-loss/export', 'ProfitLossReport::export');
-
-    // Best Selling Report Routes
-    $routes->get('best-selling', 'BestSellingReport::index');
-    $routes->get('best-selling/export', 'BestSellingReport::export');
-
-    // Cut-off Report Routes
-    $routes->get('cutoff', 'CutOffReport::index');
-    $routes->get('cutoff/debug', 'CutOffReport::debug');
-    $routes->get('cutoff/export', 'CutOffReport::export');
-    $routes->get('cutoff/detail/(:num)', 'CutOffReport::detail/$1');
+    // Shift Omzet Report Routes
+    $routes->get('shift-omzet', 'ShiftOmzetReport::index');
+    $routes->get('shift-omzet/export_excel', 'ShiftOmzetReport::export_excel');
+    $routes->get('shift-omzet/export_pdf', 'ShiftOmzetReport::export_pdf');
 });
 
 $routes->group('pengaturan', ['namespace' => 'App\Controllers', 'filter' => 'auth'], function ($routes) {

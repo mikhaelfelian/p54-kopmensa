@@ -48,7 +48,7 @@ class SaleReport extends BaseController
         $endDate      = $this->request->getGet('end_date')      ?? date('Y-m-t');
         $idGudang     = $this->request->getGet('id_gudang');
         $idPelanggan  = $this->request->getGet('id_pelanggan');
-        $idSales      = $this->request->getGet('id_sales');
+        $idPlatform   = $this->request->getGet('id_platform');
 
         // Build query
         $builder = $this->transJualModel->select('
@@ -84,8 +84,10 @@ class SaleReport extends BaseController
             $builder->where('tbl_trans_jual.id_pelanggan', $idPelanggan);
         }
 
-        if ($idSales) {
-            $builder->where('tbl_trans_jual.id_sales', $idSales);
+        if ($idPlatform) {
+            $builder->join('tbl_trans_jual_plat tjp_filter', 'tjp_filter.id_penjualan = tbl_trans_jual.id', 'inner')
+                    ->where('tjp_filter.id_platform', $idPlatform)
+                    ->groupBy('tbl_trans_jual.id, tbl_trans_jual.tgl_masuk, tbl_trans_jual.no_nota');
         }
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
@@ -220,7 +222,7 @@ class SaleReport extends BaseController
         // Get filter options
         $gudangList     = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
         $pelangganList  = $this->pelangganModel->where('status', '0')->findAll();
-        $salesList      = $this->karyawanModel->where('status', '0')->findAll();
+        $platformList   = $this->platformModel->where('status', '1')->findAll();
 
         $data = [
             'title'             => 'Laporan Penjualan',
@@ -233,10 +235,10 @@ class SaleReport extends BaseController
             'endDate'           => $endDate,
             'idGudang'          => $idGudang,
             'idPelanggan'       => $idPelanggan,
-            'idSales'           => $idSales,
+            'idPlatform'        => $idPlatform,
             'gudangList'        => $gudangList,
             'pelangganList'     => $pelangganList,
-            'salesList'         => $salesList,
+            'platformList'      => $platformList,
             'platforms'         => $platforms,
             'vouchers'          => $vouchers,
             'breadcrumbs'       => '
@@ -369,7 +371,7 @@ class SaleReport extends BaseController
         $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
         $idGudang = $this->request->getGet('id_gudang');
         $idPelanggan = $this->request->getGet('id_pelanggan');
-        $idSales = $this->request->getGet('id_sales');
+        $idPlatform = $this->request->getGet('id_platform');
 
         // Build query
         $builder = $this->transJualModel->select('
@@ -405,8 +407,10 @@ class SaleReport extends BaseController
             $builder->where('tbl_trans_jual.id_pelanggan', $idPelanggan);
         }
 
-        if ($idSales) {
-            $builder->where('tbl_trans_jual.id_sales', $idSales);
+        if ($idPlatform) {
+            $builder->join('tbl_trans_jual_plat tjp_filter', 'tjp_filter.id_penjualan = tbl_trans_jual.id', 'inner')
+                    ->where('tjp_filter.id_platform', $idPlatform)
+                    ->groupBy('tbl_trans_jual.id, tbl_trans_jual.tgl_masuk, tbl_trans_jual.no_nota');
         }
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
@@ -520,6 +524,195 @@ class SaleReport extends BaseController
         header('Cache-Control: max-age=0');
 
         $writer->save('php://output');
+        exit;
+    }
+
+    public function export_pdf()
+    {
+        require_once(APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php');
+        
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
+        $idGudang = $this->request->getGet('id_gudang');
+        $idPelanggan = $this->request->getGet('id_pelanggan');
+        $idPlatform = $this->request->getGet('id_platform');
+
+        // Build query (same as index)
+        $builder = $this->transJualModel->select('
+                tbl_trans_jual.*,
+                tbl_m_pelanggan.nama as pelanggan_nama,
+                tbl_m_pelanggan.kode as pelanggan_kode,
+                tbl_m_gudang.nama as gudang_nama,
+                tbl_m_karyawan.nama as sales_nama,
+                tbl_m_shift.shift_code as shift_nama,
+                tbl_ion_users.username as username
+            ')
+            ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
+            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_jual.id_sales', 'left')
+            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
+            ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
+            ->where('tbl_trans_jual.status_nota', '1')
+            ->where('tbl_trans_jual.status', '1');
+
+        if ($startDate && $endDate) {
+            $builder->where('tbl_trans_jual.tgl_masuk >=', $startDate . ' 00:00:00')
+                   ->where('tbl_trans_jual.tgl_masuk <=', $endDate . ' 23:59:59');
+        }
+
+        if ($idGudang) {
+            $builder->where('tbl_trans_jual.id_gudang', $idGudang);
+        }
+
+        if ($idPelanggan) {
+            $builder->where('tbl_trans_jual.id_pelanggan', $idPelanggan);
+        }
+
+        if ($idPlatform) {
+            $builder->join('tbl_trans_jual_plat tjp_filter', 'tjp_filter.id_penjualan = tbl_trans_jual.id', 'inner')
+                    ->where('tjp_filter.id_platform', $idPlatform)
+                    ->groupBy('tbl_trans_jual.id');
+        }
+
+        $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
+
+        // Get payment methods
+        $transactionIds = array_column($sales, 'id');
+        $paymentMethods = [];
+        if (!empty($transactionIds)) {
+            $db = \Config\Database::connect();
+            $paymentData = $db->table('tbl_trans_jual_plat')
+                ->select('id_penjualan, GROUP_CONCAT(CONCAT(platform, " (", FORMAT(nominal, 0), ")") SEPARATOR ", ") as metode_pembayaran')
+                ->whereIn('id_penjualan', $transactionIds)
+                ->groupBy('id_penjualan')
+                ->get()
+                ->getResult();
+            
+            foreach ($paymentData as $pm) {
+                $paymentMethods[$pm->id_penjualan] = $pm->metode_pembayaran;
+            }
+        }
+
+        $totalSales = 0;
+        foreach ($sales as $sale) {
+            $sale->metode_pembayaran = $paymentMethods[$sale->id] ?? '-';
+            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
+                $sale->pelanggan_nama = 'Umum';
+                $sale->pelanggan_kode = '';
+            }
+            $totalSales += $sale->jml_gtotal ?? 0;
+        }
+
+        // Get filter labels
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
+        $pelangganList = $this->pelangganModel->where('status', '0')->findAll();
+        $platformList = $this->platformModel->where('status', '1')->findAll();
+        
+        $gudangName = 'Semua Outlet';
+        if ($idGudang) {
+            foreach ($gudangList as $g) {
+                if ($g->id == $idGudang) {
+                    $gudangName = $g->nama;
+                    break;
+                }
+            }
+        }
+        
+        $pelangganName = 'Semua Pelanggan';
+        if ($idPelanggan) {
+            $ionAuth = new \IonAuth\Libraries\IonAuth();
+            $pelangganUsers = $ionAuth->where('tipe', '2')->users()->result();
+            foreach ($pelangganUsers as $p) {
+                if ($p->id == $idPelanggan) {
+                    $pelangganName = isset($p->nama) ? $p->nama : (isset($p->first_name) ? $p->first_name : 'Pelanggan ' . $p->id);
+                    break;
+                }
+            }
+        }
+        
+        $platformName = 'Semua Platform';
+        if ($idPlatform) {
+            foreach ($platformList as $p) {
+                if ($p->id == $idPlatform) {
+                    $platformName = $p->platform;
+                    break;
+                }
+            }
+        }
+
+        // Create PDF
+        $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator($this->pengaturan->judul_app ?? 'POS System');
+        $pdf->SetAuthor($this->pengaturan->judul ?? 'Company');
+        $pdf->SetTitle('Laporan Penjualan');
+        $pdf->SetMargins(10, 15, 10);
+        $pdf->SetHeaderMargin(0);
+        $pdf->SetFooterMargin(0);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->AddPage();
+
+        // Header
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 8, strtoupper($this->pengaturan->judul ?? 'COMPANY NAME'), 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(0, 5, $this->pengaturan->alamat ?? '', 0, 1, 'C');
+        if (!empty($this->pengaturan->no_telp)) {
+            $pdf->Cell(0, 5, 'Telp: ' . $this->pengaturan->no_telp, 0, 1, 'C');
+        }
+        $pdf->Ln(3);
+        $pdf->Line(10, $pdf->GetY(), 287, $pdf->GetY());
+        $pdf->Ln(5);
+
+        // Report Title
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 8, 'LAPORAN PENJUALAN', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 5, 'Periode: ' . date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)), 0, 1, 'C');
+        $pdf->Ln(2);
+
+        // Filter Info
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 4, 'Outlet: ' . $gudangName . ' | Pelanggan: ' . $pelangganName . ' | Platform: ' . $platformName, 0, 1, 'L');
+        $pdf->Ln(2);
+
+        // Table Header
+        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->Cell(10, 6, 'No', 1, 0, 'C');
+        $pdf->Cell(30, 6, 'Tanggal', 1, 0, 'C');
+        $pdf->Cell(35, 6, 'No. Nota', 1, 0, 'C');
+        $pdf->Cell(50, 6, 'Pelanggan', 1, 0, 'C');
+        $pdf->Cell(50, 6, 'Metode Pembayaran', 1, 0, 'C');
+        $pdf->Cell(30, 6, 'Gudang', 1, 0, 'C');
+        $pdf->Cell(40, 6, 'Total', 1, 1, 'R');
+
+        // Table Data
+        $pdf->SetFont('helvetica', '', 7);
+        $no = 1;
+        foreach ($sales as $sale) {
+            $pdf->Cell(10, 5, $no++, 1, 0, 'C');
+            $pdf->Cell(30, 5, date('d/m/Y H:i', strtotime($sale->tgl_masuk)), 1, 0, 'L');
+            $pdf->Cell(35, 5, substr($sale->no_nota, 0, 15), 1, 0, 'L');
+            $pdf->Cell(50, 5, substr($sale->pelanggan_nama . ($sale->pelanggan_kode ? ' (' . $sale->pelanggan_kode . ')' : ''), 0, 30), 1, 0, 'L');
+            $pdf->Cell(50, 5, substr($sale->metode_pembayaran, 0, 30), 1, 0, 'L');
+            $pdf->Cell(30, 5, substr($sale->gudang_nama ?? '-', 0, 20), 1, 0, 'L');
+            $pdf->Cell(40, 5, format_angka($sale->jml_gtotal ?? 0), 1, 1, 'R');
+        }
+
+        // Total
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(205, 6, 'TOTAL', 1, 0, 'R');
+        $pdf->Cell(40, 6, format_angka($totalSales), 1, 1, 'R');
+
+        // Summary
+        $pdf->Ln(5);
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(0, 5, 'Total Transaksi: ' . count($sales), 0, 1, 'L');
+        $pdf->Cell(0, 5, 'Total Penjualan: ' . format_angka($totalSales), 0, 1, 'L');
+
+        // Output
+        $filename = 'Laporan_Penjualan_' . date('Y-m-d') . '.pdf';
+        $pdf->Output($filename, 'D');
         exit;
     }
 }

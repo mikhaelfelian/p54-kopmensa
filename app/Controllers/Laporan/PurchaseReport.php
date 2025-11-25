@@ -39,7 +39,6 @@ class PurchaseReport extends BaseController
         $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
         $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
         $idSupplier = $this->request->getGet('id_supplier');
-        $statusNota = $this->request->getGet('status_nota');
 
         // Build query
         $builder = $this->transBeliModel->select('
@@ -59,10 +58,6 @@ class PurchaseReport extends BaseController
 
         if ($idSupplier) {
             $builder->where('tbl_trans_beli.id_supplier', $idSupplier);
-        }
-
-        if ($statusNota !== null && $statusNota !== '') {
-            $builder->where('tbl_trans_beli.status_nota', $statusNota);
         }
 
         $purchases = $builder->orderBy('tbl_trans_beli.tgl_masuk', 'DESC')->findAll();
@@ -97,7 +92,6 @@ class PurchaseReport extends BaseController
             'startDate' => $startDate,
             'endDate' => $endDate,
             'idSupplier' => $idSupplier,
-            'statusNota' => $statusNota,
             'supplierList' => $supplierList,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
@@ -161,7 +155,6 @@ class PurchaseReport extends BaseController
         $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
         $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
         $idSupplier = $this->request->getGet('id_supplier');
-        $statusNota = $this->request->getGet('status_nota');
 
         // Build query
         $builder = $this->transBeliModel->select('
@@ -181,10 +174,6 @@ class PurchaseReport extends BaseController
 
         if ($idSupplier) {
             $builder->where('tbl_trans_beli.id_supplier', $idSupplier);
-        }
-
-        if ($statusNota !== null && $statusNota !== '') {
-            $builder->where('tbl_trans_beli.status_nota', $statusNota);
         }
 
         $purchases = $builder->orderBy('tbl_trans_beli.tgl_masuk', 'DESC')->findAll();
@@ -356,5 +345,126 @@ class PurchaseReport extends BaseController
         ];
 
         return $this->view($this->theme->getThemePath() . '/laporan/purchase/print_invoice', $data);
+    }
+
+    public function export_pdf()
+    {
+        require_once(APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php');
+        
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
+        $idSupplier = $this->request->getGet('id_supplier');
+
+        $builder = $this->transBeliModel->select('
+                tbl_trans_beli.*,
+                tbl_m_supplier.nama as supplier_nama,
+                tbl_m_karyawan.nama as penerima_nama
+            ')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
+            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
+            ->where('tbl_trans_beli.deleted_at IS NULL');
+
+        if ($startDate && $endDate) {
+            $builder->where('tbl_trans_beli.tgl_masuk >=', $startDate . ' 00:00:00')
+                   ->where('tbl_trans_beli.tgl_masuk <=', $endDate . ' 23:59:59');
+        }
+
+        if ($idSupplier) {
+            $builder->where('tbl_trans_beli.id_supplier', $idSupplier);
+        }
+
+        $purchases = $builder->orderBy('tbl_trans_beli.tgl_masuk', 'DESC')->findAll();
+
+        $totalPurchase = 0;
+        foreach ($purchases as $purchase) {
+            $totalPurchase += $purchase->jml_gtotal ?? 0;
+        }
+
+        $supplierList = $this->supplierModel->where('deleted_at IS NULL')->findAll();
+        $supplierName = 'Semua Supplier';
+        if ($idSupplier) {
+            foreach ($supplierList as $s) {
+                if ($s->id == $idSupplier) {
+                    $supplierName = $s->nama;
+                    break;
+                }
+            }
+        }
+
+        // Create PDF
+        $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator($this->pengaturan->judul_app ?? 'POS System');
+        $pdf->SetAuthor($this->pengaturan->judul ?? 'Company');
+        $pdf->SetTitle('Laporan Pembelian');
+        $pdf->SetMargins(10, 15, 10);
+        $pdf->SetHeaderMargin(0);
+        $pdf->SetFooterMargin(0);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->AddPage();
+
+        // Header
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 8, strtoupper($this->pengaturan->judul ?? 'COMPANY NAME'), 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(0, 5, $this->pengaturan->alamat ?? '', 0, 1, 'C');
+        if (!empty($this->pengaturan->no_telp)) {
+            $pdf->Cell(0, 5, 'Telp: ' . $this->pengaturan->no_telp, 0, 1, 'C');
+        }
+        $pdf->Ln(3);
+        $pdf->Line(10, $pdf->GetY(), 287, $pdf->GetY());
+        $pdf->Ln(5);
+
+        // Report Title
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 8, 'LAPORAN PEMBELIAN', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 5, 'Periode: ' . date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)), 0, 1, 'C');
+        $pdf->Ln(2);
+
+        // Filter Info
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 4, 'Supplier: ' . $supplierName, 0, 1, 'L');
+        $pdf->Ln(2);
+
+        // Table Header
+        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->Cell(10, 6, 'No', 1, 0, 'C');
+        $pdf->Cell(30, 6, 'Tanggal', 1, 0, 'C');
+        $pdf->Cell(40, 6, 'No. Nota', 1, 0, 'C');
+        $pdf->Cell(60, 6, 'Supplier', 1, 0, 'C');
+        $pdf->Cell(50, 6, 'Penerima', 1, 0, 'C');
+        $pdf->Cell(40, 6, 'Total', 1, 0, 'R');
+        $pdf->Cell(57, 6, 'Status', 1, 1, 'C');
+
+        // Table Data
+        $pdf->SetFont('helvetica', '', 7);
+        $no = 1;
+        foreach ($purchases as $purchase) {
+            $pdf->Cell(10, 5, $no++, 1, 0, 'C');
+            $pdf->Cell(30, 5, date('d/m/Y', strtotime($purchase->tgl_masuk)), 1, 0, 'L');
+            $pdf->Cell(40, 5, substr($purchase->no_nota, 0, 20), 1, 0, 'L');
+            $pdf->Cell(60, 5, substr($purchase->supplier_nama ?? '-', 0, 35), 1, 0, 'L');
+            $pdf->Cell(50, 5, substr($purchase->penerima_nama ?? '-', 0, 30), 1, 0, 'L');
+            $pdf->Cell(40, 5, format_angka($purchase->jml_gtotal ?? 0), 1, 0, 'R');
+            $pdf->Cell(57, 5, ($purchase->status_bayar == '1' ? 'Lunas' : 'Belum Lunas'), 1, 1, 'C');
+        }
+
+        // Total
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(190, 6, 'TOTAL', 1, 0, 'R');
+        $pdf->Cell(40, 6, format_angka($totalPurchase), 1, 0, 'R');
+        $pdf->Cell(57, 6, '', 1, 1);
+
+        // Summary
+        $pdf->Ln(5);
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(0, 5, 'Total Transaksi: ' . count($purchases), 0, 1, 'L');
+        $pdf->Cell(0, 5, 'Total Pembelian: ' . format_angka($totalPurchase), 0, 1, 'L');
+
+        // Output
+        $filename = 'Laporan_Pembelian_' . date('Y-m-d') . '.pdf';
+        $pdf->Output($filename, 'D');
+        exit;
     }
 }

@@ -724,19 +724,13 @@
                     <!-- Reports -->
                     <li class="nav-header">LAPORAN</li>
                     <?php
-                    // Integrate isMenuActive with all Laporan menu routes (Enhanced with new reports)
+                    // Integrate isMenuActive with required Laporan menu routes
                     $laporanMenus = [
                         'laporan/sale',
-                        'laporan/purchase',
+                        'laporan/item-sale',
                         'laporan/stock',
-                        'laporan/outlet',
-                        'laporan/sales-turnover',
-                        'laporan/product-sales',
-                        'laporan/order',
-                        'laporan/all-in-one-turnover',
-                        'laporan/profit-loss',
-                        'laporan/best-selling',
-                        'laporan/cutoff'
+                        'laporan/purchase',
+                        'laporan/shift-omzet'
                     ];
                     $isLaporanActive = isMenuActive($laporanMenus);
                     ?>
@@ -749,13 +743,28 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview">
-                            <!-- Laporan Standar -->
                             <li class="nav-item">
                                 <a href="<?= base_url('laporan/sale') ?>"
                                     class="nav-link <?= isMenuActive('laporan/sale') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-shopping-cart nav-icon"></i>
                                     <p>Laporan Penjualan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/item-sale') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/item-sale') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-box nav-icon"></i>
+                                    <p>Laporan Penjualan Item</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/stock') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/stock') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-boxes nav-icon"></i>
+                                    <p>Laporan Stok Item</p>
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -767,87 +776,11 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="<?= base_url('laporan/stock') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/stock') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-boxes nav-icon"></i>
-                                    <p>Laporan Stok</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/outlet') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/outlet') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-store nav-icon"></i>
-                                    <p>Laporan Outlet</p>
-                                </a>
-                            </li>
-
-                            <!-- Pemisah -->
-                            <li class="nav-item">
-                                <div class="nav-link"
-                                    style="color: #6c757d; font-size: 0.8rem; font-weight: bold; padding-top: 10px;">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-star nav-icon"></i>
-                                    <span>LAPORAN LANJUTAN</span>
-                                </div>
-                            </li>
-
-                            <!-- Laporan Lanjutan -->
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/sales-turnover') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/sales-turnover') ? 'active' : '' ?>">
+                                <a href="<?= base_url('laporan/shift-omzet') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/shift-omzet') ? 'active' : '' ?>">
                                     <?= nbs(3) ?>
                                     <i class="fas fa-chart-line nav-icon"></i>
-                                    <p>Omzet Penjualan</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/product-sales') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/product-sales') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-box nav-icon"></i>
-                                    <p>Penjualan Produk</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/order') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/order') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-file-invoice nav-icon"></i>
-                                    <p>Laporan Pesanan</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/all-in-one-turnover') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/all-in-one-turnover') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-chart-pie nav-icon"></i>
-                                    <p>Omzet All-in-One</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/profit-loss') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/profit-loss') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-calculator nav-icon"></i>
-                                    <p>Laba & Rugi</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/best-selling') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/best-selling') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-trophy nav-icon"></i>
-                                    <p>Produk Terlaris</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="<?= base_url('laporan/cutoff') ?>"
-                                    class="nav-link <?= isMenuActive('laporan/cutoff') ? 'active' : '' ?>">
-                                    <?= nbs(3) ?>
-                                    <i class="fas fa-cut nav-icon"></i>
-                                    <p>Laporan Cut-off</p>
+                                    <p>Laporan Omzet Shift</p>
                                 </a>
                             </li>
                         </ul>

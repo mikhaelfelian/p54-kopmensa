@@ -1,14 +1,84 @@
 <?= $this->extend(theme_path('main')) ?>
 
+<?= $this->section('css') ?>
+<link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
-        <!-- Summary Cards -->
+        <div class="card card-default">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-boxes mr-1"></i> Laporan Stok Item
+                </h3>
+                <div class="card-tools">
+                    <a href="#" id="exportExcelBtn" class="btn btn-success btn-sm rounded-0">
+                        <i class="fas fa-file-excel mr-1"></i> Export Excel
+                    </a>
+                    <a href="#" id="exportPdfBtn" class="btn btn-danger btn-sm rounded-0">
+                        <i class="fas fa-file-pdf mr-1"></i> Export PDF
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Filter Form -->
+                <form method="get" action="<?= base_url('laporan/stock') ?>" id="filterForm" class="mb-4">
+                    <input type="hidden" name="start_date" id="start_date" value="<?= $startDate ?>">
+                    <input type="hidden" name="end_date" id="end_date" value="<?= $endDate ?>">
                     <div class="row">
-                    <div class="col-lg-3 col-6">
+                        <div class="col-md-3">
+                            <label>Periode Tanggal</label>
+                            <input type="text" id="date_range" class="form-control form-control-sm" 
+                                   placeholder="Pilih Periode Tanggal" 
+                                   value="<?= $startDate && $endDate ? date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)) : '' ?>">
+                        </div>
+                        <div class="col-md-2">
+                            <label>Outlet</label>
+                            <select name="gudang_id" class="form-control form-control-sm">
+                                <option value="">Semua Outlet</option>
+                                <?php foreach ($gudangList as $gudang): ?>
+                                    <option value="<?= $gudang->id ?>" <?= ($selectedGudang ?? '') == $gudang->id ? 'selected' : '' ?>>
+                                        <?= esc($gudang->nama) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Urutkan</label>
+                            <select name="sort_by" class="form-control form-control-sm">
+                                <option value="sisa" <?= ($sortBy ?? 'sisa') == 'sisa' ? 'selected' : '' ?>>Sisa Stok</option>
+                                <option value="item" <?= ($sortBy ?? '') == 'item' ? 'selected' : '' ?>>Nama Item</option>
+                                <option value="kode" <?= ($sortBy ?? '') == 'kode' ? 'selected' : '' ?>>Kode</option>
+                                <option value="gudang" <?= ($sortBy ?? '') == 'gudang' ? 'selected' : '' ?>>Gudang</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Urutan</label>
+                            <select name="sort_order" class="form-control form-control-sm">
+                                <option value="DESC" <?= ($sortOrder ?? 'DESC') == 'DESC' ? 'selected' : '' ?>>Tertinggi</option>
+                                <option value="ASC" <?= ($sortOrder ?? '') == 'ASC' ? 'selected' : '' ?>>Terendah</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-search mr-1"></i> Filter
+                            </button>
+                            <a href="<?= base_url('laporan/stock') ?>" class="btn btn-secondary btn-sm">
+                                <i class="fas fa-redo mr-1"></i> Reset
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-lg-4 col-6">
                         <div class="small-box bg-info">
                             <div class="inner">
-                        <h3><?= number_format($summary->total_items ?? 0) ?></h3>
+                                <h3><?= format_angka(count($stock)) ?></h3>
                                 <p>Total Item</p>
                             </div>
                             <div class="icon">
@@ -16,499 +86,196 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-6">
+                    <div class="col-lg-4 col-6">
                         <div class="small-box bg-success">
                             <div class="inner">
-                        <h3><?= number_format($summary->total_sisa ?? 0, 2) ?></h3>
-                        <p>Total Sisa Stok</p>
+                                <h3><?= format_angka(array_sum(array_map(function($item) { return (float)($item->sisa ?? 0); }, $stock))) ?></h3>
+                                <p>Total Sisa Stok</p>
                             </div>
                             <div class="icon">
-                        <i class="fas fa-warehouse"></i>
+                                <i class="fas fa-warehouse"></i>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-3 col-6">
+                    <div class="col-lg-4 col-6">
                         <div class="small-box bg-warning">
                             <div class="inner">
-                        <h3><?= number_format($summary->total_masuk ?? 0, 2) ?></h3>
-                        <p>Total Stok Masuk</p>
+                                <h3><?= format_angka(count(array_filter($stock, function($item) { return (float)($item->sisa ?? 0) <= 0; }))) ?></h3>
+                                <p>Item Stok Habis/Kosong</p>
                             </div>
                             <div class="icon">
-                        <i class="fas fa-arrow-down"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-6">
-                        <div class="small-box bg-danger">
-                            <div class="inner">
-                        <h3><?= number_format($summary->total_keluar ?? 0, 2) ?></h3>
-                        <p>Total Stok Keluar</p>
-                            </div>
-                            <div class="icon">
-                        <i class="fas fa-arrow-up"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stock Aging Analysis -->
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Analisis Level Stok</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Level Stok</th>
-                                        <th>Jumlah Item</th>
-                                        <th>Total Quantity</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($stockAging as $aging): ?>
-                                    <tr>
-                                        <td><?= esc($aging->stock_level) ?></td>
-                                        <td><?= number_format($aging->item_count) ?></td>
-                                        <td><?= number_format($aging->total_quantity, 2) ?></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Ringkasan per Gudang</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Gudang</th>
-                                        <th>Total Item</th>
-                                        <th>In Stock</th>
-                                        <th>Out of Stock</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($warehouseSummary as $warehouse): ?>
-                                    <tr>
-                                        <td><?= esc($warehouse->gudang) ?></td>
-                                        <td><?= number_format($warehouse->total_items) ?></td>
-                                        <td><?= number_format($warehouse->items_in_stock) ?></td>
-                                        <td><?= number_format($warehouse->items_out_of_stock) ?></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Ringkasan per Tipe Lokasi</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>Tipe</th>
-                                        <th>Lokasi</th>
-                                        <th>Total Item</th>
-                                        <th>In Stock</th>
-                                        <th>Out of Stock</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($outletTypeSummary as $summary): ?>
-                                    <tr>
-                                        <td>
-                                            <span class="badge badge-<?= $summary->status_otl == '1' ? 'success' : 'info' ?>">
-                                                <?= esc($summary->outlet_type) ?>
-                                            </span>
-                                        </td>
-                                        <td><?= number_format($summary->total_locations) ?></td>
-                                        <td><?= number_format($summary->total_items) ?></td>
-                                        <td><?= number_format($summary->items_in_stock) ?></td>
-                                        <td><?= number_format($summary->items_out_of_stock) ?></td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stock Alerts -->
-        <div class="row">
-            <div class="col-md-4">
-                <div class="card card-warning">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-exclamation-triangle"></i> Stok Menipis (≤10)
-                        </h3>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th>Gudang</th>
-                                        <th>Sisa</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    if (is_array($lowStock) && !empty($lowStock)) {
-                                        foreach (array_slice($lowStock, 0, 5) as $item): 
-                                            // Handle both object and array access
-                                            $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
-                                            $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
-                                            $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
-                                    ?>
-                                    <tr>
-                                        <td><?= esc($itemName) ?></td>
-                                        <td><?= esc($gudangName) ?></td>
-                                        <td><span class="badge badge-warning"><?= number_format($sisa, 2) ?></span></td>
-                                    </tr>
-                                    <?php 
-                                        endforeach;
-                                    } else {
-                                        echo '<tr><td colspan="3" class="text-center">Tidak ada data</td></tr>';
-                                    }
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <?php if (count($lowStock) > 5): ?>
-                    <div class="card-footer text-center">
-                        <small>Dan <?= count($lowStock) - 5 ?> item lainnya...</small>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card card-danger">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-times-circle"></i> Stok Habis
-                        </h3>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th>Gudang</th>
-                                        <th>Sisa</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    if (is_array($outOfStock) && !empty($outOfStock)) {
-                                        foreach (array_slice($outOfStock, 0, 5) as $item): 
-                                            // Handle both object and array access
-                                            $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
-                                            $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
-                                            $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
-                                    ?>
-                                    <tr>
-                                        <td><?= esc($itemName) ?></td>
-                                        <td><?= esc($gudangName) ?></td>
-                                        <td><span class="badge badge-danger"><?= number_format($sisa, 2) ?></span></td>
-                                    </tr>
-                                    <?php 
-                                        endforeach;
-                                    } else {
-                                        echo '<tr><td colspan="3" class="text-center">Tidak ada data</td></tr>';
-                                    }
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <?php if (count($outOfStock) > 5): ?>
-                    <div class="card-footer text-center">
-                        <small>Dan <?= count($outOfStock) - 5 ?> item lainnya...</small>
-                    </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card card-info">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-chart-line"></i> Top Items by Stock
-                        </h3>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Item</th>
-                                        <th>Gudang</th>
-                                        <th>Sisa</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php 
-                                    if (is_array($stock) && !empty($stock)) {
-                                        $topItems = array_slice($stock, 0, 5);
-                                        foreach ($topItems as $item): 
-                                            // Handle both object and array access
-                                            $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
-                                            $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
-                                            $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
-                                    ?>
-                                    <tr>
-                                        <td><?= esc($itemName) ?></td>
-                                        <td><?= esc($gudangName) ?></td>
-                                        <td><span class="badge badge-success"><?= number_format($sisa, 2) ?></span></td>
-                                    </tr>
-                                    <?php 
-                                        endforeach;
-                                    } else {
-                                        echo '<tr><td colspan="3" class="text-center">Tidak ada data</td></tr>';
-                                    }
-                                    ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                <i class="fas fa-exclamation-triangle"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-
-        <!-- Main Stock Table -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Laporan Stok Detail</h3>
-                <div class="card-tools">
-                    <a href="<?= base_url('laporan/stock/export_excel') ?>?<?= http_build_query($_GET) ?>" 
-                       class="btn btn-success btn-sm">
-                        <i class="fas fa-file-excel"></i> Export Excel
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <!-- Filters -->
-                <form method="get" class="mb-3">
-                    <div class="row">
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="gudang_id">Gudang</label>
-                                <select class="form-control" id="gudang_id" name="gudang_id">
-                                    <option value="">Semua Gudang</option>
-                                    <?php foreach ($gudang as $g): ?>
-                                    <option value="<?= $g->id ?>" <?= $selectedGudang == $g->id ? 'selected' : '' ?>>
-                                        <?= esc($g->nama) ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="outlet_type">Tipe Lokasi</label>
-                                <select class="form-control" id="outlet_type" name="outlet_type">
-                                    <option value="">Semua</option>
-                                    <option value="warehouse" <?= $outletType == 'warehouse' ? 'selected' : '' ?>>Warehouse</option>
-                                    <option value="outlet" <?= $outletType == 'outlet' ? 'selected' : '' ?>>Outlet</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="keyword">Keyword</label>
-                                <input type="text" class="form-control" id="keyword" name="keyword" 
-                                       value="<?= esc($keyword) ?>" placeholder="Cari item...">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="stock_status">Status Stok</label>
-                                <select class="form-control" id="stock_status" name="stock_status">
-                                    <option value="">Semua</option>
-                                    <option value="positive" <?= $stockStatus == 'positive' ? 'selected' : '' ?>>Ada Stok</option>
-                                    <option value="negative" <?= $stockStatus == 'negative' ? 'selected' : '' ?>>Stok Negatif</option>
-                                    <option value="zero" <?= $stockStatus == 'zero' ? 'selected' : '' ?>>Stok Kosong</option>
-                                    <option value="low" <?= $stockStatus == 'low' ? 'selected' : '' ?>>Stok Menipis</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="sort_by">Urutkan</label>
-                                <select class="form-control" id="sort_by" name="sort_by">
-                                    <option value="item" <?= $sortBy == 'item' ? 'selected' : '' ?>>Nama Item</option>
-                                    <option value="kode" <?= $sortBy == 'kode' ? 'selected' : '' ?>>Kode</option>
-                                    <option value="gudang" <?= $sortBy == 'gudang' ? 'selected' : '' ?>>Gudang</option>
-                                    <option value="sisa" <?= $sortBy == 'sisa' ? 'selected' : '' ?>>Sisa Stok</option>
-                                    <option value="so" <?= $sortBy == 'so' ? 'selected' : '' ?>>SO</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="sort_order">Urutan</label>
-                                <select class="form-control" id="sort_order" name="sort_order">
-                                    <option value="ASC" <?= $sortOrder == 'ASC' ? 'selected' : '' ?>>A-Z</option>
-                                    <option value="DESC" <?= $sortOrder == 'DESC' ? 'selected' : '' ?>>Z-A</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-search"></i> Filter
-                            </button>
-                            <a href="<?= base_url('laporan/stock') ?>" class="btn btn-secondary">
-                                <i class="fas fa-refresh"></i> Reset
-                            </a>
-                        </div>
-                    </div>
-                </form>
 
                 <!-- Stock Table -->
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
-                                <th width="50">No</th>
+                                <th width="5%">No</th>
                                 <th>Kode Item</th>
                                 <th>Nama Item</th>
                                 <th>Gudang</th>
                                 <th>SO</th>
-                                <th>Stok Masuk</th>
-                                <th>Stok Keluar</th>
-                                <th>Sisa</th>
+                                <th class="text-right">Stok Masuk</th>
+                                <th class="text-right">Stok Keluar</th>
+                                <th class="text-right">Sisa</th>
                                 <th>Status</th>
-                                <th width="100">Aksi</th>
+                                <th width="10%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($stock)): ?>
                                 <tr>
-                                <td colspan="10" class="text-center">Tidak ada data stok</td>
+                                    <td colspan="10" class="text-center">Tidak ada data stok</td>
                                 </tr>
                             <?php else: ?>
-                            <?php 
-                            if (is_array($stock) || is_object($stock)) {
-                                $rowNumber = 1; // Initialize row counter
-                                foreach ($stock as $index => $item): 
-                                    // Handle both object and array access
-                                    $kode = is_object($item) ? ($item->kode ?? 'Unknown') : ($item['kode'] ?? 'Unknown');
-                                    $itemName = is_object($item) ? ($item->item ?? 'Unknown') : ($item['item'] ?? 'Unknown');
-                                    $gudangName = is_object($item) ? ($item->gudang ?? 'Unknown') : ($item['gudang'] ?? 'Unknown');
-                                    $so = is_object($item) ? ($item->so ?? null) : ($item['so'] ?? null);
-                                    $stokMasuk = is_object($item) ? (float)($item->stok_masuk ?? 0) : (float)($item['stok_masuk'] ?? 0);
-                                    $stokKeluar = is_object($item) ? (float)($item->stok_keluar ?? 0) : (float)($item['stok_keluar'] ?? 0);
-                                    $sisa = is_object($item) ? (float)($item->sisa ?? 0) : (float)($item['sisa'] ?? 0);
-                                    $idItem = is_object($item) ? (int)($item->id_item ?? 0) : (int)($item['id_item'] ?? 0);
-                                    $idGudang = is_object($item) ? (int)($item->id_gudang ?? 0) : (int)($item['id_gudang'] ?? 0);
-                            ?>
+                                <?php 
+                                $rowNumber = 1;
+                                foreach ($stock as $item): 
+                                    $kode = $item->kode ?? 'Unknown';
+                                    $itemName = $item->item ?? 'Unknown';
+                                    $gudangName = $item->gudang ?? 'Unknown';
+                                    $so = $item->so ?? null;
+                                    $stokMasuk = (float)($item->stok_masuk ?? 0);
+                                    $stokKeluar = (float)($item->stok_keluar ?? 0);
+                                    $sisa = (float)($item->sisa ?? 0);
+                                    $idItem = (int)($item->id_item ?? 0);
+                                    $idGudang = (int)($item->id_gudang ?? 0);
+                                ?>
                                     <tr>
-                                        <td><?= $rowNumber ?></td>
-                                <td><strong><?= esc($kode) ?></strong></td>
-                                <td><?= esc($itemName) ?></td>
-                                <td><?= esc($gudangName) ?></td>
-                                <td>
-                                    <?php if ($so !== null): ?>
-                                        <span class="badge badge-info"><?= number_format($so, 2) ?></span>
-                                             <?php else: ?>
-                                        <span class="badge badge-secondary">-</span>
-                                             <?php endif; ?>
-                                         </td>
-                                <td><?= number_format($stokMasuk, 2) ?></td>
-                                <td><?= number_format($stokKeluar, 2) ?></td>
-                                <td>
-                                    <?php 
-                                    if ($sisa > 0) {
-                                        echo '<span class="badge badge-success">' . number_format($sisa, 2) . '</span>';
-                                    } elseif ($sisa == 0) {
-                                        echo '<span class="badge badge-warning">' . number_format($sisa, 2) . '</span>';
-                                    } else {
-                                        echo '<span class="badge badge-danger">' . number_format($sisa, 2) . '</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <?php 
-                                    if ($sisa > 0) {
-                                        echo '<span class="badge badge-success">Ada Stok</span>';
-                                    } elseif ($sisa == 0) {
-                                        echo '<span class="badge badge-warning">Stok Kosong</span>';
-                                    } else {
-                                        echo '<span class="badge badge-danger">Stok Negatif</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td>
-                                    <a href="<?= base_url('laporan/stock/detail/' . $idItem) ?>?gudang_id=<?= $idGudang ?>" 
-                                       class="btn btn-sm btn-info" title="Detail">
+                                        <td><?= $rowNumber++ ?></td>
+                                        <td><strong><?= esc($kode) ?></strong></td>
+                                        <td><?= esc($itemName) ?></td>
+                                        <td><?= esc($gudangName) ?></td>
+                                        <td>
+                                            <?php if ($so !== null): ?>
+                                                <span class="badge badge-info"><?= format_angka($so) ?></span>
+                                            <?php else: ?>
+                                                <span class="badge badge-secondary">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-right"><?= format_angka($stokMasuk) ?></td>
+                                        <td class="text-right"><?= format_angka($stokKeluar) ?></td>
+                                        <td class="text-right">
+                                            <?php 
+                                            if ($sisa > 0) {
+                                                echo '<span class="badge badge-success">' . format_angka($sisa) . '</span>';
+                                            } elseif ($sisa == 0) {
+                                                echo '<span class="badge badge-warning">' . format_angka($sisa) . '</span>';
+                                            } else {
+                                                echo '<span class="badge badge-danger">' . format_angka($sisa) . '</span>';
+                                            }
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <?php 
+                                            if ($sisa > 0) {
+                                                echo '<span class="badge badge-success">Ada Stok</span>';
+                                            } elseif ($sisa == 0) {
+                                                echo '<span class="badge badge-warning">Stok Kosong</span>';
+                                            } else {
+                                                echo '<span class="badge badge-danger">Stok Negatif</span>';
+                                            }
+                                            ?>
+                                        </td>
+                                        <td>
+                                            <a href="<?= base_url('laporan/stock/detail/' . $idItem) ?>?gudang_id=<?= $idGudang ?>" 
+                                               class="btn btn-info btn-sm rounded-0">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         </td>
                                     </tr>
-                                <?php 
-                                    $rowNumber++; // Increment row counter
-                                endforeach;
-                            }
-                            ?>
+                                <?php endforeach; ?>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Pagination -->
-                <?php if (isset($stock['pager'])): ?>
-                <div class="d-flex justify-content-center mt-3">
-                    <?= $stock['pager']->links() ?>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
+<?= $this->endSection() ?>
 
 <?= $this->section('js') ?>
+<script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.js') ?>"></script>
 <script>
 $(document).ready(function() {
-    // Auto-submit form when filters change
-    $('#gudang_id, #outlet_type, #stock_status, #sort_by, #sort_order').on('change', function() {
-        $('form').submit();
+    // Initialize daterangepicker
+    var startDate = '<?= $startDate ?>' ? moment('<?= $startDate ?>', 'YYYY-MM-DD') : moment().startOf('month');
+    var endDate = '<?= $endDate ?>' ? moment('<?= $endDate ?>', 'YYYY-MM-DD') : moment().endOf('month');
+    
+    $('#date_range').daterangepicker({
+        startDate: startDate,
+        endDate: endDate,
+        locale: {
+            format: 'DD/MM/YYYY',
+            separator: ' - ',
+            applyLabel: 'Terapkan',
+            cancelLabel: 'Batal',
+            fromLabel: 'Dari',
+            toLabel: 'Sampai',
+            customRangeLabel: 'Kustom',
+            weekLabel: 'M',
+            daysOfWeek: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+            monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+            firstDay: 1
+        },
+        opens: 'left',
+        autoUpdateInput: true
+    }, function(start, end, label) {
+        // Update hidden inputs when date range changes
+        $('#start_date').val(start.format('YYYY-MM-DD'));
+        $('#end_date').val(end.format('YYYY-MM-DD'));
     });
-
-    // Initialize tooltips
-    $('[data-toggle="tooltip"]').tooltip();
-
-    // Stock status color coding
-    $('.badge').each(function() {
-        var text = $(this).text();
-        if (text.includes('-')) {
-            $(this).removeClass().addClass('badge badge-danger');
+    
+    // Update hidden inputs on initial load
+    $('#start_date').val(startDate.format('YYYY-MM-DD'));
+    $('#end_date').val(endDate.format('YYYY-MM-DD'));
+    
+    // Update export links when date range changes
+    function updateExportLinks() {
+        var startDate = $('#start_date').val();
+        var endDate = $('#end_date').val();
+        var gudangId = $('select[name="gudang_id"]').val() || '';
+        var sortBy = $('select[name="sort_by"]').val() || 'sisa';
+        var sortOrder = $('select[name="sort_order"]').val() || 'DESC';
+        
+        var params = 'start_date=' + startDate + '&end_date=' + endDate + 
+                     '&gudang_id=' + gudangId + '&sort_by=' + sortBy + '&sort_order=' + sortOrder;
+        
+        $('#exportExcelBtn').attr('href', '<?= base_url('laporan/stock/export_excel') ?>?' + params);
+        $('#exportPdfBtn').attr('href', '<?= base_url('laporan/stock/export_pdf') ?>?' + params);
+    }
+    
+    // Update export links when form fields change
+    $('#date_range').on('apply.daterangepicker', function(ev, picker) {
+        updateExportLinks();
+    });
+    
+    $('select[name="gudang_id"], select[name="sort_by"], select[name="sort_order"]').on('change', function() {
+        updateExportLinks();
+    });
+    
+    // Initialize export links on page load
+    updateExportLinks();
+    
+    // Handle form submission
+    $('#filterForm').on('submit', function(e) {
+        // Ensure hidden inputs are populated
+        var range = $('#date_range').val();
+        if (range) {
+            var dates = range.split(' - ');
+            if (dates.length === 2) {
+                $('#start_date').val(moment(dates[0], 'DD/MM/YYYY').format('YYYY-MM-DD'));
+                $('#end_date').val(moment(dates[1], 'DD/MM/YYYY').format('YYYY-MM-DD'));
+            }
         }
     });
 });
 </script>
-<?= $this->endSection() ?>
-
 <?= $this->endSection() ?>

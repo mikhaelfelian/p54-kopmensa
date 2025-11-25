@@ -30,73 +30,64 @@ class StockReport extends BaseController
      */
     public function index()
     {
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
         $gudangId = $this->request->getGet('gudang_id');
-        $keyword = $this->request->getGet('keyword');
-        $stockStatus = $this->request->getGet('stock_status');
-        $outletType = $this->request->getGet('outlet_type'); // 'warehouse', 'outlet', or null
-        $sortBy = $this->request->getGet('sort_by') ?: 'item';
-        $sortOrder = $this->request->getGet('sort_order') ?: 'ASC';
+        $sortBy = $this->request->getGet('sort_by') ?: 'sisa';
+        $sortOrder = $this->request->getGet('sort_order') ?: 'DESC';
 
-        // Build search criteria
+        // Build search criteria (simplified - only outlet filter)
         $criteria = [
             'gudang_id' => $gudangId,
-            'keyword' => $keyword,
-            'stock_status' => $stockStatus,
-            'outlet_type' => $outletType,
             'sort_by' => $sortBy,
             'sort_order' => $sortOrder
         ];
 
-        // Get stock data
-        $stockResult = $this->vItemStokModel->searchItems($criteria, 20);
+        // Get stock data (no pagination limit for full report)
+        $stockResult = $this->vItemStokModel->searchItems($criteria, 10000);
         $stock = $stockResult['data'] ?? [];
         
-        // Debug: Log the stock data
-        log_message('debug', 'Stock data count: ' . count($stock));
-        if (!empty($stock)) {
-            log_message('debug', 'First stock item: ' . json_encode($stock[0]));
-        }
-        
-        // Get summary data
-        $summary = $this->vItemStokModel->getStockMovementSummary($gudangId);
-        $warehouseSummary = $this->vItemStokModel->getStockSummaryByWarehouse($gudangId, $outletType);
-        $stockAging = $this->vItemStokModel->getStockAgingAnalysis($gudangId);
-        $outletTypeSummary = $this->vItemStokModel->getStockSummaryByOutletType($gudangId);
-        
-        // Get low stock alerts based on outlet type
-        if ($outletType === 'outlet') {
-            $lowStock = $this->vItemStokModel->getLowStockItemsInOutlets($gudangId, 10);
-            $outOfStock = $this->vItemStokModel->getOutOfStockItems($gudangId);
-            $negativeStock = $this->vItemStokModel->getNegativeStockItems($gudangId);
-        } elseif ($outletType === 'warehouse') {
-            $lowStock = $this->vItemStokModel->getLowStockItemsInWarehouses($gudangId, 10);
-            $outOfStock = $this->vItemStokModel->getOutOfStockItems($gudangId);
-            $negativeStock = $this->vItemStokModel->getNegativeStockItems($gudangId);
-        } else {
-            $lowStock = $this->vItemStokModel->getLowStockItems($gudangId, 10);
-            $outOfStock = $this->vItemStokModel->getOutOfStockItems($gudangId);
-            $negativeStock = $this->vItemStokModel->getNegativeStockItems($gudangId);
+        // Filter by date range (items that had transactions in this period)
+        if ($startDate && $endDate && !empty($stock)) {
+            $db = \Config\Database::connect();
+            $itemIdsWithTransactions = $db->table('tbl_trans_jual_det tjd')
+                ->select('DISTINCT tjd.id_item')
+                ->join('tbl_trans_jual tj', 'tj.id = tjd.id_penjualan')
+                ->where('DATE(tj.tgl_masuk) >=', $startDate)
+                ->where('DATE(tj.tgl_masuk) <=', $endDate)
+                ->get()
+                ->getResultArray();
+            
+            $itemIds = array_column($itemIdsWithTransactions, 'id_item');
+            if (!empty($itemIds)) {
+                $stock = array_filter($stock, function($item) use ($itemIds) {
+                    return isset($item->id_item) && in_array($item->id_item, $itemIds);
+                });
+                $stock = array_values($stock);
+            } else {
+                $stock = []; // No items with transactions in this period
+            }
         }
 
+        // Get outlet list (only with status_otl='1')
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
+
         $data = [
-            'title' => 'Laporan Stok',
+            'title' => 'Laporan Stok Item',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
             'stock' => $stock,
-            'summary' => $summary,
-            'warehouseSummary' => $warehouseSummary,
-            'stockAging' => $stockAging,
-            'outletTypeSummary' => $outletTypeSummary,
-            'lowStock' => $lowStock,
-            'outOfStock' => $outOfStock,
-            'negativeStock' => $negativeStock,
-            'gudang' => $this->gudangModel->findAll(),
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'gudangList' => $gudangList,
             'selectedGudang' => $gudangId,
-            'keyword' => $keyword,
-            'stockStatus' => $stockStatus,
-            'outletType' => $outletType,
             'sortBy' => $sortBy,
-            'sortOrder' => $sortOrder
+            'sortOrder' => $sortOrder,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Laporan</li>
+                <li class="breadcrumb-item active">Stok Item</li>
+            '
         ];
 
         return $this->view($this->theme->getThemePath() . '/laporan/stock/index', $data);
@@ -171,15 +162,17 @@ class StockReport extends BaseController
      */
     public function export_excel()
     {
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
         $gudangId = $this->request->getGet('gudang_id');
-        $keyword = $this->request->getGet('keyword');
-        $stockStatus = $this->request->getGet('stock_status');
+        $sortBy = $this->request->getGet('sort_by') ?: 'sisa';
+        $sortOrder = $this->request->getGet('sort_order') ?: 'DESC';
 
         // Build search criteria
         $criteria = [
             'gudang_id' => $gudangId,
-            'keyword' => $keyword,
-            'stock_status' => $stockStatus
+            'sort_by' => $sortBy,
+            'sort_order' => $sortOrder
         ];
 
         // Get all data for export (no pagination)
@@ -404,5 +397,127 @@ class StockReport extends BaseController
             'success' => true,
             'data' => $topItems
         ]);
+    }
+
+    public function export_pdf()
+    {
+        require_once(APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php');
+        
+        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
+        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
+        $gudangId = $this->request->getGet('gudang_id');
+        $sortBy = $this->request->getGet('sort_by') ?: 'sisa';
+        $sortOrder = $this->request->getGet('sort_order') ?: 'DESC';
+
+        $criteria = [
+            'gudang_id' => $gudangId,
+            'sort_by' => $sortBy,
+            'sort_order' => $sortOrder
+        ];
+
+        $stockResult = $this->vItemStokModel->searchItems($criteria, 10000);
+        $stock = $stockResult['data'] ?? [];
+
+        // Filter by date range
+        if ($startDate && $endDate && !empty($stock)) {
+            $db = \Config\Database::connect();
+            $itemIdsWithTransactions = $db->table('tbl_trans_jual_det tjd')
+                ->select('DISTINCT tjd.id_item')
+                ->join('tbl_trans_jual tj', 'tj.id = tjd.id_penjualan')
+                ->where('DATE(tj.tgl_masuk) >=', $startDate)
+                ->where('DATE(tj.tgl_masuk) <=', $endDate)
+                ->get()
+                ->getResultArray();
+            
+            $itemIds = array_column($itemIdsWithTransactions, 'id_item');
+            if (!empty($itemIds)) {
+                $stock = array_filter($stock, function($item) use ($itemIds) {
+                    return isset($item->id_item) && in_array($item->id_item, $itemIds);
+                });
+                $stock = array_values($stock);
+            } else {
+                $stock = [];
+            }
+        }
+
+        $gudangList = $this->gudangModel->where('status', '1')->where('status_otl', '1')->findAll();
+        $gudangName = 'Semua Outlet';
+        if ($gudangId) {
+            foreach ($gudangList as $g) {
+                if ($g->id == $gudangId) {
+                    $gudangName = $g->nama;
+                    break;
+                }
+            }
+        }
+
+        // Create PDF
+        $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator($this->pengaturan->judul_app ?? 'POS System');
+        $pdf->SetAuthor($this->pengaturan->judul ?? 'Company');
+        $pdf->SetTitle('Laporan Stok Item');
+        $pdf->SetMargins(10, 15, 10);
+        $pdf->SetHeaderMargin(0);
+        $pdf->SetFooterMargin(0);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->AddPage();
+
+        // Header
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 8, strtoupper($this->pengaturan->judul ?? 'COMPANY NAME'), 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Cell(0, 5, $this->pengaturan->alamat ?? '', 0, 1, 'C');
+        if (!empty($this->pengaturan->no_telp)) {
+            $pdf->Cell(0, 5, 'Telp: ' . $this->pengaturan->no_telp, 0, 1, 'C');
+        }
+        $pdf->Ln(3);
+        $pdf->Line(10, $pdf->GetY(), 287, $pdf->GetY());
+        $pdf->Ln(5);
+
+        // Report Title
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 8, 'LAPORAN STOK ITEM', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->Cell(0, 5, 'Periode: ' . date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)), 0, 1, 'C');
+        $pdf->Ln(2);
+
+        // Filter Info
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 4, 'Outlet: ' . $gudangName . ' | Sort: ' . ucfirst($sortBy) . ' (' . $sortOrder . ')', 0, 1, 'L');
+        $pdf->Ln(2);
+
+        // Table Header
+        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->Cell(10, 6, 'No', 1, 0, 'C');
+        $pdf->Cell(30, 6, 'Kode', 1, 0, 'C');
+        $pdf->Cell(80, 6, 'Nama Item', 1, 0, 'C');
+        $pdf->Cell(40, 6, 'Gudang', 1, 0, 'C');
+        $pdf->Cell(30, 6, 'Stok', 1, 0, 'R');
+        $pdf->Cell(30, 6, 'Satuan', 1, 0, 'C');
+        $pdf->Cell(67, 6, 'Keterangan', 1, 1, 'L');
+
+        // Table Data
+        $pdf->SetFont('helvetica', '', 7);
+        $no = 1;
+        foreach ($stock as $item) {
+            $pdf->Cell(10, 5, $no++, 1, 0, 'C');
+            $pdf->Cell(30, 5, substr($item->kode ?? '-', 0, 20), 1, 0, 'L');
+            $pdf->Cell(80, 5, substr($item->item ?? '-', 0, 40), 1, 0, 'L');
+            $pdf->Cell(40, 5, substr($item->gudang ?? '-', 0, 25), 1, 0, 'L');
+            $pdf->Cell(30, 5, format_angka($item->sisa ?? 0), 1, 0, 'R');
+            $pdf->Cell(30, 5, substr($item->satuan ?? '-', 0, 15), 1, 0, 'C');
+            $pdf->Cell(67, 5, substr($item->keterangan ?? '-', 0, 40), 1, 1, 'L');
+        }
+
+        // Summary
+        $pdf->Ln(5);
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->Cell(0, 5, 'Total Item: ' . count($stock), 0, 1, 'L');
+
+        // Output
+        $filename = 'Laporan_Stok_Item_' . date('Y-m-d') . '.pdf';
+        $pdf->Output($filename, 'D');
+        exit;
     }
 }

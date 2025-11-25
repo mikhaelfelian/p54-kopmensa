@@ -19,9 +19,13 @@
                     <i class="fas fa-chart-bar mr-1"></i> Laporan Pembelian
                 </h3>
                 <div class="card-tools">
-                    <a href="<?= base_url('laporan/purchase/export_excel') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_supplier=<?= $idSupplier ?>&status_nota=<?= $statusNota ?>" 
+                    <a href="<?= base_url('laporan/purchase/export_excel') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_supplier=<?= $idSupplier ?>" 
                        class="btn btn-success btn-sm rounded-0">
                         <i class="fas fa-file-excel mr-1"></i> Export Excel
+                    </a>
+                    <a href="<?= base_url('laporan/purchase/export_pdf') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_supplier=<?= $idSupplier ?>" 
+                       class="btn btn-danger btn-sm rounded-0">
+                        <i class="fas fa-file-pdf mr-1"></i> Export PDF
                     </a>
                 </div>
             </div>
@@ -37,27 +41,18 @@
                             <label>Tanggal Akhir</label>
                             <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $endDate ?>">
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label>Supplier</label>
                             <select name="id_supplier" class="form-control form-control-sm">
                                 <option value="">Semua Supplier</option>
                                 <?php foreach ($supplierList as $supplier): ?>
-                                    <option value="<?= $supplier->id ?>" <?= $idSupplier == $supplier->id ? 'selected' : '' ?>>
+                                    <option value="<?= $supplier->id ?>" <?= ($idSupplier ?? '') == $supplier->id ? 'selected' : '' ?>>
                                         <?= $supplier->nama ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label>Status</label>
-                            <select name="status_nota" class="form-control form-control-sm">
-                                <option value="">Semua Status</option>
-                                <option value="0" <?= $statusNota === '0' ? 'selected' : '' ?>>Draft</option>
-                                <option value="1" <?= $statusNota === '1' ? 'selected' : '' ?>>Proses</option>
-                                <option value="2" <?= $statusNota === '2' ? 'selected' : '' ?>>Selesai</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
                             <label>&nbsp;</label>
                             <button type="submit" class="btn btn-primary btn-sm btn-block">
                                 <i class="fas fa-search mr-1"></i> Filter
@@ -71,7 +66,7 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-info">
                             <div class="inner">
-                                <h3><?= number_format($totalTransactions, 0, ',', '.') ?></h3>
+                                <h3><?= format_angka($totalTransactions) ?></h3>
                                 <p>Total Transaksi</p>
                             </div>
                             <div class="icon">
@@ -82,7 +77,7 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-success">
                             <div class="inner">
-                                <h3><?= number_format($totalPurchase, 0, ',', '.') ?></h3>
+                                <h3><?= format_angka($totalPurchase) ?></h3>
                                 <p>Total Pembelian</p>
                             </div>
                             <div class="icon">
@@ -93,7 +88,7 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-warning">
                             <div class="inner">
-                                <h3><?= number_format($totalPaid, 0, ',', '.') ?></h3>
+                                <h3><?= format_angka($totalPaid) ?></h3>
                                 <p>Total Lunas</p>
                             </div>
                             <div class="icon">
@@ -104,7 +99,7 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-danger">
                             <div class="inner">
-                                <h3><?= number_format($totalUnpaid, 0, ',', '.') ?></h3>
+                                <h3><?= format_angka($totalUnpaid) ?></h3>
                                 <p>Total Belum Lunas</p>
                             </div>
                             <div class="icon">
@@ -157,7 +152,7 @@
                                                 <span class="badge badge-secondary">-</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td class="text-right"><?= number_format($purchase->jml_gtotal ?? 0, 0, ',', '.') ?></td>
+                                        <td class="text-right"><?= format_angka($purchase->jml_gtotal ?? 0) ?></td>
                                         <td>
                                             <a href="<?= base_url('laporan/purchase/detail/' . $purchase->id) ?>" 
                                                class="btn btn-info btn-sm rounded-0" title="Detail">
@@ -176,7 +171,7 @@
                             <tfoot>
                                 <tr class="bg-light">
                                     <th colspan="5" class="text-right">TOTAL</th>
-                                    <th class="text-right"><?= number_format($totalPurchase, 0, ',', '.') ?></th>
+                                    <th class="text-right"><?= format_angka($totalPurchase) ?></th>
                                     <th></th>
                                 </tr>
                             </tfoot>

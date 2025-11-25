@@ -19,9 +19,13 @@
                     <i class="fas fa-chart-bar mr-1"></i> Laporan Penjualan
                 </h3>
                 <div class="card-tools">
-                    <a href="<?= base_url('laporan/sale/export_excel') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&id_sales=<?= $idSales ?>" 
+                    <a href="<?= base_url('laporan/sale/export_excel') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&id_platform=<?= $idPlatform ?? '' ?>" 
                        class="btn btn-success btn-sm rounded-0">
                         <i class="fas fa-file-excel mr-1"></i> Export Excel
+                    </a>
+                    <a href="<?= base_url('laporan/sale/export_pdf') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_gudang=<?= $idGudang ?>&id_pelanggan=<?= $idPelanggan ?>&id_platform=<?= $idPlatform ?? '' ?>" 
+                       class="btn btn-danger btn-sm rounded-0">
+                        <i class="fas fa-file-pdf mr-1"></i> Export PDF
                     </a>
                 </div>
             </div>
@@ -65,12 +69,12 @@
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label>Sales</label>
-                            <select name="id_sales" class="form-control form-control-sm">
-                                <option value="">Semua Sales</option>
-                                <?php foreach ($salesList as $salesItem): ?>
-                                    <option value="<?= $salesItem->id ?>" <?= $idSales == $salesItem->id ? 'selected' : '' ?>>
-                                        <?= $salesItem->nama ?>
+                            <label>Platform</label>
+                            <select name="id_platform" class="form-control form-control-sm">
+                                <option value="">Semua Platform</option>
+                                <?php foreach ($platformList as $platform): ?>
+                                    <option value="<?= $platform->id ?>" <?= ($idPlatform ?? '') == $platform->id ? 'selected' : '' ?>>
+                                        <?= esc($platform->platform) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
