@@ -373,7 +373,7 @@ class SaleReport extends BaseController
         $idPelanggan = $this->request->getGet('id_pelanggan');
         $idPlatform = $this->request->getGet('id_platform');
 
-        // Build query
+        // Build query (same as index method)
         $builder = $this->transJualModel->select('
                 tbl_trans_jual.*,
                 tbl_m_pelanggan.nama as pelanggan_nama,
@@ -391,7 +391,7 @@ class SaleReport extends BaseController
             ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
             ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
             ->where('tbl_trans_jual.status_nota', '1')
-            ->where('tbl_trans_jual.status', '1'); // Synchronize with cashier data
+            ->where('tbl_trans_jual.status', '1');
 
         // Apply filters
         if ($startDate && $endDate) {
@@ -415,26 +415,114 @@ class SaleReport extends BaseController
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
 
-        // Get payment methods for each transaction
+        // Get platforms with status='1' for dynamic columns
+        $platforms = $this->platformModel->where('status', '1')->findAll();
+        
+        // Get vouchers for dynamic columns
+        $vouchers = $this->voucherModel->findAll();
+        
+        // Get payment methods for each transaction (same as index method)
         $transactionIds = array_column($sales, 'id');
         $paymentMethods = [];
+        $paymentBreakdown = []; // Platform ID => Transaction ID => Amount
+        $voucherUsage = []; // Voucher ID => Transaction ID => Amount
+        
         if (!empty($transactionIds)) {
             $db = \Config\Database::connect();
+            
+            // Get payment breakdown by platform
             $paymentData = $db->table('tbl_trans_jual_plat')
-                ->select('id_penjualan, GROUP_CONCAT(CONCAT(platform, " (", FORMAT(nominal, 0), ")") SEPARATOR ", ") as metode_pembayaran')
+                ->select('id_penjualan, id_platform, platform, SUM(nominal) as total_nominal')
                 ->whereIn('id_penjualan', $transactionIds)
-                ->groupBy('id_penjualan')
+                ->groupBy('id_penjualan', 'id_platform', 'platform')
                 ->get()
                 ->getResult();
             
+            // Build payment methods string and breakdown
             foreach ($paymentData as $pm) {
-                $paymentMethods[$pm->id_penjualan] = $pm->metode_pembayaran;
+                $platformId = $pm->id_platform;
+                $existingSummary = $paymentMethods[$pm->id_penjualan] ?? '';
+
+                $paymentMethods[$pm->id_penjualan] = $existingSummary . 
+                    ($existingSummary ? ', ' : '') . 
+                    $pm->platform . ' (' . format_angka($pm->total_nominal) . ')';
+                
+                if ($platformId === null) {
+                    continue;
+                }
+
+                // Store breakdown by platform ID
+                if (!isset($paymentBreakdown[$platformId])) {
+                    $paymentBreakdown[$platformId] = [];
+                }
+                $paymentBreakdown[$platformId][$pm->id_penjualan] = (float)$pm->total_nominal;
+            }
+            
+            // Get voucher usage per transaction
+            $voucherData = $db->table('tbl_trans_jual')
+                ->select('id, voucher_code, voucher_discount_amount, voucher_id')
+                ->whereIn('id', $transactionIds)
+                ->groupStart()
+                    ->where('voucher_code IS NOT NULL')
+                    ->where('voucher_code !=', '')
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('voucher_id IS NOT NULL')
+                ->groupEnd()
+                ->get()
+                ->getResult();
+            
+            // Create a map of voucher_code to voucher_id for lookup
+            $voucherCodeMap = [];
+            if (!empty($vouchers)) {
+                foreach ($vouchers as $voucher) {
+                    $voucherCodeMap[$voucher->kode] = $voucher->id;
+                }
+            }
+            
+            foreach ($voucherData as $v) {
+                $voucherId = null;
+                if ($v->voucher_id) {
+                    $voucherId = $v->voucher_id;
+                } elseif ($v->voucher_code && isset($voucherCodeMap[$v->voucher_code])) {
+                    $voucherId = $voucherCodeMap[$v->voucher_code];
+                }
+                
+                if ($voucherId) {
+                    if (!isset($voucherUsage[$voucherId])) {
+                        $voucherUsage[$voucherId] = [];
+                    }
+                    $voucherUsage[$voucherId][$v->id] = (float)($v->voucher_discount_amount ?? 0);
+                }
             }
         }
 
-        // Attach payment methods and set member info
+        // Attach platform breakdown and voucher usage to each sale
+        $totalSales = 0;
         foreach ($sales as $sale) {
-            $sale->metode_pembayaran = $paymentMethods[$sale->id] ?? '-';
+            $totalSales += $sale->jml_gtotal ?? 0;
+            
+            // Attach platform breakdown
+            $sale->platform_amounts = [];
+            foreach ($platforms as $platform) {
+                $platformId = $platform->id;
+                if (isset($paymentBreakdown[$platformId]) && isset($paymentBreakdown[$platformId][$sale->id])) {
+                    $sale->platform_amounts[$platformId] = $paymentBreakdown[$platformId][$sale->id];
+                } else {
+                    $sale->platform_amounts[$platformId] = 0;
+                }
+            }
+            
+            // Attach voucher usage
+            $sale->voucher_amounts = [];
+            foreach ($vouchers as $voucher) {
+                $voucherId = $voucher->id;
+                if (isset($voucherUsage[$voucherId]) && isset($voucherUsage[$voucherId][$sale->id])) {
+                    $sale->voucher_amounts[$voucherId] = $voucherUsage[$voucherId][$sale->id];
+                } else {
+                    $sale->voucher_amounts[$voucherId] = 0;
+                }
+            }
             
             // Set member name (use "Umum" for general customers)
             if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
@@ -451,68 +539,102 @@ class SaleReport extends BaseController
         $sheet->setCellValue('A1', 'LAPORAN PENJUALAN');
         $sheet->setCellValue('A2', 'Periode: ' . date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)));
         
-        $sheet->setCellValue('A4', 'No');
-        $sheet->setCellValue('B4', 'Tanggal');
-        $sheet->setCellValue('C4', 'No. Nota');
-        $sheet->setCellValue('D4', 'Nama Anggota');
-        $sheet->setCellValue('E4', 'No. Anggota');
-        $sheet->setCellValue('F4', 'Metode Pembayaran');
-        $sheet->setCellValue('G4', 'Gudang');
-        $sheet->setCellValue('H4', 'Sales');
-        $sheet->setCellValue('I4', 'Shift');
-        $sheet->setCellValue('J4', 'Username');
-        $sheet->setCellValue('K4', 'Total');
+        // Column headers: No, Tanggal, Pelanggan, [Platforms], [Vouchers], Subtotal
+        $col = 'A';
+        $sheet->setCellValue($col++ . '4', 'No');
+        $sheet->setCellValue($col++ . '4', 'Tanggal');
+        $sheet->setCellValue($col++ . '4', 'Pelanggan');
+        
+        // Dynamic platform columns
+        $platformCols = [];
+        foreach ($platforms as $platform) {
+            $platformCols[$platform->id] = $col;
+            $sheet->setCellValue($col++ . '4', $platform->platform);
+        }
+        
+        // Dynamic voucher columns
+        $voucherCols = [];
+        foreach ($vouchers as $voucher) {
+            $voucherCols[$voucher->id] = $col;
+            $sheet->setCellValue($col++ . '4', $voucher->kode ?? 'Voucher ' . $voucher->id);
+        }
+        
+        // Subtotal column
+        $subtotalCol = $col;
+        $sheet->setCellValue($col . '4', 'Subtotal');
 
+        // Data rows
         $row = 5;
-        $total = 0;
-
         foreach ($sales as $index => $sale) {
-            // Create full name from first_name and last_name
-            $fullName = trim(($sale->user_first_name ?? '') . ' ' . ($sale->user_last_name ?? ''));
-            $userDisplayName = $fullName ?: $sale->username ?? '-';
+            $col = 'A';
             
-            // For sales, show username if sales_nama is not available
-            $salesDisplayName = $sale->sales_nama ?? '-';
-            if (empty($salesDisplayName) || $salesDisplayName === '-') {
-                $salesDisplayName = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
+            $sheet->setCellValue($col++ . $row, $index + 1);
+            $sheet->setCellValue($col++ . $row, date('d/m/Y H:i', strtotime($sale->tgl_masuk)));
+            
+            // Pelanggan (with code if available)
+            $pelangganText = $sale->pelanggan_nama ?? 'Umum';
+            if (!empty($sale->pelanggan_kode)) {
+                $pelangganText .= ' (' . $sale->pelanggan_kode . ')';
+            }
+            $sheet->setCellValue($col++ . $row, $pelangganText);
+            
+            // Platform columns
+            foreach ($platforms as $platform) {
+                $amount = $sale->platform_amounts[$platform->id] ?? 0;
+                $sheet->setCellValue($platformCols[$platform->id] . $row, (float)$amount);
+                $sheet->getStyle($platformCols[$platform->id] . $row)->getNumberFormat()->setFormatCode('#,##0');
             }
             
-            // Set member name and ID (use "Umum" for general customers)
-            $memberName = $sale->pelanggan_nama ?? 'Umum';
-            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
-                $memberName = 'Umum';
-            }
-            $memberId = $sale->pelanggan_kode ?? '';
-            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
-                $memberId = '';
+            // Voucher columns
+            foreach ($vouchers as $voucher) {
+                $amount = $sale->voucher_amounts[$voucher->id] ?? 0;
+                $sheet->setCellValue($voucherCols[$voucher->id] . $row, (float)$amount);
+                $sheet->getStyle($voucherCols[$voucher->id] . $row)->getNumberFormat()->setFormatCode('#,##0');
             }
             
-            $sheet->setCellValue('A' . $row, $index + 1);
-            $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($sale->tgl_masuk)));
-            $sheet->setCellValue('C' . $row, $sale->no_nota);
-            $sheet->setCellValue('D' . $row, $memberName);
-            $sheet->setCellValue('E' . $row, $memberId);
-            $sheet->setCellValue('F' . $row, $sale->metode_pembayaran ?? '-');
-            $sheet->setCellValue('G' . $row, $sale->gudang_nama ?? '-');
-            $sheet->setCellValue('H' . $row, $salesDisplayName);
-            $sheet->setCellValue('I' . $row, $sale->shift_nama ?? '-');
-            $sheet->setCellValue('J' . $row, $userDisplayName);
-            // Use actual numeric value for Total column
-            $sheet->setCellValue('K' . $row, (float)($sale->jml_gtotal ?? 0));
-            $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            // Subtotal
+            $sheet->setCellValue($subtotalCol . $row, (float)($sale->jml_gtotal ?? 0));
+            $sheet->getStyle($subtotalCol . $row)->getNumberFormat()->setFormatCode('#,##0');
             
-            $total += $sale->jml_gtotal ?? 0;
             $row++;
         }
 
-        // Add total
-        $sheet->setCellValue('A' . $row, 'TOTAL');
-        $sheet->setCellValue('K' . $row, (float)$total);
-        $sheet->getStyle('K' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        // Add total row
+        $col = 'A';
+        $sheet->setCellValue($col++ . $row, 'TOTAL');
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col++ . $row, '');
+        
+        // Platform totals
+        foreach ($platforms as $platform) {
+            $totalPlatform = 0;
+            foreach ($sales as $sale) {
+                $totalPlatform += $sale->platform_amounts[$platform->id] ?? 0;
+            }
+            $sheet->setCellValue($platformCols[$platform->id] . $row, (float)$totalPlatform);
+            $sheet->getStyle($platformCols[$platform->id] . $row)->getNumberFormat()->setFormatCode('#,##0');
+        }
+        
+        // Voucher totals
+        foreach ($vouchers as $voucher) {
+            $totalVoucher = 0;
+            foreach ($sales as $sale) {
+                $totalVoucher += $sale->voucher_amounts[$voucher->id] ?? 0;
+            }
+            $sheet->setCellValue($voucherCols[$voucher->id] . $row, (float)$totalVoucher);
+            $sheet->getStyle($voucherCols[$voucher->id] . $row)->getNumberFormat()->setFormatCode('#,##0');
+        }
+        
+        // Subtotal total
+        $sheet->setCellValue($subtotalCol . $row, (float)$totalSales);
+        $sheet->getStyle($subtotalCol . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('A' . $row . ':' . $subtotalCol . $row)->getFont()->setBold(true);
 
         // Auto size columns
-        foreach (range('A', 'K') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($subtotalCol));
+        for ($i = 1; $i <= \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($subtotalCol); $i++) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
         }
 
         // Create response
@@ -576,31 +698,120 @@ class SaleReport extends BaseController
 
         $sales = $builder->orderBy('tbl_trans_jual.tgl_masuk', 'DESC')->findAll();
 
-        // Get payment methods
+        // Get platforms with status='1' for dynamic columns
+        $platforms = $this->platformModel->where('status', '1')->findAll();
+        
+        // Get vouchers for dynamic columns
+        $vouchers = $this->voucherModel->findAll();
+        
+        // Get payment methods for each transaction (same as index method)
         $transactionIds = array_column($sales, 'id');
         $paymentMethods = [];
+        $paymentBreakdown = []; // Platform ID => Transaction ID => Amount
+        $voucherUsage = []; // Voucher ID => Transaction ID => Amount
+        
         if (!empty($transactionIds)) {
             $db = \Config\Database::connect();
+            
+            // Get payment breakdown by platform
             $paymentData = $db->table('tbl_trans_jual_plat')
-                ->select('id_penjualan, GROUP_CONCAT(CONCAT(platform, " (", FORMAT(nominal, 0), ")") SEPARATOR ", ") as metode_pembayaran')
+                ->select('id_penjualan, id_platform, platform, SUM(nominal) as total_nominal')
                 ->whereIn('id_penjualan', $transactionIds)
-                ->groupBy('id_penjualan')
+                ->groupBy('id_penjualan', 'id_platform', 'platform')
                 ->get()
                 ->getResult();
             
+            // Build payment methods string and breakdown
             foreach ($paymentData as $pm) {
-                $paymentMethods[$pm->id_penjualan] = $pm->metode_pembayaran;
+                $platformId = $pm->id_platform;
+                $existingSummary = $paymentMethods[$pm->id_penjualan] ?? '';
+
+                $paymentMethods[$pm->id_penjualan] = $existingSummary . 
+                    ($existingSummary ? ', ' : '') . 
+                    $pm->platform . ' (' . format_angka($pm->total_nominal) . ')';
+                
+                if ($platformId === null) {
+                    continue;
+                }
+
+                // Store breakdown by platform ID
+                if (!isset($paymentBreakdown[$platformId])) {
+                    $paymentBreakdown[$platformId] = [];
+                }
+                $paymentBreakdown[$platformId][$pm->id_penjualan] = (float)$pm->total_nominal;
+            }
+            
+            // Get voucher usage per transaction
+            $voucherData = $db->table('tbl_trans_jual')
+                ->select('id, voucher_code, voucher_discount_amount, voucher_id')
+                ->whereIn('id', $transactionIds)
+                ->groupStart()
+                    ->where('voucher_code IS NOT NULL')
+                    ->where('voucher_code !=', '')
+                ->groupEnd()
+                ->orGroupStart()
+                    ->where('voucher_id IS NOT NULL')
+                ->groupEnd()
+                ->get()
+                ->getResult();
+            
+            // Create a map of voucher_code to voucher_id for lookup
+            $voucherCodeMap = [];
+            if (!empty($vouchers)) {
+                foreach ($vouchers as $voucher) {
+                    $voucherCodeMap[$voucher->kode] = $voucher->id;
+                }
+            }
+            
+            foreach ($voucherData as $v) {
+                $voucherId = null;
+                if ($v->voucher_id) {
+                    $voucherId = $v->voucher_id;
+                } elseif ($v->voucher_code && isset($voucherCodeMap[$v->voucher_code])) {
+                    $voucherId = $voucherCodeMap[$v->voucher_code];
+                }
+                
+                if ($voucherId) {
+                    if (!isset($voucherUsage[$voucherId])) {
+                        $voucherUsage[$voucherId] = [];
+                    }
+                    $voucherUsage[$voucherId][$v->id] = (float)($v->voucher_discount_amount ?? 0);
+                }
             }
         }
 
+        // Attach platform breakdown and voucher usage to each sale
         $totalSales = 0;
         foreach ($sales as $sale) {
-            $sale->metode_pembayaran = $paymentMethods[$sale->id] ?? '-';
+            $totalSales += $sale->jml_gtotal ?? 0;
+            
+            // Attach platform breakdown
+            $sale->platform_amounts = [];
+            foreach ($platforms as $platform) {
+                $platformId = $platform->id;
+                if (isset($paymentBreakdown[$platformId]) && isset($paymentBreakdown[$platformId][$sale->id])) {
+                    $sale->platform_amounts[$platformId] = $paymentBreakdown[$platformId][$sale->id];
+                } else {
+                    $sale->platform_amounts[$platformId] = 0;
+                }
+            }
+            
+            // Attach voucher usage
+            $sale->voucher_amounts = [];
+            foreach ($vouchers as $voucher) {
+                $voucherId = $voucher->id;
+                if (isset($voucherUsage[$voucherId]) && isset($voucherUsage[$voucherId][$sale->id])) {
+                    $sale->voucher_amounts[$voucherId] = $voucherUsage[$voucherId][$sale->id];
+                } else {
+                    $sale->voucher_amounts[$voucherId] = 0;
+                }
+            }
+            
+            // Set member name (use "Umum" for general customers)
             if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
                 $sale->pelanggan_nama = 'Umum';
                 $sale->pelanggan_kode = '';
             }
-            $totalSales += $sale->jml_gtotal ?? 0;
         }
 
         // Get filter labels
@@ -676,32 +887,88 @@ class SaleReport extends BaseController
         $pdf->Cell(0, 4, 'Outlet: ' . $gudangName . ' | Pelanggan: ' . $pelangganName . ' | Platform: ' . $platformName, 0, 1, 'L');
         $pdf->Ln(2);
 
+        // Calculate column widths dynamically
+        $numPlatforms = count($platforms);
+        $numVouchers = count($vouchers);
+        $totalDynamicCols = $numPlatforms + $numVouchers;
+        
+        // Base columns: No (10), Tanggal (30), Pelanggan (50), Subtotal (40)
+        $baseWidth = 10 + 30 + 50 + 40; // 130mm
+        $availableWidth = 277 - $baseWidth; // Landscape A4 width minus margins and base columns
+        $dynamicColWidth = $totalDynamicCols > 0 ? min(25, $availableWidth / max(1, $totalDynamicCols)) : 0;
+        
         // Table Header
-        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->SetFont('helvetica', 'B', 7);
         $pdf->Cell(10, 6, 'No', 1, 0, 'C');
         $pdf->Cell(30, 6, 'Tanggal', 1, 0, 'C');
-        $pdf->Cell(35, 6, 'No. Nota', 1, 0, 'C');
         $pdf->Cell(50, 6, 'Pelanggan', 1, 0, 'C');
-        $pdf->Cell(50, 6, 'Metode Pembayaran', 1, 0, 'C');
-        $pdf->Cell(30, 6, 'Gudang', 1, 0, 'C');
-        $pdf->Cell(40, 6, 'Total', 1, 1, 'R');
+        
+        // Dynamic platform columns
+        foreach ($platforms as $platform) {
+            $pdf->Cell($dynamicColWidth, 6, substr($platform->platform, 0, 12), 1, 0, 'C');
+        }
+        
+        // Dynamic voucher columns
+        foreach ($vouchers as $voucher) {
+            $voucherLabel = substr($voucher->kode ?? 'Voucher ' . $voucher->id, 0, 12);
+            $pdf->Cell($dynamicColWidth, 6, $voucherLabel, 1, 0, 'C');
+        }
+        
+        $pdf->Cell(40, 6, 'Subtotal', 1, 1, 'R');
 
         // Table Data
-        $pdf->SetFont('helvetica', '', 7);
+        $pdf->SetFont('helvetica', '', 6);
         $no = 1;
         foreach ($sales as $sale) {
             $pdf->Cell(10, 5, $no++, 1, 0, 'C');
             $pdf->Cell(30, 5, date('d/m/Y H:i', strtotime($sale->tgl_masuk)), 1, 0, 'L');
-            $pdf->Cell(35, 5, substr($sale->no_nota, 0, 15), 1, 0, 'L');
-            $pdf->Cell(50, 5, substr($sale->pelanggan_nama . ($sale->pelanggan_kode ? ' (' . $sale->pelanggan_kode . ')' : ''), 0, 30), 1, 0, 'L');
-            $pdf->Cell(50, 5, substr($sale->metode_pembayaran, 0, 30), 1, 0, 'L');
-            $pdf->Cell(30, 5, substr($sale->gudang_nama ?? '-', 0, 20), 1, 0, 'L');
+            
+            // Pelanggan (with code if available)
+            $pelangganText = $sale->pelanggan_nama ?? 'Umum';
+            if (!empty($sale->pelanggan_kode)) {
+                $pelangganText .= ' (' . $sale->pelanggan_kode . ')';
+            }
+            $pdf->Cell(50, 5, substr($pelangganText, 0, 25), 1, 0, 'L');
+            
+            // Platform columns
+            foreach ($platforms as $platform) {
+                $amount = $sale->platform_amounts[$platform->id] ?? 0;
+                $pdf->Cell($dynamicColWidth, 5, format_angka($amount), 1, 0, 'R');
+            }
+            
+            // Voucher columns
+            foreach ($vouchers as $voucher) {
+                $amount = $sale->voucher_amounts[$voucher->id] ?? 0;
+                $pdf->Cell($dynamicColWidth, 5, format_angka($amount), 1, 0, 'R');
+            }
+            
+            // Subtotal
             $pdf->Cell(40, 5, format_angka($sale->jml_gtotal ?? 0), 1, 1, 'R');
         }
 
-        // Total
-        $pdf->SetFont('helvetica', 'B', 9);
-        $pdf->Cell(205, 6, 'TOTAL', 1, 0, 'R');
+        // Total row
+        $pdf->SetFont('helvetica', 'B', 7);
+        $totalColWidth = 10 + 30 + 50 + ($dynamicColWidth * $totalDynamicCols);
+        $pdf->Cell($totalColWidth, 6, 'TOTAL', 1, 0, 'R');
+        
+        // Platform totals
+        foreach ($platforms as $platform) {
+            $totalPlatform = 0;
+            foreach ($sales as $sale) {
+                $totalPlatform += $sale->platform_amounts[$platform->id] ?? 0;
+            }
+            $pdf->Cell($dynamicColWidth, 6, format_angka($totalPlatform), 1, 0, 'R');
+        }
+        
+        // Voucher totals
+        foreach ($vouchers as $voucher) {
+            $totalVoucher = 0;
+            foreach ($sales as $sale) {
+                $totalVoucher += $sale->voucher_amounts[$voucher->id] ?? 0;
+            }
+            $pdf->Cell($dynamicColWidth, 6, format_angka($totalVoucher), 1, 0, 'R');
+        }
+        
         $pdf->Cell(40, 6, format_angka($totalSales), 1, 1, 'R');
 
         // Summary
