@@ -201,10 +201,11 @@
                         'id' => 'username',
                         'name' => 'username',
                         'class' => 'form-control rounded-0' . (!empty($psnGagal['username']) ? ' is-invalid' : ''),
-                        'placeholder' => 'username123',
-                        'value' => old('username')
+                        'placeholder' => 'Akan di-generate otomatis',
+                        'value' => old('username'),
+                        'readonly' => true
                     ]) ?>
-                    <small class="form-text text-muted">Username minimal 4 karakter, hanya huruf dan angka</small>
+                    <small class="form-text text-muted">Username akan di-generate otomatis berdasarkan nama</small>
                 </div>
 
                 <div class="form-group <?= (!empty($psnGagal['password']) ? 'has-error' : '') ?>">
