@@ -138,8 +138,8 @@
             <tr>
                 <td class="label">Supplier</td>
                 <td>: <?= $purchase->supplier_nama ?? '-' ?></td>
-                <td class="label">Gudang</td>
-                <td>: <?= $purchase->gudang_nama ?? '-' ?></td>
+                <td class="label">Penerima</td>
+                <td>: <?= $purchase->penerima_nama ?? '-' ?></td>
             </tr>
             <?php if (!empty($purchase->supplier_alamat)): ?>
             <tr>

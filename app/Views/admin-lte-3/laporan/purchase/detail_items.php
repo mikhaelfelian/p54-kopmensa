@@ -46,11 +46,7 @@
                     <div class="col-md-6">
                         <table class="table table-borderless">
                             <tr>
-                                <td width="30%"><strong>Gudang</strong></td>
-                                <td>: <?= $purchase->gudang_nama ?? '-' ?></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Penerima</strong></td>
+                                <td width="30%"><strong>Penerima</strong></td>
                                 <td>: <?= $purchase->penerima_nama ?? '-' ?></td>
                             </tr>
                             <tr>

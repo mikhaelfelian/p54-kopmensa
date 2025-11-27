@@ -34,11 +34,17 @@ class PurchaseReport extends BaseController
         $this->karyawanModel = new KaryawanModel();
     }
 
-    public function index()
+    /**
+     * Get report data with consistent query logic
+     * 
+     * @param array $filters
+     * @return array
+     */
+    protected function getReportData($filters)
     {
-        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
-        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
-        $idSupplier = $this->request->getGet('id_supplier');
+        $startDate = $filters['start_date'] ?? date('Y-m-d');
+        $endDate = $filters['end_date'] ?? date('Y-m-d');
+        $idSupplier = $filters['id_supplier'] ?? null;
 
         // Build query
         $builder = $this->transBeliModel->select('
@@ -77,6 +83,30 @@ class PurchaseReport extends BaseController
             }
         }
 
+        return [
+            'purchases' => $purchases,
+            'totalPurchase' => $totalPurchase,
+            'totalTransactions' => $totalTransactions,
+            'totalPaid' => $totalPaid,
+            'totalUnpaid' => $totalUnpaid,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'id_supplier' => $idSupplier
+            ]
+        ];
+    }
+
+    public function index()
+    {
+        $filters = [
+            'start_date' => $this->request->getGet('start_date') ?? date('Y-m-d'),
+            'end_date' => $this->request->getGet('end_date') ?? date('Y-m-d'),
+            'id_supplier' => $this->request->getGet('id_supplier')
+        ];
+
+        $report = $this->getReportData($filters);
+
         // Get filter options
         $supplierList = $this->supplierModel->where('deleted_at IS NULL')->findAll();
 
@@ -84,14 +114,14 @@ class PurchaseReport extends BaseController
             'title' => 'Laporan Pembelian',
             'Pengaturan' => $this->pengaturan,
             'user' => $this->ionAuth->user()->row(),
-            'purchases' => $purchases,
-            'totalPurchase' => $totalPurchase,
-            'totalTransactions' => $totalTransactions,
-            'totalPaid' => $totalPaid,
-            'totalUnpaid' => $totalUnpaid,
-            'startDate' => $startDate,
-            'endDate' => $endDate,
-            'idSupplier' => $idSupplier,
+            'purchases' => $report['purchases'],
+            'totalPurchase' => $report['totalPurchase'],
+            'totalTransactions' => $report['totalTransactions'],
+            'totalPaid' => $report['totalPaid'],
+            'totalUnpaid' => $report['totalUnpaid'],
+            'startDate' => $report['filters']['start_date'],
+            'endDate' => $report['filters']['end_date'],
+            'idSupplier' => $report['filters']['id_supplier'],
             'supplierList' => $supplierList,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
@@ -110,12 +140,10 @@ class PurchaseReport extends BaseController
                 tbl_m_supplier.nama as supplier_nama,
                 tbl_m_supplier.alamat as supplier_alamat,
                 tbl_m_supplier.no_tlp as supplier_no_tlp,
-                tbl_m_karyawan.nama as penerima_nama,
-                tbl_m_gudang.nama as gudang_nama
+                tbl_m_karyawan.nama as penerima_nama
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli.id_gudang', 'left')
             ->where('tbl_trans_beli.id', $id)
             ->first();
 
@@ -152,31 +180,16 @@ class PurchaseReport extends BaseController
 
     public function export_excel()
     {
-        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
-        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
-        $idSupplier = $this->request->getGet('id_supplier');
+        $filters = [
+            'start_date' => $this->request->getGet('start_date') ?? date('Y-m-d'),
+            'end_date' => $this->request->getGet('end_date') ?? date('Y-m-d'),
+            'id_supplier' => $this->request->getGet('id_supplier')
+        ];
 
-        // Build query
-        $builder = $this->transBeliModel->select('
-                tbl_trans_beli.*,
-                tbl_m_supplier.nama as supplier_nama,
-                tbl_m_karyawan.nama as penerima_nama
-            ')
-            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
-            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
-            ->where('tbl_trans_beli.deleted_at IS NULL');
-
-        // Apply filters
-        if ($startDate && $endDate) {
-            $builder->where('tbl_trans_beli.tgl_masuk >=', $startDate . ' 00:00:00')
-                   ->where('tbl_trans_beli.tgl_masuk <=', $endDate . ' 23:59:59');
-        }
-
-        if ($idSupplier) {
-            $builder->where('tbl_trans_beli.id_supplier', $idSupplier);
-        }
-
-        $purchases = $builder->orderBy('tbl_trans_beli.tgl_masuk', 'DESC')->findAll();
+        $report = $this->getReportData($filters);
+        $purchases = $report['purchases'];
+        $startDate = $report['filters']['start_date'];
+        $endDate = $report['filters']['end_date'];
 
         // Create Excel file
         $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
@@ -194,6 +207,12 @@ class PurchaseReport extends BaseController
         $sheet->setCellValue('F4', 'Status');
         $sheet->setCellValue('G4', 'Total');
 
+        // Style header row
+        $sheet->getStyle('A4:G4')->getFont()->setBold(true);
+        $sheet->getStyle('A4:G4')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFE0E0E0');
+
         $row = 5;
         $total = 0;
 
@@ -207,7 +226,7 @@ class PurchaseReport extends BaseController
 
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($purchase->tgl_masuk)));
-            // Ensure invoice number is displayed as text (not converted to number)
+            // Ensure invoice number is displayed as text (not converted to number) - use exact value from database
             $sheet->setCellValueExplicit('C' . $row, (string)($purchase->no_nota ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValue('D' . $row, $purchase->supplier_nama ?? '-');
             $sheet->setCellValue('E' . $row, $purchase->penerima_nama ?? '-');
@@ -222,8 +241,10 @@ class PurchaseReport extends BaseController
 
         // Add total
         $sheet->setCellValue('A' . $row, 'TOTAL');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
         $sheet->setCellValue('G' . $row, (float)$total);
         $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('G' . $row)->getFont()->setBold(true);
 
         // Auto size columns
         foreach (range('A', 'G') as $col) {
@@ -256,12 +277,10 @@ class PurchaseReport extends BaseController
                 tbl_m_supplier.nama as supplier_nama,
                 tbl_m_supplier.alamat as supplier_alamat,
                 tbl_m_supplier.no_tlp as supplier_no_tlp,
-                tbl_m_karyawan.nama as penerima_nama,
-                tbl_m_gudang.nama as gudang_nama
+                tbl_m_karyawan.nama as penerima_nama
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli.id_gudang', 'left')
             ->where('tbl_trans_beli.id', $id)
             ->first();
 
@@ -273,10 +292,12 @@ class PurchaseReport extends BaseController
                 tbl_trans_beli_det.*,
                 tbl_m_item.item as item_nama,
                 tbl_m_item.kode as item_kode,
-                tbl_m_satuan.SatuanBesar as satuan_nama
+                tbl_m_satuan.SatuanBesar as satuan_nama,
+                tbl_m_gudang.nama as gudang_nama
             ')
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_det.id_item', 'left')
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_beli_det.id_satuan', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli_det.id_gudang', 'left')
             ->where('id_pembelian', $id)
             ->findAll();
 
@@ -312,12 +333,10 @@ class PurchaseReport extends BaseController
                 tbl_m_supplier.alamat as supplier_alamat,
                 tbl_m_supplier.no_tlp as supplier_no_tlp,
                 tbl_m_supplier.npwp as supplier_npwp,
-                tbl_m_karyawan.nama as penerima_nama,
-                tbl_m_gudang.nama as gudang_nama
+                tbl_m_karyawan.nama as penerima_nama
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
-            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli.id_gudang', 'left')
             ->where('tbl_trans_beli.id', $id)
             ->first();
 
@@ -351,34 +370,18 @@ class PurchaseReport extends BaseController
     {
         require_once(APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php');
         
-        $startDate = $this->request->getGet('start_date') ?? date('Y-m-01');
-        $endDate = $this->request->getGet('end_date') ?? date('Y-m-t');
-        $idSupplier = $this->request->getGet('id_supplier');
+        $filters = [
+            'start_date' => $this->request->getGet('start_date') ?? date('Y-m-d'),
+            'end_date' => $this->request->getGet('end_date') ?? date('Y-m-d'),
+            'id_supplier' => $this->request->getGet('id_supplier')
+        ];
 
-        $builder = $this->transBeliModel->select('
-                tbl_trans_beli.*,
-                tbl_m_supplier.nama as supplier_nama,
-                tbl_m_karyawan.nama as penerima_nama
-            ')
-            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
-            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
-            ->where('tbl_trans_beli.deleted_at IS NULL');
-
-        if ($startDate && $endDate) {
-            $builder->where('tbl_trans_beli.tgl_masuk >=', $startDate . ' 00:00:00')
-                   ->where('tbl_trans_beli.tgl_masuk <=', $endDate . ' 23:59:59');
-        }
-
-        if ($idSupplier) {
-            $builder->where('tbl_trans_beli.id_supplier', $idSupplier);
-        }
-
-        $purchases = $builder->orderBy('tbl_trans_beli.tgl_masuk', 'DESC')->findAll();
-
-        $totalPurchase = 0;
-        foreach ($purchases as $purchase) {
-            $totalPurchase += $purchase->jml_gtotal ?? 0;
-        }
+        $report = $this->getReportData($filters);
+        $purchases = $report['purchases'];
+        $totalPurchase = $report['totalPurchase'];
+        $startDate = $report['filters']['start_date'];
+        $endDate = $report['filters']['end_date'];
+        $idSupplier = $report['filters']['id_supplier'];
 
         $supplierList = $this->supplierModel->where('deleted_at IS NULL')->findAll();
         $supplierName = 'Semua Supplier';

@@ -10,6 +10,10 @@
 
 <?= $this->extend(theme_path('main')) ?>
 
+<?= $this->section('css') ?>
+<link rel="stylesheet" href="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.css') ?>">
+<?= $this->endSection() ?>
+
 <?= $this->section('content') ?>
 <div class="row">
     <div class="col-12">
@@ -19,31 +23,29 @@
                     <i class="fas fa-chart-bar mr-1"></i> Laporan Pembelian
                 </h3>
                 <div class="card-tools">
-                    <a href="<?= base_url('laporan/purchase/export_excel') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_supplier=<?= $idSupplier ?>" 
-                       class="btn btn-success btn-sm rounded-0">
+                    <a href="#" id="exportExcelBtn" class="btn btn-success btn-sm rounded-0">
                         <i class="fas fa-file-excel mr-1"></i> Export Excel
                     </a>
-                    <a href="<?= base_url('laporan/purchase/export_pdf') ?>?start_date=<?= $startDate ?>&end_date=<?= $endDate ?>&id_supplier=<?= $idSupplier ?>" 
-                       class="btn btn-danger btn-sm rounded-0">
+                    <a href="#" id="exportPdfBtn" class="btn btn-danger btn-sm rounded-0">
                         <i class="fas fa-file-pdf mr-1"></i> Export PDF
                     </a>
                 </div>
             </div>
             <div class="card-body">
                 <!-- Filter Form -->
-                <form method="get" action="<?= base_url('laporan/purchase') ?>" class="mb-4">
+                <form method="get" action="<?= base_url('laporan/purchase') ?>" id="filterForm" class="mb-4">
                     <div class="row">
-                        <div class="col-md-2">
-                            <label>Tanggal Mulai</label>
-                            <input type="date" name="start_date" class="form-control form-control-sm" value="<?= $startDate ?>">
-                        </div>
-                        <div class="col-md-2">
-                            <label>Tanggal Akhir</label>
-                            <input type="date" name="end_date" class="form-control form-control-sm" value="<?= $endDate ?>">
+                        <div class="col-md-3">
+                            <label>Tanggal</label>
+                            <input type="text" id="date_range" class="form-control form-control-sm" 
+                                   value="<?= date('d/m/Y', strtotime($startDate)) ?> - <?= date('d/m/Y', strtotime($endDate)) ?>" 
+                                   placeholder="Pilih Tanggal">
+                            <input type="hidden" name="start_date" id="start_date" value="<?= $startDate ?>">
+                            <input type="hidden" name="end_date" id="end_date" value="<?= $endDate ?>">
                         </div>
                         <div class="col-md-3">
                             <label>Supplier</label>
-                            <select name="id_supplier" class="form-control form-control-sm">
+                            <select name="id_supplier" id="id_supplier" class="form-control form-control-sm">
                                 <option value="">Semua Supplier</option>
                                 <?php foreach ($supplierList as $supplier): ?>
                                     <option value="<?= $supplier->id ?>" <?= ($idSupplier ?? '') == $supplier->id ? 'selected' : '' ?>>
@@ -127,7 +129,7 @@
                         <tbody>
                             <?php if (empty($purchases)): ?>
                                 <tr>
-                                    <td colspan="7" class="text-center">Tidak ada data pembelian</td>
+                                    <td colspan="8" class="text-center">Tidak ada data pembelian</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($purchases as $index => $purchase): ?>
@@ -154,14 +156,21 @@
                                         </td>
                                         <td class="text-right"><?= format_angka($purchase->jml_gtotal ?? 0) ?></td>
                                         <td>
-                                            <a href="<?= base_url('laporan/purchase/detail/' . $purchase->id) ?>" 
-                                               class="btn btn-info btn-sm rounded-0" title="Detail">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="<?= base_url('laporan/purchase/detail_items/' . $purchase->id) ?>" 
-                                               class="btn btn-secondary btn-sm rounded-0" title="Detail Item">
-                                                <i class="fas fa-list"></i>
-                                            </a>
+                                            <div class="btn-group">
+                                                <a href="<?= base_url('laporan/purchase/detail/' . $purchase->id) ?>" 
+                                                   class="btn btn-info btn-sm rounded-0" title="Detail">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="<?= base_url('laporan/purchase/detail_items/' . $purchase->id) ?>" 
+                                                   class="btn btn-secondary btn-sm rounded-0" title="Detail Item">
+                                                    <i class="fas fa-list"></i>
+                                                </a>
+                                                <a href="<?= base_url('laporan/purchase/print_invoice/' . $purchase->id) ?>" 
+                                                   target="_blank"
+                                                   class="btn btn-warning btn-sm rounded-0" title="Print Invoice">
+                                                    <i class="fas fa-print"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -170,7 +179,7 @@
                         <?php if (!empty($purchases)): ?>
                             <tfoot>
                                 <tr class="bg-light">
-                                    <th colspan="5" class="text-right">TOTAL</th>
+                                    <th colspan="6" class="text-right">TOTAL</th>
                                     <th class="text-right"><?= format_angka($totalPurchase) ?></th>
                                     <th></th>
                                 </tr>
@@ -182,4 +191,70 @@
         </div>
     </div>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('js') ?>
+<script src="<?= base_url('public/assets/theme/admin-lte-3/plugins/daterangepicker/daterangepicker.js') ?>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const startInput = document.getElementById('start_date');
+    const endInput = document.getElementById('end_date');
+    const dateRangeInput = $('#date_range');
+
+    const startMoment = startInput.value ? moment(startInput.value, 'YYYY-MM-DD') : moment();
+    const endMoment = endInput.value ? moment(endInput.value, 'YYYY-MM-DD') : moment();
+
+    dateRangeInput.daterangepicker({
+        startDate: startMoment,
+        endDate: endMoment,
+        locale: {
+            format: 'DD/MM/YYYY',
+            separator: ' - ',
+            applyLabel: 'Terapkan',
+            cancelLabel: 'Batal',
+            fromLabel: 'Dari',
+            toLabel: 'Sampai',
+            customRangeLabel: 'Kustom',
+            weekLabel: 'M',
+            daysOfWeek: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+            monthNames: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+            firstDay: 1
+        },
+        opens: 'left',
+        autoUpdateInput: true
+    }, function (start, end) {
+        startInput.value = start.format('YYYY-MM-DD');
+        endInput.value = end.format('YYYY-MM-DD');
+        updateExportLinks();
+    });
+
+    function updateExportLinks() {
+        const params = new URLSearchParams({
+            start_date: startInput.value || '',
+            end_date: endInput.value || '',
+            id_supplier: $('#id_supplier').val() || ''
+        }).toString();
+
+        $('#exportExcelBtn').attr('href', '<?= base_url('laporan/purchase/export_excel') ?>?' + params);
+        $('#exportPdfBtn').attr('href', '<?= base_url('laporan/purchase/export_pdf') ?>?' + params);
+    }
+
+    // Update export links when supplier changes
+    $('#id_supplier').on('change', updateExportLinks);
+
+    $('#filterForm').on('submit', function () {
+        const range = dateRangeInput.val();
+        if (range) {
+            const dates = range.split(' - ');
+            if (dates.length === 2) {
+                startInput.value = moment(dates[0], 'DD/MM/YYYY').format('YYYY-MM-DD');
+                endInput.value = moment(dates[1], 'DD/MM/YYYY').format('YYYY-MM-DD');
+            }
+        }
+    });
+
+    updateExportLinks();
+});
+</script>
 <?= $this->endSection() ?>
