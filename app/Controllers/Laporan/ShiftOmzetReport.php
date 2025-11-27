@@ -54,7 +54,7 @@ class ShiftOmzetReport extends BaseController
                 COALESCE(SUM(tj.jml_gtotal), 0) as total_omzet,
                 COALESCE(COUNT(DISTINCT tj.id), 0) as total_transactions
             ')
-            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_nota = '1' AND tj.status = '1' AND tj.deleted_at IS NULL", 'left')
+            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_bayar = '1' AND tj.deleted_at IS NULL", 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = s.outlet_id', 'left')
             ->join('tbl_ion_users tbl_ion_users_open', 'tbl_ion_users_open.id = s.user_open_id', 'left')
             ->groupBy('s.id');
@@ -126,7 +126,7 @@ class ShiftOmzetReport extends BaseController
                 COALESCE(SUM(tj.jml_gtotal), 0) as total_omzet,
                 COALESCE(COUNT(DISTINCT tj.id), 0) as total_transactions
             ')
-            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_nota = '1' AND tj.status = '1' AND tj.deleted_at IS NULL", 'left')
+            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_bayar = '1' AND tj.deleted_at IS NULL", 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = s.outlet_id', 'left')
             ->join('tbl_ion_users tbl_ion_users_open', 'tbl_ion_users_open.id = s.user_open_id', 'left')
             ->groupBy('s.id');
@@ -232,7 +232,7 @@ class ShiftOmzetReport extends BaseController
                 COALESCE(SUM(tj.jml_gtotal), 0) as total_omzet,
                 COALESCE(COUNT(DISTINCT tj.id), 0) as total_transactions
             ')
-            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_nota = '1' AND tj.status = '1' AND tj.deleted_at IS NULL", 'left')
+            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_bayar = '1' AND tj.deleted_at IS NULL", 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = s.outlet_id', 'left')
             ->join('tbl_ion_users tbl_ion_users_open', 'tbl_ion_users_open.id = s.user_open_id', 'left')
             ->groupBy('s.id');
