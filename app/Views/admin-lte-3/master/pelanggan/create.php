@@ -28,7 +28,13 @@
                 <div class="card-tools"></div>
             </div>
             <div class="card-body">
-                <?php $psnGagal = session()->getFlashdata('psn_gagal'); ?>
+                <?php
+                $psnGagal = session()->getFlashdata('psn_gagal');
+                $initialKode = old('kode', $kode ?? '');
+                if (!preg_match('/^\d{5}$/', (string) $initialKode)) {
+                    $initialKode = str_pad(random_int(0, 99999), 5, '0', STR_PAD_LEFT);
+                }
+                ?>
 
                 <div class="form-group <?= (!empty($psnGagal['kode']) ? 'has-error' : '') ?>">
                     <label class="control-label">Kode <span class="text-danger">*</span></label>
@@ -37,9 +43,13 @@
                             'id' => 'kode',
                             'name' => 'kode',
                             'class' => 'form-control rounded-0' . (!empty($psnGagal['kode']) ? ' is-invalid' : ''),
-                            'placeholder' => 'CUS0001',
-                            'value' => $kode ?? '',
-                            'required' => true
+                            'placeholder' => '12345',
+                            'value' => $initialKode,
+                            'required' => true,
+                            'maxlength' => 5,
+                            'pattern' => '\d{5}',
+                            'inputmode' => 'numeric',
+                            'title' => 'Kode harus 5 digit angka'
                         ]) ?>
                         <div class="input-group-append">
                             <button type="button" class="btn btn-outline-secondary" id="generate_kode" title="Generate new code">
@@ -47,7 +57,7 @@
                             </button>
                         </div>
                     </div>
-                    <small class="form-text text-muted">Auto-generated or enter custom code</small>
+                    <small class="form-text text-muted">Kode hanya terdiri dari 5 digit angka</small>
                 </div>
 
                 <div class="form-group <?= (!empty($psnGagal['no_agt']) ? 'has-error' : '') ?>">
@@ -342,36 +352,42 @@ $(document).ready(function() {
     const kodeInput = document.getElementById('kode');
     const generateBtn = document.getElementById('generate_kode');
     
-    // Generate customer code function
+    // Generate customer code function (5-digit numeric)
     function generateCustomerCode() {
-        const timestamp = Date.now().toString().slice(-4);
-        const paddedNumber = timestamp.padStart(4, '0');
-        return 'CUS' + paddedNumber;
+        return Math.floor(Math.random() * 90000 + 10000).toString();
     }
     
-    // Auto-generate code on page load if field is empty
-    if (!kodeInput.value.trim()) {
-        kodeInput.value = generateCustomerCode();
-    }
-    
-    // Generate new code when button is clicked
-    generateBtn.addEventListener('click', function() {
-        kodeInput.value = generateCustomerCode();
-        kodeInput.focus();
-        
-        // Visual feedback
-        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        setTimeout(() => {
-            this.innerHTML = '<i class="fas fa-sync-alt"></i>';
-        }, 500);
-    });
-    
-    // Auto-generate when field is cleared
-    kodeInput.addEventListener('input', function() {
-        if (!this.value.trim()) {
-            this.value = generateCustomerCode();
+    if (kodeInput) {
+        // Ensure valid code on load
+        if (!/^\d{5}$/.test(kodeInput.value.trim())) {
+            kodeInput.value = generateCustomerCode();
         }
-    });
+
+        // Restrict input to digits and max length 5
+        kodeInput.addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '').slice(0, 5);
+        });
+
+        kodeInput.addEventListener('blur', function() {
+            if (!/^\d{5}$/.test(this.value)) {
+                this.value = generateCustomerCode();
+            }
+        });
+    }
+    
+    if (generateBtn && kodeInput) {
+        // Generate new code when button is clicked
+        generateBtn.addEventListener('click', function() {
+            kodeInput.value = generateCustomerCode();
+            kodeInput.focus();
+            
+            // Visual feedback
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            }, 500);
+        });
+    }
 
     // Auto-generate username and email based on name
     const namaInput = document.getElementById('nama');
