@@ -36,6 +36,7 @@ class ShiftOmzetReport extends BaseController
         $db = \Config\Database::connect();
         
         // Build query: Join tbl_trans_jual with tbl_m_shift, group by shift, sum jml_gtotal
+        // Move transaction status conditions to JOIN clause to preserve LEFT JOIN behavior
         $builder = $db->table('tbl_m_shift s')
             ->select('
                 s.id,
@@ -50,15 +51,12 @@ class ShiftOmzetReport extends BaseController
                 tbl_ion_users_open.username as user_open_username,
                 tbl_ion_users_open.first_name as user_open_first_name,
                 tbl_ion_users_open.last_name as user_open_last_name,
-                SUM(tj.jml_gtotal) as total_omzet,
-                COUNT(tj.id) as total_transactions
+                COALESCE(SUM(tj.jml_gtotal), 0) as total_omzet,
+                COALESCE(COUNT(DISTINCT tj.id), 0) as total_transactions
             ')
-            ->join('tbl_trans_jual tj', 'tj.id_shift = s.id', 'left')
+            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_nota = '1' AND tj.status = '1' AND tj.deleted_at IS NULL", 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = s.outlet_id', 'left')
             ->join('tbl_ion_users tbl_ion_users_open', 'tbl_ion_users_open.id = s.user_open_id', 'left')
-            ->where('tj.status_nota', '1')
-            ->where('tj.status', '1')
-            ->where('tj.deleted_at IS NULL', null, false)
             ->groupBy('s.id');
 
         // Apply date filter
@@ -82,8 +80,8 @@ class ShiftOmzetReport extends BaseController
             $totalTransactions += (int)($shift->total_transactions ?? 0);
         }
 
-        // Get user list for filter
-        $userList = $this->ionAuth->users()->result();
+        // Get user list for filter - only employees (tipe='1')
+        $userList = $this->ionAuth->where('tipe', '1')->users()->result();
 
         $data = [
             'title' => 'Laporan Omzet Shift',
@@ -125,15 +123,12 @@ class ShiftOmzetReport extends BaseController
                 tbl_ion_users_open.username as user_open_username,
                 tbl_ion_users_open.first_name as user_open_first_name,
                 tbl_ion_users_open.last_name as user_open_last_name,
-                SUM(tj.jml_gtotal) as total_omzet,
-                COUNT(tj.id) as total_transactions
+                COALESCE(SUM(tj.jml_gtotal), 0) as total_omzet,
+                COALESCE(COUNT(DISTINCT tj.id), 0) as total_transactions
             ')
-            ->join('tbl_trans_jual tj', 'tj.id_shift = s.id', 'left')
+            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_nota = '1' AND tj.status = '1' AND tj.deleted_at IS NULL", 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = s.outlet_id', 'left')
             ->join('tbl_ion_users tbl_ion_users_open', 'tbl_ion_users_open.id = s.user_open_id', 'left')
-            ->where('tj.status_nota', '1')
-            ->where('tj.status', '1')
-            ->where('tj.deleted_at IS NULL', null, false)
             ->groupBy('s.id');
 
         if ($startDate && $endDate) {
@@ -234,15 +229,12 @@ class ShiftOmzetReport extends BaseController
                 tbl_ion_users_open.username as user_open_username,
                 tbl_ion_users_open.first_name as user_open_first_name,
                 tbl_ion_users_open.last_name as user_open_last_name,
-                SUM(tj.jml_gtotal) as total_omzet,
-                COUNT(tj.id) as total_transactions
+                COALESCE(SUM(tj.jml_gtotal), 0) as total_omzet,
+                COALESCE(COUNT(DISTINCT tj.id), 0) as total_transactions
             ')
-            ->join('tbl_trans_jual tj', 'tj.id_shift = s.id', 'left')
+            ->join('tbl_trans_jual tj', "tj.id_shift = s.id AND tj.status_nota = '1' AND tj.status = '1' AND tj.deleted_at IS NULL", 'left')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = s.outlet_id', 'left')
             ->join('tbl_ion_users tbl_ion_users_open', 'tbl_ion_users_open.id = s.user_open_id', 'left')
-            ->where('tj.status_nota', '1')
-            ->where('tj.status', '1')
-            ->where('tj.deleted_at IS NULL', null, false)
             ->groupBy('s.id');
 
         if ($startDate && $endDate) {
