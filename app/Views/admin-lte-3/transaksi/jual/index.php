@@ -596,11 +596,36 @@
                 <tbody>`;
 
         details.forEach((detail, index) => {
+            // Extract variant information if available
+            let productDisplay = detail.produk || detail.nama_item || 'Unknown Item';
+            let variantInfo = '';
+            
+            // Check if variant information is available
+            if (detail.nama_varian) {
+                // Variant is already matched and available
+                variantInfo = `<br><small class="text-muted"><i class="fas fa-tag"></i> Varian: ${detail.nama_varian}${detail.kode_varian ? ' (' + detail.kode_varian + ')' : ''}</small>`;
+            } else if (detail.produk && detail.nama_item) {
+                // Try to extract variant from produk field (format: "Item Name - Variant Name")
+                const produk = detail.produk;
+                const itemName = detail.nama_item;
+                
+                // Check if produk contains " - " which indicates variant
+                if (produk.includes(' - ') && produk !== itemName) {
+                    const parts = produk.split(' - ');
+                    if (parts.length > 1) {
+                        const variantName = parts.slice(1).join(' - '); // Join in case variant name contains " - "
+                        variantInfo = `<br><small class="text-muted"><i class="fas fa-tag"></i> Varian: ${variantName}</small>`;
+                        // Use the base item name for display
+                        productDisplay = itemName;
+                    }
+                }
+            }
+            
             html += `
             <tr>
                 <td>${index + 1}</td>
-                <td>${detail.produk || detail.nama_item}</td>
-                <td>${detail.jml} ${detail.satuan || detail.nama_satuan}</td>
+                <td>${productDisplay}${variantInfo}</td>
+                <td>${detail.jml} ${detail.satuan || detail.nama_satuan || 'PCS'}</td>
                 <td class="text-right">Rp ${numberFormat(detail.harga)}</td>
                 <td class="text-right">Rp ${numberFormat(detail.subtotal)}</td>
             </tr>`;

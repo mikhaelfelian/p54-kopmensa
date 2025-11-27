@@ -109,7 +109,11 @@ class TransJualDetModel extends Model
     public function getDetailsWithItem($penjualanId = null)
     {
         $builder = $this->db->table('tbl_trans_jual_det tjd');
-        $builder->select('tjd.*, mi.item as nama_item, mk.kategori as nama_kategori, mm.merk as nama_merk, ms.satuanBesar as nama_satuan');
+        $builder->select('tjd.*, 
+            mi.item as nama_item, 
+            mk.kategori as nama_kategori, 
+            mm.merk as nama_merk, 
+            ms.satuanBesar as nama_satuan');
         $builder->join('tbl_m_item mi', 'mi.id = tjd.id_item', 'left');
         $builder->join('tbl_m_kategori mk', 'mk.id = tjd.id_kategori', 'left');
         $builder->join('tbl_m_merk mm', 'mm.id = tjd.id_merk', 'left');
@@ -119,7 +123,49 @@ class TransJualDetModel extends Model
             $builder->where('tjd.id_penjualan', $penjualanId);
         }
         
-        return $builder->get()->getResult();
+        $results = $builder->get()->getResult();
+        
+        // Fetch variants for items that might have variants
+        if (!empty($results)) {
+            $itemIds = array_unique(array_filter(array_column($results, 'id_item')));
+            if (!empty($itemIds)) {
+                $itemVarianModel = new \App\Models\ItemVarianModel();
+                $variants = $itemVarianModel->whereIn('id_item', $itemIds)
+                    ->where('status', '1')
+                    ->findAll();
+                
+                // Create a map of item_id => variants array
+                $variantMap = [];
+                foreach ($variants as $variant) {
+                    if (!isset($variantMap[$variant->id_item])) {
+                        $variantMap[$variant->id_item] = [];
+                    }
+                    $variantMap[$variant->id_item][] = $variant;
+                }
+                
+                // Attach variants to each result
+                foreach ($results as $result) {
+                    if (isset($variantMap[$result->id_item])) {
+                        // Try to match variant from produk field
+                        $produk = $result->produk ?? '';
+                        $itemName = $result->nama_item ?? '';
+                        
+                        // Check if produk contains variant name (format: "Item Name - Variant Name")
+                        foreach ($variantMap[$result->id_item] as $variant) {
+                            if (strpos($produk, $variant->varian) !== false || 
+                                strpos($produk, ' - ' . $variant->varian) !== false) {
+                                $result->id_item_varian = $variant->id;
+                                $result->nama_varian = $variant->varian;
+                                $result->kode_varian = $variant->kode;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return $results;
     }
 
     /**
