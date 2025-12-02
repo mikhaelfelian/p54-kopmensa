@@ -578,21 +578,36 @@ class TransJual extends BaseController
             $warehouseId = $this->request->getPost('warehouse_id');
             
             if (empty($warehouseId)) {
-                // Return all platforms if no outlet selected
-                $platforms = $this->platformModel->where('status', '1')->findAll();
+                // Return all platforms if no outlet selected - EXCLUDE vouchers (vouchers are discounts, not payment methods)
+                $allPlatforms = $this->platformModel->where('status', '1')->findAll();
+                // Filter out vouchers (ID 4 or name contains "voucher")
+                $platforms = array_filter($allPlatforms, function($platform) {
+                    $platformId = (int)($platform->id ?? 0);
+                    $platformName = strtolower($platform->platform ?? '');
+                    // Exclude if ID is 4 or name contains "voucher"
+                    return $platformId !== 4 && strpos($platformName, 'voucher') === false;
+                });
                 return $this->response->setJSON([
                     'success' => true,
-                    'platforms' => $platforms
+                    'platforms' => array_values($platforms) // Re-index array
                 ]);
             }
 
-            // Get platforms assigned to this outlet
+            // Get platforms assigned to this outlet - EXCLUDE vouchers
             $outletPlatforms = $this->outletPlatformModel->getPlatformsByOutlet($warehouseId);
             
-            // Return the platforms
+            // Filter out vouchers from the list
+            $filteredPlatforms = array_filter($outletPlatforms, function($platform) {
+                $platformId = (int)($platform->id_platform ?? $platform->id ?? 0);
+                $platformName = strtolower($platform->platform ?? '');
+                // Exclude if ID is 4 or name contains "voucher"
+                return $platformId !== 4 && strpos($platformName, 'voucher') === false;
+            });
+            
+            // Return the filtered platforms
             return $this->response->setJSON([
                 'success' => true,
-                'platforms' => $outletPlatforms
+                'platforms' => array_values($filteredPlatforms) // Re-index array
             ]);
 
         } catch (\Exception $e) {

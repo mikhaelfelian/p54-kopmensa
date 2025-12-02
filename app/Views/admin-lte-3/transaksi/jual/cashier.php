@@ -1743,11 +1743,17 @@ helper('form');
     function addPaymentMethod() {
         paymentCounter++;
 
-        // Add voucher as a payment method option
+        // Build platform options - EXCLUDE vouchers (vouchers are discounts, not payment methods)
         let platformOptions = '<option value="">Pilih Platform</option>';
         if (outletPlatforms && outletPlatforms.length > 0) {
             outletPlatforms.forEach(platform => {
-                platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
+                // Filter out vouchers - vouchers should NOT be payment methods
+                // Check by ID (4 is hardcoded as voucher) or by platform name containing "voucher"
+                const platformId = String(platform.id);
+                const platformName = String(platform.platform || '').toLowerCase();
+                if (platformId !== '4' && !platformName.includes('voucher')) {
+                    platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
+                }
             });
         }
 
@@ -1812,87 +1818,53 @@ helper('form');
                 firstPaymentRow.find('.payment-amount').val('0'); // Default amount
                 firstPaymentRow.find('.payment-note').val(''); // Default empty note
             }
+            
+            // Check for any existing payment methods with voucher selected and clear them
+            $('.payment-platform').each(function() {
+                if ($(this).val() === '4') {
+                    toastr.warning('Voucher tidak dapat digunakan sebagai metode pembayaran. Field voucher telah direset.');
+                    $(this).val('');
+                    const paymentRow = $(this).closest('.payment-method-row');
+                    paymentRow.find('.payment-amount').show().val('0');
+                    paymentRow.find('.voucher-code-input').closest('.input-group').hide();
+                    paymentRow.find('label').filter(function() { 
+                        return $(this).text().trim() === 'Kode Voucher'; 
+                    }).text('Jumlah');
+                }
+            });
         }, 100);
     }
 
-    // Handle payment platform change (including voucher)
+    // Handle payment platform change - vouchers should NOT be in payment methods
     function handlePaymentPlatformChange() {
         const selectedPlatform = $(this).val();
         const paymentRow = $(this).closest('.payment-method-row');
         const amountInput = paymentRow.find('.payment-amount');
         
-                if (selectedPlatform === '4') { // Hardcoded voucher value
-            // Show voucher input instead of amount input
-            amountInput.hide();
-            // Find the label that contains "Jumlah" and change it to "Kode Voucher"
-            paymentRow.find('label').filter(function() {
-                return $(this).text().trim() === 'Jumlah';
-            }).text('Kode Voucher');
-            
-            // Ensure amount input is hidden
-            paymentRow.find('.payment-amount').hide();
-            
-            // Replace amount input with voucher code input
-            if (!paymentRow.find('.voucher-code-input').length) {
-                const voucherInput = $(`
-                    <div class="input-group">
-                        <input type="text" class="form-control form-control-sm rounded-0 voucher-code-input" 
-                               name="payments[${paymentRow.data('payment-id')}][voucher_code]" 
-                               placeholder="Masukkan kode voucher">
-                        <div class="input-group-append">
-                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-0 clear-voucher" 
-                                    title="Clear Voucher">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                `);
-                amountInput.after(voucherInput);
-                
-                // Add clear voucher functionality
-                voucherInput.find('.clear-voucher').off('click.voucher').on('click.voucher', function() {
-                    clearVoucher(paymentRow);
-                });
-            } else {
-                // Show existing voucher input
-                paymentRow.find('.voucher-code-input').closest('.input-group').show();
-            }
-            
-            // Ensure voucher input is visible and amount input is hidden
-            paymentRow.find('.voucher-code-input').closest('.input-group').show();
-            paymentRow.find('.payment-amount').hide();
-            
-            // Add voucher validation and discount calculation
-            paymentRow.find('.voucher-code-input').off('blur.voucher').on('blur.voucher', function() {
-                const voucherCode = $(this).val().trim();
-                if (voucherCode) {
-                    validateVoucherCode(voucherCode, paymentRow);
-                }
-            });
-            
-            // Also validate on Enter key press
-            paymentRow.find('.voucher-code-input').off('keypress.voucher').on('keypress.voucher', function(e) {
-                if (e.which === 13) { // Enter key
-                    e.preventDefault();
-                    const voucherCode = $(this).val().trim();
-                    if (voucherCode) {
-                        validateVoucherCode(voucherCode, paymentRow);
-                    }
-                }
-            });
-        } else {
-            // Show regular amount input for other platforms
+        // If voucher (ID 4) is somehow selected, reset it and show error
+        if (selectedPlatform === '4') {
+            toastr.error('Voucher tidak dapat digunakan sebagai metode pembayaran. Gunakan field Voucher di atas untuk menerapkan diskon voucher.');
+            $(this).val(''); // Reset selection
             amountInput.show();
-            // Find the label that contains "Kode Voucher" and change it back to "Jumlah"
+            paymentRow.find('.voucher-code-input').closest('.input-group').hide();
             paymentRow.find('label').filter(function() { 
                 return $(this).text().trim() === 'Kode Voucher'; 
             }).text('Jumlah');
-            paymentRow.find('.voucher-code-input').closest('.input-group').hide();
-            
-            // Ensure amount input is visible and voucher input is hidden
-            paymentRow.find('.payment-amount').show();
-            paymentRow.find('.voucher-code-input').closest('.input-group').hide();
+            calculatePaymentTotals();
+            return;
         }
+        
+        // Show regular amount input for all valid payment platforms
+        amountInput.show();
+        // Ensure label is "Jumlah" (not "Kode Voucher")
+        paymentRow.find('label').filter(function() { 
+            return $(this).text().trim() === 'Kode Voucher'; 
+        }).text('Jumlah');
+        paymentRow.find('.voucher-code-input').closest('.input-group').hide();
+        
+        // Ensure amount input is visible and voucher input is hidden
+        paymentRow.find('.payment-amount').show();
+        paymentRow.find('.voucher-code-input').closest('.input-group').hide();
         
         calculatePaymentTotals();
     }
