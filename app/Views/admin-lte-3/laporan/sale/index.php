@@ -145,9 +145,14 @@
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
-                                <th width="5%">No</th>
-                                <th>Tanggal</th>
-                                <th>Pelanggan</th>
+                                <th width="3%">No</th>
+                                <th width="8%">Tanggal</th>
+                                <th width="10%">No. Nota</th>
+                                <th width="10%">Outlet</th>
+                                <th width="12%">Pelanggan</th>
+                                <th width="10%">Kasir</th>
+                                <th width="8%">Shift</th>
+                                <th width="5%" class="text-center">Item</th>
                                 <?php if (!empty($platforms)): ?>
                                     <?php foreach ($platforms as $platform): ?>
                                         <th class="text-right"><?= esc($platform->platform) ?></th>
@@ -160,20 +165,25 @@
                                 <?php endif; ?>
                                 <th class="text-right">Subtotal</th>
                                 <th class="text-right">Retur</th>
-                                <th width="10%">Aksi</th>
+                                <th width="8%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($sales)): ?>
                                 <tr>
-                                    <td colspan="<?= 6 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-center">Tidak ada data penjualan</td>
+                                    <td colspan="<?= 11 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-center">Tidak ada data penjualan</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($sales as $index => $sale): ?>
                                     <tr>
                                         <td><?= $index + 1 ?></td>
                                         <td><?= date('d/m/Y H:i', strtotime($sale->tgl_masuk)) ?></td>
+                                        <td><?= esc($sale->no_nota ?? '-') ?></td>
+                                        <td><?= esc($sale->gudang_nama ?? '-') ?></td>
                                         <td><?= esc($sale->pelanggan_nama ?? 'Umum') ?><?= !empty($sale->pelanggan_kode) ? ' (' . esc($sale->pelanggan_kode) . ')' : '' ?></td>
+                                        <td><?= esc($sale->user_full_name ?? $sale->username ?? '-') ?></td>
+                                        <td><?= esc($sale->shift_nama ?? '-') ?></td>
+                                        <td class="text-center"><?= (int)($sale->total_items ?? 0) ?></td>
                                         <?php if (!empty($platforms)): ?>
                                             <?php foreach ($platforms as $platform): ?>
                                                 <td class="text-right"><?= format_angka($sale->platform_amounts[$platform->id] ?? 0) ?></td>
@@ -199,7 +209,7 @@
                         <?php if (!empty($sales)): ?>
                             <tfoot>
                                 <tr class="bg-light">
-                                    <th colspan="<?= 3 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-right">TOTAL</th>
+                                    <th colspan="<?= 8 + (count($platforms ?? []) + count($vouchers ?? [])) ?>" class="text-right">TOTAL</th>
                                     <th class="text-right"><?= format_angka($totalSales) ?></th>
                                     <th class="text-right"><?= format_angka($totalRetur ?? 0) ?></th>
                                     <th></th>

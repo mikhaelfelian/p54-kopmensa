@@ -817,9 +817,18 @@ $routes->group('laporan', ['namespace' => 'App\Controllers\Laporan', 'filter' =>
     $routes->get('purchase', 'PurchaseReport::index');
     $routes->get('purchase/detail/(:num)', 'PurchaseReport::detail/$1');
     $routes->get('purchase/detail_items/(:num)', 'PurchaseReport::detail_items/$1');
+    $routes->get('purchase/export_detail_items_excel/(:num)', 'PurchaseReport::export_detail_items_excel/$1');
     $routes->get('purchase/print_invoice/(:num)', 'PurchaseReport::print_invoice/$1');
     $routes->get('purchase/export_excel', 'PurchaseReport::export_excel');
     $routes->get('purchase/export_pdf', 'PurchaseReport::export_pdf');
+
+    // Order Report Routes
+    $routes->get('order', 'OrderReport::index');
+    $routes->get('order/detail/(:num)', 'OrderReport::detail/$1');
+    $routes->get('order/detail_items/(:num)', 'OrderReport::detail_items/$1');
+    $routes->get('order/print_invoice/(:num)', 'OrderReport::print_invoice/$1');
+    $routes->get('order/export_excel', 'OrderReport::export_excel');
+    $routes->get('order/export_pdf', 'OrderReport::export_pdf');
 
     // Stock Report Routes
     $routes->get('stock', 'StockReport::index');

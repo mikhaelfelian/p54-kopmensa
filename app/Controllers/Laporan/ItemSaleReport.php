@@ -284,6 +284,7 @@ class ItemSaleReport extends BaseController
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_jual_det.id_item')
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
             ->where('tbl_trans_jual.status_nota', '1')
+            ->where('tbl_trans_jual.status_bayar', '1')
             ->where('tbl_trans_jual.deleted_at IS NULL')
             ->groupBy('tbl_trans_jual_det.id_item');
 

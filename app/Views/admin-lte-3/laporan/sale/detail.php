@@ -60,8 +60,16 @@
                     <div class="col-md-6">
                         <table class="table table-borderless">
                             <tr>
-                                <td width="30%"><strong>Gudang</strong></td>
+                                <td width="30%"><strong>Gudang/Outlet</strong></td>
                                 <td>: <?= $sale->gudang_nama ?? '-' ?></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Shift</strong></td>
+                                <td>: <?= $sale->shift_nama ?? '-' ?></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Kasir</strong></td>
+                                <td>: <?= $sale->user_full_name ?? $sale->username ?? '-' ?></td>
                             </tr>
                             <tr>
                                 <td><strong>Sales</strong></td>
@@ -70,6 +78,10 @@
                             <tr>
                                 <td><strong>Metode Bayar</strong></td>
                                 <td>: <?= $sale->metode_bayar_formatted ?? '-' ?></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Total Item</strong></td>
+                                <td>: <?= (int)($sale->total_items ?? 0) ?> item</td>
                             </tr>
                             <tr>
                                 <td><strong>Status</strong></td>

@@ -19,6 +19,9 @@
                     <i class="fas fa-list mr-1"></i> Detail Item Pembelian - <?= $purchase->no_nota ?>
                 </h3>
                 <div class="card-tools">
+                    <a href="<?= base_url('laporan/purchase/export_detail_items_excel/' . $purchase->id) ?>" class="btn btn-success btn-sm rounded-0">
+                        <i class="fas fa-file-excel mr-1"></i> Export Excel
+                    </a>
                     <a href="<?= base_url('laporan/purchase/detail/' . $purchase->id) ?>" class="btn btn-default btn-sm rounded-0">
                         <i class="fas fa-arrow-left mr-1"></i> Kembali
                     </a>

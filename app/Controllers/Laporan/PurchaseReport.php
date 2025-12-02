@@ -50,10 +50,12 @@ class PurchaseReport extends BaseController
         $builder = $this->transBeliModel->select('
                 tbl_trans_beli.*,
                 tbl_m_supplier.nama as supplier_nama,
-                tbl_m_karyawan.nama as penerima_nama
+                tbl_m_karyawan.nama as penerima_nama,
+                tbl_m_gudang.nama as gudang_nama
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
             ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli.id_gudang', 'left')
             ->where('tbl_trans_beli.deleted_at IS NULL');
 
         // Apply filters
@@ -204,12 +206,14 @@ class PurchaseReport extends BaseController
         $sheet->setCellValue('C4', 'No. Faktur');
         $sheet->setCellValue('D4', 'Supplier');
         $sheet->setCellValue('E4', 'Penerima');
-        $sheet->setCellValue('F4', 'Status');
-        $sheet->setCellValue('G4', 'Total');
+        $sheet->setCellValue('F4', 'Gudang');
+        $sheet->setCellValue('G4', 'Status Nota');
+        $sheet->setCellValue('H4', 'Status Bayar');
+        $sheet->setCellValue('I4', 'Total');
 
         // Style header row
-        $sheet->getStyle('A4:G4')->getFont()->setBold(true);
-        $sheet->getStyle('A4:G4')->getFill()
+        $sheet->getStyle('A4:I4')->getFont()->setBold(true);
+        $sheet->getStyle('A4:I4')->getFill()
             ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFE0E0E0');
 
@@ -217,12 +221,14 @@ class PurchaseReport extends BaseController
         $total = 0;
 
         foreach ($purchases as $index => $purchase) {
-            $status = 'Draft';
+            $statusNota = 'Draft';
             if ($purchase->status_nota == '1') {
-                $status = 'Proses';
+                $statusNota = 'Proses';
             } elseif ($purchase->status_nota == '2') {
-                $status = 'Selesai';
+                $statusNota = 'Selesai';
             }
+
+            $statusBayar = ($purchase->status_bayar == '1') ? 'Lunas' : 'Belum Lunas';
 
             $sheet->setCellValue('A' . $row, $index + 1);
             $sheet->setCellValue('B' . $row, date('d/m/Y', strtotime($purchase->tgl_masuk)));
@@ -230,10 +236,12 @@ class PurchaseReport extends BaseController
             $sheet->setCellValueExplicit('C' . $row, (string)($purchase->no_nota ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValue('D' . $row, $purchase->supplier_nama ?? '-');
             $sheet->setCellValue('E' . $row, $purchase->penerima_nama ?? '-');
-            $sheet->setCellValue('F' . $row, $status);
+            $sheet->setCellValue('F' . $row, $purchase->gudang_nama ?? '-');
+            $sheet->setCellValue('G' . $row, $statusNota);
+            $sheet->setCellValue('H' . $row, $statusBayar);
             // Use actual numeric value for Total column
-            $sheet->setCellValue('G' . $row, (float)($purchase->jml_gtotal ?? 0));
-            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->setCellValue('I' . $row, (float)($purchase->jml_gtotal ?? 0));
+            $sheet->getStyle('I' . $row)->getNumberFormat()->setFormatCode('#,##0');
             
             $total += $purchase->jml_gtotal ?? 0;
             $row++;
@@ -241,13 +249,14 @@ class PurchaseReport extends BaseController
 
         // Add total
         $sheet->setCellValue('A' . $row, 'TOTAL');
+        $sheet->mergeCells('A' . $row . ':H' . $row);
         $sheet->getStyle('A' . $row)->getFont()->setBold(true);
-        $sheet->setCellValue('G' . $row, (float)$total);
-        $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
-        $sheet->getStyle('G' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('I' . $row, (float)$total);
+        $sheet->getStyle('I' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('I' . $row)->getFont()->setBold(true);
 
         // Auto size columns
-        foreach (range('A', 'G') as $col) {
+        foreach (range('A', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -316,6 +325,120 @@ class PurchaseReport extends BaseController
         ];
 
         return $this->view($this->theme->getThemePath() . '/laporan/purchase/detail_items', $data);
+    }
+
+    /**
+     * Export detailed items to Excel
+     */
+    public function export_detail_items_excel($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('laporan/purchase')->with('error', 'ID Pembelian tidak valid');
+        }
+
+        $purchase = $this->transBeliModel->select('
+                tbl_trans_beli.*,
+                tbl_m_supplier.nama as supplier_nama,
+                tbl_m_supplier.alamat as supplier_alamat,
+                tbl_m_supplier.no_tlp as supplier_no_tlp,
+                tbl_m_karyawan.nama as penerima_nama
+            ')
+            ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
+            ->join('tbl_m_karyawan', 'tbl_m_karyawan.id = tbl_trans_beli.id_penerima', 'left')
+            ->where('tbl_trans_beli.id', $id)
+            ->first();
+
+        if (!$purchase) {
+            return redirect()->to('laporan/purchase')->with('error', 'Data pembelian tidak ditemukan');
+        }
+
+        $items = $this->transBeliDetModel->select('
+                tbl_trans_beli_det.*,
+                tbl_m_item.item as item_nama,
+                tbl_m_item.kode as item_kode,
+                tbl_m_satuan.SatuanBesar as satuan_nama,
+                tbl_m_gudang.nama as gudang_nama
+            ')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_det.id_item', 'left')
+            ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_trans_beli_det.id_satuan', 'left')
+            ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_beli_det.id_gudang', 'left')
+            ->where('id_pembelian', $id)
+            ->findAll();
+
+        // Create Excel file
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Set headers
+        $sheet->setCellValue('A1', 'DETAIL ITEM PEMBELIAN');
+        $sheet->setCellValue('A2', 'No. Faktur: ' . ($purchase->no_nota ?? '-'));
+        $sheet->setCellValue('A3', 'Tanggal: ' . date('d/m/Y', strtotime($purchase->tgl_masuk)));
+        $sheet->setCellValue('A4', 'Supplier: ' . ($purchase->supplier_nama ?? '-'));
+        $sheet->setCellValue('A5', 'Penerima: ' . ($purchase->penerima_nama ?? '-'));
+        
+        $sheet->setCellValue('A7', 'No');
+        $sheet->setCellValue('B7', 'Kode Item');
+        $sheet->setCellValue('C7', 'Nama Item');
+        $sheet->setCellValue('D7', 'Satuan');
+        $sheet->setCellValue('E7', 'Gudang');
+        $sheet->setCellValue('F7', 'Qty');
+        $sheet->setCellValue('G7', 'Harga');
+        $sheet->setCellValue('H7', 'Diskon');
+        $sheet->setCellValue('I7', 'PPN');
+        $sheet->setCellValue('J7', 'Subtotal');
+
+        // Style header row
+        $sheet->getStyle('A7:J7')->getFont()->setBold(true);
+        $sheet->getStyle('A7:J7')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setARGB('FFE0E0E0');
+
+        $row = 8;
+        $total = 0;
+
+        foreach ($items as $index => $item) {
+            $sheet->setCellValue('A' . $row, $index + 1);
+            $sheet->setCellValue('B' . $row, $item->item_kode ?? '-');
+            $sheet->setCellValue('C' . $row, $item->item_nama ?? '-');
+            $sheet->setCellValue('D' . $row, $item->satuan_nama ?? '-');
+            $sheet->setCellValue('E' . $row, $item->gudang_nama ?? '-');
+            $sheet->setCellValue('F' . $row, (float)($item->jml ?? 0));
+            $sheet->setCellValue('G' . $row, (float)($item->harga ?? 0));
+            $sheet->getStyle('G' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->setCellValue('H' . $row, (float)($item->potongan ?? 0));
+            $sheet->getStyle('H' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->setCellValue('I' . $row, (float)($item->ppn_amount ?? 0));
+            $sheet->getStyle('I' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            $sheet->setCellValue('J' . $row, (float)($item->subtotal ?? 0));
+            $sheet->getStyle('J' . $row)->getNumberFormat()->setFormatCode('#,##0');
+            
+            $total += $item->subtotal ?? 0;
+            $row++;
+        }
+
+        // Add total
+        $sheet->setCellValue('A' . $row, 'TOTAL');
+        $sheet->mergeCells('A' . $row . ':I' . $row);
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $sheet->setCellValue('J' . $row, (float)$total);
+        $sheet->getStyle('J' . $row)->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('J' . $row)->getFont()->setBold(true);
+
+        // Auto size columns
+        foreach (range('A', 'J') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Create response
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = 'Detail_Item_Pembelian_' . ($purchase->no_nota ?? $id) . '_' . date('Y-m-d') . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer->save('php://output');
+        exit;
     }
 
     /**

@@ -141,6 +141,25 @@
                         </div>
                     <?php endif ?>
                 </div>
+
+                <div class="form-group">
+                    <label for="logo_invoice">Logo Invoice/Laporan</label>
+                    <div class="custom-file">
+                        <?= form_upload([
+                            'class' => 'custom-file-input',
+                            'id' => 'logo_invoice',
+                            'name' => 'logo_invoice',
+                            'accept' => 'image/jpg,image/jpeg,image/png'
+                        ]) ?>
+                        <label class="custom-file-label" for="logo_invoice">Pilih file...</label>
+                    </div>
+                    <small class="text-muted">Format: JPG, JPEG, PNG. Maksimal 2MB. Logo ini akan digunakan pada invoice dan laporan</small>
+                    <?php if (!empty($Pengaturan->logo_invoice)): ?>
+                        <div class="mt-2">
+                            <img src="<?= base_url($Pengaturan->logo_invoice) ?>" alt="Logo Invoice" class="img-fluid" style="max-height: 100px">
+                        </div>
+                    <?php endif ?>
+                </div>
             </div>
             <!-- /.card-body -->
             <div class="card-footer">

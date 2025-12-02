@@ -730,6 +730,7 @@
                         'laporan/item-sale',
                         'laporan/stock',
                         'laporan/purchase',
+                        'laporan/order',
                         'laporan/shift-omzet'
                     ];
                     $isLaporanActive = isMenuActive($laporanMenus);
@@ -773,6 +774,14 @@
                                     <?= nbs(3) ?>
                                     <i class="fas fa-shopping-bag nav-icon"></i>
                                     <p>Pembelian</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('laporan/order') ?>"
+                                    class="nav-link <?= isMenuActive('laporan/order') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-file-invoice nav-icon"></i>
+                                    <p>Pesanan</p>
                                 </a>
                             </li>
                             <li class="nav-item">

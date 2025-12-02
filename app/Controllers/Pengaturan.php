@@ -106,6 +106,14 @@ class Pengaturan extends BaseController
                     'mime_in'   => 'Format file harus ICO atau PNG',
                     'max_size'  => 'Ukuran file maksimal 1MB'
                 ]
+            ],
+            'logo_invoice' => [
+                'rules'  => 'permit_empty|is_image[logo_invoice]|mime_in[logo_invoice,image/jpg,image/jpeg,image/png]|max_size[logo_invoice,2048]',
+                'errors' => [
+                    'is_image'  => 'File harus berupa gambar',
+                    'mime_in'   => 'Format file harus JPG, JPEG, atau PNG',
+                    'max_size'  => 'Ukuran file maksimal 2MB'
+                ]
             ]
         ])) {
             return redirect()->back()->withInput()->with('toastr', [
@@ -117,6 +125,7 @@ class Pengaturan extends BaseController
         // Handle file uploads
         $logo_header = $this->request->getFile('logo_header');
         $favicon = $this->request->getFile('favicon');
+        $logo_invoice = $this->request->getFile('logo_invoice');
 
         $data = [
             'judul' => $this->request->getPost('judul'),
@@ -149,6 +158,18 @@ class Pengaturan extends BaseController
             // Delete old file
             if ($this->pengaturan->favicon && file_exists(FCPATH . $this->pengaturan->favicon)) {
                 unlink(FCPATH . $this->pengaturan->favicon);
+            }
+        }
+
+        // Process logo invoice upload
+        if ($logo_invoice->isValid() && !$logo_invoice->hasMoved()) {
+            $newName = $logo_invoice->getRandomName();
+            $logo_invoice->move(FCPATH . 'public/assets/img', $newName);
+            $data['logo_invoice'] = 'public/assets/img/' . $newName;
+            
+            // Delete old file
+            if ($this->pengaturan->logo_invoice && file_exists(FCPATH . $this->pengaturan->logo_invoice)) {
+                unlink(FCPATH . $this->pengaturan->logo_invoice);
             }
         }
 

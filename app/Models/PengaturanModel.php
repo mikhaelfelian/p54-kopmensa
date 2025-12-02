@@ -14,7 +14,7 @@ class PengaturanModel extends Model
     protected $allowedFields = [
         'judul', 'judul_app', 'alamat', 'deskripsi', 'kota', 
         'url', 'theme', 'pagination_limit', 'favicon', 'logo', 
-        'logo_header', 'apt_apa', 'apt_sipa', 'ppn'
+        'logo_header', 'logo_invoice', 'apt_apa', 'apt_sipa', 'ppn'
     ];
 
     // Dates

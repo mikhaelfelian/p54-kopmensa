@@ -104,9 +104,25 @@ class SaleReport extends BaseController
         $paymentMethods  = [];
         $paymentBreakdown = [];
         $voucherUsage    = [];
+        $itemCounts      = [];
 
         if (!empty($transactionIds)) {
             $db = \Config\Database::connect();
+
+            // Get item counts for each transaction
+            $itemCountData = $db->table('tbl_trans_jual_det')
+                ->select('id_penjualan, COUNT(*) as total_items, SUM(jml) as total_qty')
+                ->whereIn('id_penjualan', $transactionIds)
+                ->groupBy('id_penjualan')
+                ->get()
+                ->getResult();
+
+            foreach ($itemCountData as $ic) {
+                $itemCounts[$ic->id_penjualan] = [
+                    'total_items' => (int)$ic->total_items,
+                    'total_qty' => (float)$ic->total_qty
+                ];
+            }
 
             $paymentData = $db->table('tbl_trans_jual_plat')
                 ->select('id_penjualan, id_platform, platform, SUM(nominal) as total_nominal')
@@ -180,9 +196,28 @@ class SaleReport extends BaseController
             $totalSales += $sale->jml_gtotal ?? 0;
             $totalRetur += $sale->jml_retur;
 
+            // Ensure proper fallbacks for missing data
+            $sale->gudang_nama = $sale->gudang_nama ?? '-';
+            $sale->shift_nama = $sale->shift_nama ?? '-';
+            $sale->username = $sale->username ?? '-';
+            
+            // Create full name from first_name and last_name
+            $fullName = trim(($sale->user_first_name ?? '') . ' ' . ($sale->user_last_name ?? ''));
+            $sale->user_full_name = $fullName ?: $sale->username;
+
             if (empty($sale->sales_nama) || $sale->sales_nama === '-') {
-                $sale->sales_nama = $sale->username ?? 'User ID: ' . ($sale->id_user ?? 'Unknown');
+                $sale->sales_nama = $sale->user_full_name;
             }
+
+            // Set member name (use "Umum" for general customers)
+            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
+                $sale->pelanggan_nama = 'Umum';
+                $sale->pelanggan_kode = '';
+            }
+
+            // Add item counts
+            $sale->total_items = $itemCounts[$sale->id]['total_items'] ?? 0;
+            $sale->total_qty = $itemCounts[$sale->id]['total_qty'] ?? 0;
 
             $sale->metode_pembayaran = $paymentMethods[$sale->id] ?? '-';
 
@@ -196,11 +231,6 @@ class SaleReport extends BaseController
             foreach ($vouchers as $voucher) {
                 $voucherId = $voucher->id;
                 $sale->voucher_amounts[$voucherId] = $voucherUsage[$voucherId][$sale->id] ?? 0;
-            }
-
-            if (empty($sale->pelanggan_nama) || !$sale->id_pelanggan) {
-                $sale->pelanggan_nama = 'Umum';
-                $sale->pelanggan_kode = '';
             }
         }
 
@@ -363,6 +393,10 @@ class SaleReport extends BaseController
         $fullName = trim(($sale->user_first_name ?? '') . ' ' . ($sale->user_last_name ?? ''));
         $sale->user_full_name = $fullName ?: $sale->username;
 
+        // Get total items count
+        $sale->total_items = count($items);
+        $sale->total_qty = array_sum(array_column($items, 'jml'));
+
         $data = [
             'title' => 'Detail Penjualan - ' . $sale->no_nota,
             'Pengaturan' => $this->pengaturan,
@@ -407,11 +441,16 @@ class SaleReport extends BaseController
         $sheet->setCellValue('A1', 'LAPORAN PENJUALAN');
         $sheet->setCellValue('A2', 'Periode: ' . date('d/m/Y', strtotime($startDate)) . ' - ' . date('d/m/Y', strtotime($endDate)));
         
-        // Column headers: No, Tanggal, Pelanggan, [Platforms], [Vouchers], Subtotal, Retur
+        // Column headers: No, Tanggal, No. Nota, Outlet, Pelanggan, Kasir, Shift, Total Item, [Platforms], [Vouchers], Subtotal, Retur
         $col = 'A';
         $sheet->setCellValue($col++ . '4', 'No');
         $sheet->setCellValue($col++ . '4', 'Tanggal');
+        $sheet->setCellValue($col++ . '4', 'No. Nota');
+        $sheet->setCellValue($col++ . '4', 'Outlet');
         $sheet->setCellValue($col++ . '4', 'Pelanggan');
+        $sheet->setCellValue($col++ . '4', 'Kasir');
+        $sheet->setCellValue($col++ . '4', 'Shift');
+        $sheet->setCellValue($col++ . '4', 'Total Item');
         
         // Dynamic platform columns
         $platformCols = [];
@@ -441,12 +480,27 @@ class SaleReport extends BaseController
             $sheet->setCellValue($col++ . $row, $index + 1);
             $sheet->setCellValue($col++ . $row, date('d/m/Y H:i', strtotime($sale->tgl_masuk)));
             
+            // Invoice number (as text to preserve format)
+            $sheet->setCellValueExplicit($col++ . $row, (string)($sale->no_nota ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            
+            // Store name
+            $sheet->setCellValue($col++ . $row, $sale->gudang_nama ?? '-');
+            
             // Pelanggan (with code if available)
             $pelangganText = $sale->pelanggan_nama ?? 'Umum';
             if (!empty($sale->pelanggan_kode)) {
                 $pelangganText .= ' (' . $sale->pelanggan_kode . ')';
             }
             $sheet->setCellValue($col++ . $row, $pelangganText);
+            
+            // Cashier name
+            $sheet->setCellValue($col++ . $row, $sale->user_full_name ?? $sale->username ?? '-');
+            
+            // Shift name
+            $sheet->setCellValue($col++ . $row, $sale->shift_nama ?? '-');
+            
+            // Total items
+            $sheet->setCellValue($col++ . $row, (int)($sale->total_items ?? 0));
             
             // Platform columns
             foreach ($platforms as $platform) {
@@ -476,6 +530,11 @@ class SaleReport extends BaseController
         $sheet->setCellValue($col++ . $row, 'TOTAL');
         $sheet->setCellValue($col++ . $row, '');
         $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col++ . $row, '');
+        $sheet->setCellValue($col++ . $row, array_sum(array_column($sales, 'total_items')));
         
         // Platform totals
         foreach ($platforms as $platform) {
@@ -623,18 +682,23 @@ class SaleReport extends BaseController
         $numVouchers = count($vouchers);
         $totalDynamicCols = $numPlatforms + $numVouchers;
         
-        $subtotalWidth = 40;
-        $returWidth = 30;
-        // Base columns: No (10), Tanggal (30), Pelanggan (50), Subtotal, Retur
-        $baseWidth = 10 + 30 + 50 + $subtotalWidth + $returWidth;
+        $subtotalWidth = 35;
+        $returWidth = 25;
+        // Base columns: No (8), Tanggal (25), No.Nota (25), Outlet (30), Pelanggan (35), Kasir (25), Shift (20), Item (15), Subtotal, Retur
+        $baseWidth = 8 + 25 + 25 + 30 + 35 + 25 + 20 + 15 + $subtotalWidth + $returWidth;
         $availableWidth = 277 - $baseWidth; // Landscape A4 width minus margins and base columns
-        $dynamicColWidth = $totalDynamicCols > 0 ? min(25, $availableWidth / max(1, $totalDynamicCols)) : 0;
+        $dynamicColWidth = $totalDynamicCols > 0 ? min(20, $availableWidth / max(1, $totalDynamicCols)) : 0;
         
         // Table Header
-        $pdf->SetFont('helvetica', 'B', 7);
-        $pdf->Cell(10, 6, 'No', 1, 0, 'C');
-        $pdf->Cell(30, 6, 'Tanggal', 1, 0, 'C');
-        $pdf->Cell(50, 6, 'Pelanggan', 1, 0, 'C');
+        $pdf->SetFont('helvetica', 'B', 6);
+        $pdf->Cell(8, 6, 'No', 1, 0, 'C');
+        $pdf->Cell(25, 6, 'Tanggal', 1, 0, 'C');
+        $pdf->Cell(25, 6, 'No.Nota', 1, 0, 'C');
+        $pdf->Cell(30, 6, 'Outlet', 1, 0, 'C');
+        $pdf->Cell(35, 6, 'Pelanggan', 1, 0, 'C');
+        $pdf->Cell(25, 6, 'Kasir', 1, 0, 'C');
+        $pdf->Cell(20, 6, 'Shift', 1, 0, 'C');
+        $pdf->Cell(15, 6, 'Item', 1, 0, 'C');
         
         // Dynamic platform columns
         foreach ($platforms as $platform) {
@@ -651,40 +715,45 @@ class SaleReport extends BaseController
         $pdf->Cell($returWidth, 6, 'Retur', 1, 1, 'R');
 
         // Table Data
-        $pdf->SetFont('helvetica', '', 6);
+        $pdf->SetFont('helvetica', '', 5);
         $no = 1;
         foreach ($sales as $sale) {
-            $pdf->Cell(10, 5, $no++, 1, 0, 'C');
-            $pdf->Cell(30, 5, date('d/m/Y H:i', strtotime($sale->tgl_masuk)), 1, 0, 'L');
+            $pdf->Cell(8, 4, $no++, 1, 0, 'C');
+            $pdf->Cell(25, 4, date('d/m/Y H:i', strtotime($sale->tgl_masuk)), 1, 0, 'L');
+            $pdf->Cell(25, 4, substr($sale->no_nota ?? '-', 0, 15), 1, 0, 'L');
+            $pdf->Cell(30, 4, substr($sale->gudang_nama ?? '-', 0, 18), 1, 0, 'L');
             
             // Pelanggan (with code if available)
             $pelangganText = $sale->pelanggan_nama ?? 'Umum';
             if (!empty($sale->pelanggan_kode)) {
                 $pelangganText .= ' (' . $sale->pelanggan_kode . ')';
             }
-            $pdf->Cell(50, 5, substr($pelangganText, 0, 25), 1, 0, 'L');
+            $pdf->Cell(35, 4, substr($pelangganText, 0, 20), 1, 0, 'L');
+            $pdf->Cell(25, 4, substr($sale->user_full_name ?? '-', 0, 15), 1, 0, 'L');
+            $pdf->Cell(20, 4, substr($sale->shift_nama ?? '-', 0, 12), 1, 0, 'C');
+            $pdf->Cell(15, 4, (int)($sale->total_items ?? 0), 1, 0, 'C');
             
             // Platform columns
             foreach ($platforms as $platform) {
                 $amount = $sale->platform_amounts[$platform->id] ?? 0;
-                $pdf->Cell($dynamicColWidth, 5, format_angka($amount), 1, 0, 'R');
+                $pdf->Cell($dynamicColWidth, 4, format_angka($amount), 1, 0, 'R');
             }
             
             // Voucher columns
             foreach ($vouchers as $voucher) {
                 $amount = $sale->voucher_amounts[$voucher->id] ?? 0;
-                $pdf->Cell($dynamicColWidth, 5, format_angka($amount), 1, 0, 'R');
+                $pdf->Cell($dynamicColWidth, 4, format_angka($amount), 1, 0, 'R');
             }
             
             // Subtotal
-            $pdf->Cell($subtotalWidth, 5, format_angka($sale->jml_gtotal ?? 0), 1, 0, 'R');
-            $pdf->Cell($returWidth, 5, format_angka($sale->jml_retur ?? 0), 1, 1, 'R');
+            $pdf->Cell($subtotalWidth, 4, format_angka($sale->jml_gtotal ?? 0), 1, 0, 'R');
+            $pdf->Cell($returWidth, 4, format_angka($sale->jml_retur ?? 0), 1, 1, 'R');
         }
 
         // Total row
-        $pdf->SetFont('helvetica', 'B', 7);
-        $totalColWidth = 10 + 30 + 50 + ($dynamicColWidth * $totalDynamicCols);
-        $pdf->Cell($totalColWidth, 6, 'TOTAL', 1, 0, 'R');
+        $pdf->SetFont('helvetica', 'B', 6);
+        $totalColWidth = 8 + 25 + 25 + 30 + 35 + 25 + 20 + 15 + ($dynamicColWidth * $totalDynamicCols);
+        $pdf->Cell($totalColWidth, 5, 'TOTAL', 1, 0, 'R');
         
         // Platform totals
         foreach ($platforms as $platform) {
@@ -692,7 +761,7 @@ class SaleReport extends BaseController
             foreach ($sales as $sale) {
                 $totalPlatform += $sale->platform_amounts[$platform->id] ?? 0;
             }
-            $pdf->Cell($dynamicColWidth, 6, format_angka($totalPlatform), 1, 0, 'R');
+            $pdf->Cell($dynamicColWidth, 5, format_angka($totalPlatform), 1, 0, 'R');
         }
         
         // Voucher totals
@@ -701,11 +770,11 @@ class SaleReport extends BaseController
             foreach ($sales as $sale) {
                 $totalVoucher += $sale->voucher_amounts[$voucher->id] ?? 0;
             }
-            $pdf->Cell($dynamicColWidth, 6, format_angka($totalVoucher), 1, 0, 'R');
+            $pdf->Cell($dynamicColWidth, 5, format_angka($totalVoucher), 1, 0, 'R');
         }
         
-        $pdf->Cell($subtotalWidth, 6, format_angka($totalSales), 1, 0, 'R');
-        $pdf->Cell($returWidth, 6, format_angka($totalRetur), 1, 1, 'R');
+        $pdf->Cell($subtotalWidth, 5, format_angka($totalSales), 1, 0, 'R');
+        $pdf->Cell($returWidth, 5, format_angka($totalRetur), 1, 1, 'R');
 
         // Summary
         $pdf->Ln(5);
