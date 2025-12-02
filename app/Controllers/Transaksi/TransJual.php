@@ -256,10 +256,12 @@ class TransJual extends BaseController
                 tbl_m_gudang.nama as nama_toko,
                 tbl_m_pelanggan.kode as no_anggota,
                 tbl_m_pelanggan.nama as nama_pelanggan,
+                tbl_m_shift.shift_code as shift_nama,
                 CONCAT(tbl_ion_users.first_name, " ", tbl_ion_users.last_name) as nama_kasir,
                 tbl_ion_users.username as username_kasir')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
             ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left');
         
         if ($search) {
@@ -399,16 +401,18 @@ class TransJual extends BaseController
      */
     public function getTransactionDetails($id)
     {
-        // Get transaction with joins to get store name, customer info, and cashier name
+        // Get transaction with joins to get store name, customer info, cashier name, and shift
         $transaction = $this->db->table('tbl_trans_jual')
             ->select('tbl_trans_jual.*, 
                 tbl_m_gudang.nama as nama_toko,
                 tbl_m_pelanggan.kode as no_anggota,
                 tbl_m_pelanggan.nama as nama_pelanggan,
+                tbl_m_shift.shift_code as shift_nama,
                 CONCAT(tbl_ion_users.first_name, " ", tbl_ion_users.last_name) as nama_kasir,
                 tbl_ion_users.username as username_kasir')
             ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
             ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+            ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
             ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
             ->where('tbl_trans_jual.id', $id)
             ->get()
@@ -424,6 +428,12 @@ class TransJual extends BaseController
 
         $details = $this->transJualDetModel->getDetailsWithItem($id);
         $platforms = $this->transJualPlatModel->getPlatformsWithInfo($id);
+
+        // Ensure customer name fallback to "Umum"
+        if (empty($transaction->nama_pelanggan) || !$transaction->id_pelanggan) {
+            $transaction->nama_pelanggan = 'Umum';
+            $transaction->no_anggota = '';
+        }
 
         // Get payment methods as formatted string
         $paymentMethods = [];
@@ -1059,7 +1069,28 @@ class TransJual extends BaseController
             $noNota = $this->transJualModel->generateKode();
             $Pengaturan = $this->pengaturan;
 
-            $pelanggan = $this->pelangganModel->find($customerId);
+            // Get customer - if null or invalid, use default UMUM customer
+            $pelanggan = null;
+            if ($customerId) {
+                $pelanggan = $this->pelangganModel->find($customerId);
+            }
+            
+            // If no customer found, get or use default UMUM customer
+            if (!$pelanggan) {
+                $umumCustomer = $this->pelangganModel
+                    ->where('nama', 'UMUM')
+                    ->where('tipe', '2') // tipe 2 = umum
+                    ->first();
+                
+                if (!$umumCustomer) {
+                    // Try to find any customer with tipe 2
+                    $umumCustomer = $this->pelangganModel
+                        ->where('tipe', '2')
+                        ->first();
+                }
+                
+                $pelanggan = $umumCustomer;
+            }
 
             $status_ppn = 1; // included
 
@@ -1169,7 +1200,7 @@ class TransJual extends BaseController
             $transactionData = [
                 'id_user'           => $this->ionAuth->user()->row()->id,
                 'id_sales'          => $warehouseId ?? 0, // Can be added later if needed
-                'id_pelanggan'      => $pelanggan->id_user ?? 2,
+                'id_pelanggan'      => $pelanggan ? $pelanggan->id : null,
                 'id_gudang'         => $warehouseId,
                 'id_shift'          => session()->get('kasir_shift'),
                 'no_nota'           => $noNota,

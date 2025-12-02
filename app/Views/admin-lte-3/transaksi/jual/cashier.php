@@ -3722,7 +3722,7 @@ helper('form');
             </div>`;
         });
 
-        // Payment block - show all payment methods
+        // Payment block - show all payment methods with notes
         let paymentHTML = '';
         let totalPayment = 0;
         let change = 0;
@@ -3743,8 +3743,9 @@ helper('form');
                 paymentHTML += `<div style="font-family:monospace;">
                     ${padRight(methodName, 16)}${padLeft(numberFormat(amount), 16)}
                 </div>`;
+                // Always display payment notes if available
                 if (notes) {
-                    paymentHTML += `<div style="font-family:monospace;font-size:11px;padding-left:4px;">${notes}</div>`;
+                    paymentHTML += `<div style="font-family:monospace;font-size:10px;padding-left:4px;color:#555;">Catatan: ${notes}</div>`;
                 }
                 totalPayment += amount;
             });
@@ -3762,6 +3763,7 @@ helper('form');
         // Get member number from customer data if available
         const memberNumber = transactionData.customer_code || transactionData.no_anggota || '';
         const storeName = transactionData.store_name || transactionData.nama_toko || outlet || COMPANY_NAME;
+        const shiftName = transactionData.shift_nama || transactionData.shift_code || '';
         const paymentNotes = transactionData.payment_notes || transactionData.catatan || '';
 
         // Compose HTML
@@ -3774,6 +3776,7 @@ ${padRight('No. Nota', 12)}: ${no_nota || '-'}<br>
 ${padRight('Tanggal', 12)}: ${dateStr || '-'}<br>
 ${padRight('Waktu', 12)}: ${dateStr ? dateStr.split(' ')[1] || '' : '-'}<br>
 ${padRight('Kasir', 12)}: ${cashier || user || '-'}<br>
+${shiftName ? `${padRight('Shift', 12)}: ${shiftName}<br>` : ''}
 ${customer_name && customer_name !== 'Umum' ? `${padRight('Pelanggan', 12)}: ${customer_name}<br>` : ''}
 ${memberNumber ? `${padRight('No. Anggota', 12)}: ${memberNumber}<br>` : ''}
 ${paymentNotes ? `${padRight('Catatan', 12)}: ${paymentNotes}<br>` : ''}

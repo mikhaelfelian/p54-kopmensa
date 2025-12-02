@@ -154,18 +154,31 @@ class PrintController extends BaseController
     {
         switch ($type) {
             case 'jual':
-                // Get sales transaction with customer info
+                // Get sales transaction with customer info, store, shift, and cashier
                 $transaction = $this->transJualModel->select('
                         tbl_trans_jual.*,
                         tbl_m_pelanggan.nama as customer_nama,
+                        tbl_m_pelanggan.kode as customer_kode,
+                        tbl_m_gudang.nama as store_nama,
+                        tbl_m_shift.shift_code as shift_nama,
+                        CONCAT(tbl_ion_users.first_name, " ", tbl_ion_users.last_name) as cashier_name,
+                        tbl_ion_users.username as cashier_username,
                         tbl_ion_users.first_name as user_name
                     ')
                     ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_trans_jual.id_pelanggan', 'left')
+                    ->join('tbl_m_gudang', 'tbl_m_gudang.id = tbl_trans_jual.id_gudang', 'left')
+                    ->join('tbl_m_shift', 'tbl_m_shift.id = tbl_trans_jual.id_shift', 'left')
                     ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_jual.id_user', 'left')
                     ->where('tbl_trans_jual.id', $id)
                     ->first();
                 
                 if ($transaction) {
+                    // Ensure customer name fallback to "Umum"
+                    if (empty($transaction->customer_nama) || !$transaction->id_pelanggan) {
+                        $transaction->customer_nama = 'Umum';
+                        $transaction->customer_kode = '';
+                    }
+                    
                     // Get transaction details
                     $transJualDetModel = new \App\Models\TransJualDetModel();
                     $transaction->details = $transJualDetModel->getDetailsWithItem($id);
@@ -322,6 +335,30 @@ class PrintController extends BaseController
             $html .= '</div>';
         }
 
+        // Store name
+        if ($type === 'jual' && isset($transaction->store_nama) && $transaction->store_nama) {
+            $html .= '<div class="info-row">';
+            $html .= '<span class="info-label">Store:</span>';
+            $html .= '<span>' . $transaction->store_nama . '</span>';
+            $html .= '</div>';
+        }
+        
+        // Shift name
+        if ($type === 'jual' && isset($transaction->shift_nama) && $transaction->shift_nama) {
+            $html .= '<div class="info-row">';
+            $html .= '<span class="info-label">Shift:</span>';
+            $html .= '<span>' . $transaction->shift_nama . '</span>';
+            $html .= '</div>';
+        }
+        
+        // Customer member number (for sales)
+        if ($type === 'jual' && isset($transaction->customer_kode) && $transaction->customer_kode) {
+            $html .= '<div class="info-row">';
+            $html .= '<span class="info-label">Member No:</span>';
+            $html .= '<span>' . $transaction->customer_kode . '</span>';
+            $html .= '</div>';
+        }
+        
         // Payment method
         $paymentSummaryText = $this->formatPaymentSummaryText($transaction->payments ?? [], $transaction->metode_bayar ?? null, false);
         $voucherInfo = $this->getVoucherInfo($transaction);
@@ -336,10 +373,15 @@ class PrintController extends BaseController
             foreach ($transaction->payments as $payment) {
                 $label = $payment->nama_platform ?? $payment->platform ?? 'Payment';
                 $amount = number_format((float)($payment->nominal ?? 0), 0, ',', '.');
-                $html .= '<span style="width:100%; display:flex; justify-content:space-between;">';
+                $notes = $payment->keterangan ?? '';
+                $html .= '<span style="width:100%; display:flex; justify-content:space-between; margin-bottom:2px;">';
                 $html .= '<span>' . $label . '</span>';
                 $html .= '<span>Rp ' . $amount . '</span>';
                 $html .= '</span>';
+                // Display payment notes if available
+                if (!empty($notes)) {
+                    $html .= '<span style="width:100%; font-size:9px; color:#666; padding-left:8px; margin-bottom:4px;">Note: ' . htmlspecialchars($notes) . '</span>';
+                }
             }
             $html .= '</div>';
         }
@@ -1174,9 +1216,17 @@ class PrintController extends BaseController
             foreach ($transaction->payments as $payment) {
                 $label = $payment->nama_platform ?? $payment->platform ?? 'Payment';
                 $amount = number_format((float)($payment->nominal ?? 0), 0, ',', '.');
+                $notes = $payment->keterangan ?? '';
                 $pdf->SetX(202);
                 $pdf->Cell(50, 5, $label, 0, 0, 'L');
                 $pdf->Cell(33, 5, 'Rp ' . $amount, 0, 1, 'R');
+                // Display payment notes if available
+                if (!empty($notes)) {
+                    $pdf->SetX(202);
+                    $pdf->SetFont('helvetica', 'I', 7);
+                    $pdf->Cell(83, 3, 'Note: ' . $notes, 0, 1, 'L');
+                    $pdf->SetFont('helvetica', '', 8);
+                }
             }
         }
         

@@ -115,6 +115,9 @@
                                 <th width="5%" class="text-center">No</th>
                                 <th>No. Nota</th>
                                 <th>Pelanggan</th>
+                                <th>Store</th>
+                                <th>Shift</th>
+                                <th>Metode Bayar</th>
                                 <th class="text-right">Total</th>
                                 <th width="12%">Aksi</th>
                             </tr>
@@ -122,7 +125,7 @@
                         <tbody>
                             <?php if (empty($transactions)): ?>
                                 <tr>
-                                    <td colspan="9" class="text-center">Tidak ada data transaksi</td>
+                                    <td colspan="8" class="text-center">Tidak ada data transaksi</td>
                                 </tr>
                             <?php else: ?>
                                 <?php
@@ -139,18 +142,40 @@
                                         </td>
                                         <td>
                                             <?php
-                                            // Find Pelanggan
-                                            $customerName = 'Umum';
-                                            if ($row->id_pelanggan) {
+                                            // Use joined data if available, otherwise fallback to lookup
+                                            $customerName = $row->nama_pelanggan ?? 'Umum';
+                                            $noAnggota = $row->no_anggota ?? '';
+                                            
+                                            // If no customer name from join or customer is null, use Umum
+                                            if (empty($customerName) || !$row->id_pelanggan) {
+                                                $customerName = 'Umum';
+                                            }
+                                            
+                                            // If still empty, try lookup from customers array
+                                            if (empty($customerName) && $row->id_pelanggan) {
                                                 foreach ($customers as $customer) {
                                                     if ($customer->id == $row->id_pelanggan) {
-                                                        $customerName = isset($customer->nama) ? $customer->nama : 'Umum';
+                                                        $customerName = $customer->nama ?? 'Umum';
+                                                        $noAnggota = $customer->kode ?? '';
                                                         break;
                                                     }
                                                 }
                                             }
-                                            echo '' . esc($customerName) . '';
+                                            
+                                            echo esc($customerName);
+                                            if (!empty($noAnggota)) {
+                                                echo '<br/><small class="text-muted">No. Anggota: ' . esc($noAnggota) . '</small>';
+                                            }
                                             ?>
+                                        </td>
+                                        <td>
+                                            <?= esc($row->nama_toko ?? '-') ?>
+                                        </td>
+                                        <td>
+                                            <?= esc($row->shift_nama ?? '-') ?>
+                                        </td>
+                                        <td>
+                                            <small><?= esc($row->metode_pembayaran ?? '-') ?></small>
                                         </td>
                                         <td class="text-right">
                                             <?php $rowStatusRetur = $row->status_retur ?? '0'; ?>
@@ -991,8 +1016,12 @@
         let paymentHTML = '';
         if (payment_methods && payment_methods.length > 0) {
             payment_methods.forEach(pm => {
-                const methodName = pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang';
-                paymentHTML += `<div>${methodName}: ${formatCurrency(pm.amount)}</div>`;
+                const methodName = pm.platform || (pm.type === '1' ? 'Tunai' : pm.type === '2' ? 'Non Tunai' : 'Piutang');
+                const notes = pm.keterangan || pm.notes || '';
+                paymentHTML += `<div>${methodName}: ${formatCurrency(pm.amount || pm.nominal || 0)}</div>`;
+                if (notes) {
+                    paymentHTML += `<div style="font-size:11px;color:#666;padding-left:10px;">Catatan: ${notes}</div>`;
+                }
             });
         }
 
