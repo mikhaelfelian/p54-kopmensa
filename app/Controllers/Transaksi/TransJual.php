@@ -1043,22 +1043,58 @@ class TransJual extends BaseController
 
         // Skip payment validation for drafts; otherwise, validate
         if (!$isDraft) {
-            if (empty($paymentMethods) || !is_array($paymentMethods)) {
+            // Filter out vouchers from payment methods (vouchers are discounts, not payments)
+            $filteredPaymentMethods = [];
+            if (!empty($paymentMethods) && is_array($paymentMethods)) {
+                foreach ($paymentMethods as $payment) {
+                    // Skip vouchers (type '4' or 'voucher') - they are discounts, not payments
+                    if (isset($payment['type']) && ($payment['type'] == '4' || $payment['type'] == 'voucher')) {
+                        continue;
+                    }
+                    $filteredPaymentMethods[] = $payment;
+                }
+            }
+            
+            if (empty($filteredPaymentMethods)) {
                 return $this->response->setJSON(['error' => 'Metode pembayaran harus diisi']);
             }
+
+            // Calculate cart total first
+            $cartTotal = 0;
+            foreach ($cart as $item) {
+                $cartTotal += ($item['price'] * $item['quantity']);
+            }
+            
+            // Calculate voucher discount to get adjusted grand total
+            $calculatedVoucherDiscount = 0;
+            if (!empty($voucherCode) && $voucherDiscount > 0) {
+                if ($voucherType === 'nominal' && $voucherDiscountAmount > 0) {
+                    $calculatedVoucherDiscount = (float) $voucherDiscountAmount;
+                } else if ($voucherType === 'persen' || empty($voucherType)) {
+                    // Calculate from cart total
+                    $calculatedVoucherDiscount = $cartTotal * ($voucherDiscount / 100);
+                }
+            }
+            
+            // Adjusted grand total after voucher discount
+            $adjustedGrandTotal = $cartTotal - $calculatedVoucherDiscount;
 
             // Enforce blocked-member rule for Piutang Anggota and validate spending limit
             $guardResult = $this->paymentGuard->allowPayment(
                 $customerId ? (int) $customerId : null, 
-                $paymentMethods,
-                (float) $grandTotal // Pass transaction amount for limit validation
+                $filteredPaymentMethods,
+                (float) $adjustedGrandTotal // Pass adjusted amount for limit validation
             );
             if (!$guardResult['allowed']) {
                 return $this->response->setJSON(['error' => $guardResult['message']]);
             }
 
-            if ($totalAmountReceived < $grandTotal) {
-                return $this->response->setJSON(['error' => 'Jumlah bayar kurang dari total']);
+            // Validate total payment amount matches adjusted grand total (allow small rounding differences)
+            $paymentTolerance = 100; // Allow 100 rupiah difference for rounding
+            if (abs($totalAmountReceived - $adjustedGrandTotal) > $paymentTolerance) {
+                return $this->response->setJSON([
+                    'error' => 'Jumlah bayar tidak sesuai dengan total. Total: ' . number_format($adjustedGrandTotal, 0, ',', '.') . ', Bayar: ' . number_format($totalAmountReceived, 0, ',', '.')
+                ]);
             }
         }
 
@@ -1090,6 +1126,32 @@ class TransJual extends BaseController
                 }
                 
                 $pelanggan = $umumCustomer;
+            }
+
+            // Validate voucher before processing transaction (only for completed transactions)
+            $voucherId = $this->request->getPost('voucher_id') ?: null;
+            $voucherCode = $this->request->getPost('voucher_code') ?: null;
+            if (!$isDraft && !empty($voucherCode) && !empty($voucherId)) {
+                $voucher = $this->voucherModel->find($voucherId);
+                if (!$voucher) {
+                    throw new \Exception('Voucher tidak ditemukan');
+                }
+                
+                // Re-validate voucher before using (check balance and validity)
+                if (!$this->voucherModel->isVoucherValid($voucherCode)) {
+                    $today = date('Y-m-d');
+                    $errorMessage = 'Voucher tidak valid';
+                    
+                    if ($voucher->tgl_masuk > $today) {
+                        $errorMessage = 'Voucher belum aktif';
+                    } elseif ($voucher->tgl_keluar < $today) {
+                        $errorMessage = 'Voucher sudah kadaluarsa';
+                    } elseif ($voucher->jml_keluar >= $voucher->jml_max) {
+                        $errorMessage = 'Voucher sudah habis digunakan';
+                    }
+                    
+                    throw new \Exception($errorMessage);
+                }
             }
 
             $status_ppn = 1; // included
@@ -1131,22 +1193,24 @@ class TransJual extends BaseController
             // Calculate diskon (discount %)
             $discountAmount = $jml_total * ($discountPercent / 100);
 
-            // Check if voucher is used as payment method (in payment_methods array)
-            $voucherAsPayment = false;
-            $voucherPaymentAmount = 0;
+            // Vouchers are ALWAYS discounts, never payment methods
+            // Remove any voucher entries from payment_methods array
+            $filteredPaymentMethods = [];
             if (!$isDraft && !empty($paymentMethods)) {
                 foreach ($paymentMethods as $payment) {
+                    // Skip vouchers (type '4' or 'voucher') - they are discounts, not payments
                     if (isset($payment['type']) && ($payment['type'] == '4' || $payment['type'] == 'voucher')) {
-                        $voucherAsPayment = true;
-                        $voucherPaymentAmount = (float)($payment['amount'] ?? 0);
-                        break;
+                        log_message('debug', 'Skipping voucher from payment methods - vouchers are discounts, not payments');
+                        continue;
                     }
+                    $filteredPaymentMethods[] = $payment;
                 }
             }
+            $paymentMethods = $filteredPaymentMethods;
 
-            // Calculate voucher as discount (if not used as payment method)
+            // Calculate voucher as discount
             $voucherAmount = 0;
-            if (!empty($voucherCode) && $voucherDiscount > 0 && !$voucherAsPayment) {
+            if (!empty($voucherCode) && $voucherDiscount > 0) {
                 if ($voucherType === 'nominal' && $voucherDiscountAmount > 0) {
                     // Nominal voucher - use the provided discount amount
                     $voucherAmount = (float) $voucherDiscountAmount;
@@ -1154,10 +1218,14 @@ class TransJual extends BaseController
                     // Percentage voucher - calculate from percentage
                     $voucherAmount = $jml_total * ($voucherDiscount / 100);
                 }
+                
+                // Ensure voucher amount doesn't exceed grand total
+                if ($voucherAmount > $jml_total) {
+                    $voucherAmount = $jml_total;
+                }
             }
 
-            // jml_diskon = total diskon (voucher as discount + diskon % or nominal)
-            // Note: If voucher is used as payment method, it's not included in discount
+            // jml_diskon = total diskon (voucher discount + discount % or nominal)
             $jml_diskon = $discountAmount + $voucherAmount;
 
             // Grand total (jml_gtotal) before PPN breakdown
@@ -1360,23 +1428,11 @@ class TransJual extends BaseController
                     // Debug: Log each payment
                     log_message('debug', 'Processing payment: ' . json_encode($payment));
                     
-                    // Handle voucher as payment method
+                    // Vouchers should NOT be in payment_methods array - they are discounts, not payments
+                    // If somehow a voucher got through, skip it
                     if (isset($payment['type']) && ($payment['type'] == '4' || $payment['type'] == 'voucher')) {
-                        // Voucher used as payment method - create platform entry for voucher
-                        if (!empty($voucherCode) && $voucherPaymentAmount > 0) {
-                            $platformData = [
-                                'id_penjualan' => $transactionId,
-                                'id_platform'  => null, // Voucher doesn't have platform ID
-                                'no_nota'      => $noNota,
-                                'platform'     => 'Voucher: ' . $voucherCode,
-                                'keterangan'   => (!empty($payment['keterangan']) ? $payment['keterangan'] : 'Voucher ' . $voucherCode),
-                                'nominal'      => $voucherPaymentAmount
-                            ];
-                            
-                            log_message('debug', 'Inserting voucher as payment: ' . json_encode($platformData));
-                            $this->transJualPlatModel->insert($platformData);
-                        }
-                        continue; // Skip to next payment method
+                        log_message('warning', 'Voucher found in payment methods - skipping. Vouchers are discounts, not payments.');
+                        continue;
                     }
                     
                     // Debug: Check all available keys in payment array
@@ -1423,12 +1479,20 @@ class TransJual extends BaseController
             }
 
             // Mark voucher as used if transaction is completed and voucher was applied
-            if (!$isDraft && !empty($voucherCode) && !empty($this->request->getPost('voucher_id'))) {
-                $voucherId = $this->request->getPost('voucher_id');
-                $voucherUsed = $this->voucherModel->useVoucher($voucherId);
-                if (!$voucherUsed) {
-                    log_message('warning', 'Failed to mark voucher as used. Voucher ID: ' . $voucherId);
-                    // Don't throw error - transaction is already completed
+            // This is done within the transaction, so if transaction fails, voucher won't be marked as used
+            if (!$isDraft && !empty($voucherCode) && !empty($voucherId)) {
+                // Re-check voucher validity one more time before marking as used
+                $voucher = $this->voucherModel->find($voucherId);
+                if ($voucher && $this->voucherModel->isVoucherValid($voucherCode)) {
+                    $voucherUsed = $this->voucherModel->useVoucher($voucherId);
+                    if (!$voucherUsed) {
+                        log_message('warning', 'Failed to mark voucher as used. Voucher ID: ' . $voucherId);
+                        throw new \Exception('Gagal menandai voucher sebagai digunakan. Voucher mungkin sudah habis.');
+                    }
+                    log_message('debug', 'Voucher marked as used. Voucher ID: ' . $voucherId . ', Code: ' . $voucherCode);
+                } else {
+                    log_message('warning', 'Cannot mark voucher as used - voucher is invalid or already used. Voucher ID: ' . $voucherId);
+                    throw new \Exception('Voucher tidak valid atau sudah habis digunakan');
                 }
             }
 
