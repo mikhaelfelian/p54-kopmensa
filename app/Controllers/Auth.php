@@ -29,7 +29,7 @@ class Auth extends BaseController
 
     public function index()
     {
-        $data = [
+        $data = [ 
             'title'         => 'Dashboard',
             'Pengaturan'    => $this->pengaturan
         ];
@@ -37,7 +37,7 @@ class Auth extends BaseController
         if ($this->ionAuth->loggedIn()) {
             return redirect()->to('/dashboard');
         }
-        return $this->login();
+        return $this->login();a
     }
 
     public function login()
