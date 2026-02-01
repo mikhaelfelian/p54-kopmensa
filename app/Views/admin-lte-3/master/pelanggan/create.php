@@ -20,7 +20,7 @@
 
 <?= $this->section('content') ?>
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-6"> 
         <?= form_open('master/customer/store') ?>
         <div class="card card-default">
             <div class="card-header">
