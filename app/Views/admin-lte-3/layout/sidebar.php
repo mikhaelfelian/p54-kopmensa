@@ -664,7 +664,7 @@
                         'gudang/penerimaan',
                         'gudang/input_stok',
                         'gudang/stok',
-                        'gudang/opname'
+                        'gudang/opname' 
                     ];
 
                     $isGudangActive = isMenuActive($gudangMenus);
