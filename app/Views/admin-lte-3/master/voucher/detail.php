@@ -32,7 +32,7 @@
                                         <span class="badge badge-info">Persentase (%)</span>
                                     <?php endif; ?>
                                 </td>
-                            </tr>
+                            </tr> 
                             <tr>
                                 <td><strong>Nominal Voucher</strong></td>
                                 <td>: 
