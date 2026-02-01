@@ -78,7 +78,7 @@ class Opname extends BaseController
             } elseif ($tipe == 'Outlet') {
                 $builder = $builder->where('tipe', '2');
             }
-        }
+        } 
         
         if ($status !== null && $status !== '') {
             $builder = $builder->where('status', $status);
