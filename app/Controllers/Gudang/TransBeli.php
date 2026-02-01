@@ -23,7 +23,7 @@ class TransBeli extends BaseController
 {
     protected $transBeliModel;
     protected $transBeliDetModel;
-    protected $supplierModel;
+    protected $supplierModel; 
     protected $gudangModel;
     protected $itemModel;
     protected $itemStokModel;
