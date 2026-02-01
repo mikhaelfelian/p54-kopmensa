@@ -16,7 +16,7 @@ class Home extends BaseController
 
     public function __construct()
     {
-        $this->itemModel = new ItemModel();
+        $this->itemModel = new ItemModel(); s
     }
 
     // Add SKU
