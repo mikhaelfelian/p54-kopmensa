@@ -20,9 +20,9 @@ use Exception;
 class Opname extends BaseController
 {
     protected $utilSOModel;
-    protected $gudangModel;
+    protected $gudangModel; 
     protected $itemModel;
-    protected $itemStokModel;
+    protected $itemStokModel; 
     protected $itemHistModel;
     protected $utilSODetModel;
     protected $ionAuth;
