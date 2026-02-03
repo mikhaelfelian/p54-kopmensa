@@ -107,16 +107,16 @@ class Publik extends BaseController
              // Log the error
              log_message('error', '[Publik::getItemsStock] Error: ' . $e->getMessage());
 
-             // Send error response
-             header('HTTP/1.1 500 Internal Server Error');
-             header('Content-Type: application/json; charset=utf-8');
-             echo json_encode([
-                 'error' => true,
-                 'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Internal server error'
-             ]);
-             exit();
-         }
-     }
+            // Send error response
+            header('HTTP/1.1 500 Internal Server Error', true, 500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'error' => true,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Internal server error'
+            ]);
+            exit();
+        }
+    }
 
     public function getItems()
     {
@@ -221,7 +221,7 @@ class Publik extends BaseController
             log_message('error', '[Publik::getItems] Error: ' . $e->getMessage());
 
             // Send error response
-            header('HTTP/1.1 500 Internal Server Error');
+            header('HTTP/1.1 500 Internal Server Error', true, 500);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'error' => true,
@@ -299,7 +299,7 @@ class Publik extends BaseController
             log_message('error', '[Publik::getItemsBySupplier] Error: ' . $e->getMessage());
 
             // Send error response
-            header('HTTP/1.1 500 Internal Server Error');
+            header('HTTP/1.1 500 Internal Server Error', true, 500);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'error' => true,
@@ -338,7 +338,7 @@ class Publik extends BaseController
             log_message('error', '[Publik::getSatuan] Error: ' . $e->getMessage());
 
             // Send error response
-            header('HTTP/1.1 500 Internal Server Error');
+            header('HTTP/1.1 500 Internal Server Error', true, 500);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => false,
