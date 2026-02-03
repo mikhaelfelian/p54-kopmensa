@@ -15,14 +15,6 @@ RewriteRule ^assets/(.*)$ public/assets/$1 [L]
 # 3) Sisanya route ke front controller di /public/index.php
 RewriteRule ^(.*)$ public/index.php [QSA,L]
 
-# Allow direct access to files
-# RewriteCond %{REQUEST_FILENAME} -f [OR]
-#RewriteCond %{REQUEST_FILENAME} -d
-#RewriteRule ^ - [L]
-
-# Route all other requests through index.php
-RewriteRule ^(.*)$ index.php [QSA,L]
-
 # Security Headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
