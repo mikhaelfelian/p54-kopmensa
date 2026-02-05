@@ -37,7 +37,7 @@ class Auth extends BaseController
         if ($this->ionAuth->loggedIn()) {
             return redirect()->to('/dashboard');
         }
-        return $this->login();a
+        return $this->login();
     }
 
     public function login()
