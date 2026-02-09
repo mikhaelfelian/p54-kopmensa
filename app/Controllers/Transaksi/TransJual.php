@@ -16,7 +16,7 @@ use App\Models\TransJualPlatModel;
 use App\Models\PelangganModel;
 use App\Models\ItemModel;
 use App\Models\ItemStokModel;
-use App\Models\KaryawanModel; s
+use App\Models\KaryawanModel;
 use App\Models\GudangModel;
 use App\Models\PlatformModel;
 use App\Models\OutletPlatformModel;
