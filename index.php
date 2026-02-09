@@ -21,7 +21,32 @@ if (file_exists(__DIR__ . '/app/Config/Boot/development.php') || file_exists(__D
 
 if (file_exists($publicPath) && is_file($publicPath)) {
     // Serve static files directly
-    return false;
+    $mimeType = mime_content_type($publicPath);
+    if ($mimeType === false) {
+        // Fallback MIME type detection based on extension
+        $extension = strtolower(pathinfo($publicPath, PATHINFO_EXTENSION));
+        $mimeTypes = [
+            'css' => 'text/css',
+            'js' => 'application/javascript',
+            'json' => 'application/json',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon',
+            'pdf' => 'application/pdf',
+            'xml' => 'application/xml',
+            'txt' => 'text/plain',
+            'html' => 'text/html',
+        ];
+        $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
+    }
+    
+    header('Content-Type: ' . $mimeType);
+    header('Content-Length: ' . filesize($publicPath));
+    readfile($publicPath);
+    exit();
 } else {
     // Forward to public/index.php
     require_once __DIR__ . '/public/index.php';
