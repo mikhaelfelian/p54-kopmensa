@@ -1326,6 +1326,26 @@ helper('form');
             const amount = parseFloat($(this).val()) || 0;
             const platformId = $(this).closest('.payment-method-row').find('.payment-platform').val();
             console.log('Payment amount changed:', { amount, platformId, paymentRow: $(this).closest('.payment-method-row').data('payment-id') });
+            
+            // If this row now has valid values, remove any empty rows
+            if (platformId && platformId !== '' && amount > 0) {
+                setTimeout(() => {
+                    removeEmptyPaymentRows();
+                }, 100);
+            }
+        });
+        
+        // Also remove empty rows when platform is selected
+        $(document).off('change.payment-cleanup').on('change.payment-cleanup', '.payment-platform', function() {
+            const platformId = $(this).val();
+            const amount = parseFloat($(this).closest('.payment-method-row').find('.payment-amount').val()) || 0;
+            
+            // If this row now has valid values, remove any empty rows
+            if (platformId && platformId !== '' && platformId !== '4' && amount > 0) {
+                setTimeout(() => {
+                    removeEmptyPaymentRows();
+                }, 100);
+            }
         });
 
 
@@ -1829,21 +1849,32 @@ helper('form');
         
         // Initialize the first payment method - ALWAYS set default platform
         if (paymentCounter === 1) {
-            // Set default platform for first payment method (system platform)
-            // Use setTimeout to ensure DOM is ready and platform options are loaded
-            setTimeout(() => {
-                const success = setDefaultPlatformForRow(newPaymentRow);
-                if (!success) {
-                    console.error('Failed to set default platform for first payment row');
-                    // Try again after a short delay to allow platform options to load
-                    setTimeout(() => {
-                        const retrySuccess = setDefaultPlatformForRow(newPaymentRow);
-                        if (!retrySuccess) {
-                            toastr.warning('Gagal memuat platform pembayaran default. Silakan pilih platform secara manual.');
-                        }
-                    }, 500);
-                }
-            }, 100);
+            // Try to set platform immediately if platforms are already loaded
+            const defaultId = getSystemPlatformId();
+            const platformSelect = newPaymentRow.find('.payment-platform');
+            
+            // Check if platform option exists in dropdown (platforms are loaded)
+            if (defaultId && platformSelect.find(`option[value="${defaultId}"]`).length > 0) {
+                // Platforms are loaded, set immediately
+                platformSelect.val(defaultId);
+                console.log(`Immediately set default platform ${defaultId} for first payment row`);
+            } else {
+                // Platforms not loaded yet, use setTimeout
+                setTimeout(() => {
+                    const success = setDefaultPlatformForRow(newPaymentRow);
+                    if (!success) {
+                        console.error('Failed to set default platform for first payment row');
+                        // Try again after a short delay to allow platform options to load
+                        setTimeout(() => {
+                            const retrySuccess = setDefaultPlatformForRow(newPaymentRow);
+                            if (!retrySuccess) {
+                                console.warn('Still failed to set default platform after retry');
+                                // Don't show warning to user, just log it
+                            }
+                        }, 500);
+                    }
+                }, 100);
+            }
             
             newPaymentRow.find('.payment-amount').val('0'); // Default amount
             newPaymentRow.find('.payment-note').val(''); // Default empty note
@@ -1853,6 +1884,16 @@ helper('form');
                 const platformSelect = newPaymentRow.find('.payment-platform');
                 if (!platformSelect.val() || platformSelect.val() === '') {
                     setDefaultPlatformForRow(newPaymentRow);
+                }
+                
+                // After adding a new row, check if we should remove empty first row
+                // Only remove if the new row has a valid platform and amount
+                const newRowPlatformId = newPaymentRow.find('.payment-platform').val();
+                const newRowAmount = parseFloat(newPaymentRow.find('.payment-amount').val()) || 0;
+                
+                if (newRowPlatformId && newRowPlatformId !== '' && newRowAmount > 0) {
+                    // New row is valid, remove any empty rows
+                    removeEmptyPaymentRows();
                 }
             }, 100);
         }
@@ -1867,6 +1908,10 @@ helper('form');
      */
     function removeEmptyPaymentRows() {
         const paymentRows = $('.payment-method-row');
+        if (paymentRows.length === 0) {
+            return 0;
+        }
+        
         const validRows = [];
         const emptyRows = [];
         
@@ -1876,10 +1921,10 @@ helper('form');
             const amount = parseFloat($row.find('.payment-amount').val()) || 0;
             
             // Check if row is empty (no platform selected AND amount is 0)
-            const isEmpty = (!platformId || platformId === '' || platformId === null) && amount <= 0;
+            const isEmpty = (!platformId || platformId === '' || platformId === null || platformId === undefined) && amount <= 0;
             
             if (isEmpty) {
-                emptyRows.push($row);
+                emptyRows.push({row: $row, index: emptyRows.length});
             } else {
                 validRows.push($row);
             }
@@ -1889,15 +1934,15 @@ helper('form');
         // If all rows are empty, keep the first one
         if (validRows.length > 0 && emptyRows.length > 0) {
             console.log(`Removing ${emptyRows.length} empty payment method row(s)`);
-            emptyRows.forEach(function($row) {
-                $row.remove();
+            emptyRows.forEach(function(item) {
+                item.row.remove();
             });
             return emptyRows.length;
         } else if (validRows.length === 0 && emptyRows.length > 1) {
             // Keep only the first empty row, remove the rest
             console.log(`All rows are empty, keeping first row and removing ${emptyRows.length - 1} empty row(s)`);
             for (let i = 1; i < emptyRows.length; i++) {
-                emptyRows[i].remove();
+                emptyRows[i].row.remove();
             }
             return emptyRows.length - 1;
         }
