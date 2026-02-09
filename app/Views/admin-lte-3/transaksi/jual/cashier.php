@@ -1685,12 +1685,47 @@ helper('form');
 
     function setDefaultPlatformForRow($row) {
         if (!$row || !$row.length) {
-            return;
+            console.warn('setDefaultPlatformForRow: Invalid row provided');
+            return false;
         }
+        
         const defaultId = getSystemPlatformId();
+        if (!defaultId) {
+            console.error('setDefaultPlatformForRow: No default platform ID available');
+            return false;
+        }
+        
         const platformSelect = $row.find('.payment-platform');
-        if (!platformSelect.val()) {
+        if (!platformSelect.length) {
+            console.warn('setDefaultPlatformForRow: Platform select not found in row');
+            return false;
+        }
+        
+        // Check if platform option exists in dropdown
+        const optionExists = platformSelect.find(`option[value="${defaultId}"]`).length > 0;
+        if (!optionExists) {
+            console.warn(`setDefaultPlatformForRow: Platform ID ${defaultId} not found in dropdown options`);
+            // Try to select first available option as fallback
+            const firstOption = platformSelect.find('option:not([value=""])').first();
+            if (firstOption.length) {
+                platformSelect.val(firstOption.val());
+                console.log('setDefaultPlatformForRow: Using first available option as fallback');
+            } else {
+                return false;
+            }
+        } else {
+            // Set the default platform
             platformSelect.val(defaultId);
+        }
+        
+        // Verify selection was successful
+        const selectedValue = platformSelect.val();
+        if (selectedValue && selectedValue !== '') {
+            console.log(`setDefaultPlatformForRow: Successfully set platform to ${selectedValue}`);
+            return true;
+        } else {
+            console.error('setDefaultPlatformForRow: Failed to set platform - value is empty');
+            return false;
         }
     }
 
@@ -1789,16 +1824,85 @@ helper('form');
 
         $('#paymentMethods').append(paymentHtml);
 
-        // Initialize the first payment method
+        // Get the newly added payment row
+        const newPaymentRow = $(`[data-payment-id="${paymentCounter}"]`);
+        
+        // Initialize the first payment method - ALWAYS set default platform
         if (paymentCounter === 1) {
             // Set default platform for first payment method (system platform)
-            const firstPaymentRow = $(`[data-payment-id="${paymentCounter}"]`);
-            setDefaultPlatformForRow(firstPaymentRow);
-            firstPaymentRow.find('.payment-amount').val('0'); // Default amount
-            firstPaymentRow.find('.payment-note').val(''); // Default empty note
+            // Use setTimeout to ensure DOM is ready and platform options are loaded
+            setTimeout(() => {
+                const success = setDefaultPlatformForRow(newPaymentRow);
+                if (!success) {
+                    console.error('Failed to set default platform for first payment row');
+                    // Try again after a short delay to allow platform options to load
+                    setTimeout(() => {
+                        const retrySuccess = setDefaultPlatformForRow(newPaymentRow);
+                        if (!retrySuccess) {
+                            toastr.warning('Gagal memuat platform pembayaran default. Silakan pilih platform secara manual.');
+                        }
+                    }, 500);
+                }
+            }, 100);
+            
+            newPaymentRow.find('.payment-amount').val('0'); // Default amount
+            newPaymentRow.find('.payment-note').val(''); // Default empty note
+        } else {
+            // For additional rows, ensure platform is selected if not already set
+            setTimeout(() => {
+                const platformSelect = newPaymentRow.find('.payment-platform');
+                if (!platformSelect.val() || platformSelect.val() === '') {
+                    setDefaultPlatformForRow(newPaymentRow);
+                }
+            }, 100);
         }
 
         calculatePaymentTotals();
+    }
+    
+    /**
+     * Remove empty payment method rows before transaction processing
+     * Removes rows where platformId is null/empty AND amount is 0
+     * Preserves at least one row if all are empty
+     */
+    function removeEmptyPaymentRows() {
+        const paymentRows = $('.payment-method-row');
+        const validRows = [];
+        const emptyRows = [];
+        
+        paymentRows.each(function() {
+            const $row = $(this);
+            const platformId = $row.find('.payment-platform').val();
+            const amount = parseFloat($row.find('.payment-amount').val()) || 0;
+            
+            // Check if row is empty (no platform selected AND amount is 0)
+            const isEmpty = (!platformId || platformId === '' || platformId === null) && amount <= 0;
+            
+            if (isEmpty) {
+                emptyRows.push($row);
+            } else {
+                validRows.push($row);
+            }
+        });
+        
+        // Only remove empty rows if we have at least one valid row
+        // If all rows are empty, keep the first one
+        if (validRows.length > 0 && emptyRows.length > 0) {
+            console.log(`Removing ${emptyRows.length} empty payment method row(s)`);
+            emptyRows.forEach(function($row) {
+                $row.remove();
+            });
+            return emptyRows.length;
+        } else if (validRows.length === 0 && emptyRows.length > 1) {
+            // Keep only the first empty row, remove the rest
+            console.log(`All rows are empty, keeping first row and removing ${emptyRows.length - 1} empty row(s)`);
+            for (let i = 1; i < emptyRows.length; i++) {
+                emptyRows[i].remove();
+            }
+            return emptyRows.length - 1;
+        }
+        
+        return 0;
     }
     
     // Initialize payment methods with default options
@@ -1814,7 +1918,10 @@ helper('form');
         setTimeout(() => {
             const firstPaymentRow = $('[data-payment-id="1"]');
             if (firstPaymentRow.length) {
-                setDefaultPlatformForRow(firstPaymentRow);
+                const success = setDefaultPlatformForRow(firstPaymentRow);
+                if (!success) {
+                    console.warn('Failed to set default platform for first payment row during initialization');
+                }
                 firstPaymentRow.find('.payment-amount').val('0'); // Default amount
                 firstPaymentRow.find('.payment-note').val(''); // Default empty note
             }
@@ -3167,6 +3274,12 @@ helper('form');
 
         // If it's a draft, skip payment validation
         if (!isDraft) {
+            // Remove empty payment method rows before validation
+            const removedCount = removeEmptyPaymentRows();
+            if (removedCount > 0) {
+                console.log(`Removed ${removedCount} empty payment method row(s) before validation`);
+            }
+            
             // Check if voucher is applied and mark it as used
             const voucherId = $('#voucherId').val();
             if (voucherId && voucherId !== '') {
@@ -3184,7 +3297,11 @@ helper('form');
 
                 console.log('Validating payment method:', { platformId, amount });
 
-                if (platformId && amount > 0) {
+                // Explicitly check for empty rows: platformId must be non-null, non-empty string, and amount > 0
+                const isValidPlatformId = platformId !== null && platformId !== '' && platformId !== undefined;
+                const isValidAmount = amount > 0 && !isNaN(amount);
+                
+                if (isValidPlatformId && isValidAmount) {
                     // Determine payment type based on platform (matching backend expectations)
                     let paymentType = 'platform';
                     if (platformId === '4') { // Hardcoded voucher value
@@ -3245,11 +3362,55 @@ helper('form');
                         paymentMethods.push(paymentMethod);
                         totalPaymentAmount += amount;
                     }
+                } else {
+                    // Log skipped empty rows for debugging
+                    console.log('Skipping empty payment method row:', { platformId, amount });
                 }
             });
 
-            if (!hasValidPayment) {
-                toastr.error('Minimal harus ada satu platform pembayaran dengan jumlah > 0. Silakan isi jumlah pembayaran.');
+            // Final filter: Remove any invalid payment methods that might have slipped through
+            paymentMethods = paymentMethods.filter(function(pm) {
+                const isValid = pm.platform_id && 
+                               pm.platform_id !== '' && 
+                               pm.platform_id !== null && 
+                               pm.amount > 0 && 
+                               !isNaN(pm.amount);
+                if (!isValid) {
+                    console.warn('Filtered out invalid payment method:', pm);
+                }
+                return isValid;
+            });
+            
+            // Update totalPaymentAmount after filtering
+            totalPaymentAmount = paymentMethods.reduce(function(sum, pm) {
+                return sum + (parseFloat(pm.amount) || 0);
+            }, 0);
+            
+            console.log(`Final payment methods count: ${paymentMethods.length}, Total amount: ${totalPaymentAmount}`);
+
+            if (!hasValidPayment || paymentMethods.length === 0) {
+                // Check if there are any payment rows at all
+                const totalRows = $('.payment-method-row').length;
+                if (totalRows === 0) {
+                    toastr.error('Tidak ada metode pembayaran. Silakan tambahkan metode pembayaran.');
+                } else {
+                    // Check if all rows are empty
+                    let allEmpty = true;
+                    $('.payment-method-row').each(function() {
+                        const platformId = $(this).find('.payment-platform').val();
+                        const amount = parseFloat($(this).find('.payment-amount').val()) || 0;
+                        if (platformId && platformId !== '' && amount > 0) {
+                            allEmpty = false;
+                            return false; // Break loop
+                        }
+                    });
+                    
+                    if (allEmpty) {
+                        toastr.error('Semua metode pembayaran kosong. Silakan pilih platform dan isi jumlah pembayaran.');
+                    } else {
+                        toastr.error('Minimal harus ada satu platform pembayaran dengan jumlah > 0. Silakan isi jumlah pembayaran.');
+                    }
+                }
                 return;
             }
 
