@@ -911,7 +911,12 @@ class TransJual extends BaseController
         // Get items data
         $items = $this->request->getPost('items');
         $platforms = $this->request->getPost('platforms');
-        
+
+        // Decode items JSON if it's a string
+        if (is_string($items)) {
+            $items = json_decode($items, true);
+        }
+
         // Decode platforms JSON if it's a string
         if (is_string($platforms)) {
             $platforms = json_decode($platforms, true);
@@ -921,8 +926,29 @@ class TransJual extends BaseController
             $this->db->transStart();
 
             // Insert main transaction
-            $this->transJualModel->insert($transactionData);
+            $inserted = $this->transJualModel->insert($transactionData);
+            if ($inserted === false) {
+                $errors = $this->transJualModel->errors();
+                $dbError = $this->db->error();
+                $this->db->transComplete();
+                $errorMsg = !empty($errors) ? implode(' ', $errors) : ($dbError['message'] ?? 'Gagal menyimpan header transaksi.');
+                if (ENVIRONMENT === 'development' && !empty($dbError['message'])) {
+                    $errorMsg .= ' [DB: ' . $dbError['message'] . ']';
+                }
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', $errorMsg);
+            }
+
             $transactionId = $this->transJualModel->getInsertID();
+
+            // Validate transactionId before inserting details
+            if (empty($transactionId) || (int) $transactionId === 0) {
+                $this->db->transComplete();
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Gagal menyimpan transaksi: ID transaksi tidak valid.');
+            }
 
             // Insert transaction details
             if ($items && is_array($items)) {
@@ -996,9 +1022,15 @@ class TransJual extends BaseController
             $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
+                $dbError = $this->db->error();
+                log_message('error', '[TransJual::store] Transaction failed: ' . ($dbError['message'] ?? 'unknown') . ' (code: ' . ($dbError['code'] ?? 0) . ')');
+                $errorMsg = 'Gagal menyimpan transaksi. Silakan coba lagi.';
+                if (ENVIRONMENT === 'development' && !empty($dbError['message'])) {
+                    $errorMsg .= ' [DB: ' . $dbError['message'] . ']';
+                }
                 return redirect()->back()
-                                ->withInput()
-                                ->with('error', 'Gagal menyimpan transaksi. Silakan coba lagi.');
+                    ->withInput()
+                    ->with('error', $errorMsg);
             }
 
             // Success message
