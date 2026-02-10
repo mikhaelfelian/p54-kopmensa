@@ -1613,25 +1613,20 @@ helper('form');
             return;
         }
         
-        // Find the first cash payment method (platform_id = 1)
-        let cashPaymentRow = null;
-        $('.payment-method-row').each(function() {
-            const platformId = $(this).find('.payment-platform').val();
-            if (platformId === targetPlatformId) { // Default cash-like platform
-                cashPaymentRow = $(this);
-                return false; // Break loop
-            }
-        });
+        // Always target the first payment row in the DOM (top of the list)
+        let cashPaymentRow = $('.payment-method-row').first();
         
-        // If no cash payment method exists, add one
-        if (!cashPaymentRow) {
+        // If no payment row exists, add one
+        if (!cashPaymentRow || !cashPaymentRow.length) {
             addPaymentMethod();
-            // Get the newly added payment method row
             cashPaymentRow = $('.payment-method-row').last();
-            cashPaymentRow.find('.payment-platform').val(targetPlatformId); // Set to default platform
+            cashPaymentRow.find('.payment-platform').val(targetPlatformId);
+        } else {
+            // Set first row's platform to cash so it shows Tunai when using quick cash
+            cashPaymentRow.find('.payment-platform').val(targetPlatformId);
         }
         
-        // Set the amount in the cash payment row
+        // Set the amount in the first payment row
         if (cashPaymentRow) {
             cashPaymentRow.find('.payment-amount').val(amount);
             
