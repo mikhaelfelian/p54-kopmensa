@@ -217,6 +217,8 @@
                             </th>
                             <th width="50" class="text-center">No.</th>
                             <th width="80">Foto</th>
+                            <th width="60" class="text-center">Vis</th>
+                            <th>Lokasi Rak</th>
                             <th>Kategori</th>
                             <th>Item</th>
                             <th>Supplier</th>
@@ -248,6 +250,19 @@
                                             </div>
                                         <?php endif; ?>
                                     </td>
+                                    <td class="text-center">
+                                        <?php $isVisible = isset($row->is_visible) ? (int) $row->is_visible : 1; ?>
+                                        <button
+                                            type="button"
+                                            class="btn btn-light btn-sm rounded-0 toggle-visibility-btn"
+                                            data-item-id="<?= $row->id ?>"
+                                            data-is-visible="<?= $isVisible ?>"
+                                            data-toggle="tooltip"
+                                            title="<?= $isVisible === 1 ? 'Sembunyikan dari daftar' : 'Tampilkan di daftar' ?>">
+                                            <i class="fas <?= $isVisible === 1 ? 'fa-eye' : 'fa-eye-slash' ?>"></i>
+                                        </button>
+                                    </td>
+                                    <td><?= esc($row->lokasi_rak ?? '-') ?></td>
                                     <td><?= $row->kategori ?></td>
                                     <td>
                                         <?= $row->kode ?>
@@ -292,7 +307,7 @@
                             <?php endforeach ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="8" class="text-center">Tidak ada data</td>
+                                <td colspan="10" class="text-center">Tidak ada data</td>
                             </tr>
                         <?php endif ?>
                     </tbody>
@@ -312,6 +327,53 @@
 <script>
     $(document).ready(function () {
         $('[data-toggle="tooltip"]').tooltip();
+
+        // Toggle item visibility (list-only)
+        $(document).on('click', '.toggle-visibility-btn', function () {
+            const $btn = $(this);
+            const itemId = $btn.data('item-id');
+            const isVisible = parseInt($btn.data('is-visible') || 1, 10);
+            const csrfName = '<?= csrf_token() ?>';
+            const csrfValue = $('input[name="<?= csrf_token() ?>"]').val();
+
+            $btn.prop('disabled', true);
+
+            $.ajax({
+                url: '<?= base_url('master/item/toggle_visibility/') ?>' + itemId,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    [csrfName]: csrfValue
+                },
+                success: function (res) {
+                    if (res && res.success) {
+                        const newVisible = parseInt(res.is_visible, 10) === 1 ? 1 : 0;
+                        $btn.data('is-visible', newVisible);
+                        $btn.attr('title', newVisible === 1 ? 'Sembunyikan dari daftar' : 'Tampilkan di daftar');
+                        $btn.find('i').removeClass('fa-eye fa-eye-slash').addClass(newVisible === 1 ? 'fa-eye' : 'fa-eye-slash');
+
+                        // Hide row when user hides it (default list filter hides hidden items)
+                        if (newVisible === 0) {
+                            $btn.closest('tr').fadeOut(200, function () { $(this).remove(); });
+                        }
+
+                        if (res.message) toastr.success(res.message);
+                    } else {
+                        toastr.error((res && res.message) ? res.message : 'Gagal mengubah visibility item');
+                    }
+
+                    if (res && res.csrfHash) {
+                        $('input[name="<?= csrf_token() ?>"]').val(res.csrfHash);
+                    }
+                },
+                error: function () {
+                    toastr.error('Terjadi kesalahan server!');
+                },
+                complete: function () {
+                    $btn.prop('disabled', false);
+                }
+            });
+        });
         
         // Handle select all checkbox
         $('#select-all').change(function() {

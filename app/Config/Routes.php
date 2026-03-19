@@ -590,6 +590,7 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('item/import', 'Item::importForm');
     $routes->post('item/import', 'Item::importCsv');
     $routes->get('item/template', 'Item::downloadTemplate');
+    $routes->post('item/toggle_visibility/(:num)', 'Item::toggle_visibility/$1');
 });
 
 // Add route for TransJual get_variants (for cashier)

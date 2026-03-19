@@ -19,6 +19,20 @@
                         <li>Upload file Excel yang sudah diisi melalui form di bawah ini</li>
                         <li>Pastikan file Excel tidak melebihi 5MB</li>
                     </ol>
+                    <hr>
+                    <p class="mb-2"><strong>Aturan pengisian template</strong></p>
+                    <ul class="mb-0">
+                        <li><strong>Wajib diisi</strong>: Item, ID Kategori, ID Merk, ID Supplier, ID Satuan, Harga Beli, Harga Jual, Status, Status Stok, Status PPN, Tipe.</li>
+                        <li><strong>Opsional</strong>: Barcode, Deskripsi, Jml Min, Weight.</li>
+                        <li><strong>Harga Beli / Harga Jual</strong>: isi angka saja. Boleh <code>12000</code> atau <code>12.000</code>. Jangan pakai teks <code>Rp</code>.</li>
+                        <li><strong>Jml Min</strong>: stok minimum untuk peringatan “Stok Rendah”. Isi <code>0</code> bila tidak ingin ada peringatan.</li>
+                        <li><strong>Weight</strong>: berat item (angka). Gunakan titik (<code>.</code>) untuk desimal, contoh <code>1.25</code>.</li>
+                        <li><strong>ID Kategori / ID Merk / ID Supplier / ID Satuan</strong>: gunakan ID sesuai master data di sistem.</li>
+                        <li><strong>Tipe</strong>: <code>1</code>=Item, <code>2</code>=Jasa, <code>3</code>=Paket.</li>
+                        <li><strong>Status</strong>: <code>1</code>=Aktif, <code>0</code>=Non Aktif.</li>
+                        <li><strong>Status Stok</strong>: <code>1</code>=Stockable, <code>0</code>=Non Stockable.</li>
+                        <li><strong>Status PPN</strong>: <code>1</code>=Kena PPN, <code>0</code>=Tidak Kena PPN.</li>
+                    </ul>
                 </div>
 
                 <?= form_open_multipart('master/item/import', ['class' => 'form-horizontal']) ?>

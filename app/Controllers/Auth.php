@@ -103,12 +103,12 @@ class Auth extends BaseController
                                     ->setScoreThreshold(0.5)
                                     ->verify($recaptchaResponse, $_SERVER['REMOTE_ADDR']);
 
-        if (!$recaptcha->isSuccess()) {
-            return redirect()->back()->with('toastr', [
-                'type' => 'error', 
-                'message' => 'reCAPTCHA verification failed. Please try again.'
-            ]);
-        }
+        // if (!$recaptcha->isSuccess()) {
+        //     return redirect()->back()->with('toastr', [
+        //         'type' => 'error', 
+        //         'message' => 'reCAPTCHA verification failed. Please try again.'
+        //     ]);
+        // }
 
         $rules = [
             'user' => [

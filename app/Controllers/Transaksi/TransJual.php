@@ -1060,7 +1060,11 @@ class TransJual extends BaseController
         }
 
         // Get transaction data from POST
-        $cart               = $this->request->getPost('cart');
+        $cart = $this->request->getPost('cart');
+        // Decode cart JSON if it's a string
+        if (is_string($cart)) {
+            $cart = json_decode($cart, true);
+        }
         $customerId         = $this->request->getPost('customer_id') ?: null;
         $warehouseId        = $this->request->getPost('warehouse_id');
         $discountPercent    = $this->request->getPost('discount_percent') ?: 0;
@@ -1068,7 +1072,10 @@ class TransJual extends BaseController
         $voucherDiscount    = $this->request->getPost('voucher_discount') ?: 0;
         $voucherType        = $this->request->getPost('voucher_type') ?: null;
         $voucherDiscountAmount = $this->request->getPost('voucher_discount_amount') ?: 0;
-        $paymentMethods     = $this->request->getPost('payment_methods') ?: [];
+        $paymentMethods = $this->request->getPost('payment_methods') ?: [];
+        if (is_string($paymentMethods)) {
+            $paymentMethods = json_decode($paymentMethods, true) ?: [];
+        }
         $totalAmountReceived = $this->request->getPost('total_amount_received') ?: 0;
         $grandTotal         = $this->request->getPost('grand_total') ?: 0;
         $isDraft            = $this->request->getPost('is_draft') ?: false;
@@ -1311,6 +1318,13 @@ class TransJual extends BaseController
                 }
             }
 
+            // metode_bayar column is INT: use null for draft, integer for non-draft (1=tunai, 2=transfer, 3=piutang, else 1)
+            $metodeBayarInt = null;
+            if (!$isDraft && !empty($paymentMethods)) {
+                $firstType = $paymentMethods[0]['type'] ?? '1';
+                $metodeBayarInt = ($firstType === '1' || $firstType === '2' || $firstType === '3') ? (int) $firstType : 1;
+            }
+
             // Prepare transaction data
             $transactionData = [
                 'id_user'           => $this->ionAuth->user()->row()->id,
@@ -1330,7 +1344,7 @@ class TransJual extends BaseController
                 'jml_gtotal'        => $jml_gtotal,        // total setelah diskon dan voucher, sudah termasuk PPN
                 'jml_bayar'         => $isDraft ? 0 : $totalAmountReceived,
                 'jml_kembali'       => $isDraft ? 0 : $change,
-                'metode_bayar'      => $isDraft ? 'draft' : 'multiple', // Draft or Multiple payment methods
+                'metode_bayar'      => $metodeBayarInt,    // INT column: null for draft, 1/2/3 for payment type
                 'status'            => $isDraft ? '0' : '1', // 0=Draft, 1=Completed
                 'status_nota'       => $isDraft ? '0' : '1', // 0=Draft, 1=Completed
                 'status_bayar'      => $isDraft ? '0' : ($hasPiutang ? '0' : '1'), // 0=Unpaid/Draft, 1=Paid
@@ -1345,12 +1359,38 @@ class TransJual extends BaseController
             // Insert or update main transaction
             if ($draftId && !$isDraft) {
                 // Update existing draft to completed transaction
-                $this->transJualModel->update($draftId, $transactionData);
+                $updated = $this->transJualModel->update($draftId, $transactionData);
+                if ($updated === false) {
+                    $errors = $this->transJualModel->errors();
+                    $dbError = $this->db->error();
+                    $this->db->transComplete();
+                    $errorMsg = !empty($errors) ? implode(' ', $errors) : ($dbError['message'] ?? 'Gagal memperbarui transaksi.');
+                    if (ENVIRONMENT === 'development' && !empty($dbError['message'])) {
+                        $errorMsg .= ' [DB: ' . $dbError['message'] . ']';
+                    }
+                    return $this->response->setJSON(['error' => true, 'message' => $errorMsg]);
+                }
                 $transactionId = $draftId;
             } else {
                 // Insert new transaction
-                $this->transJualModel->insert($transactionData);
+                $inserted = $this->transJualModel->insert($transactionData);
+                if ($inserted === false) {
+                    $errors = $this->transJualModel->errors();
+                    $dbError = $this->db->error();
+                    $this->db->transComplete();
+                    $errorMsg = !empty($errors) ? implode(' ', $errors) : ($dbError['message'] ?? 'Gagal menyimpan transaksi.');
+                    if (ENVIRONMENT === 'development' && !empty($dbError['message'])) {
+                        $errorMsg .= ' [DB: ' . $dbError['message'] . ']';
+                    }
+                    return $this->response->setJSON(['error' => true, 'message' => $errorMsg]);
+                }
                 $transactionId = $this->transJualModel->getInsertID();
+            }
+
+            // Validate transactionId before inserting details
+            if (empty($transactionId) || (int) $transactionId === 0) {
+                $this->db->transComplete();
+                return $this->response->setJSON(['error' => true, 'message' => 'Gagal memproses transaksi: ID transaksi tidak valid.']);
             }
 
             // Insert transaction details
@@ -1515,7 +1555,9 @@ class TransJual extends BaseController
 
                         $this->transJualPlatModel->insert($platformData);
 
-                        $this->transJualModel->update($transactionId, ['metode_bayar' => $payment['type']]);
+                        // metode_bayar column is INT: map type to integer (1, 2, 3, or 1 for platform)
+                        $metodeBayarUpdate = (isset($payment['type']) && ($payment['type'] === '1' || $payment['type'] === '2' || $payment['type'] === '3')) ? (int) $payment['type'] : 1;
+                        $this->transJualModel->update($transactionId, ['metode_bayar' => $metodeBayarUpdate]);
                     } else {
                         // Debug: Log why payment was skipped with more detail
                         log_message('debug', "Payment skipped - platform_id empty: " . (empty($payment['platform_id']) ? 'YES' : 'NO') . 
@@ -1546,7 +1588,13 @@ class TransJual extends BaseController
             $this->db->transComplete();
 
             if ($this->db->transStatus() === false) {
-                throw new \Exception('Database transaction failed');
+                $dbError = $this->db->error();
+                log_message('error', '[TransJual::processTransaction] Transaction failed: ' . ($dbError['message'] ?? 'unknown') . ' (code: ' . ($dbError['code'] ?? 0) . ')');
+                $errorMsg = 'Database transaction failed';
+                if (ENVIRONMENT === 'development' && !empty($dbError['message'])) {
+                    $errorMsg .= ': ' . $dbError['message'];
+                }
+                throw new \Exception($errorMsg);
             }
 
             return $this->response->setJSON([
@@ -1563,10 +1611,15 @@ class TransJual extends BaseController
                 $this->db->transRollback();
             }
             
-            log_message('error', 'Cashier transaction failed: ' . $e->getMessage());
+            $msg = trim((string) $e->getMessage());
+            if ($msg === '') {
+                $dbErr = $this->db->error();
+                $msg = $dbErr['message'] ?? 'Lihat log server untuk detail';
+            }
+            log_message('error', 'Cashier transaction failed: ' . $msg);
             return $this->response->setJSON([
                 'error' => true,
-                'message' => 'Gagal memproses transaksi: ' . $e->getMessage()
+                'message' => 'Gagal memproses transaksi: ' . $msg
             ]);
         }
     }

@@ -82,6 +82,34 @@
                         <?php endif; ?>
                     </div>
                     <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label">Lokasi Rak</label>
+                                <?= form_input(['name' => 'lokasi_rak', 'id' => 'lokasi_rak', 'class' => 'form-control rounded-0', 'placeholder' => 'Contoh: Rak A-01', 'value' => old('lokasi_rak')]) ?>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label">Berat</label>
+                                <?= form_input(['name' => 'berat', 'id' => 'berat', 'class' => 'form-control rounded-0', 'placeholder' => 'Contoh: 1.25', 'value' => old('berat')]) ?>
+                                <small class="form-text text-muted">Isi angka saja (gunakan titik untuk desimal), contoh <code>1.25</code>.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label">Satuan</label>
+                                <select name="satuan" class="form-control rounded-0">
+                                    <option value="">-[Pilih Satuan]-</option>
+                                    <?php if (isset($satuan) && !empty($satuan)): ?>
+                                        <?php foreach ($satuan as $s): ?>
+                                            <option value="<?= $s->id ?>" <?= old('satuan') == $s->id ? 'selected' : '' ?>><?= $s->satuanBesar ?></option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="inputEmail3">Harga Beli</label>
@@ -110,6 +138,9 @@
                             <div class="form-group">
                                 <label class="control-label">Stok Minimum</label>
                                 <?= form_input(['type' => 'number', 'name' => 'jml_min', 'id' => 'jml_min', 'class' => 'form-control rounded-0', 'placeholder' => 'Stok minimum ...', 'value' => old('jml_min')]) ?>
+                                <small class="form-text text-muted">
+                                    Peringatan “Stok Rendah” muncul jika stok (Stockable) &le; Stok Minimum. Isi 0 untuk menonaktifkan peringatan.
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-4">

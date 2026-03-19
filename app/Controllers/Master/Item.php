@@ -101,6 +101,8 @@ class Item extends BaseController
 
         // Now filter only active items for the main list
         $this->itemModel->where('tbl_m_item.status_hps', '0');
+        // Default: show only visible items (list-only visibility feature)
+        $this->itemModel->where('tbl_m_item.is_visible', 1);
 
         if ($kat) {
             $this->itemModel->where('tbl_m_item.id_kategori', $kat);
@@ -161,6 +163,7 @@ class Item extends BaseController
             'merk'                  => $merk,
             'stok'                  => $stok,
             'supplier'              => $supplier,
+            'show_hidden'           => 0,
             'min_stok_operator'     => $min_stok_operator,
             'min_stok_value'        => $min_stok_value,
             'harga_beli_operator'   => $harga_beli_operator,
@@ -181,6 +184,55 @@ class Item extends BaseController
         return view($this->theme->getThemePath() . '/master/item/index', $data);
     }
 
+    public function toggle_visibility($id)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setStatusCode(405)->setJSON([
+                'success' => false,
+                'message' => 'Method Not Allowed',
+                'csrfHash' => csrf_hash(),
+            ]);
+        }
+
+        try {
+            $item = $this->itemModel->select('id, is_visible')->where('id', (int) $id)->first();
+            if (!$item) {
+                return $this->response->setStatusCode(404)->setJSON([
+                    'success' => false,
+                    'message' => 'Item tidak ditemukan',
+                    'csrfHash' => csrf_hash(),
+                ]);
+            }
+
+            $current = isset($item->is_visible) ? (int) $item->is_visible : 1;
+            $newValue = $current === 1 ? 0 : 1;
+
+            $updated = $this->itemModel->update((int) $id, ['is_visible' => $newValue]);
+            if (!$updated) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal mengubah visibility item',
+                    'errors' => $this->itemModel->errors(),
+                    'csrfHash' => csrf_hash(),
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $newValue === 1 ? 'Item ditampilkan' : 'Item disembunyikan',
+                'is_visible' => $newValue,
+                'csrfHash' => csrf_hash(),
+            ]);
+        } catch (\Throwable $e) {
+            log_message('error', '[Item::toggle_visibility] ' . $e->getMessage());
+            return $this->response->setStatusCode(500)->setJSON([
+                'success' => false,
+                'message' => ENVIRONMENT === 'development' ? $e->getMessage() : 'Terjadi kesalahan server',
+                'csrfHash' => csrf_hash(),
+            ]);
+        }
+    }
+
     public function create()
     {
         $data = [
@@ -191,6 +243,7 @@ class Item extends BaseController
             'kategori'      => $this->kategoriModel->findAll(),
             'merk'          => $this->merkModel->findAll(),
             'supplier'      => $this->supplierModel->findAll(),
+            'satuan'        => $this->satuanModel->findAll(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -217,6 +270,9 @@ class Item extends BaseController
         $status     = $this->request->getVar('status') ?? '1';
         $status_stok = $this->request->getVar('status_stok') ?? '0';
         $status_ppn = $this->request->getVar('status_ppn') ?? '0';
+        $lokasi_rak = $this->request->getVar('lokasi_rak') ?? null;
+        $berat = $this->request->getVar('berat') ?? null;
+        $id_satuan = $this->request->getVar('satuan') ?? 0;
         $id_user    = $this->ionAuth->user()->row()->id ?? 0;
         $foto       = $this->request->getVar('foto') ?? null;
 
@@ -276,10 +332,13 @@ class Item extends BaseController
                 'id_kategori' => $id_kategori,
                 'id_merk'     => $id_merk,
                 'id_supplier' => $id_supplier,
-                'id_satuan'   => 0,
+                'id_satuan'   => $id_satuan,
                 'jml_min'     => $jml_min,
                 'harga_beli'  => format_angka_db($harga_beli),
                 'harga_jual'  => format_angka_db($harga_jual),
+                'berat'       => $berat !== null && $berat !== '' ? format_angka_db($berat) : null,
+                'lokasi_rak'  => $lokasi_rak !== null && trim((string) $lokasi_rak) !== '' ? trim((string) $lokasi_rak) : null,
+                'is_visible'  => 1,
                 'tipe'        => $tipe,
                 'status'      => $status,
                 'status_stok' => $status_stok,
@@ -469,6 +528,8 @@ class Item extends BaseController
         $jml_min        = $this->request->getVar('jml_min') ?? 0;
         $harga_beli     = $this->request->getVar('harga_beli') ?? 0;
         $harga_jual     = $this->request->getVar('harga_jual') ?? 0;
+        $lokasi_rak     = $this->request->getVar('lokasi_rak') ?? null;
+        $berat          = $this->request->getVar('berat') ?? null;
         $tipe           = $this->request->getVar('tipe') ?? '1';
         $status         = $this->request->getVar('status') ?? '1';
         $status_stok    = $this->request->getVar('status_stok') ?? '0';
@@ -510,6 +571,8 @@ class Item extends BaseController
                 'jml_min'     => $jml_min,
                 'harga_beli'  => format_angka_db($harga_beli),
                 'harga_jual'  => format_angka_db($harga_jual),
+                'berat'       => $berat !== null && $berat !== '' ? format_angka_db($berat) : null,
+                'lokasi_rak'  => $lokasi_rak !== null && trim((string) $lokasi_rak) !== '' ? trim((string) $lokasi_rak) : null,
                 'tipe'        => $tipe,
                 'status'      => $status,
                 'status_stok' => $status_stok,  
@@ -1208,13 +1271,25 @@ class Item extends BaseController
             $sheet->setCellValue('G' . $row, $item->supplier_nama ?? '-');
             $sheet->setCellValue('H' . $row, $item->deskripsi);
             $sheet->setCellValue('I' . $row, $item->jml_min);
-            $sheet->setCellValue('J' . $row, format_angka($item->harga_beli));
-            $sheet->setCellValue('K' . $row, format_angka($item->harga_jual));
+            // Keep prices numeric in Excel (avoid formatted strings that become text)
+            $sheet->setCellValue('J' . $row, (float) ($item->harga_beli ?? 0));
+            $sheet->setCellValue('K' . $row, (float) ($item->harga_jual ?? 0));
             $sheet->setCellValue('L' . $row, $item->status_stok == '1' ? 'Stockable' : 'Non Stockable');
             $sheet->setCellValue('M' . $row, $item->status == '1' ? 'Aktif' : 'Non Aktif');
             
             $row++;
             $no++;
+        }
+
+        // Format currency/number columns
+        $lastDataRow = $row - 1;
+        if ($lastDataRow >= 4) {
+            $sheet->getStyle('J4:K' . $lastDataRow)
+                ->getNumberFormat()
+                ->setFormatCode('#,##0.00');
+            $sheet->getStyle('I4:I' . $lastDataRow)
+                ->getNumberFormat()
+                ->setFormatCode('0');
         }
 
         // Auto size columns
@@ -1464,10 +1539,12 @@ class Item extends BaseController
                             'jml_min' => (int)trim($row[6] ?? 0),
                             'harga_beli' => format_angka_db(trim($row[7] ?? 0)),
                             'harga_jual' => format_angka_db(trim($row[8] ?? 0)),
-                            'tipe' => trim($row[9] ?? '1'),
-                            'status' => trim($row[10] ?? '1'),
-                            'status_stok' => trim($row[11] ?? '0'),
-                            'status_ppn' => trim($row[12] ?? '0')
+                            'berat' => format_angka_db(trim($row[9] ?? 0)),
+                            'id_satuan' => (int)trim($row[10] ?? 0),
+                            'tipe' => trim($row[11] ?? '1'),
+                            'status' => trim($row[12] ?? '1'),
+                            'status_stok' => trim($row[13] ?? '0'),
+                            'status_ppn' => trim($row[14] ?? '0')
                         ];
 
                         // Generate kode
@@ -1481,9 +1558,11 @@ class Item extends BaseController
                             'id_kategori' => $data['id_kategori'],
                             'id_merk' => $data['id_merk'],
                             'id_supplier' => $data['id_supplier'],
+                            'id_satuan' => $data['id_satuan'],
                             'jml_min' => $data['jml_min'],
                             'harga_beli' => $data['harga_beli'],
                             'harga_jual' => $data['harga_jual'],
+                            'berat' => $data['berat'],
                             'tipe' => $data['tipe'],
                             'status' => $data['status'],
                             'status_stok' => $data['status_stok'],
@@ -1536,6 +1615,8 @@ class Item extends BaseController
             'Jml Min',
             'Harga Beli',
             'Harga Jual',
+            'Weight',
+            'ID Satuan',
             'Tipe',
             'Status',
             'Status Stok',
@@ -1543,8 +1624,8 @@ class Item extends BaseController
         ];
         
         $sampleData = [
-            ['Laptop Asus', '1234567890123', 'Laptop gaming Asus', '1', '1', '1', '5', '10000000', '12000000', '1', '1', '1', '0'],
-            ['Mouse Logitech', '1234567890124', 'Mouse wireless Logitech', '1', '2', '1', '10', '50000', '75000', '1', '1', '1', '0']
+            ['Laptop Asus', '1234567890123', 'Laptop gaming Asus', '1', '1', '1', '5', '10000000', '12000000', '1.25', '1', '1', '1', '1', '0'],
+            ['Mouse Logitech', '1234567890124', 'Mouse wireless Logitech', '1', '2', '1', '10', '50000', '75000', '0.20', '1', '1', '1', '1', '0']
         ];
         
         $filename = 'template_item.xlsx';

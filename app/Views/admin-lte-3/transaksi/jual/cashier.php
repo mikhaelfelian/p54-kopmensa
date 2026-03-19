@@ -2551,7 +2551,7 @@ helper('form');
                     stockClass = 'text-danger';
                     stockBadgeClass = 'badge-danger';
                     stockBadgeText = 'Stok Habis';
-                } else if (stock <= 5 && statusStok === '1') {
+                } else if (statusStok === '1' && (Number(product.jml_min) || 0) > 0 && stock <= (Number(product.jml_min) || 0)) {
                     stockStatus = 'Stok Rendah';
                     stockClass = 'text-warning';
                     stockBadgeClass = 'badge-warning';
@@ -2787,7 +2787,7 @@ helper('form');
                             stockBadgeClass = 'badge-danger';
                             stockBadgeText = 'Stok Habis';
                             stockTextColor = '#dc3545';
-                        } else if (stock <= 5 && statusStok === '1') {
+                        } else if (statusStok === '1' && (Number(product.jml_min) || 0) > 0 && stock <= (Number(product.jml_min) || 0)) {
                             stockBadgeClass = 'badge-warning';
                             stockBadgeText = 'Stok Rendah';
                             stockTextColor = '#ffc107';
@@ -3616,77 +3616,91 @@ helper('form');
         // Debug: Log transaction data being sent
         console.log('Transaction data being sent:', transactionData);
         
-        // Send transaction to server
-        $.ajax({
-            url: '<?= base_url('transaksi/jual/process-transaction') ?>',
-            type: 'POST',
-            data: transactionData,
-            success: function (response) {
-                if (response.success) {
-                    if (isDraft) {
-                        // Draft transaction saved successfully
-                        toastr.success('Draft transaksi berhasil disimpan!');
-
-                        // Close payment methods modal
-                        $('#paymentMethodsModal').modal('hide');
-
-                        // Clear form for next transaction
-                        clearTransactionForm();
-                    } else {
-                        // Close payment methods modal
-                        $('#paymentMethodsModal').modal('hide');
-
-                        // Normal transaction completion
-                        $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
-
-                        // Build payment methods summary
-                        let paymentSummary = '';
-                        paymentMethods.forEach(pm => {
-                            let paymentLabel = 'Platform';
-                            if (pm.type === '1') paymentLabel = 'Tunai';
-                            else if (pm.type === '2') paymentLabel = 'Transfer';
-                            else if (pm.type === '3') paymentLabel = 'Piutang';
-                            else if (pm.type === 'platform') paymentLabel = 'Platform';
-                            
-                            const note = pm.keterangan ? ` (${pm.keterangan})` : '';
-                            paymentSummary += `${paymentLabel}: ${formatCurrency(pm.amount)}${note}<br>`;
-                        });
-                        
-                        // Add voucher information if present
-                        if (voucherInfo) {
-                            paymentSummary += `<br><strong>Voucher:</strong> ${voucherInfo.voucher_code} (-${formatCurrency(voucherInfo.voucher_discount)})<br>`;
-                        }
-                        
-                        $('#finalPaymentMethod').html(paymentSummary);
-                        $('#completeModal').modal('show');
-
-                        toastr.success(response.message);
-                    }
-                } else {
-                    toastr.error(response.message || 'Gagal memproses transaksi');
-                }
-            },
-            error: function (xhr, status, error) {
-                // Try to parse response for more details
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.message) {
-                        toastr.error('Backend Error: ' + response.message);
-                    } else if (response.error) {
-                        toastr.error('Backend Error: ' + response.error);
-                    } else {
-                        toastr.error('Terjadi kesalahan saat memproses transaksi');
-                    }
-                } catch (e) {
-                    toastr.error('Terjadi kesalahan saat memproses transaksi');
-                }
-            },
-            complete: function () {
-                // Reset button state
-                $('#completeTransaction').prop('disabled', false).html('<i class="fas fa-check"></i> Proses');
-                $('#saveAsDraft').prop('disabled', false).html('<i class="fas fa-save"></i> Draft');
+        // Send transaction to server (with one automatic retry on failure)
+        function sendRequest(retryCount) {
+            if (retryCount === 1) {
+                $(buttonId).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Mencoba lagi...');
             }
-        });
+            $.ajax({
+                url: '<?= base_url('transaksi/jual/process-transaction') ?>',
+                type: 'POST',
+                data: transactionData,
+                success: function (response) {
+                    if (response.success) {
+                        if (isDraft) {
+                            // Draft transaction saved successfully
+                            toastr.success('Draft transaksi berhasil disimpan!');
+
+                            // Close payment methods modal
+                            $('#paymentMethodsModal').modal('hide');
+
+                            // Clear form for next transaction
+                            clearTransactionForm();
+                        } else {
+                            // Close payment methods modal
+                            $('#paymentMethodsModal').modal('hide');
+
+                            // Normal transaction completion
+                            $('#finalTotal').text(`Rp ${numberFormat(response.total)}`);
+
+                            // Build payment methods summary
+                            let paymentSummary = '';
+                            paymentMethods.forEach(pm => {
+                                let paymentLabel = 'Platform';
+                                if (pm.type === '1') paymentLabel = 'Tunai';
+                                else if (pm.type === '2') paymentLabel = 'Transfer';
+                                else if (pm.type === '3') paymentLabel = 'Piutang';
+                                else if (pm.type === 'platform') paymentLabel = 'Platform';
+                                
+                                const note = pm.keterangan ? ` (${pm.keterangan})` : '';
+                                paymentSummary += `${paymentLabel}: ${formatCurrency(pm.amount)}${note}<br>`;
+                            });
+                            
+                            // Add voucher information if present
+                            if (voucherInfo) {
+                                paymentSummary += `<br><strong>Voucher:</strong> ${voucherInfo.voucher_code} (-${formatCurrency(voucherInfo.voucher_discount)})<br>`;
+                            }
+                            
+                            $('#finalPaymentMethod').html(paymentSummary);
+                            $('#completeModal').modal('show');
+
+                            toastr.success(response.message);
+                        }
+                    } else {
+                        // Server returned error – show full message and log for debugging
+                        console.error('Process transaction error:', response);
+                        if (retryCount === 0) {
+                            toastr.info('Mencoba lagi...');
+                            setTimeout(function() { sendRequest(1); }, 1500);
+                        } else {
+                            toastr.error(response.message || 'Gagal memproses transaksi');
+                        }
+                    }
+                },
+                error: function (xhr, status, error) {
+                    if (retryCount === 0) {
+                        toastr.info('Mencoba lagi...');
+                        setTimeout(function() { sendRequest(1); }, 1500);
+                    } else {
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            console.error('Process transaction error:', response);
+                            const msg = response.message || response.error || 'Terjadi kesalahan saat memproses transaksi';
+                            toastr.error(msg);
+                        } catch (e) {
+                            console.error('Process transaction error (parse failed):', xhr.responseText, e);
+                            toastr.error('Terjadi kesalahan saat memproses transaksi');
+                        }
+                    }
+                },
+                complete: function () {
+                    // Reset button state
+                    $('#completeTransaction').prop('disabled', false).html('<i class="fas fa-check"></i> Proses');
+                    $('#saveAsDraft').prop('disabled', false).html('<i class="fas fa-save"></i> Draft');
+                }
+            });
+        }
+        sendRequest(0);
     }
 
     function newTransaction() {

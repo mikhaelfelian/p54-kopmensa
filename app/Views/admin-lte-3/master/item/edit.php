@@ -90,6 +90,21 @@
                     <?php endif; ?>
                 </div>
                 <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label">Lokasi Rak</label>
+                            <?= form_input(['name' => 'lokasi_rak', 'value' => old('lokasi_rak', $item->lokasi_rak ?? ''), 'id' => 'lokasi_rak', 'class' => 'form-control rounded-0', 'placeholder' => 'Contoh: Rak A-01']) ?>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label">Berat</label>
+                            <?= form_input(['name' => 'berat', 'value' => old('berat', $item->berat ?? ''), 'id' => 'berat', 'class' => 'form-control rounded-0', 'placeholder' => 'Contoh: 1.25']) ?>
+                            <small class="form-text text-muted">Isi angka saja (gunakan titik untuk desimal), contoh <code>1.25</code>.</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="harga_beli">Harga Beli</label>
@@ -118,6 +133,9 @@
                         <div class="form-group">
                             <label class="control-label">Stok Minimum</label>
                             <?= form_input(['type' => 'number', 'name' => 'jml_min', 'value' => old('jml_min', $item->jml_min ?? ''), 'id' => 'jml_min', 'class' => 'form-control rounded-0', 'placeholder' => 'Stok minimum ...']) ?>
+                            <small class="form-text text-muted">
+                                Peringatan “Stok Rendah” muncul jika stok (Stockable) &le; Stok Minimum. Isi 0 untuk menonaktifkan peringatan.
+                            </small>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -618,7 +636,7 @@
             $row.attr('data-index', index);
 
             // Update input names
-            $row.find('input[name*="[nama]"]').attr('name', `prices[${index}][nama]`);
+            $row.find('select[name*="[nama]"]').attr('name', `prices[${index}][nama]`);
             $row.find('input[name*="[jml_min]"]').attr('name', `prices[${index}][jml_min]`);
             $row.find('input[name*="[harga]"]').attr('name', `prices[${index}][harga]`);
             $row.find('input[name*="[keterangan]"]').attr('name', `prices[${index}][keterangan]`);
