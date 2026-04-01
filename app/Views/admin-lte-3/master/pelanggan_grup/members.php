@@ -323,7 +323,7 @@
                                     <?php if ($currentPage < ceil($totalAvailable / $perPage)): ?>
                                             <li class="page-item">
                                                 <a class="page-link"
-                                                href="<?= current_url() ?>?page=<?= $currentPage + 1 ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($search) ?>">
+                                                href="<?= current_url() ?>?page=<?= $currentPage + 1 ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status) ?>">
                                                     <i class="fas fa-chevron-right"></i>
                                                 </a>
                                             </li>

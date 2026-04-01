@@ -31,19 +31,9 @@
                         <td><span class="badge badge-primary"><?= esc($grup->grup) ?></span></td>
                     </tr>
                     <tr>
-                        <td><strong>Nama Pelanggan</strong></td>
+                        <td><strong>Jumlah Member</strong></td>
                         <td>:</td>
-                        <td><?= esc($grup->nama_pelanggan ?? '-') ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Telepon</strong></td>
-                        <td>:</td>
-                        <td><?= esc($grup->telepon_pelanggan ?? '-') ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Alamat</strong></td>
-                        <td>:</td>
-                        <td><?= esc($grup->alamat_pelanggan ?? '-') ?></td>
+                        <td><?= (int) ($grup->member_count ?? 0) ?></td>
                     </tr>
                     <tr>
                         <td><strong>Deskripsi</strong></td>
