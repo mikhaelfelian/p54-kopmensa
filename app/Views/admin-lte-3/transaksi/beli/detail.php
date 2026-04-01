@@ -21,9 +21,14 @@
                     <a href="<?= base_url('transaksi/beli') ?>" class="btn btn-default btn-sm rounded-0">
                         <i class="fas fa-arrow-left mr-1"></i> Kembali
                     </a>
+                    <a href="<?= base_url('transaksi/beli/pdf/' . $transaksi->id) ?>" class="btn btn-secondary btn-sm rounded-0" target="_blank" rel="noopener">
+                        <i class="fas fa-file-pdf mr-1"></i> PDF
+                    </a>
+                    <?php if (($transaksi->status_terima ?? '') !== '1'): ?>
                     <a href="<?= base_url('transaksi/beli/edit/' . $transaksi->id) ?>" class="btn btn-primary btn-sm rounded-0">
                         <i class="fas fa-edit mr-1"></i> Edit
                     </a>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">

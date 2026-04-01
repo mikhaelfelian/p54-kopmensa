@@ -71,11 +71,15 @@
                                                 onclick="return confirm('Yakin ingin memulihkan voucher ini?')">
                                                 <i class="fas fa-trash-restore"></i>
                                             </a>
+                                            <?php if ($voucherModel->canBeDeleted($voucher)): ?>
                                             <a href="<?= base_url('master/voucher/delete_permanent/' . $voucher->id) ?>"
                                                 class="btn btn-sm btn-danger rounded-0"
                                                 onclick="return confirm('Yakin ingin menghapus permanen voucher ini?')">
                                                 <i class="fas fa-trash"></i>
                                             </a>
+                                            <?php else: ?>
+                                            <span class="text-muted small" title="Tidak dapat hapus permanen: pernah digunakan">—</span>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                 <?php endforeach ?>

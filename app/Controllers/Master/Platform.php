@@ -12,20 +12,51 @@
 namespace App\Controllers\Master;
 
 use App\Controllers\BaseController;
+use App\Models\OutletPlatformModel;
 use App\Models\PlatformModel;
 use App\Models\PengaturanModel;
 
 class Platform extends BaseController
 {
     protected $platformModel;
+    protected $outletPlatformModel;
     protected $validation;
     protected $pengaturan;
 
     public function __construct()
     {
         $this->platformModel = new PlatformModel();
+        $this->outletPlatformModel = new OutletPlatformModel();
         $this->pengaturan = new PengaturanModel();
         $this->validation = \Config\Services::validation();
+    }
+
+    /**
+     * Cashier resolves payment methods via tbl_outlet_platform; keep junction in sync with master row.
+     */
+    protected function syncOutletPlatformAssignment(int $platformId, int $outletId, $platformStatus): void
+    {
+        if ($outletId <= 0 || $platformId <= 0) {
+            return;
+        }
+
+        $junctionStatus = ((string) $platformStatus === '1') ? '1' : '0';
+
+        if ($this->outletPlatformModel->isPlatformAssigned($outletId, $platformId)) {
+            $row = $this->outletPlatformModel->where('id_outlet', $outletId)
+                ->where('id_platform', $platformId)->first();
+            if ($row) {
+                $this->outletPlatformModel->update($row->id, ['status' => $junctionStatus]);
+            }
+
+            return;
+        }
+
+        $this->outletPlatformModel->insert([
+            'id_outlet'    => $outletId,
+            'id_platform'  => $platformId,
+            'status'       => $junctionStatus,
+        ]);
     }
 
     public function index()
@@ -176,6 +207,9 @@ class Platform extends BaseController
                 throw new \RuntimeException('Gagal menyimpan data platform');
             }
 
+            $newId = (int) $this->platformModel->getInsertID();
+            $this->syncOutletPlatformAssignment($newId, (int) $id_outlet, $status);
+
             return redirect()->to(base_url('master/platform'))
                            ->with('success', 'Data platform berhasil ditambahkan');
 
@@ -243,8 +277,21 @@ class Platform extends BaseController
                            ->with('error', 'ID Platform tidak ditemukan');
         }
 
+        $platformBefore = $this->platformModel->find($id);
+        if (!$platformBefore) {
+            return redirect()->to('master/platform')
+                           ->with('error', 'Data platform tidak ditemukan');
+        }
+
         // Validation rules
         $rules = [
+            'id_outlet' => [
+                'rules'  => 'required|is_natural_no_zero',
+                'errors' => [
+                    'required' => 'Outlet harus dipilih',
+                    'is_natural_no_zero' => 'Outlet tidak valid',
+                ],
+            ],
             'kode' => [
                 'rules'  => "required|is_unique[tbl_m_platform.kode,id,$id]",
                 'errors' => [
@@ -298,6 +345,15 @@ class Platform extends BaseController
             if (!$this->platformModel->update($id, $data)) {
                 throw new \RuntimeException('Gagal mengupdate data platform');
             }
+
+            $newOutletId = (int) $id_outlet;
+            $oldOutletId = (int) ($platformBefore->id_outlet ?? 0);
+            if ($oldOutletId > 0 && $oldOutletId !== $newOutletId) {
+                $this->outletPlatformModel->where('id_outlet', $oldOutletId)
+                    ->where('id_platform', (int) $id)
+                    ->delete();
+            }
+            $this->syncOutletPlatformAssignment((int) $id, $newOutletId, $status);
 
             return redirect()->to(base_url('master/platform'))
                            ->with('success', 'Data platform berhasil diupdate');

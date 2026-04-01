@@ -1341,7 +1341,7 @@ helper('form');
             const amount = parseFloat($(this).closest('.payment-method-row').find('.payment-amount').val()) || 0;
             
             // If this row now has valid values, remove any empty rows
-            if (platformId && platformId !== '' && platformId !== '4' && amount > 0) {
+            if (platformId && platformId !== '' && !isVoucherPaymentRow($(this)) && amount > 0) {
                 setTimeout(() => {
                     removeEmptyPaymentRows();
                 }, 100);
@@ -1660,6 +1660,23 @@ helper('form');
     let outletPlatforms = <?= json_encode($platforms ?? []) ?>;
     let systemPlatformCache = null;
 
+    function isVoucherPaymentRow($platformSelect) {
+        if (!$platformSelect || !$platformSelect.length) {
+            return false;
+        }
+        const opt = $platformSelect.find('option:selected');
+        if (opt.data('voucherLike') === 1) {
+            return true;
+        }
+        const pid = String($platformSelect.val() || '');
+        if (pid === '4') {
+            return true;
+        }
+        const txt = String(opt.text() || '').toLowerCase();
+
+        return txt.includes('voucher');
+    }
+
     function refreshSystemPlatformMeta() {
         const sysPlatforms = (outletPlatforms || []).filter(platform => String(platform.status_sys ?? '0') === '1');
         systemPlatformCache = sysPlatforms.length ? sysPlatforms[sysPlatforms.length - 1] : null;
@@ -1676,13 +1693,15 @@ helper('form');
 
     function getSystemPlatformId() {
         if (systemPlatformCache) {
-            return String(systemPlatformCache.id);
+            const sid = systemPlatformCache.id_platform ?? systemPlatformCache.id;
+            return String(sid);
         }
 
         const platforms = outletPlatforms || [];
         for (let i = platforms.length - 1; i >= 0; i--) {
             if (String(platforms[i].status_sys ?? '0') === '1') {
-                return String(platforms[i].id);
+                const pid = platforms[i].id_platform ?? platforms[i].id;
+                return String(pid);
             }
         }
 
@@ -1793,17 +1812,13 @@ helper('form');
     function addPaymentMethod() {
         paymentCounter++;
 
-        // Build platform options - EXCLUDE vouchers (vouchers are discounts, not payment methods)
         let platformOptions = '<option value="">Pilih Platform</option>';
         if (outletPlatforms && outletPlatforms.length > 0) {
             outletPlatforms.forEach(platform => {
-                // Filter out vouchers - vouchers should NOT be payment methods
-                // Check by ID (4 is hardcoded as voucher) or by platform name containing "voucher"
-                const platformId = String(platform.id);
-                const platformName = String(platform.platform || '').toLowerCase();
-                if (platformId !== '4' && !platformName.includes('voucher')) {
-                    platformOptions += `<option value="${platform.id}">${platform.platform}</option>`;
-                }
+                const platId = platform.id_platform ?? platform.id;
+                const vlike = platform.is_voucher_like ? '1' : '0';
+                const label = platform.platform || '';
+                platformOptions += `<option value="${platId}" data-voucher-like="${vlike}">${label}</option>`;
             });
         }
 
@@ -1966,42 +1981,22 @@ helper('form');
                 firstPaymentRow.find('.payment-note').val(''); // Default empty note
             }
             
-            // Check for any existing payment methods with voucher selected and clear them
-            $('.payment-platform').each(function() {
-                if ($(this).val() === '4') {
-                    toastr.warning('Voucher tidak dapat digunakan sebagai metode pembayaran. Field voucher telah direset.');
-                    $(this).val('');
-                    const paymentRow = $(this).closest('.payment-method-row');
-                    paymentRow.find('.payment-amount').show().val('0');
-                    paymentRow.find('.voucher-code-input').closest('.input-group').hide();
-                    paymentRow.find('label').filter(function() { 
-                        return $(this).text().trim() === 'Kode Voucher'; 
-                    }).text('Jumlah');
-                }
-            });
         }, 100);
     }
 
-    // Handle payment platform change - vouchers should NOT be in payment methods
     function handlePaymentPlatformChange() {
-        const selectedPlatform = $(this).val();
-        const paymentRow = $(this).closest('.payment-method-row');
+        const $sel = $(this);
+        const paymentRow = $sel.closest('.payment-method-row');
         const amountInput = paymentRow.find('.payment-amount');
-        
-        // If voucher (ID 4) is somehow selected, reset it and show error
-        if (selectedPlatform === '4') {
-            toastr.error('Voucher tidak dapat digunakan sebagai metode pembayaran. Gunakan field Voucher di atas untuk menerapkan diskon voucher.');
-            $(this).val(''); // Reset selection
-            amountInput.show();
-            paymentRow.find('.voucher-code-input').closest('.input-group').hide();
-            paymentRow.find('label').filter(function() { 
-                return $(this).text().trim() === 'Kode Voucher'; 
-            }).text('Jumlah');
+
+        if (isVoucherPaymentRow($sel)) {
+            amountInput.val(0);
+            toastr.info('Diskon voucher: gunakan field voucher/diskon di atas. Pilih Tunai/Transfer untuk nominal pembayaran.');
             calculatePaymentTotals();
+
             return;
         }
-        
-        // Show regular amount input for all valid payment platforms
+
         amountInput.show();
         // Ensure label is "Jumlah" (not "Kode Voucher")
         paymentRow.find('label').filter(function() { 
@@ -2192,30 +2187,30 @@ helper('form');
         // Calculate total paid (excluding vouchers)
         $('.payment-amount').each(function () {
             const paymentRow = $(this).closest('.payment-method-row');
-            const platform = paymentRow.find('.payment-platform').val();
-            
-            // Only add to totalPaid if it's NOT a voucher
-            if (platform !== '4') { // Hardcoded voucher value
-                const amount = parseFloat($(this).val()) || 0;
-                totalPaid += amount;
+            const $ps = paymentRow.find('.payment-platform');
+            if (isVoucherPaymentRow($ps)) {
+                return;
             }
+            const amount = parseFloat($(this).val()) || 0;
+            totalPaid += amount;
         });
         
         // Handle voucher discounts (vouchers reduce the total amount to be paid)
         let totalVoucherDiscount = 0;
         let voucherDiscounts = [];
         $('.payment-platform').each(function() {
-            if ($(this).val() === '4') { // Hardcoded voucher value
-                const paymentRow = $(this).closest('.payment-method-row');
-                const voucherDiscount = paymentRow.data('voucher-discount') || 0;
-                const voucherCode = paymentRow.data('voucher-code') || paymentRow.find('.voucher-code-input').val();
-                if (voucherDiscount > 0 && voucherCode) {
-                    totalVoucherDiscount += voucherDiscount;
-                    voucherDiscounts.push({
-                        code: voucherCode,
-                        amount: voucherDiscount
-                    });
-                }
+            if (!isVoucherPaymentRow($(this))) {
+                return;
+            }
+            const paymentRow = $(this).closest('.payment-method-row');
+            const voucherDiscount = paymentRow.data('voucher-discount') || 0;
+            const voucherCode = paymentRow.data('voucher-code') || paymentRow.find('.voucher-code-input').val();
+            if (voucherDiscount > 0 && voucherCode) {
+                totalVoucherDiscount += voucherDiscount;
+                voucherDiscounts.push({
+                    code: voucherCode,
+                    amount: voucherDiscount
+                });
             }
         });
         
@@ -3296,12 +3291,13 @@ helper('form');
         // Calculate voucher discounts
         let totalVoucherDiscount = 0;
         $('.payment-platform').each(function() {
-            if ($(this).val() === '4') { // Hardcoded voucher value
-                const paymentRow = $(this).closest('.payment-method-row');
-                const voucherDiscount = paymentRow.data('voucher-discount') || 0;
-                if (voucherDiscount > 0) {
-                    totalVoucherDiscount += voucherDiscount;
-                }
+            if (!isVoucherPaymentRow($(this))) {
+                return;
+            }
+            const paymentRow = $(this).closest('.payment-method-row');
+            const voucherDiscount = paymentRow.data('voucher-discount') || 0;
+            if (voucherDiscount > 0) {
+                totalVoucherDiscount += voucherDiscount;
             }
         });
         
@@ -3342,12 +3338,9 @@ helper('form');
                 const isValidAmount = amount > 0 && !isNaN(amount);
                 
                 if (isValidPlatformId && isValidAmount) {
-                    // Determine payment type based on platform (matching backend expectations)
-                    let paymentType = 'platform';
-                    if (platformId === '4') { // Hardcoded voucher value
-                        // Vouchers are NOT payment methods - they are discounts
-                        // Don't add them to paymentMethods array
-                        // They are already handled in the voucher discount calculation
+                    const $ps = $(this).find('.payment-platform');
+                    if (isVoucherPaymentRow($ps)) {
+                        // Voucher-like platform: diskon via field voucher, bukan alokasi tunai
                     } else if (String(platformId) === String(defaultCashPlatformId)) {
                         paymentType = '1'; // Backend expects '1' for cash
                         hasValidPayment = true;
@@ -3481,33 +3474,30 @@ helper('form');
         // Collect voucher information from payment methods
         let voucherInfo = null;
         $('.payment-platform').each(function() {
-            if ($(this).val() === '4') { // Hardcoded voucher value
-                const paymentRow = $(this).closest('.payment-method-row');
-                const voucherCode = paymentRow.data('voucher-code');
-                const voucherNominal = paymentRow.data('voucher-nominal') ?? paymentRow.data('voucher-discount') ?? 0;
-                const voucherPercentStored = paymentRow.data('voucher-percent') ?? 0;
-                const voucherId = paymentRow.data('voucher-id');
-                const voucherType = paymentRow.data('voucher-type'); // Get voucher type from payment row data
-                
-                let voucherPercent = parseFloat(voucherPercentStored) || 0;
-                const adjustedNominal = parseFloat(voucherNominal) || 0;
-                if ((!voucherPercent || voucherPercent <= 0) && adjustedNominal > 0 && grandTotal > 0) {
-                    voucherPercent = (adjustedNominal / grandTotal) * 100;
-                }
+            if (!isVoucherPaymentRow($(this))) {
+                return;
+            }
+            const paymentRow = $(this).closest('.payment-method-row');
+            const voucherCode = paymentRow.data('voucher-code');
+            const voucherNominal = paymentRow.data('voucher-nominal') ?? paymentRow.data('voucher-discount') ?? 0;
+            const voucherPercentStored = paymentRow.data('voucher-percent') ?? 0;
+            const voucherId = paymentRow.data('voucher-id');
+            const voucherType = paymentRow.data('voucher-type');
 
-                console.log('Voucher data found:', { voucherCode, adjustedNominal, voucherPercent, voucherId, voucherType });
-                
-                if (voucherCode && adjustedNominal > 0) {
-                    voucherInfo = {
-                        voucher_code: voucherCode,
-                        voucher_discount: voucherPercent, // percentage value
-                        voucher_discount_amount: adjustedNominal,
-                        voucher_id: voucherId,
-                        voucher_type: voucherType || 'persen' // Use stored voucher type or default to 'persen'
-                    };
-                    
-                    console.log('Voucher info prepared:', voucherInfo);
-                }
+            let voucherPercent = parseFloat(voucherPercentStored) || 0;
+            const adjustedNominal = parseFloat(voucherNominal) || 0;
+            if ((!voucherPercent || voucherPercent <= 0) && adjustedNominal > 0 && grandTotal > 0) {
+                voucherPercent = (adjustedNominal / grandTotal) * 100;
+            }
+
+            if (voucherCode && adjustedNominal > 0) {
+                voucherInfo = {
+                    voucher_code: voucherCode,
+                    voucher_discount: voucherPercent,
+                    voucher_discount_amount: adjustedNominal,
+                    voucher_id: voucherId,
+                    voucher_type: voucherType || 'persen',
+                };
             }
         });
 

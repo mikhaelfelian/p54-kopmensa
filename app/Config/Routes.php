@@ -678,6 +678,9 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('po/cart_delete/(:num)', 'TransBeliPO::cart_delete/$1');
     $routes->post('po/proses/(:num)', 'TransBeliPO::proses/$1');
     $routes->get('po/delete/(:num)', 'TransBeliPO::delete/$1');
+    $routes->get('po/trash', 'TransBeliPO::trash');
+    $routes->get('po/restore/(:num)', 'TransBeliPO::restore/$1');
+    $routes->get('po/delete-permanent/(:num)', 'TransBeliPO::delete_permanent/$1');
     $routes->get('po/buat-faktur/(:num)', 'TransBeliPO::buatFaktur/$1');
     $routes->get('po/approve/(:num)/(:any)', 'TransBeliPO::approve/$1/$2');
     $routes->get('po/stats', 'TransBeliPO::getStats');
@@ -687,6 +690,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     $routes->get('beli/create', 'TransBeli::create');
     $routes->post('beli/store', 'TransBeli::store');
     $routes->get('beli/detail/(:num)', 'TransBeli::detail/$1');
+    $routes->get('beli/pdf/(:num)', 'TransBeli::pdf/$1');
     $routes->get('beli/edit/(:num)', 'TransBeli::edit/$1');
     $routes->post('beli/update/(:num)', 'TransBeli::update/$1');
     $routes->post('beli/cart_add/(:num)', 'TransBeli::cart_add/$1');
@@ -734,6 +738,7 @@ $routes->group('transaksi', ['namespace' => 'App\Controllers\Transaksi', 'filter
     // Purchase Return Routes
     $routes->get('retur/beli', 'ReturBeli::index');
     $routes->get('retur/beli/create', 'ReturBeli::create');
+    $routes->get('retur/beli/beli-lines/(:num)', 'ReturBeli::beliLines/$1');
     $routes->post('retur/beli/store', 'ReturBeli::store');
     $routes->get('retur/beli/edit/(:num)', 'ReturBeli::edit/$1');
     $routes->post('retur/beli/update/(:num)', 'ReturBeli::update/$1');

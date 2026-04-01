@@ -18,8 +18,6 @@ use App\Models\ItemModel;
 use App\Models\SupplierModel;
 use App\Models\PengaturanModel;
 use App\Models\SatuanModel;
-use TCPDF;
-
 class TransBeliPO extends BaseController
 {
     protected $transBeliPOModel;
@@ -178,8 +176,14 @@ class TransBeliPO extends BaseController
         // try {
             // Get PO data
             $po = $this->transBeliPOModel->find($id);
-            if (!$po) {
-                throw new \RuntimeException('Data PO tidak ditemukan');
+            if (!$po || ($po->status_hps ?? '0') === '1') {
+                return redirect()->to('transaksi/po')
+                    ->with('error', 'Data PO tidak ditemukan');
+            }
+
+            if ((int) $po->status !== 0) {
+                return redirect()->to('transaksi/po/detail/' . $id)
+                    ->with('error', 'Hanya PO berstatus draft yang dapat diedit');
             }
 
             // Get PO items
@@ -625,14 +629,9 @@ class TransBeliPO extends BaseController
                 throw new \RuntimeException('Hanya PO draft yang dapat dihapus');
             }
 
-            // Start transaction
             $this->db->transStart();
 
-            // Delete PO details first
-            $this->transBeliPODetModel->where('id_pembelian', $id)->delete();
-
-            // Delete PO
-            $this->transBeliPOModel->delete($id);
+            $this->transBeliPOModel->update($id, ['status_hps' => '1']);
 
             $this->db->transComplete();
 
@@ -641,12 +640,92 @@ class TransBeliPO extends BaseController
             }
 
             return redirect()->to('transaksi/po')
-                           ->with('success', 'PO berhasil dihapus');
+                           ->with('success', 'PO berhasil dipindahkan ke sampah');
 
         } catch (\Exception $e) {
             log_message('error', '[TransBeliPO::delete] ' . $e->getMessage());
             return redirect()->back()
                            ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Daftar PO yang dihapus (soft delete / status_hps).
+     */
+    public function trash()
+    {
+        $perPage = $this->pengaturan->pagination_limit ?? 10;
+        $query = $this->transBeliPOModel->where('status_hps', '1')
+            ->orderBy('updated_at', 'DESC');
+
+        $data = [
+            'title'         => 'Sampah Purchase Order',
+            'Pengaturan'    => $this->pengaturan,
+            'user'          => $this->ionAuth->user()->row(),
+            'po_list'       => $query->paginate($perPage, 'po'),
+            'pager'         => $this->transBeliPOModel->pager,
+            'transBeliPOModel' => $this->transBeliPOModel,
+        ];
+
+        return $this->view($this->theme->getThemePath() . '/transaksi/po/trash', $data);
+    }
+
+    /**
+     * Pulihkan PO dari sampah (hanya draft).
+     */
+    public function restore($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('transaksi/po/trash')->with('error', 'ID tidak valid');
+        }
+
+        $po = $this->transBeliPOModel->where('status_hps', '1')->find($id);
+        if (!$po) {
+            return redirect()->to('transaksi/po/trash')->with('error', 'Data tidak ditemukan');
+        }
+
+        if ((int) $po->status !== 0) {
+            return redirect()->to('transaksi/po/trash')
+                ->with('error', 'Hanya PO draft yang dapat dipulihkan dari sampah');
+        }
+
+        $this->transBeliPOModel->update($id, ['status_hps' => '0']);
+
+        return redirect()->to('transaksi/po/trash')->with('success', 'PO berhasil dipulihkan');
+    }
+
+    /**
+     * Hapus permanen PO draft di sampah.
+     */
+    public function delete_permanent($id = null)
+    {
+        if (!$id) {
+            return redirect()->to('transaksi/po/trash')->with('error', 'ID tidak valid');
+        }
+
+        try {
+            $po = $this->transBeliPOModel->where('status_hps', '1')->find($id);
+            if (!$po) {
+                throw new \RuntimeException('Data tidak ditemukan');
+            }
+            if ((int) $po->status !== 0) {
+                throw new \RuntimeException('Hanya PO draft di sampah yang dapat dihapus permanen');
+            }
+
+            $this->db->transStart();
+            $this->transBeliPODetModel->where('id_pembelian', $id)->delete();
+            $this->transBeliPOModel->delete($id, true);
+            $this->db->transComplete();
+
+            if ($this->db->transStatus() === false) {
+                throw new \RuntimeException('Gagal menghapus');
+            }
+
+            return redirect()->to('transaksi/po/trash')->with('success', 'PO dihapus permanen');
+        } catch (\Exception $e) {
+            log_message('error', '[TransBeliPO::delete_permanent] ' . $e->getMessage());
+
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
@@ -681,134 +760,18 @@ class TransBeliPO extends BaseController
     }
 
     /**
-     * Create invoice from PO
-     * 
-     * @param int $id PO ID
-     * @return \CodeIgniter\HTTP\RedirectResponse
+     * Alihkan ke pembuatan faktur pembelian (TransBeli), bukan tabel legacy tbl_trans_beli_faktur.
      */
     public function buatFaktur($id)
     {
-        try {
-            // Start transaction
-            $this->db->transStart();
-
-            // Get PO data
-            $po = $this->transBeliPOModel->find($id);
-            if (!$po) {
-                throw new \RuntimeException('Data PO tidak ditemukan');
-            }
-
-            // Verify PO is in processed status
-            if ($po->status != '1') {
-                throw new \RuntimeException('Hanya PO yang sudah diproses yang dapat dibuatkan faktur');
-            }
-
-            // Get PO details
-            $poDetails = $this->transBeliPODetModel->where('id_pembelian', $id)->findAll();
-            if (empty($poDetails)) {
-                throw new \RuntimeException('PO tidak memiliki item');
-            }
-
-            // Generate invoice number
-            $invoiceNumber = $this->generateInvoiceNumber();
-
-            // Create invoice header
-            $invoiceData = [
-                'no_faktur' => $invoiceNumber,
-                'id_po' => $po->id,
-                'id_supplier' => $po->id_supplier,
-                'tgl_faktur' => date('Y-m-d'),
-                'total' => 0, // Will be calculated from details
-                'status' => '0', // Draft status
-                'created_at' => date('Y-m-d H:i:s')
-            ];
-
-            // Insert invoice header
-            $this->db->table('tbl_trans_beli_faktur')->insert($invoiceData);
-            $invoiceId = $this->db->insertID();
-
-            // Calculate total and create invoice details using master prices
-            $total = 0;
-            $itemHargaModel = new \App\Models\ItemHargaModel();
-            
-            foreach ($poDetails as $detail) {
-                // Get master price for this item
-                $masterPrice = $itemHargaModel->getPriceByQuantity($detail->id_item, $detail->jml);
-                
-                // Use master price if available, otherwise use PO price
-                $harga = $masterPrice ? $masterPrice->harga : ($detail->harga ?? 0);
-                
-                $detailData = [
-                    'id_faktur'     => $invoiceId,
-                    'id_item'       => $detail->id_item,
-                    'jml'           => $detail->jml,
-                    'harga'         => $harga,
-                    'subtotal'      => ($detail->jml * $harga),
-                    'created_at'    => date('Y-m-d H:i:s')
-                ];
-                
-                $this->db->table('tbl_trans_beli_faktur_det')->insert($detailData);
-                $total += $detailData['subtotal'];
-            }
-
-            // Update invoice total
-            $this->db->table('tbl_trans_beli_faktur')
-                     ->where('id', $invoiceId)
-                     ->update(['total' => $total]);
-
-            // Update PO status to invoice created (2)
-            $this->transBeliPOModel->update($id, [
-                'status' => '2',
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
-
-            // Commit transaction
-            $this->db->transComplete();
-
-            if ($this->db->transStatus() === false) {
-                throw new \RuntimeException('Gagal membuat faktur');
-            }
-
-            return redirect()->to("transaksi/pembelian/faktur/edit/{$invoiceId}")
-                            ->with('success', 'Faktur berhasil dibuat');
-
-        } catch (\Exception $e) {
-            // Rollback transaction on error
-            $this->db->transRollback();
-            
-            log_message('error', '[TransBeliPO::buatFaktur] ' . $e->getMessage());
-            
-            return redirect()->back()
-                            ->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * Generate invoice number
-     * 
-     * @return string
-     */
-    private function generateInvoiceNumber()
-    {
-        $prefix = 'FKT' . date('Ym');
-        
-        // Get last invoice number
-        $lastInvoice = $this->db->table('tbl_trans_beli_faktur')
-                               ->select('no_faktur')
-                               ->like('no_faktur', $prefix, 'after')
-                               ->orderBy('id', 'DESC')
-                               ->get()
-                               ->getRow();
-
-        if (!$lastInvoice) {
-            return $prefix . '0001';
+        $po = $this->transBeliPOModel->find($id);
+        if (!$po || ($po->status_hps ?? '0') === '1') {
+            return redirect()->to('transaksi/po')
+                ->with('error', 'Data PO tidak ditemukan');
         }
 
-        // Extract number and increment
-        $lastNumber = (int)substr($lastInvoice->no_faktur, -4);
-        $newNumber = $lastNumber + 1;
-        
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return redirect()->to('transaksi/beli/create?id_po=' . (int) $id)
+            ->with('info', 'Lengkapi faktur pembelian dari PO ini');
     }
 
     /**

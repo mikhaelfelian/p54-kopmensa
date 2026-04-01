@@ -578,36 +578,30 @@ class TransJual extends BaseController
             $warehouseId = $this->request->getPost('warehouse_id');
             
             if (empty($warehouseId)) {
-                // Return all platforms if no outlet selected - EXCLUDE vouchers (vouchers are discounts, not payment methods)
-                $allPlatforms = $this->platformModel->where('status', '1')->findAll();
-                // Filter out vouchers (ID 4 or name contains "voucher")
-                $platforms = array_filter($allPlatforms, function($platform) {
-                    $platformId = (int)($platform->id ?? 0);
-                    $platformName = strtolower($platform->platform ?? '');
-                    // Exclude if ID is 4 or name contains "voucher"
-                    return $platformId !== 4 && strpos($platformName, 'voucher') === false;
-                });
+                $allPlatforms = $this->platformModel->where('status', '1')->where('status_hps', '0')->findAll();
+                foreach ($allPlatforms as $platform) {
+                    $pid = (int) ($platform->id ?? 0);
+                    $pname = (string) ($platform->platform ?? '');
+                    $platform->is_voucher_like = ($pid === 4 || stripos($pname, 'voucher') !== false);
+                }
+
                 return $this->response->setJSON([
                     'success' => true,
-                    'platforms' => array_values($platforms) // Re-index array
+                    'platforms' => array_values($allPlatforms),
                 ]);
             }
 
-            // Get platforms assigned to this outlet - EXCLUDE vouchers
             $outletPlatforms = $this->outletPlatformModel->getPlatformsByOutlet($warehouseId);
-            
-            // Filter out vouchers from the list
-            $filteredPlatforms = array_filter($outletPlatforms, function($platform) {
-                $platformId = (int)($platform->id_platform ?? $platform->id ?? 0);
-                $platformName = strtolower($platform->platform ?? '');
-                // Exclude if ID is 4 or name contains "voucher"
-                return $platformId !== 4 && strpos($platformName, 'voucher') === false;
-            });
-            
-            // Return the filtered platforms
+
+            foreach ($outletPlatforms as $platform) {
+                $pid = (int) ($platform->id_platform ?? $platform->id ?? 0);
+                $pname = (string) ($platform->platform ?? '');
+                $platform->is_voucher_like = ($pid === 4 || stripos($pname, 'voucher') !== false);
+            }
+
             return $this->response->setJSON([
                 'success' => true,
-                'platforms' => array_values($filteredPlatforms) // Re-index array
+                'platforms' => array_values($outletPlatforms),
             ]);
 
         } catch (\Exception $e) {

@@ -184,7 +184,7 @@
                                                class="btn btn-sm btn-warning rounded-0" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <?php if ($voucher->jml_keluar == 0): ?>
+                                            <?php if ($voucherModel->canBeDeleted($voucher)): ?>
                                                 <a href="<?= base_url('master/voucher/delete/' . $voucher->id) ?>" 
                                                    class="btn btn-sm btn-danger rounded-0" 
                                                    onclick="return confirm('Yakin ingin menghapus voucher ini?')" 

@@ -16,6 +16,8 @@
             <div class="card rounded-0">
                 <div class="card-body">
                     <!-- Purchase Order Selection -->
+                    <input type="hidden" name="items" id="items-json" value="">
+
                     <div class="form-group">
                         <label for="id_beli">No. Pembelian</label>
                         <select name="id_beli" id="id_beli" class="form-control select2 rounded-0">
@@ -207,7 +209,11 @@ $(document).ready(function() {
     // Handle purchase selection
     $('#id_beli').on('change', function() {
         updatePurchaseFields();
+        loadBeliLinesForRetur();
     });
+    if ($('#id_beli').val()) {
+        loadBeliLinesForRetur();
+    }
 
     // Function to update fields based on purchase selection
     function updatePurchaseFields() {
@@ -220,6 +226,38 @@ $(document).ready(function() {
         
         // Set No Nota Asal field value
         $('#no_nota_asal').val(noNotaAsal);
+    }
+
+    function loadBeliLinesForRetur() {
+        const id = $('#id_beli').val();
+        $('#items-json').val('');
+        if (!id) {
+            return;
+        }
+        $.ajax({
+            url: '<?= base_url('transaksi/retur/beli/beli-lines') ?>/' + id,
+            method: 'GET',
+            dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).done(function(res) {
+            if (!res || !res.success || !res.lines || !res.lines.length) {
+                return;
+            }
+            const items = res.lines.map(function(l) {
+                const h = parseFloat(l.harga) || 0;
+                const q = parseFloat(l.jml) || 0;
+                return {
+                    id_beli_det: l.id,
+                    id_item: l.id_item,
+                    qty: q,
+                    harga: h,
+                    kode: l.kode,
+                    nama: l.item,
+                    satuan: l.satuan
+                };
+            });
+            $('#items-json').val(JSON.stringify(items));
+        });
     }
 
     // Generate nota retur number

@@ -43,6 +43,7 @@ class Voucher extends BaseController
             'perPage'       => $perPage,
             'keyword'       => $keyword,
             'summary'       => $this->voucherModel->getVoucherSummary(),
+            'voucherModel'  => $this->voucherModel,
             'trashCount'    => $this->voucherModel->onlyDeleted()->countAllResults(),
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
@@ -425,10 +426,9 @@ class Voucher extends BaseController
                 ->with('error', 'Data voucher tidak ditemukan');
         }
 
-        // Voucher yang sudah pernah digunakan tidak boleh dihapus
-        if (isset($voucher->jml_keluar) && $voucher->jml_keluar > 0) {
+        if (!$this->voucherModel->canBeDeleted($voucher)) {
             return redirect()->to(base_url('master/voucher'))
-                ->with('error', 'Voucher tidak dapat dihapus karena sudah digunakan');
+                ->with('error', 'Voucher tidak dapat dihapus karena sudah pernah digunakan dalam transaksi');
         }
 
         try {
@@ -474,6 +474,7 @@ class Voucher extends BaseController
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
             'keyword'       => $keyword,
+            'voucherModel'  => $this->voucherModel,
             'breadcrumbs'   => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item">Master</li>
@@ -527,6 +528,11 @@ class Voucher extends BaseController
         if (!$voucher) {
             return redirect()->to('master/voucher')
                 ->with('error', 'Voucher tidak ditemukan di trash');
+        }
+
+        if (!$this->voucherModel->canBeDeleted($voucher)) {
+            return redirect()->to(base_url('master/voucher/trash'))
+                ->with('error', 'Voucher tidak dapat dihapus permanen karena sudah pernah digunakan dalam transaksi');
         }
 
         try {
@@ -611,10 +617,9 @@ class Voucher extends BaseController
                 try {
                     $voucher = $this->voucherModel->find($id);
                     
-                    // Check if voucher has been used
-                    if ($voucher && $voucher->jml_keluar > 0) {
+                    if ($voucher && !$this->voucherModel->canBeDeleted($voucher)) {
                         $failedCount++;
-                        $errors[] = "Voucher {$voucher->kode} gagal terhapus karena terpakai";
+                        $errors[] = "Voucher {$voucher->kode} gagal terhapus karena sudah digunakan dalam transaksi";
                         continue;
                     }
                     
@@ -632,7 +637,7 @@ class Voucher extends BaseController
 
             $message = "Berhasil menghapus {$deletedCount} voucher";
             if ($failedCount > 0) {
-                $message .= ", {$failedCount} voucher gagal terhapus karena terpakai";
+                $message .= ", {$failedCount} voucher gagal terhapus karena sudah digunakan";
             }
 
             return $this->response->setJSON([

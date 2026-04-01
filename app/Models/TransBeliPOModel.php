@@ -23,7 +23,7 @@ class TransBeliPOModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'id_penerima', 'id_supplier', 'id_user', 'tgl_masuk', 'tgl_keluar',
-        'no_nota', 'supplier', 'keterangan', 'pengiriman', 'status'
+        'no_nota', 'supplier', 'keterangan', 'pengiriman', 'status', 'status_hps',
     ];
 
     // Dates
@@ -76,7 +76,7 @@ class TransBeliPOModel extends Model
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli_po.id_supplier', 'left')
             ->join('tbl_ion_users', 'tbl_ion_users.id = tbl_trans_beli_po.id_user', 'left')
-            ->where('tbl_trans_beli_po.deleted_at IS NULL');
+            ->where('tbl_trans_beli_po.status_hps', '0');
 
         // If single record is requested
         if (isset($conditions['tbl_trans_beli_po.id'])) {
@@ -155,6 +155,31 @@ class TransBeliPOModel extends Model
     {
         return $this->where('status_hps', '1')
                     ->countAllResults();
+    }
+
+    /**
+     * PO siap dibuat faktur pembelian (TransBeli): disetujui (1) atau diproses (4), belum punya faktur.
+     *
+     * @return array
+     */
+    public function getAvailableForPurchaseInvoice()
+    {
+        $db = \Config\Database::connect();
+        $usedRows = $db->table('tbl_trans_beli')
+            ->select('id_po')
+            ->where('id_po >', 0)
+            ->get()
+            ->getResultArray();
+        $usedIds = array_unique(array_filter(array_map('intval', array_column($usedRows, 'id_po'))));
+
+        $builder = $this->where('status_hps', '0')
+            ->whereIn('status', [1, 4]);
+
+        if ($usedIds !== []) {
+            $builder->whereNotIn('id', $usedIds);
+        }
+
+        return $builder->orderBy('created_at', 'DESC')->findAll();
     }
 
     /**

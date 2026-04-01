@@ -252,6 +252,34 @@ class VoucherModel extends Model
     }
 
     /**
+     * Count sales transactions that reference this voucher (usage in tbl_trans_jual).
+     */
+    public function countSalesReferencingVoucher(int $voucherId): int
+    {
+        if ($voucherId <= 0) {
+            return 0;
+        }
+
+        return (int) \Config\Database::connect()
+            ->table('tbl_trans_jual')
+            ->where('voucher_id', $voucherId)
+            ->countAllResults();
+    }
+
+    /**
+     * Whether the voucher may be soft- or hard-deleted: never used in any transaction.
+     * Expiry alone does not block deletion.
+     */
+    public function canBeDeleted(object $voucher): bool
+    {
+        if ((int) ($voucher->jml_keluar ?? 0) > 0) {
+            return false;
+        }
+
+        return $this->countSalesReferencingVoucher((int) $voucher->id) === 0;
+    }
+
+    /**
      * Get voucher summary statistics
      */
     public function getVoucherSummary()

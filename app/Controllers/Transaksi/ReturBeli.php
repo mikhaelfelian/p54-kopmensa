@@ -13,6 +13,7 @@ use App\Controllers\BaseController;
 use App\Models\ItemModel;
 use App\Models\ItemHistModel;
 use App\Models\SupplierModel;
+use App\Models\TransBeliDetModel;
 use App\Models\TransBeliModel;
 use App\Models\TransReturBeliModel;
 use App\Models\TransReturBeliDetModel;
@@ -21,6 +22,7 @@ class ReturBeli extends BaseController
 {
     protected $supplierModel;
     protected $transBeliModel;
+    protected $transBeliDetModel;
     protected $returBeliModel;
     protected $returBeliDetModel;
     protected $itemModel;
@@ -29,10 +31,31 @@ class ReturBeli extends BaseController
     {
         $this->supplierModel = new SupplierModel();
         $this->transBeliModel = new TransBeliModel();
+        $this->transBeliDetModel = new TransBeliDetModel();
         $this->returBeliModel = new TransReturBeliModel();
         $this->returBeliDetModel = new TransReturBeliDetModel();
         $this->itemModel = new ItemModel();
         $this->itemHistModel = new ItemHistModel();
+    }
+
+    /**
+     * Jumlah sudah diretur untuk baris pembelian (partial return support).
+     */
+    protected function qtyAlreadyReturnedForBeliDet(int $idBeliDet): float
+    {
+        if ($idBeliDet <= 0) {
+            return 0.0;
+        }
+
+        $row = $this->db->table('tbl_trans_retur_beli_det rbd')
+            ->selectSum('rbd.jml', 'jml')
+            ->join('tbl_trans_retur_beli rb', 'rb.id = rbd.id_retur', 'inner')
+            ->where('rbd.id_beli_det', $idBeliDet)
+            ->where('rb.deleted_at IS NULL', null, false)
+            ->get()
+            ->getRow();
+
+        return (float) ($row->jml ?? 0);
     }
 
     public function index()
@@ -69,51 +92,13 @@ class ReturBeli extends BaseController
         // Get active suppliers from tbl_m_supplier
         $suppliers = $this->supplierModel->where('status', '1')->findAll();
         
-        // Get purchase transactions that can be returned
-        // First try to get transactions that haven't been fully returned
         $purchaseTransactions = $this->transBeliModel
             ->select('tbl_trans_beli.id, tbl_trans_beli.no_nota, tbl_trans_beli.id_supplier, tbl_trans_beli.status_retur, tbl_trans_beli.status_nota, tbl_trans_beli.created_at, tbl_m_supplier.nama as supplier_nama')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
-            ->groupStart()
-                ->where('tbl_trans_beli.status_retur', '0')
-                ->orWhereIn('tbl_trans_beli.status_retur', ['', null])
-            ->groupEnd()
+            ->where('tbl_trans_beli.status_nota', '1')
+            ->where('tbl_trans_beli.status_terima', '1')
             ->orderBy('tbl_trans_beli.created_at', 'DESC')
             ->findAll();
-
-        // If no results with strict conditions, try with more relaxed conditions
-        if (empty($purchaseTransactions)) {
-            log_message('info', 'No purchase transactions found with strict conditions, trying relaxed query...');
-            $purchaseTransactions = $this->transBeliModel
-                ->select('tbl_trans_beli.id, tbl_trans_beli.no_nota, tbl_trans_beli.id_supplier, tbl_trans_beli.status_retur, tbl_trans_beli.status_nota, tbl_trans_beli.created_at, tbl_m_supplier.nama as supplier_nama')
-                ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
-                ->orderBy('tbl_trans_beli.created_at', 'DESC')
-                ->findAll();
-        }
-
-        // If still no results, check if there are any purchase records at all
-        if (empty($purchaseTransactions)) {
-            log_message('warning', 'No purchase transactions found in database. Please check if there are any purchase records.');
-            
-            // Try to get any records without join to see if the issue is with the join
-            $simpleQuery = $this->transBeliModel
-                ->select('id, no_nota, id_supplier, status_retur, status_nota, created_at')
-                ->orderBy('created_at', 'DESC')
-                ->findAll();
-            
-            if (!empty($simpleQuery)) {
-                log_message('info', 'Found ' . count($simpleQuery) . ' purchase records without join. Issue might be with supplier join.');
-                // Add supplier names manually
-                $supplierModel = new SupplierModel();
-                foreach ($simpleQuery as $transaction) {
-                    $supplier = $supplierModel->find($transaction->id_supplier);
-                    $transaction->supplier_nama = $supplier ? $supplier->nama : 'Unknown Supplier';
-                }
-                $purchaseTransactions = $simpleQuery;
-            }
-        }
-
-        log_message('info', 'Final purchase transactions count: ' . count($purchaseTransactions));
 
         $data = [
             'title'      => 'Buat Retur Pembelian',
@@ -125,6 +110,29 @@ class ReturBeli extends BaseController
         ];
         
         return $this->view($this->theme->getThemePath() . '/transaksi/retur/beli/trans_retur', $data);
+    }
+
+    /**
+     * Baris pembelian untuk membentuk JSON items retur (AJAX).
+     */
+    public function beliLines($id_beli = null)
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid'])->setStatusCode(400);
+        }
+
+        if (!$id_beli) {
+            return $this->response->setJSON(['success' => false, 'lines' => []]);
+        }
+
+        $beli = $this->transBeliModel->find($id_beli);
+        if (!$beli || (string) $beli->status_nota !== '1' || (string) ($beli->status_terima ?? '') !== '1') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Pembelian tidak siap retur', 'lines' => []]);
+        }
+
+        $lines = $this->transBeliDetModel->where('id_pembelian', $id_beli)->findAll();
+
+        return $this->response->setJSON(['success' => true, 'lines' => $lines]);
     }
 
     public function store()
@@ -175,16 +183,44 @@ class ReturBeli extends BaseController
             $items = json_decode($items, true);
         }
 
+        $beli = $this->transBeliModel->find($id_beli);
+        if (!$beli) {
+            return redirect()->to(base_url('transaksi/retur/beli/create'))
+                ->withInput()->with('error', 'Transaksi pembelian tidak ditemukan.');
+        }
+        if ((int) $beli->id_supplier !== (int) $id_supplier) {
+            return redirect()->to(base_url('transaksi/retur/beli/create'))
+                ->withInput()->with('error', 'Supplier tidak sesuai dengan faktur pembelian.');
+        }
+        if ((string) $beli->status_nota !== '1') {
+            return redirect()->to(base_url('transaksi/retur/beli/create'))
+                ->withInput()->with('error', 'Retur hanya untuk pembelian yang sudah diproses.');
+        }
+        if ((string) ($beli->status_terima ?? '') !== '1') {
+            return redirect()->to(base_url('transaksi/retur/beli/create'))
+                ->withInput()->with('error', 'Barang harus sudah diterima di gudang sebelum retur.');
+        }
+
+        if (!$items || !is_array($items) || count($items) === 0) {
+            return redirect()->to(base_url('transaksi/retur/beli/create'))
+                ->withInput()->with('error', 'Detail barang retur wajib diisi. Pilih pembelian dan tunggu daftar item terisi otomatis.');
+        }
+
         try {
             $this->db->transStart();
 
             // Calculate totals
             $subtotal = 0;
-            if ($items && is_array($items)) {
-                foreach ($items as $item) {
-                    if (isset($item['qty']) && isset($item['harga'])) {
-                        $subtotal += ($item['qty'] * $item['harga']);
-                    }
+            foreach ($items as $item) {
+                $qty = isset($item['qty']) ? (float) $item['qty'] : 0;
+                $harga = $item['harga'] ?? 0;
+                if (is_string($harga)) {
+                    $harga = (float) str_replace(['.', ','], ['', '.'], $harga);
+                } else {
+                    $harga = (float) $harga;
+                }
+                if ($qty > 0 && $harga >= 0) {
+                    $subtotal += ($qty * $harga);
                 }
             }
 
@@ -195,6 +231,10 @@ class ReturBeli extends BaseController
 
             $total = $subtotal + $ppnAmount;
 
+            if ($subtotal <= 0) {
+                throw new \RuntimeException('Minimal satu barang dengan jumlah retur lebih dari 0.');
+            }
+
             // Format and add calculated amounts to data
             $data['jml_subtotal'] = $subtotal;
             $data['jml_ppn']      = $ppnAmount;
@@ -204,31 +244,62 @@ class ReturBeli extends BaseController
             $this->returBeliModel->save($data);
             $returId = $this->returBeliModel->getInsertID();
 
-            // Save return detail items
-            if ($items && is_array($items)) {
-                foreach ($items as $item) {
-                    if (!empty($item['kode']) && !empty($item['nama'])) {
-                        $detailData = [
-                            'id_retur'   => $returId,
-                            'id_user'    => $data['id_user'],
-                            'kode'       => $item['kode'],
-                            'item'       => $item['nama'],
-                            'satuan'     => $item['satuan'] ?? 'PCS',
-                            'jml'  => $item['qty'] ?? 1,
-                            'harga'      => $item['harga'] ?? 0,
-                            'subtotal'   => ($item['qty'] ?? 1) * ($item['harga'] ?? 0),
-                            'tgl_keluar' => $data['tgl_retur'],
-                        ];
+            foreach ($items as $item) {
+                $qty = isset($item['qty']) ? (float) $item['qty'] : 0;
+                if ($qty <= 0) {
+                    continue;
+                }
 
-                        $this->returBeliDetModel->save($detailData);
+                $harga = $item['harga'] ?? 0;
+                if (is_string($harga)) {
+                    $harga = (float) str_replace(['.', ','], ['', '.'], $harga);
+                } else {
+                    $harga = (float) $harga;
+                }
+
+                $id_beli_det = isset($item['id_beli_det']) ? (int) $item['id_beli_det'] : 0;
+                if ($id_beli_det > 0) {
+                    $line = $this->transBeliDetModel->find($id_beli_det);
+                    if (!$line || (int) $line->id_pembelian !== (int) $id_beli) {
+                        throw new \RuntimeException('Baris pembelian tidak valid.');
                     }
+                    $maxQty = (float) $line->jml - $this->qtyAlreadyReturnedForBeliDet($id_beli_det);
+                    if ($qty > $maxQty + 0.0001) {
+                        throw new \RuntimeException('Qty retur melebihi sisa yang dapat diretur untuk salah satu item.');
+                    }
+
+                    $detailData = [
+                        'id_retur'     => $returId,
+                        'id_beli_det'  => $id_beli_det,
+                        'id_item'      => (int) $line->id_item,
+                        'id_satuan'    => (int) ($line->id_satuan ?? 0),
+                        'id_user'      => $data['id_user'],
+                        'kode'         => $line->kode,
+                        'item'         => $line->item,
+                        'satuan'       => $line->satuan ?? 'PCS',
+                        'jml'          => $qty,
+                        'harga'        => $harga,
+                        'subtotal'     => $qty * $harga,
+                        'tgl_masuk'    => $data['tgl_retur'],
+                    ];
+                    $this->returBeliDetModel->skipValidation(true)->insert($detailData);
+                } elseif (!empty($item['kode']) && !empty($item['nama'])) {
+                    $detailData = [
+                        'id_retur'   => $returId,
+                        'id_user'    => $data['id_user'],
+                        'kode'       => $item['kode'],
+                        'item'       => $item['nama'],
+                        'satuan'     => $item['satuan'] ?? 'PCS',
+                        'jml'        => $qty,
+                        'harga'      => $harga,
+                        'subtotal'   => $qty * $harga,
+                        'tgl_masuk'  => $data['tgl_retur'],
+                    ];
+                    $this->returBeliDetModel->skipValidation(true)->insert($detailData);
                 }
             }
 
-            // Update purchase transaction status
-            if ($data['status_retur'] == '1') {
-                $this->transBeliModel->update($data['id_beli'], ['status_retur' => '1']);
-            }
+            $this->transBeliModel->update($data['id_beli'], ['status_retur' => '1']);
 
             $this->db->transComplete();
 

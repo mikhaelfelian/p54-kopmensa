@@ -94,6 +94,49 @@ class TransBeli extends BaseController
         return null;
     }
 
+    protected function assertBeliEditable(object $transaksi)
+    {
+        if (($transaksi->status_terima ?? '') === '1') {
+            return redirect()->to('transaksi/beli/detail/' . $transaksi->id)
+                ->with('error', 'Transaksi yang sudah diterima di gudang tidak dapat diubah.');
+        }
+
+        return null;
+    }
+
+    /**
+     * @return \CodeIgniter\HTTP\Response|null JSON 400 or null
+     */
+    protected function jsonIfBeliNotEditable(object $transaksi)
+    {
+        if (($transaksi->status_terima ?? '') === '1') {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Transaksi yang sudah diterima di gudang tidak dapat diubah.',
+            ])->setStatusCode(400);
+        }
+
+        return null;
+    }
+
+    /**
+     * Supplier aktif di master (bukan dihapus / nonaktif).
+     */
+    protected function resolveActiveSupplier(int $id_supplier): ?object
+    {
+        if ($id_supplier <= 0) {
+            return null;
+        }
+        $s = $this->supplierModel->find($id_supplier);
+        if (!$s) {
+            return null;
+        }
+        if (($s->status_hps ?? '0') === '1' || (string) ($s->status ?? '1') !== '1') {
+            return null;
+        }
+
+        return $s;
+    }
 
     /**
      * Display list of purchase transactions
@@ -206,14 +249,17 @@ class TransBeli extends BaseController
         $selected_po = null;
         if ($id_po) {
             $selected_po = $this->transPOModel->find($id_po);
+            if ($selected_po && ($selected_po->status_hps ?? '0') === '1') {
+                $selected_po = null;
+            }
         }
 
         $data = [
             'title'         => 'Buat Faktur',
             'Pengaturan'    => $this->pengaturan,
             'user'          => $this->ionAuth->user()->row(),
-            'suppliers'     => $this->supplierModel->where('status_hps', '0')->findAll(),
-            'po_list'       => $this->transPOModel->where('status', '4')->findAll(), // Only processed POs
+            'suppliers'     => $this->supplierModel->where('status_hps', '0')->where('status', '1')->findAll(),
+            'po_list'       => $this->transPOModel->getAvailableForPurchaseInvoice(),
             'selected_po'   => $selected_po
         ];
 
@@ -235,12 +281,11 @@ class TransBeli extends BaseController
         $tgl_keluar   = $this->request->getPost('tgl_keluar');
         $status_ppn   = $this->request->getPost('status_ppn');
 
-        // Generate no. nota if not provided
-        $no_nota_post = $this->request->getPost('no_nota');
-        if (!empty($no_nota_post)) {
-            $no_nota = $this->transBeliModel->generateKode();
-        } else {
+        $no_nota_post = trim((string) $this->request->getPost('no_nota'));
+        if ($no_nota_post !== '') {
             $no_nota = $no_nota_post;
+        } else {
+            $no_nota = $this->transBeliModel->generateKode();
         }
         
         // Validation rules
@@ -275,6 +320,39 @@ class TransBeli extends BaseController
                             ->with('errors', $this->validator->getErrors());
         }
 
+        if (!empty($id_po)) {
+            $poCheck = $this->transPOModel->find($id_po);
+            if (!$poCheck || ($poCheck->status_hps ?? '0') === '1') {
+                return redirect()->to('transaksi/beli/create')
+                    ->withInput()
+                    ->with('error', 'PO tidak valid atau sudah dihapus');
+            }
+            $poSt = (int) $poCheck->status;
+            if (!in_array($poSt, [1, 4], true)) {
+                return redirect()->to('transaksi/beli/create')
+                    ->withInput()
+                    ->with('error', 'PO harus dalam status diproses atau disetujui sebelum dibuat faktur pembelian');
+            }
+            $existingBeli = $this->transBeliModel->where('id_po', (int) $id_po)->first();
+            if ($existingBeli) {
+                return redirect()->to('transaksi/beli/edit/' . $existingBeli->id)
+                    ->with('error', 'PO ini sudah memiliki faktur pembelian');
+            }
+        }
+
+        $supplierRow = $this->resolveActiveSupplier((int) $id_supplier);
+        if (!$supplierRow) {
+            return redirect()->to('transaksi/beli/create')
+                ->withInput()
+                ->with('error', 'Supplier tidak valid, tidak aktif, atau sudah dihapus.');
+        }
+
+        if (!empty($id_po) && isset($poCheck) && (int) $id_supplier !== (int) $poCheck->id_supplier) {
+            return redirect()->to('transaksi/beli/create')
+                ->withInput()
+                ->with('error', 'Supplier harus sesuai dengan supplier pada PO.');
+        }
+
         // Get form data
         $kasirOutlet = $this->kasirOutletId();
         $data = [
@@ -286,6 +364,7 @@ class TransBeli extends BaseController
             'no_nota'       => $no_nota,
             'status_ppn'    => $status_ppn,
             'status_nota'   => 0, // Draft
+            'supplier'      => $supplierRow->nama,
         ];
         if ($kasirOutlet) {
             $data['id_penerima'] = $kasirOutlet;
@@ -300,8 +379,8 @@ class TransBeli extends BaseController
         if (!empty($data['id_po'])) {
             $po = $this->transPOModel->find($data['id_po']);
             if ($po) {
-                $data['no_po']      = $po->no_nota;
-                $data['supplier']   = $po->supplier;
+                $data['no_po']    = $po->no_nota;
+                $data['supplier'] = $po->supplier;
             }
         }
 
@@ -385,6 +464,10 @@ class TransBeli extends BaseController
             return $redirect;
         }
 
+        if ($redirect = $this->assertBeliEditable($transaksi)) {
+            return $redirect;
+        }
+
         // Get transaction items
         $transaksi->items = $this->transBeliDetModel->select('
                 tbl_trans_beli_det.*,
@@ -421,9 +504,8 @@ class TransBeli extends BaseController
         $transaksi->jml_ppn = $ppn;
         $transaksi->jml_total = $subtotal + $ppn;
 
-        // Get PO list and suppliers
-        $po_list = $this->transPOModel->findAll();
-        $suppliers = $this->supplierModel->findAll();
+        $po_list = $this->transPOModel->getAvailableForPurchaseInvoice();
+        $suppliers = $this->supplierModel->where('status_hps', '0')->where('status', '1')->findAll();
 
         // Prepare data for view
         $data = [
@@ -457,6 +539,10 @@ class TransBeli extends BaseController
         }
 
         if ($redirect = $this->assertBeliRowAccess($transaksi)) {
+            return $redirect;
+        }
+
+        if ($redirect = $this->assertBeliEditable($transaksi)) {
             return $redirect;
         }
 
@@ -499,6 +585,13 @@ class TransBeli extends BaseController
                             ->with('errors', $this->validator->getErrors());
         }
 
+        $supplierRow = $this->resolveActiveSupplier((int) $this->request->getPost('id_supplier'));
+        if (!$supplierRow) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Supplier tidak valid, tidak aktif, atau sudah dihapus.');
+        }
+
         // Get form data
         $data = [
             'id_po'         => $this->request->getPost('id_po'),
@@ -506,7 +599,8 @@ class TransBeli extends BaseController
             'tgl_masuk'     => $this->request->getPost('tgl_masuk'),
             'tgl_keluar'    => $this->request->getPost('tgl_keluar'),
             'no_nota'       => $this->request->getPost('no_nota'),
-            'status_ppn'    => $this->request->getPost('status_ppn')
+            'status_ppn'    => $this->request->getPost('status_ppn'),
+            'supplier'      => $supplierRow->nama,
         ];
 
         // Get PO data if exists and changed
@@ -560,6 +654,10 @@ class TransBeli extends BaseController
 
             if ($forbidden = $this->jsonIfBeliRowForbidden($transaksi)) {
                 return $forbidden;
+            }
+
+            if ($locked = $this->jsonIfBeliNotEditable($transaksi)) {
+                return $locked;
             }
 
             // Check if transaction is in draft status
@@ -786,6 +884,15 @@ class TransBeli extends BaseController
             if ($transaksi && ($forbidden = $this->jsonIfBeliRowForbidden($transaksi))) {
                 return $forbidden;
             }
+            if ($transaksi && ($locked = $this->jsonIfBeliNotEditable($transaksi))) {
+                return $locked;
+            }
+            if ($transaksi && $transaksi->status_nota != '0') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Hanya transaksi draft yang dapat diubah',
+                ])->setStatusCode(400);
+            }
 
             // Get form data
             $jml = $this->request->getPost('jml');
@@ -856,6 +963,15 @@ class TransBeli extends BaseController
             $transaksi = $this->transBeliModel->find($item->id_pembelian);
             if ($transaksi && ($forbidden = $this->jsonIfBeliRowForbidden($transaksi))) {
                 return $forbidden;
+            }
+            if ($transaksi && ($locked = $this->jsonIfBeliNotEditable($transaksi))) {
+                return $locked;
+            }
+            if ($transaksi && $transaksi->status_nota != '0') {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Hanya transaksi draft yang dapat diubah',
+                ])->setStatusCode(400);
             }
 
             // Delete item
@@ -958,6 +1074,10 @@ class TransBeli extends BaseController
                 return $redirect;
             }
 
+            if ($redirect = $this->assertBeliEditable($transaksi)) {
+                return $redirect;
+            }
+
             // Check if transaction is in draft status
             if ($transaksi->status_nota != '0') {
                 throw new \Exception('Hanya transaksi draft yang dapat diproses');
@@ -1019,8 +1139,8 @@ class TransBeli extends BaseController
             // If PO exists, update PO status
             if (!empty($transaksi->id_po)) {
                 $this->transPOModel->update($transaksi->id_po, [
-                    'status' => '3', // Completed
-                    'updated_at' => date('Y-m-d H:i:s')
+                    'status' => '2',
+                    'updated_at' => date('Y-m-d H:i:s'),
                 ]);
             }
 
@@ -1133,16 +1253,85 @@ class TransBeli extends BaseController
     }
 
     /**
-     * Print purchase transaction - DISABLED
-     * 
-     * @param int $id Transaction ID
-     * @return mixed
+     * PDF faktur / tanda terima pembelian
+     */
+    public function pdf($id)
+    {
+        if ($redirect = $this->requireKasirOutletOrRedirect()) {
+            return $redirect;
+        }
+
+        $transaksi = $this->transBeliModel->find($id);
+        if (!$transaksi) {
+            return redirect()->to('transaksi/beli')->with('error', 'Transaksi tidak ditemukan');
+        }
+        if ($redirect = $this->assertBeliRowAccess($transaksi)) {
+            return $redirect;
+        }
+
+        $items = $this->transBeliDetModel->select('
+                tbl_trans_beli_det.*,
+                tbl_m_item.kode as item_kode
+            ')
+            ->join('tbl_m_item', 'tbl_m_item.id = tbl_trans_beli_det.id_item', 'left')
+            ->where('id_pembelian', $id)
+            ->findAll();
+
+        $supplier = $this->supplierModel->find($transaksi->id_supplier);
+
+        require_once APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php';
+
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetMargins(12, 12, 12);
+        $pdf->AddPage();
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 8, 'Faktur Pembelian', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->Ln(2);
+        $pdf->Cell(45, 6, 'No. Faktur', 0, 0);
+        $pdf->Cell(0, 6, ': ' . ($transaksi->no_nota ?? '-'), 0, 1);
+        $pdf->Cell(45, 6, 'Tanggal', 0, 0);
+        $pdf->Cell(0, 6, ': ' . ($transaksi->tgl_masuk ?? '-'), 0, 1);
+        $pdf->Cell(45, 6, 'Supplier', 0, 0);
+        $pdf->Cell(0, 6, ': ' . ($supplier->nama ?? $transaksi->supplier ?? '-'), 0, 1);
+        if (!empty($transaksi->no_po)) {
+            $pdf->Cell(45, 6, 'No. PO', 0, 0);
+            $pdf->Cell(0, 6, ': ' . $transaksi->no_po, 0, 1);
+        }
+        $pdf->Ln(3);
+
+        $h = static function ($s) {
+            return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+        };
+
+        $html = '<table border="1" cellpadding="3" cellspacing="0" width="100%"><thead><tr style="background-color:#eee;">
+            <th width="8%">No</th><th width="22%">Kode</th><th width="35%">Item</th><th width="12%">Qty</th><th width="23%">Subtotal</th>
+            </tr></thead><tbody>';
+        $no = 1;
+        $sum = 0;
+        foreach ($items as $row) {
+            $sub = (float) ($row->subtotal ?? 0);
+            $sum += $sub;
+            $html .= '<tr><td align="center">' . $no++ . '</td><td>' . $h($row->item_kode ?? $row->kode ?? '') . '</td><td>'
+                . $h($row->item ?? '') . '</td><td align="right">' . number_format((float) ($row->jml ?? 0), 2, ',', '.')
+                . '</td><td align="right">' . number_format($sub, 0, ',', '.') . '</td></tr>';
+        }
+        $html .= '</tbody></table><p><strong>Total: Rp ' . number_format($sum, 0, ',', '.') . '</strong></p>';
+        $pdf->writeHTML($html, true, false, true, false, '');
+
+        $filename = 'faktur-pembelian-' . preg_replace('/[^A-Za-z0-9\-_]+/', '-', (string) ($transaksi->no_nota ?? $id)) . '.pdf';
+        $pdf->Output($filename, 'I');
+        exit;
+    }
+
+    /**
+     * @deprecated Gunakan pdf()
      */
     public function print($id)
     {
-        // Print functionality disabled - use new unified print system
-        return redirect()->to('transaksi/beli')
-                        ->with('error', 'Print functionality has been disabled. Please use the new unified print system.');
+        return $this->pdf($id);
     }
 
     /**
