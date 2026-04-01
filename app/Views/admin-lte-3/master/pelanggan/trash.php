@@ -17,10 +17,10 @@
                 <a href="<?= base_url('master/customer') ?>" class="btn btn-sm btn-secondary rounded-0">
                     <i class="fas fa-arrow-left"></i> Kembali
                 </a>
-                <button type="button" class="btn btn-sm btn-danger rounded-0" onclick="restoreAll()">
+                <button type="button" id="restore-all-btn" class="btn btn-sm btn-success rounded-0">
                     <i class="fas fa-trash-restore"></i> Pulihkan Semua
                 </button>
-                <button type="button" class="btn btn-sm btn-danger rounded-0" onclick="deleteAllPermanent()">
+                <button type="button" id="delete-all-permanent-btn" class="btn btn-sm btn-danger rounded-0">
                     <i class="fas fa-trash"></i> Hapus Permanen Semua
                 </button>
             </div>
@@ -28,7 +28,7 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-        <?= form_open('master/customer', ['method' => 'get']) ?>
+        <?= form_open('master/customer/trash', ['method' => 'get']) ?>
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
@@ -43,7 +43,7 @@
                         <th>
                             <?= form_input([
                                 'name' => 'search',
-                                'value' => $search,
+                                'value' => $search ?? '',
                                 'class' => 'form-control form-control-sm rounded-0',
                                 'placeholder' => 'Cari...'
                             ]) ?>
@@ -101,18 +101,60 @@
 
 <?= $this->section('js') ?>
 <script>
-function restoreAll() {
-    if (confirm('Pulihkan semua data?')) {
-        window.location.href = '<?= base_url("master/customer/restore-all") ?>';
+(function () {
+    function postJson(url, onDone) {
+        var fd = new FormData();
+        fd.append('<?= csrf_token() ?>', '<?= csrf_hash() ?>');
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd,
+            credentials: 'same-origin'
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (res.csrfHash) {
+                var m = document.querySelector('meta[name="csrf-token"]');
+                if (m) { m.setAttribute('content', res.csrfHash); }
+            }
+            onDone(res);
+        })
+        .catch(function () {
+            onDone({ success: false, message: 'Permintaan gagal' });
+        });
     }
-}
 
-function deleteAllPermanent() {
-    if (confirm('Semua data akan dihapus secara permanen. Lanjutkan?')) {
-        window.location.href = '<?= base_url("master/customer/delete-all-permanent") ?>';
-    }
-}
+    document.getElementById('restore-all-btn').addEventListener('click', function () {
+        if (!confirm('Pulihkan semua data di arsip?')) return;
+        var btn = this;
+        btn.disabled = true;
+        postJson('<?= base_url('master/customer/restore_all') ?>', function (res) {
+            btn.disabled = false;
+            if (res.success) {
+                if (typeof toastr !== 'undefined') { toastr.success(res.message); } else { alert(res.message); }
+                setTimeout(function () { window.location.reload(); }, 800);
+            } else {
+                if (typeof toastr !== 'undefined') { toastr.error(res.message); } else { alert(res.message); }
+            }
+        });
+    });
+
+    document.getElementById('delete-all-permanent-btn').addEventListener('click', function () {
+        if (!confirm('Semua data di arsip akan dihapus secara permanen. Lanjutkan?')) return;
+        var btn = this;
+        btn.disabled = true;
+        postJson('<?= base_url('master/customer/delete_all_permanent') ?>', function (res) {
+            btn.disabled = false;
+            if (res.success) {
+                if (typeof toastr !== 'undefined') { toastr.success(res.message); } else { alert(res.message); }
+                setTimeout(function () { window.location.reload(); }, 800);
+            } else {
+                if (typeof toastr !== 'undefined') { toastr.error(res.message); } else { alert(res.message); }
+            }
+        });
+    });
+})();
 </script>
 <?= $this->endSection() ?>
 
-<?= $this->endSection() ?> 
+<?= $this->endSection() ?>

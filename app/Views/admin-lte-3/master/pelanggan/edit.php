@@ -280,9 +280,11 @@
                 </div>
             </div>
         </div>
-    
-    <!-- Contact Person Section - Show if customer type is Instansi/Swasta -->
-    <div class="col-md-6" id="contactPersonSection" style="display: <?= $pelanggan->tipe > 1 ? 'block' : 'none' ?>;">
+    </div>
+</div>
+
+<div class="row mt-3" id="contactPersonRow" style="display: <?= (int) ($pelanggan->tipe ?? 0) > 1 ? 'flex' : 'none' ?>;">
+    <div class="col-12 col-lg-6" id="contactPersonSection">
         <?= form_open('master/customer/store_contact') ?>
         <?= form_hidden('id_pelanggan', $pelanggan->id) ?>
 
@@ -385,13 +387,13 @@
 
 <script>
 $(document).ready(function() {   
-    // Show/hide contact person section based on tipe selection
+    // Show/hide contact person section based on tipe selection (Umum / non-Anggota)
     $('select[name="tipe"]').change(function() {
         var tipe = $(this).val();
         if (tipe > 1) {
-            $('#contactPersonSection').show();
+            $('#contactPersonRow').css('display', 'flex');
         } else {
-            $('#contactPersonSection').hide();
+            $('#contactPersonRow').hide();
         }
     });
 

@@ -91,8 +91,10 @@
                             <td>
                                 <div class="btn-group">
                                     <a href="<?= base_url("master/supplier/detail/{$supplier->id}") ?>"
-                                        class="btn btn-info btn-sm rounded-0" title="Detail">
-                                        <i class="fas fa-eye"></i>
+                                        class="btn btn-info btn-sm rounded-0"
+                                        title="Lihat detail supplier"
+                                        aria-label="Lihat detail supplier">
+                                        <i class="fas fa-eye" aria-hidden="true"></i>
                                     </a>
                                     <a href="<?= base_url("master/supplier/edit/{$supplier->id}") ?>"
                                         class="btn btn-warning btn-sm rounded-0" title="Edit">

@@ -21,7 +21,8 @@ class PelangganModel extends Model
     protected $protectFields    = true;
     protected $allowedFields    = [
         'id_user', 'kode', 'no_agt', 'nama', 'no_telp', 'alamat', 'kota', 
-        'provinsi', 'tipe', 'status', 'is_blocked', 'limit_belanja', 'status_hps', 'status_blokir', 'limit'
+        'provinsi', 'tipe', 'status', 'is_blocked', 'limit_belanja', 'status_hps', 'status_blokir', 'limit',
+        'poin', 'poin_updated_at',
     ];
 
     // Dates
@@ -165,6 +166,49 @@ class PelangganModel extends Model
                 ->orWhere('deleted_at IS NOT NULL', null, false)
             ->groupEnd()
             ->countAllResults();
+    }
+
+    /**
+     * Restore all archived pelanggan (same scope as trash list)
+     */
+    public function restoreAllArchived(): bool
+    {
+        try {
+            return $this->builder()
+                ->groupStart()
+                    ->where('status_hps', '1')
+                    ->orWhere('deleted_at IS NOT NULL', null, false)
+                ->groupEnd()
+                ->set(['status_hps' => '0', 'deleted_at' => null])
+                ->update() !== false;
+        } catch (\Exception $e) {
+            log_message('error', '[PelangganModel::restoreAllArchived] ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Permanently delete all archived pelanggan rows
+     *
+     * @return int Number of rows deleted
+     */
+    public function purgeAllArchived(): int
+    {
+        $rows = $this->withDeleted()
+            ->groupStart()
+                ->where('status_hps', '1')
+                ->orWhere('deleted_at IS NOT NULL', null, false)
+            ->groupEnd()
+            ->findAll();
+
+        $deleted = 0;
+        foreach ($rows as $row) {
+            if ($this->delete($row->id, true)) {
+                $deleted++;
+            }
+        }
+
+        return $deleted;
     }
 
     /**

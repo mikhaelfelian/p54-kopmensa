@@ -489,6 +489,8 @@ $routes->post('customer/toggle_block', 'Pelanggan::toggle_block');
 $routes->post('customer/reset_password', 'Pelanggan::reset_password');
     $routes->get('customer/detail/(:num)', 'Pelanggan::detail/$1');
     $routes->get('customer/trash', 'Pelanggan::trash');
+    $routes->post('customer/restore_all', 'Pelanggan::restore_all');
+    $routes->post('customer/delete_all_permanent', 'Pelanggan::delete_all_permanent');
     $routes->get('customer/restore/(:num)', 'Pelanggan::restore/$1');
     $routes->get('customer/delete_permanent/(:num)', 'Pelanggan::delete_permanent/$1');
 
@@ -511,6 +513,8 @@ $routes->post('customer/reset_password', 'Pelanggan::reset_password');
     $routes->get('customer-group/edit/(:num)', 'PelangganGrup::edit/$1');
     $routes->post('customer-group/update/(:num)', 'PelangganGrup::update/$1');
     $routes->get('customer-group/delete/(:num)', 'PelangganGrup::delete/$1');
+    $routes->post('customer-group/bulk_delete', 'PelangganGrup::bulk_delete');
+    $routes->post('customer-group/bulk_restore', 'PelangganGrup::bulk_restore');
     $routes->get('customer-group/detail/(:num)', 'PelangganGrup::detail/$1');
     $routes->get('customer-group/trash', 'PelangganGrup::trash');
     $routes->get('customer-group/import', 'PelangganGrup::importForm');

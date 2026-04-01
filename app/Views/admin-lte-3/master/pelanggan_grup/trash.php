@@ -3,7 +3,7 @@
  * Created by:
  * Mikhael Felian Waskito - mikhaelfelian@gmail.com
  * 2025-08-23
- * 
+ *
  * Pelanggan Grup Trash View
  */
 ?>
@@ -28,8 +28,6 @@
                     <tr>
                         <th>No</th>
                         <th class="text-left">Nama Grup</th>
-                        <th class="text-left">Nama Pelanggan</th>
-                        <th class="text-left">Telepon</th>
                         <th class="text-left">Deskripsi</th>
                         <th class="text-center">Aksi</th>
                     </tr>
@@ -37,14 +35,12 @@
                         <th></th>
                         <th>
                             <?= form_input([
-                                'name' => 'keyword',
-                                'value' => $keyword ?? '',
+                                'name' => 'search',
+                                'value' => $search ?? '',
                                 'class' => 'form-control form-control-sm rounded-0',
-                                'placeholder' => 'Cari grup, deskripsi, atau nama pelanggan...'
+                                'placeholder' => 'Cari grup atau deskripsi...'
                             ]) ?>
                         </th>
-                        <th></th>
-                        <th></th>
                         <th></th>
                         <th class="text-center">
                             <button type="submit" class="btn btn-sm btn-primary rounded-0">
@@ -61,13 +57,11 @@
                             ?>
                             <tr>
                                 <td class="text-center" width="3%"><?= $no++ ?>.</td>
-                                <td width="20%">
+                                <td width="30%">
                                     <span class="badge badge-secondary"><?= esc($grup->grup) ?></span>
                                 </td>
-                                <td width="25%"><?= esc($grup->nama_pelanggan ?? '-') ?></td>
-                                <td width="20%"><?= esc($grup->telepon_pelanggan ?? '-') ?></td>
-                                <td width="25%"><?= esc($grup->deskripsi ?? '-') ?></td>
-                                <td class="text-center" width="7%">
+                                <td width="45%"><?= esc($grup->deskripsi ?? '-') ?></td>
+                                <td class="text-center" width="12%">
                                     <div class="btn-group">
                                         <a href="<?= base_url("master/customer-group/restore/{$grup->id}") ?>"
                                             class="btn btn-success btn-sm rounded-0"
@@ -85,7 +79,7 @@
                         <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
-                            <td colspan="6" class="text-center">Tidak ada data</td>
+                            <td colspan="4" class="text-center">Tidak ada data</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -94,7 +88,7 @@
         </div>
     </div>
     <div class="card-footer">
-        <?= $pager->links('adminlte_pagination') ?>
+        <?= $pager->links('page_grup', 'adminlte_pagination') ?>
     </div>
 </div>
 <?= $this->endSection() ?>

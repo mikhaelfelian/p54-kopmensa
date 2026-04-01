@@ -17,7 +17,6 @@ class PelangganGrup extends BaseController
 {
     protected $pelangganGrupModel;
     protected $pelangganModel;
-    protected $pengaturan;
     protected $ionAuth;
     protected $validation;
     protected $db;
@@ -37,8 +36,7 @@ class PelangganGrup extends BaseController
         $query = $this->request->getVar('keyword') ?? '';
         $status = $this->request->getVar('status') ?? '';
 
-        // Get trash count
-        $trashCount = (clone $this->pelangganGrupModel)->where('status', '0')->countAllResults();
+        $trashCount = $this->pelangganGrupModel->countArchived();
 
         // Filter active records for main list
         $this->pelangganGrupModel->where('tbl_m_pelanggan_grup.status', '1');
@@ -356,19 +354,14 @@ class PelangganGrup extends BaseController
      */
     public function trash()
     {
-        $currentPage = $this->request->getVar('page_grup') ?? 1;
+        $currentPage = (int) ($this->request->getVar('page_grup') ?? 1);
         $perPage = 10;
 
-        $query = $this->pelangganGrupModel;
-
-        // Use withDeleted() to include soft-deleted items
-        $query->withDeleted();
-
-        // Show items where status_hps = '1' OR deleted_at IS NOT NULL
+        $query = $this->pelangganGrupModel->withDeleted();
         $query->groupStart()
             ->where('status_hps', '1')
             ->orWhere('deleted_at IS NOT NULL', null, false)
-            ->groupEnd();
+        ->groupEnd();
 
         $search = $this->request->getVar('search');
         if ($search) {
@@ -378,21 +371,22 @@ class PelangganGrup extends BaseController
                 ->groupEnd();
         }
 
-        // Order by deleted_at descending
         $query->orderBy('deleted_at', 'DESC');
 
-        $total = $query->countAllResults(false);
-        $trashCount = $this->pelangganGrupModel->countArchived();
+        $grup_list = $query->paginate($perPage, 'page_grup', $currentPage);
+        $pager = $this->pelangganGrupModel->pager;
 
         $data = [
             'title'       => 'Trash Grup Pelanggan',
-            'grup_list'   => $query->findAll(),
-            'pager'       => $this->pelangganGrupModel->pager,
+            'Pengaturan'  => $this->pengaturan,
+            'user'        => $this->ionAuth->user()->row(),
+            'grup_list'   => $grup_list,
+            'pager'       => $pager,
             'currentPage' => $currentPage,
             'perPage'     => $perPage,
-            'total'       => $total,
             'search'      => $search,
-            'trashCount'  => $trashCount,
+            'keyword'     => $search,
+            'trashCount'  => $this->pelangganGrupModel->countArchived(),
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/customer-group') . '">Grup Pelanggan</a></li>
@@ -452,5 +446,303 @@ class PelangganGrup extends BaseController
             return redirect()->back()
                            ->with('error', 'Gagal menghapus permanen data grup');
         }
+    }
+
+    public function detail($id = null)
+    {
+        if (! $id) {
+            return redirect()->to('master/customer-group')->with('error', 'ID grup tidak ditemukan');
+        }
+
+        $grup = $this->pelangganGrupModel->getGroupWithMemberCount($id);
+        if (! $grup) {
+            return redirect()->to('master/customer-group')->with('error', 'Data grup tidak ditemukan');
+        }
+
+        $data = [
+            'title' => 'Detail Grup Pelanggan',
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'grup' => $grup,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/customer-group') . '">Grup Pelanggan</a></li>
+                <li class="breadcrumb-item active">Detail</li>
+            ',
+        ];
+
+        return view($this->theme->getThemePath() . '/master/pelanggan_grup/detail', $data);
+    }
+
+    public function members($id = null)
+    {
+        if (! $id) {
+            return redirect()->to('master/customer-group')->with('error', 'ID grup tidak ditemukan');
+        }
+
+        $grup = $this->pelangganGrupModel->find($id);
+        if (! $grup) {
+            return redirect()->to('master/customer-group')->with('error', 'Data grup tidak ditemukan');
+        }
+
+        $search = $this->request->getVar('search') ?? '';
+        $status = $this->request->getVar('status') ?? '';
+        $currentPage = max(1, (int) ($this->request->getVar('page') ?? 1));
+        $perPage = 20;
+
+        $currentMembers = $this->pelangganGrupModel->getGroupMembers($id);
+        $availableCustomers = $this->pelangganGrupModel->getAvailableCustomersPaginated($id, $perPage, $currentPage, $search, $status);
+        $totalAvailable = $this->pelangganGrupModel->getTotalAvailableCustomers($id, $search, $status);
+
+        $data = [
+            'title' => 'Kelola Member Grup',
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'grup' => $grup,
+            'currentMembers' => $currentMembers,
+            'availableCustomers' => $availableCustomers,
+            'totalAvailable' => $totalAvailable,
+            'search' => $search,
+            'status' => $status,
+            'currentPage' => $currentPage,
+            'perPage' => $perPage,
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item">Master</li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/customer-group') . '">Grup Pelanggan</a></li>
+                <li class="breadcrumb-item active">Member</li>
+            ',
+        ];
+
+        return view($this->theme->getThemePath() . '/master/pelanggan_grup/members', $data);
+    }
+
+    public function add_member($id = null)
+    {
+        if (! $id) {
+            return redirect()->to('master/customer-group')->with('error', 'ID grup tidak ditemukan');
+        }
+
+        return redirect()->to(base_url('master/customer-group/members/' . $id));
+    }
+
+    public function store_member()
+    {
+        $id_grup = (int) $this->request->getPost('id_grup');
+        $id_pelanggan = (int) $this->request->getPost('id_pelanggan');
+        if ($id_grup < 1 || $id_pelanggan < 1) {
+            return redirect()->back()->with('error', 'Data tidak valid');
+        }
+
+        if ($this->pelangganGrupModel->addMemberToGroup($id_grup, $id_pelanggan)) {
+            return redirect()->back()->with('success', 'Member berhasil ditambahkan');
+        }
+
+        return redirect()->back()->with('error', 'Member sudah ada di grup atau gagal menyimpan');
+    }
+
+    public function delete_member($memberRowId = null)
+    {
+        if (! $memberRowId) {
+            return redirect()->back()->with('error', 'ID tidak valid');
+        }
+
+        $row = $this->db->table('tbl_m_pelanggan_grup_member')->where('id', $memberRowId)->get()->getRow();
+        if (! $row) {
+            return redirect()->back()->with('error', 'Data keanggotaan tidak ditemukan');
+        }
+
+        $this->db->table('tbl_m_pelanggan_grup_member')->where('id', $memberRowId)->delete();
+
+        return redirect()->back()->with('success', 'Member dihapus dari grup');
+    }
+
+    public function addMember()
+    {
+        $id_grup = (int) $this->request->getPost('id_grup');
+        $id_pelanggan = (int) $this->request->getPost('id_pelanggan');
+        if ($id_grup < 1 || $id_pelanggan < 1) {
+            return redirect()->back()->with('error', 'Data tidak valid');
+        }
+
+        if ($this->pelangganGrupModel->addMemberToGroup($id_grup, $id_pelanggan)) {
+            return redirect()->back()->with('success', 'Pelanggan ditambahkan ke grup');
+        }
+
+        return redirect()->back()->with('error', 'Pelanggan sudah menjadi anggota grup atau gagal menyimpan');
+    }
+
+    public function removeMember()
+    {
+        $id_grup = (int) $this->request->getPost('id_grup');
+        $id_pelanggan = (int) $this->request->getPost('id_pelanggan');
+        if ($id_grup < 1 || $id_pelanggan < 1) {
+            return redirect()->back()->with('error', 'Data tidak valid');
+        }
+
+        if ($this->pelangganGrupModel->removeMemberFromGroup($id_grup, $id_pelanggan)) {
+            return redirect()->back()->with('success', 'Member dihapus dari grup');
+        }
+
+        return redirect()->back()->with('error', 'Gagal menghapus member dari grup');
+    }
+
+    public function addBulkMembers()
+    {
+        $id_grup = (int) $this->request->getPost('id_grup');
+        $ids = $this->request->getPost('customer_ids');
+        if ($id_grup < 1 || empty($ids) || ! is_array($ids)) {
+            return redirect()->back()->with('error', 'Pilih minimal satu pelanggan');
+        }
+
+        $added = 0;
+        foreach ($ids as $cid) {
+            $cid = (int) $cid;
+            if ($cid < 1) {
+                continue;
+            }
+            if ($this->pelangganGrupModel->addMemberToGroup($id_grup, $cid)) {
+                $added++;
+            }
+        }
+
+        return redirect()->back()->with('success', "Berhasil menambahkan {$added} pelanggan ke grup");
+    }
+
+    public function searchCustomers()
+    {
+        if (! $this->request->isAJAX()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $q = trim((string) $this->request->getPost('search'));
+        $id_grup = (int) $this->request->getPost('id_grup');
+        if ($id_grup < 1) {
+            return $this->response->setJSON(['success' => false, 'customers' => []]);
+        }
+
+        $inGroup = $this->db->table('tbl_m_pelanggan_grup_member')
+            ->select('id_pelanggan')
+            ->where('id_grup', $id_grup)
+            ->get()
+            ->getResultArray();
+        $excludeIds = array_column($inGroup, 'id_pelanggan');
+
+        $builder = $this->pelangganModel->builder();
+        $builder->where('status_hps', '0')->where('status', '1');
+        if ($excludeIds !== []) {
+            $builder->whereNotIn('id', $excludeIds);
+        }
+        if ($q !== '') {
+            $builder->groupStart()->like('nama', $q)->orLike('no_telp', $q)->orLike('kode', $q)->groupEnd();
+        }
+        $rows = $builder->limit(30)->get()->getResult();
+
+        return $this->response->setJSON(['success' => true, 'customers' => $rows]);
+    }
+
+    public function getCurrentMembers($id = null)
+    {
+        if (! $id) {
+            return $this->response->setJSON(['success' => false, 'members' => []]);
+        }
+
+        $members = $this->pelangganGrupModel->getGroupMembers($id);
+
+        return $this->response->setJSON(['success' => true, 'members' => $members]);
+    }
+
+    public function importForm()
+    {
+        $data = [
+            'title' => 'Import Grup Pelanggan',
+            'Pengaturan' => $this->pengaturan,
+            'user' => $this->ionAuth->user()->row(),
+            'breadcrumbs' => '
+                <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
+                <li class="breadcrumb-item"><a href="' . base_url('master/customer-group') . '">Grup Pelanggan</a></li>
+                <li class="breadcrumb-item active">Import</li>
+            ',
+        ];
+
+        return view($this->theme->getThemePath() . '/master/pelanggan_grup/import', $data);
+    }
+
+    public function downloadTemplate()
+    {
+        $filename = 'template_grup_pelanggan.csv';
+        $tmp = WRITEPATH . 'uploads/' . $filename;
+        if (! is_dir(dirname($tmp))) {
+            mkdir(dirname($tmp), 0755, true);
+        }
+        $fp = fopen($tmp, 'wb');
+        if ($fp === false) {
+            return redirect()->back()->with('error', 'Gagal membuat template');
+        }
+        fputcsv($fp, ['grup', 'deskripsi', 'status']);
+        fputcsv($fp, ['Contoh Grup', 'Deskripsi opsional', '1']);
+        fclose($fp);
+
+        return $this->response->download($tmp, null)->setFileName($filename);
+    }
+
+    public function importCsv()
+    {
+        $file = $this->request->getFile('csv_file');
+        if (! $file || ! $file->isValid()) {
+            return redirect()->back()->with('error', 'File tidak valid');
+        }
+
+        $path = $file->getTempName();
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            return redirect()->back()->with('error', 'Tidak dapat membaca file');
+        }
+
+        $skipHeader = (bool) $this->request->getPost('skip_header');
+        $updateExisting = (bool) $this->request->getPost('update_existing');
+        $rowNum = 0;
+        $inserted = 0;
+        $updated = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+            if ($skipHeader && $rowNum === 1) {
+                continue;
+            }
+            if (count($row) < 1 || trim((string) ($row[0] ?? '')) === '') {
+                continue;
+            }
+
+            $grup = trim((string) $row[0]);
+            $deskripsi = trim((string) ($row[1] ?? ''));
+            $status = trim((string) ($row[2] ?? '1'));
+            if ($status !== '0' && $status !== '1') {
+                $status = '1';
+            }
+
+            $existing = $this->pelangganGrupModel->where('grup', $grup)->first();
+            if ($existing) {
+                if ($updateExisting) {
+                    $this->pelangganGrupModel->update($existing->id, [
+                        'deskripsi' => $deskripsi,
+                        'status' => $status,
+                    ]);
+                    $updated++;
+                }
+                continue;
+            }
+
+            $this->pelangganGrupModel->insert([
+                'grup' => $grup,
+                'deskripsi' => $deskripsi,
+                'status' => $status,
+            ]);
+            $inserted++;
+        }
+        fclose($handle);
+
+        return redirect()->to('master/customer-group')->with('success', "Import selesai: {$inserted} baru, {$updated} diperbarui");
     }
 }

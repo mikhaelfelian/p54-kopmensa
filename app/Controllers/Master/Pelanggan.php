@@ -673,22 +673,25 @@ class Pelanggan extends BaseController
         $perPage     = $this->pengaturan->pagination_limit ?? 10;
         $search      = $this->request->getVar('search');
 
-        $model = $this->pelangganModel;
-        $model->onlyDeleted();
+        $query = $this->pelangganModel->withDeleted();
+        $query->groupStart()
+            ->where('status_hps', '1')
+            ->orWhere('deleted_at IS NOT NULL', null, false)
+        ->groupEnd();
 
         if ($search) {
-            $model->groupStart()
+            $query->groupStart()
                   ->like('nama', $search)
                   ->orLike('kode', $search)
+                  ->orLike('alamat', $search)
                   ->groupEnd();
         }
 
-        // Use pagination on onlyDeleted customers
-        $pelanggan = $model
+        $pelanggan = $query
             ->orderBy('deleted_at', 'DESC')
             ->paginate($perPage, 'pelanggan', $currentPage);
 
-        $pager = $model->pager;
+        $pager = $this->pelangganModel->pager;
 
         $data = [
             'title'        => 'Trash Pelanggan',
@@ -699,7 +702,7 @@ class Pelanggan extends BaseController
             'search'       => $search,
             'currentPage'  => $currentPage,
             'perPage'      => $perPage,
-            'trashCount'   => $model->countArchived ? $model->countArchived() : null,
+            'trashCount'   => $this->pelangganModel->countArchived(),
             'breadcrumbs'  => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('master/customer') . '">Pelanggan</a></li>
@@ -758,6 +761,90 @@ class Pelanggan extends BaseController
             log_message('error', '[Pelanggan::delete_permanent] ' . $e->getMessage());
             return redirect()->back()
                            ->with('error', 'Gagal menghapus permanen data pelanggan');
+        }
+    }
+
+    /**
+     * Restore all archived customers (AJAX POST, CSRF)
+     */
+    public function restore_all()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            if ($this->pelangganModel->countArchived() === 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada data di arsip untuk dipulihkan',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            if (!$this->pelangganModel->restoreAllArchived()) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Gagal memulihkan data pelanggan',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Semua pelanggan di arsip berhasil dipulihkan',
+                'csrfHash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::restore_all] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+    }
+
+    /**
+     * Permanently delete all archived customers (AJAX POST, CSRF)
+     */
+    public function delete_all_permanent()
+    {
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request',
+                'csrfHash' => csrf_hash()
+            ]);
+        }
+
+        try {
+            $deleted = $this->pelangganModel->purgeAllArchived();
+            if ($deleted === 0) {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'Tidak ada data di arsip untuk dihapus permanen',
+                    'csrfHash' => csrf_hash()
+                ]);
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => "Berhasil menghapus permanen {$deleted} pelanggan",
+                'deleted_count' => $deleted,
+                'csrfHash' => csrf_hash()
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', '[Pelanggan::delete_all_permanent] ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'csrfHash' => csrf_hash()
+            ]);
         }
     }
 
@@ -1462,8 +1549,8 @@ class Pelanggan extends BaseController
         // Get all data (no pagination for export)
         $pelanggans = $query->orderBy('id', 'DESC')->findAll();
         
-        // Prepare Excel data
-        $headers = ['Kode', 'Nama', 'No. Telp', 'Email', 'Alamat', 'Kota', 'Provinsi', 'Tipe', 'Status'];
+        // Prepare Excel data (same column order as list: Kode, Nama, No. Telp, Alamat, Tipe, Status)
+        $headers = ['Kode', 'Nama', 'No. Telp', 'Alamat', 'Tipe', 'Status'];
         $excelData = [];
         
         $tipeLabels = [
@@ -1477,10 +1564,7 @@ class Pelanggan extends BaseController
                 $pelanggan->kode,
                 $pelanggan->nama,
                 $pelanggan->no_telp ?? '',
-                $pelanggan->email ?? '',
                 $pelanggan->alamat ?? '',
-                $pelanggan->kota ?? '',
-                $pelanggan->provinsi ?? '',
                 $tipeLabels[$pelanggan->tipe] ?? '-',
                 ($pelanggan->status == '1') ? 'Aktif' : 'Tidak Aktif'
             ];

@@ -25,12 +25,6 @@
                         <?= esc($pelanggan->kode) ?>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="control-label">Kode</label>
-                    <div class="form-control rounded-0 bg-light" readonly>
-                        <?= esc($pelanggan->kode) ?>
-                    </div>
-                </div>
                 <?php
                     // Ambil username dari Ion Auth berdasarkan $pelanggan->id_user
                     $ionAuthUsername = '-';
@@ -59,15 +53,15 @@
                     <label class="control-label">No. Telp</label>
                     <div class="form-control rounded-0 bg-light" readonly>
                         <?= esc($pelanggan->no_telp) ?: '-' ?>
-            </div>
-        </div>
+                    </div>
+                </div>
 
                 <div class="form-group">
                     <label class="control-label">Alamat</label>
                     <div class="form-control rounded-0 bg-light" readonly style="min-height: 80px;">
                         <?= nl2br(esc($pelanggan->alamat)) ?>
-    </div>
-            </div>
+                    </div>
+                </div>
 
                 <div class="row">
                     <div class="col-md-6">
@@ -95,8 +89,9 @@
                             <div class="form-control rounded-0 bg-light" readonly>
                                 <?php
                                 $tipeLabels = [
+                                    '0' => '-',
                                     '1' => 'Anggota',
-                                    '2' => 'Umum'
+                                    '2' => 'Pelanggan'
                                 ];
                                 echo $tipeLabels[$pelanggan->tipe] ?? '-';
                                 ?>
@@ -114,6 +109,18 @@
                         </div>
                     </div>
                 </div>
+
+                <?php if (isset($pelanggan->poin)): ?>
+                <div class="form-group">
+                    <label class="control-label">Poin loyalitas</label>
+                    <div class="form-control rounded-0 bg-light" readonly>
+                        <?= number_format((float) $pelanggan->poin, 2, ',', '.') ?>
+                        <?php if (! empty($pelanggan->poin_updated_at)): ?>
+                            <small class="text-muted d-block">Diperbarui: <?= esc($pelanggan->poin_updated_at) ?></small>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             <div class="card-footer">
                 <div class="row">

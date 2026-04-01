@@ -122,6 +122,7 @@ class PelangganGrupModel extends Model
                   ->select('tbl_m_pelanggan_grup_member.*, tbl_m_pelanggan.nama, tbl_m_pelanggan.no_telp, tbl_m_pelanggan.alamat')
                   ->join('tbl_m_pelanggan', 'tbl_m_pelanggan.id = tbl_m_pelanggan_grup_member.id_pelanggan')
                   ->where('tbl_m_pelanggan_grup_member.id_grup', $groupId)
+                  ->where('tbl_m_pelanggan.status_hps', '0')
                   ->get()
                   ->getResult();
     }
@@ -189,7 +190,8 @@ class PelangganGrupModel extends Model
         
         $query = $this->db->table('tbl_m_pelanggan p')
             ->select('p.id, p.nama, p.no_telp, p.status')
-            ->where('p.status', '1') // Only active customers
+            ->where('p.status', '1')
+            ->where('p.status_hps', '0')
             ->whereNotIn('p.id', function($subQuery) use ($groupId) {
                 $subQuery->select('pgm.id_pelanggan')
                     ->from('tbl_m_pelanggan_grup_member pgm')
@@ -221,7 +223,8 @@ class PelangganGrupModel extends Model
     public function getTotalAvailableCustomers($groupId, $search = '', $status = '')
     {
         $query = $this->db->table('tbl_m_pelanggan p')
-            ->where('p.status', '1') // Only active customers
+            ->where('p.status', '1')
+            ->where('p.status_hps', '0')
             ->whereNotIn('p.id', function($subQuery) use ($groupId) {
                 $subQuery->select('pgm.id_pelanggan')
                     ->from('tbl_m_pelanggan_grup_member pgm')

@@ -103,7 +103,7 @@ class Supplier extends BaseController
                 <li class="breadcrumb-item">Master</li>
                 <li class="breadcrumb-item active">Supplier</li>
             ',
-            'trashCount'     => $this->supplierModel->onlyDeleted()->countAllResults()
+            'trashCount'     => $this->supplierModel->countArchived()
         ];
 
         return $this->view($this->theme->getThemePath() . '/master/supplier/index', $data);

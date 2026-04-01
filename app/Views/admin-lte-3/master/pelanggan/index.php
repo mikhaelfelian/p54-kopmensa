@@ -22,7 +22,7 @@
                         <a href="<?= base_url('master/customer/import') ?>" class="btn btn-sm btn-success rounded-0">
                             <i class="fas fa-file-import"></i> IMPORT
                         </a>
-                        <a href="<?= base_url('master/customer/export') ?>" class="btn btn-sm btn-warning rounded-0">
+                        <a href="<?= base_url('master/customer/export?' . http_build_query(array_filter(['keyword' => $keyword ?? '']))) ?>" class="btn btn-sm btn-warning rounded-0">
                             <i class="fas fa-file-export"></i> EXPORT
                         </a>
                         <a href="<?= base_url('master/customer/template') ?>" class="btn btn-sm btn-info rounded-0">

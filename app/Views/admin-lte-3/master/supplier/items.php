@@ -105,8 +105,10 @@
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
                                         <a href="<?= base_url("master/item/detail/{$item->id}") ?>"
-                                            class="btn btn-info btn-xs" title="Detail">
-                                            <i class="fas fa-eye"></i>
+                                            class="btn btn-info btn-xs"
+                                            title="Lihat detail item"
+                                            aria-label="Lihat detail item">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
                                         </a>
                                         <a href="<?= base_url("master/item/edit/{$item->id}") ?>"
                                             class="btn btn-warning btn-xs" title="Edit">

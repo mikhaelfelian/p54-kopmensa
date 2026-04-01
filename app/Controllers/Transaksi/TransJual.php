@@ -1597,6 +1597,14 @@ class TransJual extends BaseController
                 throw new \Exception($errorMsg);
             }
 
+            if (! $isDraft && ! empty($transactionId)) {
+                try {
+                    (new \App\Libraries\PelangganPoinService())->accrueForSale((int) $transactionId);
+                } catch (\Throwable $e) {
+                    log_message('error', '[TransJual::processTransaction] Poin: ' . $e->getMessage());
+                }
+            }
+
             return $this->response->setJSON([
                     'success'        => true,
                     'message'        => 'Transaksi berhasil diproses',

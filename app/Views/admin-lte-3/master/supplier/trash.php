@@ -101,7 +101,7 @@
                                             class="btn btn-success btn-sm rounded-0" title="Pulihkan">
                                             <i class="fas fa-trash-restore"></i>
                                         </a>
-                                        <a href="<?= base_url("master/supplier/delete-permanent/{$supplier->id}") ?>"
+                                        <a href="<?= base_url("master/supplier/delete_permanent/{$supplier->id}") ?>"
                                             class="btn btn-danger btn-sm rounded-0" title="Hapus Permanen"
                                             onclick="return confirm('Data akan dihapus secara permanen. Lanjutkan?')">
                                             <i class="fas fa-trash"></i>
