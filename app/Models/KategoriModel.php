@@ -12,7 +12,7 @@ class KategoriModel extends Model
     protected $returnType       = 'object';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
-    protected $allowedFields    = ['kode', 'kategori', 'keterangan', 'status', 'updated_at'];
+    protected $allowedFields    = ['kode', 'kategori', 'keterangan', 'status', 'updated_at', 'poin_multiplier'];
 
     // Dates
     protected $useTimestamps = true;

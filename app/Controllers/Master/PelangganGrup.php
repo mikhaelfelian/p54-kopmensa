@@ -671,20 +671,12 @@ class PelangganGrup extends BaseController
 
     public function downloadTemplate()
     {
-        $filename = 'template_grup_pelanggan.csv';
-        $tmp = WRITEPATH . 'uploads/' . $filename;
-        if (! is_dir(dirname($tmp))) {
-            mkdir(dirname($tmp), 0755, true);
-        }
-        $fp = fopen($tmp, 'wb');
-        if ($fp === false) {
-            return redirect()->back()->with('error', 'Gagal membuat template');
-        }
-        fputcsv($fp, ['grup', 'deskripsi', 'status']);
-        fputcsv($fp, ['Contoh Grup', 'Deskripsi opsional', '1']);
-        fclose($fp);
+        $csv = "grup,deskripsi,status\nContoh Grup,Deskripsi opsional,1\n";
 
-        return $this->response->download($tmp, null)->setFileName($filename);
+        return $this->response
+            ->setHeader('Content-Type', 'text/csv; charset=utf-8')
+            ->setHeader('Content-Disposition', 'attachment; filename="template_grup_pelanggan.csv"')
+            ->setBody($csv);
     }
 
     public function importCsv()

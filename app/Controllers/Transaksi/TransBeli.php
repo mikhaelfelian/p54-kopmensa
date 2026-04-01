@@ -38,12 +38,72 @@ class TransBeli extends BaseController
 
     }
 
+    /**
+     * Outlet (gudang) id for kasir session, or null for non-cashier users.
+     */
+    protected function kasirOutletId(): ?int
+    {
+        helper('akses');
+        if (! akses_kasir()) {
+            return null;
+        }
+        $oid = session()->get('kasir_outlet');
+
+        return $oid ? (int) $oid : null;
+    }
+
+    /**
+     * Cashier must have outlet in session to use pembelian.
+     */
+    protected function requireKasirOutletOrRedirect()
+    {
+        helper('akses');
+        if (! akses_kasir()) {
+            return null;
+        }
+        if (empty(session()->get('kasir_outlet'))) {
+            return redirect()->to('dashboard')->with('error', 'Pilih outlet atau buka shift terlebih dahulu untuk mengakses pembelian.');
+        }
+
+        return null;
+    }
+
+    protected function assertBeliRowAccess(object $transaksi)
+    {
+        $oid = $this->kasirOutletId();
+        if ($oid && (int) ($transaksi->id_penerima ?? 0) !== $oid) {
+            return redirect()->to('transaksi/beli')->with('error', 'Akses ditolak untuk transaksi ini.');
+        }
+
+        return null;
+    }
+
+    /**
+     * @return \CodeIgniter\HTTP\Response|null JSON 403 or null if OK
+     */
+    protected function jsonIfBeliRowForbidden(object $transaksi)
+    {
+        $oid = $this->kasirOutletId();
+        if ($oid && (int) ($transaksi->id_penerima ?? 0) !== $oid) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Akses ditolak untuk transaksi ini.',
+            ])->setStatusCode(403);
+        }
+
+        return null;
+    }
+
 
     /**
      * Display list of purchase transactions
      */
     public function index()
     {
+        if ($redirect = $this->requireKasirOutletOrRedirect()) {
+            return $redirect;
+        }
+
         $currentPage = $this->request->getVar('page_transbeli') ?? 1;
         $perPage = $this->pengaturan->pagination_limit;
 
@@ -62,6 +122,11 @@ class TransBeli extends BaseController
         $builder->select('tbl_trans_beli.*, tbl_m_supplier.nama as supplier_nama')
                 ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
                 ->where('tbl_trans_beli.deleted_at IS NULL');
+
+        $kasirOutlet = $this->kasirOutletId();
+        if ($kasirOutlet) {
+            $builder->where('tbl_trans_beli.id_penerima', $kasirOutlet);
+        }
 
         // Apply filters
         if ($startDate) {
@@ -130,6 +195,10 @@ class TransBeli extends BaseController
      */
     public function create()
     {
+        if ($redirect = $this->requireKasirOutletOrRedirect()) {
+            return $redirect;
+        }
+
         // Get id_po from URL if exists
         $id_po = $this->request->getGet('id_po');
         
@@ -156,6 +225,10 @@ class TransBeli extends BaseController
      */
     public function store()
     {
+        if ($redirect = $this->requireKasirOutletOrRedirect()) {
+            return $redirect;
+        }
+
         $id_po        = $this->request->getPost('id_po');
         $id_supplier  = $this->request->getPost('id_supplier');
         $tgl_masuk    = $this->request->getPost('tgl_masuk');
@@ -203,6 +276,7 @@ class TransBeli extends BaseController
         }
 
         // Get form data
+        $kasirOutlet = $this->kasirOutletId();
         $data = [
             'id_po'         => $id_po,
             'id_supplier'   => $id_supplier,
@@ -213,6 +287,9 @@ class TransBeli extends BaseController
             'status_ppn'    => $status_ppn,
             'status_nota'   => 0, // Draft
         ];
+        if ($kasirOutlet) {
+            $data['id_penerima'] = $kasirOutlet;
+        }
 
         // If no_nota is empty, generate new one
         if (empty($data['no_nota'])) {
@@ -293,11 +370,19 @@ class TransBeli extends BaseController
      */
     public function edit($id)
     {
+        if ($redirect = $this->requireKasirOutletOrRedirect()) {
+            return $redirect;
+        }
+
         // Check if transaction exists
         $transaksi = $this->transBeliModel->find($id);
         if (!$transaksi) {
             return redirect()->to(base_url('transaksi/beli'))
                             ->with('error', 'Transaksi tidak ditemukan');
+        }
+
+        if ($redirect = $this->assertBeliRowAccess($transaksi)) {
+            return $redirect;
         }
 
         // Get transaction items
@@ -360,11 +445,19 @@ class TransBeli extends BaseController
      */
     public function update($id)
     {
+        if ($redirect = $this->requireKasirOutletOrRedirect()) {
+            return $redirect;
+        }
+
         // Check if transaction exists
         $transaksi = $this->transBeliModel->find($id);
         if (!$transaksi) {
             return redirect()->back()
                             ->with('error', 'Transaksi tidak ditemukan');
+        }
+
+        if ($redirect = $this->assertBeliRowAccess($transaksi)) {
+            return $redirect;
         }
 
         // Validation rules
@@ -463,6 +556,10 @@ class TransBeli extends BaseController
                     'success' => false,
                     'message' => 'Transaksi tidak ditemukan'
                 ])->setStatusCode(404);
+            }
+
+            if ($forbidden = $this->jsonIfBeliRowForbidden($transaksi)) {
+                return $forbidden;
             }
 
             // Check if transaction is in draft status
@@ -685,6 +782,11 @@ class TransBeli extends BaseController
                 throw new \Exception('Item tidak ditemukan');
             }
 
+            $transaksi = $this->transBeliModel->find($item->id_pembelian);
+            if ($transaksi && ($forbidden = $this->jsonIfBeliRowForbidden($transaksi))) {
+                return $forbidden;
+            }
+
             // Get form data
             $jml = $this->request->getPost('jml');
             $id_satuan = $this->request->getPost('id_satuan');
@@ -751,6 +853,11 @@ class TransBeli extends BaseController
                 throw new \Exception('Item tidak ditemukan');
             }
 
+            $transaksi = $this->transBeliModel->find($item->id_pembelian);
+            if ($transaksi && ($forbidden = $this->jsonIfBeliRowForbidden($transaksi))) {
+                return $forbidden;
+            }
+
             // Delete item
             $this->transBeliDetModel->delete($id);
 
@@ -780,6 +887,10 @@ class TransBeli extends BaseController
             $transaksi = $this->transBeliModel->find($id);
             if (!$transaksi) {
                 throw new \Exception('Transaksi tidak ditemukan');
+            }
+
+            if ($forbidden = $this->jsonIfBeliRowForbidden($transaksi)) {
+                return $forbidden;
             }
 
             // Get supplier ID from transaction
@@ -833,10 +944,18 @@ class TransBeli extends BaseController
     public function proses($id)
     {
         try {
+            if ($redirect = $this->requireKasirOutletOrRedirect()) {
+                return $redirect;
+            }
+
             // Get transaction data
             $transaksi = $this->transBeliModel->find($id);
             if (!$transaksi) {
                 throw new \Exception('Transaksi tidak ditemukan');
+            }
+
+            if ($redirect = $this->assertBeliRowAccess($transaksi)) {
+                return $redirect;
             }
 
             // Check if transaction is in draft status
@@ -933,10 +1052,18 @@ class TransBeli extends BaseController
     public function detail($id)
     {
         try {
+            if ($redirect = $this->requireKasirOutletOrRedirect()) {
+                return $redirect;
+            }
+
             // Get transaction data
             $transaksi = $this->transBeliModel->find($id);
             if (!$transaksi) {
                 throw new \Exception('Transaksi tidak ditemukan');
+            }
+
+            if ($redirect = $this->assertBeliRowAccess($transaksi)) {
+                return $redirect;
             }
 
             // Get transaction items with item and satuan data

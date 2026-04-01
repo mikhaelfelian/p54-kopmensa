@@ -197,6 +197,42 @@
                         </ul>
                     </li>
 
+                    <?php
+                    $pembelianKasirMenus = [
+                        'transaksi/beli',
+                        'transaksi/beli/create',
+                    ];
+                    $isPembelianKasirActive = isMenuActive($pembelianKasirMenus);
+                    ?>
+                    <li class="nav-header">PEMBELIAN</li>
+                    <li class="nav-item has-treeview <?= $isPembelianKasirActive ? 'menu-open' : '' ?>">
+                        <a href="#" class="nav-link <?= $isPembelianKasirActive ? 'active' : '' ?>">
+                            <i class="nav-icon fas fa-shopping-cart"></i>
+                            <p>
+                                Pembelian
+                                <i class="right fas fa-angle-left"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/beli/create') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/beli/create') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-plus nav-icon"></i>
+                                    <p>Buat Faktur</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('transaksi/beli') ?>"
+                                    class="nav-link <?= isMenuActive('transaksi/beli') && ! isMenuActive('transaksi/beli/create') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-list nav-icon"></i>
+                                    <p>Data Pembelian</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
                     <!-- Warehouse -->
                     <li class="nav-header">GUDANG</li>
                     <?php
