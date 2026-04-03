@@ -157,10 +157,10 @@
                             <?php 
                             $status = is_array($shift) ? ($shift['status'] ?? 'unknown') : ($shift->status ?? 'unknown');
                             if ($status === 'open'): ?>
-                                <button type="button" class="btn btn-warning btn-block mb-2" onclick="closeShift()">
+                                <a href="<?= base_url('transaksi/shift/close/' . (is_array($shift) ? $shift['id'] : $shift->id)) ?>" class="btn btn-warning btn-block mb-2">
                                     <i class="fas fa-lock mr-2"></i>
                                     Tutup Shift
-                                </button>
+                                </a>
                             <?php endif; ?>
                             
                                                          <a href="<?= base_url('transaksi/shift/print/' . (is_array($shift) ? $shift['id'] : $shift->id)) ?>" class="btn btn-info btn-block mb-2" target="_blank">
@@ -216,6 +216,52 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Draft transactions (only draft can be deleted) -->
+            <?php if (!empty($draftSales)): ?>
+            <div class="card card-outline card-warning rounded-0">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-file-alt mr-2"></i>
+                        Transaksi Draft
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Waktu</th>
+                                    <th>No. Nota</th>
+                                    <th class="text-right">Total</th>
+                                    <th width="120" class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($draftSales as $idx => $d): ?>
+                                <tr>
+                                    <td><?= $idx + 1 ?></td>
+                                    <td><?= date('d/m/Y H:i', strtotime($d->created_at)) ?></td>
+                                    <td><?= esc($d->no_nota ?? '-') ?></td>
+                                    <td class="text-right"><?= format_angka($d->jml_gtotal ?? 0, 0) ?></td>
+                                    <td class="text-center">
+                                        <form action="<?= base_url('transaksi/shift/draft/delete/' . (is_array($shift) ? $shift['id'] : $shift->id)) ?>" method="post" class="d-inline" onsubmit="return confirm('Hapus draft ini? Tindakan tidak dapat dibatalkan.');">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="penjualan_id" value="<?= (int) $d->id ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm rounded-0" title="Hapus draft">
+                                                <i class="fas fa-trash-alt"></i> Hapus
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Recent Transactions Card -->
             <div class="card">
@@ -273,15 +319,15 @@
                                             </td>
                                             <td>
                                                 <?php
-                                                $status = $transaction->status ?? 'pending';
+                                                $st = (string) ($transaction->status ?? '');
+                                                $statusLabel = $st === '1' ? 'Selesai' : ($st === '0' ? 'Draft' : $st);
                                                 $statusClass = [
-                                                    'selesai' => 'badge badge-success',
-                                                    'pending' => 'badge badge-warning',
-                                                    'batal' => 'badge badge-danger'
+                                                    '1' => 'badge badge-success',
+                                                    '0' => 'badge badge-warning',
                                                 ];
                                                 ?>
-                                                <span class="<?= $statusClass[$status] ?? 'badge badge-secondary' ?>">
-                                                    <?= ucfirst($status) ?>
+                                                <span class="<?= $statusClass[$st] ?? 'badge badge-secondary' ?>">
+                                                    <?= esc($statusLabel) ?>
                                                 </span>
                                             </td>
                                         </tr>
@@ -302,50 +348,12 @@
     </div>
 </div>
 
-<!-- Close Shift Modal -->
-<div class="modal fade" id="closeShiftModal" tabindex="-1" role="dialog" aria-labelledby="closeShiftModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="closeShiftModalLabel">Tutup Shift</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form id="closeShiftForm" action="<?= base_url('transaksi/shift/close/' . (is_array($shift) ? $shift['id'] : $shift->id)) ?>" method="POST">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="saldo_akhir">Saldo Akhir</label>
-                        <input type="text" class="form-control" id="saldo_akhir" name="saldo_akhir" 
-                               value="<?= (is_array($shift) ? ($shift['saldo_akhir'] ?? 0) : ($shift->saldo_akhir ?? 0)) ?>" required>
-                        <small class="form-text text-muted">Masukkan saldo akhir yang tersisa di kasir</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="catatan">Catatan</label>
-                        <textarea class="form-control" id="catatan" name="catatan" rows="3" 
-                                  placeholder="Catatan tambahan (opsional)"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-warning">Tutup Shift</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <?= $this->endSection() ?>
 
 <?= $this->section('js') ?>
 <script>
-function closeShift() {
-    $('#closeShiftModal').modal('show');
-}
-
-// AutoNumeric for saldo akhir input
 $(document).ready(function() {
-    $('#saldo_akhir').autoNumeric('init', {
+    $('[data-autonumeric]').autoNumeric('init', {
         aSep: ',',
         aDec: '.',
         aSign: '',

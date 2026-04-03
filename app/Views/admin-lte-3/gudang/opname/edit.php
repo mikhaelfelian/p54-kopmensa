@@ -26,6 +26,13 @@
                 <div class="row">
                     <div class="col-md-6">
                         <?= form_open(base_url("gudang/opname/update/{$opname->id}"), ['id' => 'opname_form', 'autocomplete' => 'off']) ?>
+                        <?= csrf_field() ?>
+                        
+                        <div class="form-group">
+                            <label>Tipe Opname</label>
+                            <input type="text" class="form-control rounded-0" readonly
+                                   value="<?= (string)($opname->tipe ?? '') === '2' ? 'Opname Outlet' : 'Opname Gudang' ?>">
+                        </div>
                         
                         <div class="form-group">
                             <label class="control-label">Tanggal</label>
@@ -44,15 +51,24 @@
                             </div>
                         </div>
                         
+                        <?php $isOutletOpname = (string)($opname->tipe ?? '') === '2'; ?>
                         <div class="form-group">
-                            <label for="gudang">Gudang <i class="text-danger">*</i></label>
-                            <select name="id_gudang" class="form-control rounded-0">
-                                <option value="">- Pilih Gudang -</option>
-                                <?php foreach ($gudang as $gd): ?>
-                                    <option value="<?= $gd->id ?>" <?= ($gd->id == $opname->id_gudang) ? 'selected' : '' ?>>
-                                        <?= $gd->nama ?>
-                                    </option>
-                                <?php endforeach; ?>
+                            <label><?= $isOutletOpname ? 'Outlet' : 'Gudang' ?> <i class="text-danger">*</i></label>
+                            <select name="id_gudang" class="form-control rounded-0" required>
+                                <option value="">- Pilih -</option>
+                                <?php if ($isOutletOpname): ?>
+                                    <?php foreach ($outlet as $ot): ?>
+                                        <option value="<?= $ot->id ?>" <?= ((int)$ot->id === (int)$opname->id_gudang) ? 'selected' : '' ?>>
+                                            <?= esc($ot->nama) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <?php foreach ($gudang as $gd): ?>
+                                        <option value="<?= $gd->id ?>" <?= ((int)$gd->id === (int)$opname->id_gudang) ? 'selected' : '' ?>>
+                                            <?= esc($gd->nama) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </select>
                         </div>
                         

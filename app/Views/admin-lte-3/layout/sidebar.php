@@ -352,9 +352,9 @@
 
                     <!-- Outlet -->
                     <li
-                        class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'menu-open' : '' ?>">
+                        class="nav-item has-treeview <?= isMenuActive(['master/outlet', 'master/gudang', 'master/shift-schedule']) ? 'menu-open' : '' ?>">
                         <a href="#"
-                            class="nav-link <?= isMenuActive(['master/outlet', 'master/gudang']) ? 'active' : '' ?>">
+                            class="nav-link <?= isMenuActive(['master/outlet', 'master/gudang', 'master/shift-schedule']) ? 'active' : '' ?>">
                             <i class="nav-icon fas fa-building"></i>
                             <p>
                                 Outlet
@@ -376,6 +376,14 @@
                                     <?= nbs(3) ?>
                                     <i class="fas fa-map-marker-alt nav-icon"></i>
                                     <p>Data Gudang</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="<?= base_url('master/shift-schedule') ?>"
+                                    class="nav-link <?= isMenuActive('master/shift-schedule') ? 'active' : '' ?>">
+                                    <?= nbs(3) ?>
+                                    <i class="fas fa-calendar-alt nav-icon"></i>
+                                    <p>Jadwal Shift</p>
                                 </a>
                             </li>
                         </ul>

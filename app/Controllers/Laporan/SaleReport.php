@@ -416,8 +416,8 @@ class SaleReport extends BaseController
     public function export_excel()
     {
         $filters = [
-            'start_date'   => $this->request->getGet('start_date') ?? date('Y-m-d'),
-            'end_date'     => $this->request->getGet('end_date') ?? date('Y-m-d'),
+            'start_date'   => $this->request->getGet('start_date') ?? date('Y-m-01'),
+            'end_date'     => $this->request->getGet('end_date') ?? date('Y-m-t'),
             'id_gudang'    => $this->request->getGet('id_gudang'),
             'id_pelanggan' => $this->request->getGet('id_pelanggan'),
             'id_platform'  => $this->request->getGet('id_platform'),
@@ -587,8 +587,8 @@ class SaleReport extends BaseController
         require_once(APPPATH . '../vendor/tecnickcom/tcpdf/tcpdf.php');
         
         $filters = [
-            'start_date'   => $this->request->getGet('start_date') ?? date('Y-m-d'),
-            'end_date'     => $this->request->getGet('end_date') ?? date('Y-m-d'),
+            'start_date'   => $this->request->getGet('start_date') ?? date('Y-m-01'),
+            'end_date'     => $this->request->getGet('end_date') ?? date('Y-m-t'),
             'id_gudang'    => $this->request->getGet('id_gudang'),
             'id_pelanggan' => $this->request->getGet('id_pelanggan'),
             'id_platform'  => $this->request->getGet('id_platform'),

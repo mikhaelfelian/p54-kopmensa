@@ -244,6 +244,13 @@
                                                 title="Input Item">
                                                 <i class="fas fa-plus"></i>
                                             </a>
+                                            <a href="<?= base_url("gudang/transfer/delete/{$row->id}") ?>"
+                                                class="btn btn-danger btn-sm rounded-0"
+                                                onclick="return confirm('Hapus draft transfer ini?');"
+                                                data-toggle="tooltip"
+                                                title="Hapus draft">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
                                             <?php endif; ?>
                                         </div>
                                     </td>

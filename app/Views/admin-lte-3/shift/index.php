@@ -56,6 +56,9 @@
                         </h3>
                     </div>
                     <div class="col-md-6 text-right">
+                        <a href="<?= base_url('master/shift-schedule') ?>" class="btn btn-outline-secondary btn-sm rounded-0" title="Master jadwal jam operasional per outlet">
+                            <i class="fas fa-calendar-alt"></i> Pengaturan Jadwal
+                        </a>
                         <a href="<?= base_url('transaksi/shift/open') ?>" class="btn btn-primary btn-sm rounded-0">
                             <i class="fas fa-plus-circle"></i> Buka Shift Baru
                         </a>
@@ -67,10 +70,61 @@
             </div>
             <!-- /.card-header -->
 
+            <div class="card-body border-bottom py-3">
+                <?= form_open('', ['method' => 'get', 'class' => 'form-horizontal', 'autocomplete' => 'off']) ?>
+                <div class="row align-items-end">
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-0">Tanggal mulai</label>
+                        <input type="date" name="start_date" class="form-control form-control-sm rounded-0" value="<?= esc($filter_start_date ?? '') ?>">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-0">Tanggal akhir</label>
+                        <input type="date" name="end_date" class="form-control form-control-sm rounded-0" value="<?= esc($filter_end_date ?? '') ?>">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-0">Status</label>
+                        <select name="status" class="form-control form-control-sm rounded-0">
+                            <option value="">Semua</option>
+                            <option value="open" <?= (($filter_status ?? '') === 'open') ? 'selected' : '' ?>>Aktif</option>
+                            <option value="closed" <?= (($filter_status ?? '') === 'closed') ? 'selected' : '' ?>>Ditutup</option>
+                            <option value="approved" <?= (($filter_status ?? '') === 'approved') ? 'selected' : '' ?>>Disetujui</option>
+                            <option value="void" <?= (($filter_status ?? '') === 'void') ? 'selected' : '' ?>>Dibatalkan</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-0">Outlet</label>
+                        <select name="outlet_id" class="form-control form-control-sm rounded-0">
+                            <option value="">Semua outlet</option>
+                            <?php foreach ($outlets ?? [] as $o): ?>
+                                <option value="<?= (int) $o->id ?>" <?= (string)($filter_outlet_id ?? '') === (string) $o->id ? 'selected' : '' ?>><?= esc($o->nama) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-0">Kata kunci</label>
+                        <input type="text" name="keyword" class="form-control form-control-sm rounded-0" placeholder="Kode shift / kasir" value="<?= esc($filter_keyword ?? '') ?>">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-0 d-block">Per halaman</label>
+                        <select name="per_page" class="form-control form-control-sm rounded-0">
+                            <?php $pp = (int) ($per_page ?? 25); ?>
+                            <option value="25" <?= $pp === 25 ? 'selected' : '' ?>>25</option>
+                            <option value="50" <?= $pp === 50 ? 'selected' : '' ?>>50</option>
+                            <option value="100" <?= $pp === 100 ? 'selected' : '' ?>>100</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-muted mb-0 d-block">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary btn-sm rounded-0"><i class="fas fa-search"></i> Filter</button>
+                        <a href="<?= base_url('transaksi/shift') ?>" class="btn btn-secondary btn-sm rounded-0">Reset</a>
+                    </div>
+                </div>
+                <?= form_close() ?>
+            </div>
+
             <!-- Summary Statistics -->
             <?php
-            // Calculate summary statistics
-            $totalShifts = count($shifts);
+            $totalFiltered = (int) ($total_shifts ?? count($shifts));
             $openShifts = 0;
             $closedShifts = 0;
             $approvedShifts = 0;
@@ -96,8 +150,8 @@
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-info">
                             <div class="inner">
-                                <h3><?= number_format($totalShifts) ?></h3>
-                                <p>Total Shift</p>
+                                <h3><?= number_format($totalFiltered) ?></h3>
+                                <p>Total Shift <small class="text-white-50">(sesuai filter)</small></p>
                             </div>
                             <div class="icon">
                                 <i class="fas fa-list"></i>
@@ -108,7 +162,7 @@
                         <div class="small-box bg-success">
                             <div class="inner">
                                 <h3><?= number_format($openShifts) ?></h3>
-                                <p>Shift Aktif</p>
+                                <p>Shift Aktif <small class="text-white-50">(halaman ini)</small></p>
                             </div>
                             <div class="icon">
                                 <i class="fas fa-play-circle"></i>
@@ -119,7 +173,7 @@
                         <div class="small-box bg-warning">
                             <div class="inner">
                                 <h3><?= number_format($closedShifts) ?></h3>
-                                <p>Shift Ditutup</p>
+                                <p>Shift Ditutup <small class="text-white-50">(halaman ini)</small></p>
                             </div>
                             <div class="icon">
                                 <i class="fas fa-stop-circle"></i>
@@ -130,7 +184,7 @@
                         <div class="small-box bg-primary">
                             <div class="inner">
                                 <h3><?= number_format($totalSales, 0, ',', '.') ?></h3>
-                                <p>Total Penjualan</p>
+                                <p>Total Penjualan <small class="text-white-50">(kas, halaman ini)</small></p>
                             </div>
                             <div class="icon">
                                 <i class="fas fa-money-bill-wave"></i>
@@ -171,12 +225,13 @@
                     <tbody>
                         <?php if (!empty($shifts)) : ?>
                             <?php 
-                            $no = 1;
+                            $no = (($current_page ?? 1) - 1) * ($per_page ?? 25);
                             foreach ($shifts as $shift) : 
+                                $no++;
                             ?>
                                 <tr>
                                     <td class="text-center text-muted">
-                                        <strong><?= $no++ ?></strong>
+                                        <strong><?= $no ?></strong>
                                     </td>
                                     <td>
                                         <i class="fas fa-store text-muted"></i>
@@ -301,6 +356,17 @@
                     </tbody>
                 </table>
             </div>
+            <?php if (! empty($pager) && isset($total_shifts) && $total_shifts > 0): ?>
+                <div class="card-footer clearfix">
+                    <div class="float-left text-muted small pt-2">
+                        Menampilkan <?= (($current_page ?? 1) - 1) * ($per_page ?? 25) + 1 ?>–<?= min(($current_page ?? 1) * ($per_page ?? 25), (int) $total_shifts) ?>
+                        dari <?= (int) $total_shifts ?> shift
+                    </div>
+                    <div class="float-right">
+                        <?= $pager->links('shift_hist', 'adminlte_pagination') ?>
+                    </div>
+                </div>
+            <?php endif; ?>
             <!-- /.card-body -->
         </div>
         <!-- /.card -->

@@ -268,4 +268,15 @@ class TransJualModel extends Model
                     ->orderBy('created_at', 'DESC')
                     ->findAll();
     }
+
+    /**
+     * Draft sales tied to a shift (cashier drafts, status = 0)
+     */
+    public function getDraftSalesByShift($shift_id)
+    {
+        return $this->where('id_shift', $shift_id)
+                    ->where('status', '0')
+                    ->orderBy('created_at', 'DESC')
+                    ->findAll();
+    }
 }

@@ -74,6 +74,28 @@
                             </div>
                             
                             <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Gudang (baris detail)</label>
+                                        <select name="id_gudang" class="form-control form-control-sm rounded-0">
+                                            <option value="">Semua</option>
+                                            <?php foreach ($gudangList ?? [] as $g): ?>
+                                                <option value="<?= (int) $g->id ?>" <?= (string) ($_GET['id_gudang'] ?? '') === (string) $g->id ? 'selected' : '' ?>><?= esc($g->nama) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Kata kunci</label>
+                                        <input type="text" name="keyword" class="form-control form-control-sm rounded-0"
+                                               placeholder="No. faktur / PO / supplier..."
+                                               value="<?= esc($_GET['keyword'] ?? '') ?>">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
                                 <!-- Supplier Filter -->
                                 <div class="col-md-3">
                                     <div class="form-group">
@@ -152,6 +174,12 @@
                         if (isset($_GET['status_terima']) && $_GET['status_terima'] !== '') {
                             $receiveLabels = ['0' => 'Belum Diterima', '1' => 'Sudah Diterima', '2' => 'Ditolak'];
                             $activeFilters[] = 'Status Terima: ' . $receiveLabels[$_GET['status_terima']];
+                        }
+                        if (!empty($_GET['id_gudang'])) {
+                            $activeFilters[] = 'Gudang ID: ' . (int) $_GET['id_gudang'];
+                        }
+                        if (!empty($_GET['keyword'])) {
+                            $activeFilters[] = 'Kata kunci: "' . esc($_GET['keyword']) . '"';
                         }
                         echo implode(', ', $activeFilters);
                         ?>

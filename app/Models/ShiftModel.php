@@ -166,7 +166,7 @@ class ShiftModel extends Model
                 COALESCE(SUM(jml_bayar), 0) as total_payment
             ')
             ->where('id_shift', $shift_id)
-            ->where('status !=', '0') // Exclude draft transactions
+            ->where('status', '1')
             ->get()
             ->getRowArray();
         
@@ -178,7 +178,7 @@ class ShiftModel extends Model
             ')
             ->join('tbl_trans_jual t', 't.id = p.id_penjualan', 'inner')
             ->where('t.id_shift', $shift_id)
-            ->where('t.status !=', '0')
+            ->where('t.status', '1')
             ->groupBy('p.platform')
             ->get()
             ->getResultArray();
@@ -225,7 +225,7 @@ class ShiftModel extends Model
             ')
             ->join('tbl_trans_jual_plat p', 'p.id_penjualan = t.id', 'left')
             ->where('t.id_shift', $shift_id)
-            ->where('t.status !=', '0') // Exclude draft transactions
+            ->where('t.status', '1')
             ->groupBy('t.id')
             ->orderBy('t.created_at', 'DESC')
             ->limit($limit)
@@ -238,25 +238,59 @@ class ShiftModel extends Model
      */
     public function getShiftsByOutlet($outlet_id, $limit = 10, $offset = 0)
     {
-        $builder = $this->db->table('tbl_m_shift s')
-            ->select('
-                s.*,
-                g.nama as outlet_name,
-                u_open.first_name as user_open_name,
-                u_open.last_name as user_open_lastname
-            ')
-            ->join('tbl_m_gudang g', 'g.id = s.outlet_id', 'left')
-            ->join('tbl_ion_users u_open', 'u_open.id = s.user_open_id', 'left')
-            ->where('s.outlet_id', $outlet_id)
-            ->orderBy('s.start_at', 'DESC');
-
-        return $builder->limit($limit, $offset)->get()->getResultArray();
+        return $this->getShiftsFiltered(['outlet_id' => $outlet_id], $limit, $offset);
     }
 
     /**
      * Get all shifts with outlet and user information
      */
     public function getAllShifts($limit = 50, $offset = 0)
+    {
+        return $this->getShiftsFiltered([], $limit, $offset);
+    }
+
+    /**
+     * Apply history filters to a query builder (tbl_m_shift as s).
+     *
+     * @param array $filters outlet_id?, start_date?, end_date?, status?, keyword?
+     */
+    protected function applyShiftHistoryFilters($builder, array $filters): void
+    {
+        if (! empty($filters['outlet_id'])) {
+            $builder->where('s.outlet_id', (int) $filters['outlet_id']);
+        }
+        if (! empty($filters['start_date'])) {
+            $builder->where('DATE(s.start_at) >=', $filters['start_date']);
+        }
+        if (! empty($filters['end_date'])) {
+            $builder->where('DATE(s.start_at) <=', $filters['end_date']);
+        }
+        if (isset($filters['status']) && $filters['status'] !== null && $filters['status'] !== '') {
+            $builder->where('s.status', $filters['status']);
+        }
+        if (! empty($filters['keyword'])) {
+            $kw = $filters['keyword'];
+            $builder->groupStart()
+                ->like('s.shift_code', $kw)
+                ->orLike('g.nama', $kw)
+                ->orLike('g.kode', $kw)
+                ->orLike('u_open.first_name', $kw)
+                ->orLike('u_open.last_name', $kw)
+                ->orLike('u_open.email', $kw)
+                ->orLike('u_close.first_name', $kw)
+                ->orLike('u_close.last_name', $kw)
+                ->orLike('u_approve.first_name', $kw)
+                ->orLike('u_approve.last_name', $kw)
+                ->groupEnd();
+        }
+    }
+
+    /**
+     * Shift history with optional filters (date range, status, keyword, outlet).
+     *
+     * @param array $filters outlet_id?, start_date?, end_date?, status?, keyword?
+     */
+    public function getShiftsFiltered(array $filters = [], int $limit = 50, int $offset = 0): array
     {
         $builder = $this->db->table('tbl_m_shift s')
             ->select('
@@ -273,40 +307,140 @@ class ShiftModel extends Model
             ->join('tbl_m_gudang g', 'g.id = s.outlet_id', 'left')
             ->join('tbl_ion_users u_open', 'u_open.id = s.user_open_id', 'left')
             ->join('tbl_ion_users u_close', 'u_close.id = s.user_close_id', 'left')
-            ->join('tbl_ion_users u_approve', 'u_approve.id = s.user_approve_id', 'left')
-            ->orderBy('s.start_at', 'DESC');
+            ->join('tbl_ion_users u_approve', 'u_approve.id = s.user_approve_id', 'left');
 
-        return $builder->limit($limit, $offset)->get()->getResultArray();
+        $this->applyShiftHistoryFilters($builder, $filters);
+
+        return $builder->orderBy('s.start_at', 'DESC')->limit($limit, $offset)->get()->getResultArray();
     }
 
     /**
-     * Close shift
+     * Count shifts matching history filters (for pagination).
      */
-    public function closeShift($shift_id, $user_close_id, $counted_cash, $notes = '', $catatan_shift = '')
+    public function countShiftsFiltered(array $filters = []): int
     {
+        $builder = $this->db->table('tbl_m_shift s')
+            ->join('tbl_m_gudang g', 'g.id = s.outlet_id', 'left')
+            ->join('tbl_ion_users u_open', 'u_open.id = s.user_open_id', 'left')
+            ->join('tbl_ion_users u_close', 'u_close.id = s.user_close_id', 'left')
+            ->join('tbl_ion_users u_approve', 'u_approve.id = s.user_approve_id', 'left');
+
+        $this->applyShiftHistoryFilters($builder, $filters);
+
+        return (int) $builder->countAllResults();
+    }
+
+    /**
+     * Cash sales total from finalized sales for this shift (matches processClose / print).
+     */
+    public function computeCashSalesTotalForShift(int $shift_id): float
+    {
+        $db = \Config\Database::connect();
+        $cashSalesTotal = $db->table('tbl_trans_jual_plat tjp')
+            ->select('COALESCE(SUM(tjp.nominal), 0) as total_cash')
+            ->join('tbl_trans_jual tj', 'tj.id = tjp.id_penjualan', 'inner')
+            ->join('tbl_m_platform p', 'p.id = tjp.id_platform', 'left')
+            ->where('tj.id_shift', $shift_id)
+            ->where('tj.status', '1')
+            ->where('(p.platform LIKE "%tunai%" OR p.platform LIKE "%cash%" OR tjp.platform LIKE "%tunai%" OR tjp.platform LIKE "%cash%")', null, false)
+            ->get()
+            ->getRowArray();
+
+        return (float) ($cashSalesTotal['total_cash'] ?? 0);
+    }
+
+    /**
+     * Single path for closing: recomputes cash sales, optional petty overrides from live petty table.
+     */
+    public function closeShiftWithTotals(
+        int $shift_id,
+        int $user_close_id,
+        $counted_cash,
+        string $notes = '',
+        string $catatan_shift = '',
+        ?float $petty_in_override = null,
+        ?float $petty_out_override = null
+    ): bool {
         $shift = $this->find($shift_id);
-        if (!$shift) {
+        if (! $shift) {
             return false;
         }
 
-        $expected_cash = $shift['open_float'] + $shift['sales_cash_total'] + $shift['petty_in_total'] - $shift['petty_out_total'];
-        $diff_cash = $counted_cash - $expected_cash;
+        $counted        = (float) $counted_cash;
+        $actualCashSales = $this->computeCashSalesTotalForShift($shift_id);
+        $pettyIn        = $petty_in_override !== null ? (float) $petty_in_override : (float) ($shift['petty_in_total'] ?? 0);
+        $pettyOut       = $petty_out_override !== null ? (float) $petty_out_override : (float) ($shift['petty_out_total'] ?? 0);
+        $openFloat      = (float) ($shift['open_float'] ?? 0);
+        $expected_cash  = $openFloat + $actualCashSales + $pettyIn - $pettyOut;
+        $diff_cash      = $counted - $expected_cash;
 
         $updateData = [
-            'user_close_id' => $user_close_id,
-            'end_at' => date('Y-m-d H:i:s'),
-            'counted_cash' => $counted_cash,
-            'expected_cash' => $expected_cash,
-            'diff_cash' => $diff_cash,
-            'status' => 'closed',
-            'notes' => $notes
+            'user_close_id'    => $user_close_id,
+            'end_at'           => date('Y-m-d H:i:s'),
+            'counted_cash'     => $counted,
+            'sales_cash_total' => $actualCashSales,
+            'petty_in_total'   => $pettyIn,
+            'petty_out_total'  => $pettyOut,
+            'expected_cash'    => $expected_cash,
+            'diff_cash'        => $diff_cash,
+            'status'           => 'closed',
+            'notes'            => $notes,
+            'catatan_shift'    => $catatan_shift,
         ];
 
-        if (!empty($catatan_shift)) {
-            $updateData['catatan_shift'] = $catatan_shift;
+        return $this->update($shift_id, $updateData);
+    }
+
+    /**
+     * @deprecated Use closeShiftWithTotals(); kept for callers that still invoke closeShift().
+     */
+    public function closeShift($shift_id, $user_close_id, $counted_cash, $notes = '', $catatan_shift = '')
+    {
+        return $this->closeShiftWithTotals(
+            (int) $shift_id,
+            (int) $user_close_id,
+            $counted_cash,
+            (string) $notes,
+            (string) $catatan_shift,
+            null,
+            null
+        );
+    }
+
+    /**
+     * Revenue / payment stats for shift reports (aligned with printShiftReport).
+     */
+    public function getShiftSalesAggregates(int $shift_id): array
+    {
+        $db = \Config\Database::connect();
+        $transactionStats = $db->table('tbl_trans_jual')
+            ->select('
+                COUNT(*) as total_transactions,
+                COALESCE(SUM(jml_gtotal), 0) as total_revenue,
+                COALESCE(SUM(jml_bayar), 0) as total_payment_received
+            ')
+            ->where('id_shift', $shift_id)
+            ->where('status', '1')
+            ->get()
+            ->getRowArray();
+
+        $transactionStats['total_refund'] = 0;
+        try {
+            $refundQuery = $db->query("SHOW COLUMNS FROM tbl_trans_jual LIKE 'jml_refund'");
+            if ($refundQuery->getNumRows() > 0) {
+                $refundResult = $db->table('tbl_trans_jual')
+                    ->select('COALESCE(SUM(jml_refund), 0) as total_refund')
+                    ->where('id_shift', $shift_id)
+                    ->where('status', '1')
+                    ->get()
+                    ->getRowArray();
+                $transactionStats['total_refund'] = (float) ($refundResult['total_refund'] ?? 0);
+            }
+        } catch (\Exception $e) {
+            // ignore
         }
 
-        return $this->update($shift_id, $updateData);
+        return $transactionStats;
     }
 
     /**

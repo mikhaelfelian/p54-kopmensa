@@ -85,9 +85,14 @@
                         </div>
                         <div class="col-md-3">
                             <label>&nbsp;</label>
-                            <button type="submit" class="btn btn-primary btn-sm btn-block">
-                                <i class="fas fa-search mr-1"></i> Filter
-                            </button>
+                            <div class="btn-group btn-block">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-search mr-1"></i> Filter
+                                </button>
+                                <a href="<?= base_url('laporan/sale') ?>" class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-redo mr-1"></i> Reset
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </form>

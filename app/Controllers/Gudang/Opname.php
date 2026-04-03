@@ -71,6 +71,15 @@ class Opname extends BaseController
         if ($ket) {
             $builder = $builder->like('keterangan', $ket);
         }
+
+        if ($keyword !== null && $keyword !== '') {
+            $kw = trim((string) $keyword);
+            $builder = $builder->groupStart()->like('keterangan', $kw);
+            if (ctype_digit($kw)) {
+                $builder = $builder->orWhere('id', (int) $kw);
+            }
+            $builder = $builder->groupEnd();
+        }
         
         if ($tipe) {
             if ($tipe == 'Gudang') {
@@ -268,6 +277,9 @@ class Opname extends BaseController
         if (!$opname) {
             return redirect()->to(base_url('gudang/opname'))->with('error', 'Data opname tidak ditemukan.');
         }
+        if ((string) $opname->status !== '0') {
+            return redirect()->to(base_url('gudang/opname'))->with('error', 'Opname yang sudah selesai tidak dapat diedit.');
+        }
 
         // Set default tgl_masuk if not exists
         if (!isset($opname->tgl_masuk)) {
@@ -296,6 +308,9 @@ class Opname extends BaseController
         $opname = $this->utilSOModel->find($id);
         if (!$opname) {
             return redirect()->to(base_url('gudang/opname'))->with('error', 'Data opname tidak ditemukan.');
+        }
+        if ((string) $opname->status !== '0') {
+            return redirect()->to(base_url('gudang/opname'))->with('error', 'Opname yang sudah selesai tidak dapat diubah.');
         }
 
         // Validate form data
@@ -332,7 +347,7 @@ class Opname extends BaseController
                 tbl_util_so_det.*,
                 tbl_m_item.kode,
                 tbl_m_item.item,
-                tbl_m_satuan.SatuanBesar as satuan,
+                tbl_m_satuan.satuanBesar as satuan,
                 tbl_m_item_stok.jml as current_stock
             ')
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_util_so_det.id_item')
@@ -362,7 +377,7 @@ class Opname extends BaseController
                 tbl_m_item.kode,
                 tbl_m_item.item,
                 tbl_m_item.barcode,
-                tbl_m_satuan.SatuanBesar as satuan
+                tbl_m_satuan.satuanBesar as satuan
             ')
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
             ->where('tbl_m_item.status', '1')
@@ -526,6 +541,12 @@ class Opname extends BaseController
 
             // Test 3: Check if items exist
             $items = $this->utilSODetModel->where('id_so', $id)->findAll();
+            if ($items === []) {
+                return $this->response->setStatusCode(400)->setJSON([
+                    'status' => 'error',
+                    'message' => 'Tidak ada baris item opname. Tambahkan item terlebih dahulu.',
+                ]);
+            }
 
             foreach ($items as $item) {
                 $stokQuery      = $this->itemStokModel->where('id_item', $item->id_item)->where('id_gudang', $opname->id_gudang);
@@ -838,7 +859,7 @@ class Opname extends BaseController
                     tbl_m_item.item,
                     tbl_m_item.kode,
                     tbl_m_item.id_satuan,
-                    tbl_m_satuan.SatuanBesar as satuan
+                    tbl_m_satuan.satuanBesar as satuan
                 ')
                 ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
                 ->where('tbl_m_item.id', $itemId)
@@ -1328,14 +1349,14 @@ class Opname extends BaseController
                         }
                     }
 
-                    // Prepare data
+                    // Prepare data (impor selalu draft — proses stok lewat halaman opname)
                     $opnameData = [
                         'id_user' => $this->ionAuth->user()->row()->id,
                         'tgl_masuk' => $tglOpnameFormatted,
                         'tipe' => $tipeValue,
                         'id_gudang' => $idGudang,
                         'keterangan' => $keterangan,
-                        'status' => ($status == '1' || strtolower($status) == 'selesai') ? '1' : '0',
+                        'status' => '0',
                         'reset' => '0'
                     ];
 

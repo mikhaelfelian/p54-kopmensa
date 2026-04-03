@@ -7,6 +7,8 @@ use App\Models\ShiftModel;
 use App\Models\GudangModel;
 use App\Models\PettyModel;
 use App\Models\TransJualModel;
+use App\Models\TransJualDetModel;
+use App\Models\TransJualPlatModel;
 
 class Shift extends BaseController
 {
@@ -14,6 +16,8 @@ class Shift extends BaseController
     protected $gudangModel;
     protected $pettyModel;
     protected $transJualModel;
+    protected $transJualDetModel;
+    protected $transJualPlatModel;
     protected $ionAuth;
 
     public function __construct()
@@ -22,6 +26,8 @@ class Shift extends BaseController
         $this->gudangModel = new GudangModel();
         $this->pettyModel = new PettyModel();
         $this->transJualModel = new TransJualModel();
+        $this->transJualDetModel = new TransJualDetModel();
+        $this->transJualPlatModel = new TransJualPlatModel();
         $this->ionAuth = new \IonAuth\Libraries\IonAuth();
     }
 
@@ -39,14 +45,43 @@ class Shift extends BaseController
             $activeShift['outlet_name'] = $outlet ? $outlet->nama : 'N/A';
         }
         
-        if ($outlet_id) {
-            // If user has outlet_id in session, show shifts for that outlet
-            $shifts = $this->shiftModel->getShiftsByOutlet($outlet_id, 50, 0);
-        } else {
-            // If no outlet_id in session, show all shifts
-            $shifts = $this->shiftModel->getAllShifts(50, 0);
+        $startDate  = $this->request->getGet('start_date');
+        $endDate    = $this->request->getGet('end_date');
+        $statusFlt  = $this->request->getGet('status');
+        $keyword    = $this->request->getGet('keyword');
+        $outletFlt  = $this->request->getGet('outlet_id');
+
+        $filters = [
+            'start_date' => $startDate ?: null,
+            'end_date'   => $endDate ?: null,
+            'keyword'    => $keyword ? trim($keyword) : null,
+        ];
+        if ($statusFlt !== null && $statusFlt !== '') {
+            $filters['status'] = $statusFlt;
         }
-        
+
+        // outlet_id absent on first visit → restrict to session outlet when set; explicit GET (including empty = all outlets)
+        if ($this->request->getGet('outlet_id') !== null) {
+            if ($outletFlt !== null && $outletFlt !== '') {
+                $filters['outlet_id'] = (int) $outletFlt;
+            }
+        } elseif ($outlet_id) {
+            $filters['outlet_id'] = (int) $outlet_id;
+        }
+
+        $perPage = (int) ($this->request->getGet('per_page') ?? 25);
+        if (! in_array($perPage, [25, 50, 100], true)) {
+            $perPage = 25;
+        }
+        $page = max(1, (int) ($this->request->getGet('page_shift') ?? 1));
+        $totalShifts = $this->shiftModel->countShiftsFiltered($filters);
+        $offset = ($page - 1) * $perPage;
+        $shifts = $this->shiftModel->getShiftsFiltered($filters, $perPage, $offset);
+
+        $pager = \Config\Services::pager();
+        $pager->store('shift_hist', $page, $perPage, $totalShifts);
+        $pager->only(['start_date', 'end_date', 'status', 'keyword', 'outlet_id', 'per_page']);
+
         // Process shifts to ensure proper user data display
         $processedShifts = [];
         foreach ($shifts as $shift) {
@@ -65,7 +100,7 @@ class Shift extends BaseController
                     $db = \Config\Database::connect();
                     $userQuery = $db->table('tbl_ion_users')
                         ->select('first_name, last_name, username, email')
-                        ->where('id', $shift->user_open_id)
+                        ->where('id', $shift['user_open_id'] ?? 0)
                         ->get();
                     
                     if ($userQuery->getNumRows() > 0) {
@@ -74,17 +109,18 @@ class Shift extends BaseController
                         $shift['user_open_lastname'] = $user->last_name ?? '';
                     } else {
                         // Fallback to IonAuth method
-                        $user = $this->ionAuth->user($shift->user_open_id)->row();
+                        $uid = $shift['user_open_id'] ?? 0;
+                        $user = $this->ionAuth->user($uid)->row();
                         if ($user) {
                             $shift['user_open_name'] = $user->first_name ?? 'User';
                             $shift['user_open_lastname'] = $user->last_name ?? '';
                         } else {
-                            $shift['user_open_name'] = 'User ID: ' . $shift->user_open_id;
+                            $shift['user_open_name'] = 'User ID: ' . $uid;
                         }
                     }
                 } catch (\Exception $e) {
                     log_message('error', 'Error getting user data: ' . $e->getMessage());
-                    $shift['user_open_name'] = 'User ID: ' . $shift->user_open_id;
+                    $shift['user_open_name'] = 'User ID: ' . ($shift['user_open_id'] ?? '');
                 }
             }
             
@@ -95,7 +131,17 @@ class Shift extends BaseController
             'title' => 'Shift Management',
             'shifts' => $processedShifts,
             'current_outlet_id' => $outlet_id,
-            'activeShift' => $activeShift
+            'activeShift' => $activeShift,
+            'filter_start_date' => $startDate,
+            'filter_end_date'   => $endDate,
+            'filter_status'     => $statusFlt,
+            'filter_keyword'    => $keyword,
+            'filter_outlet_id'  => $this->request->getGet('outlet_id') !== null ? $outletFlt : $outlet_id,
+            'outlets'           => $this->gudangModel->getOutlets(),
+            'pager'             => $pager,
+            'per_page'          => $perPage,
+            'current_page'      => $page,
+            'total_shifts'      => $totalShifts,
         ]);
         
         return view('admin-lte-3/shift/index', $data);
@@ -257,6 +303,12 @@ class Shift extends BaseController
             return redirect()->to('/transaksi/shift');
         }
 
+        $draftCount = $this->transJualModel->where('id_shift', $shift_id)->where('status', '0')->countAllResults();
+        if ($draftCount > 0) {
+            session()->setFlashdata('error', 'Tidak dapat menutup shift: masih ada ' . $draftCount . ' transaksi draft. Hapus atau selesaikan draft terlebih dahulu.');
+            return redirect()->to('/transaksi/shift/view/' . $shift_id);
+        }
+
         // Get petty cash summary (TEMPORARILY DISABLED TO FIX ERROR)
         $pettySummary = [
             'total_in' => 0,
@@ -315,34 +367,17 @@ class Shift extends BaseController
             ];
         }
 
-        // Get transaction totals from database
-        $db = \Config\Database::connect();
-        $transactionStats = $db->table('tbl_trans_jual')
-            ->select('
-                COUNT(*) as total_transactions,
-                COALESCE(SUM(jml_gtotal), 0) as total_revenue,
-                COALESCE(SUM(jml_bayar), 0) as total_payment_received
-            ')
-            ->where('id_shift', $shift_id)
-            ->where('status', '1')
-            ->get()
-            ->getRowArray();
-        
-        // Get refund total if column exists
-        $transactionStats['total_refund'] = 0;
+        $transactionStats = $this->shiftModel->getShiftSalesAggregates((int) $shift_id);
+
+        // Live preview: expected cash = open + computed cash sales + petty (same as closeShiftWithTotals)
         try {
-            $refundQuery = $db->query("SHOW COLUMNS FROM tbl_trans_jual LIKE 'jml_refund'");
-            if ($refundQuery->getNumRows() > 0) {
-                $refundResult = $db->table('tbl_trans_jual')
-                    ->select('COALESCE(SUM(jml_refund), 0) as total_refund')
-                    ->where('id_shift', $shift_id)
-                    ->where('status', '1')
-                    ->get()
-                    ->getRowArray();
-                $transactionStats['total_refund'] = (float)($refundResult['total_refund'] ?? 0);
-            }
+            $pettyAtClose = $this->pettyModel->getPettyCashSummaryByShift((int) $shift_id);
+            $cashSalesLive = $this->shiftModel->computeCashSalesTotalForShift((int) $shift_id);
+            $pIn = (float) ($pettyAtClose['total_in'] ?? 0);
+            $pOut = (float) ($pettyAtClose['total_out'] ?? 0);
+            $shift['expected_cash'] = (float) ($shift['open_float'] ?? 0) + $cashSalesLive + $pIn - $pOut;
         } catch (\Exception $e) {
-            // Column doesn't exist, refund total is 0
+            log_message('error', 'closeShift preview: ' . $e->getMessage());
         }
 
         $data = array_merge($this->data, [
@@ -407,6 +442,13 @@ class Shift extends BaseController
             return redirect()->to('/transaksi/shift');
         }
 
+        $draftCount = $this->transJualModel->where('id_shift', $shift_id)->where('status', '0')->countAllResults();
+        if ($draftCount > 0) {
+            session()->setFlashdata('error', 'Tidak dapat menutup shift: masih ada ' . $draftCount . ' transaksi draft. Hapus atau selesaikan draft terlebih dahulu.');
+
+            return redirect()->to('/transaksi/shift/view/' . $shift_id);
+        }
+
         // Format counted_cash before validation
         $counted_cash_formatted = format_angka_db($counted_cash);
         
@@ -421,49 +463,35 @@ class Shift extends BaseController
         if ($this->validate($rules)) {
             $user_close_id = $this->ionAuth->user()->row()->id;
 
-            // Update shift with catatan_shift
             $shiftData = $this->shiftModel->find($shift_id);
-            if (!$shiftData) {
+            if (! $shiftData) {
                 session()->setFlashdata('error', 'Shift tidak ditemukan');
                 return redirect()->to('/transaksi/shift');
             }
 
-            // Recalculate sales_cash_total from actual transactions
-            $db = \Config\Database::connect();
-            $cashSalesTotal = $db->table('tbl_trans_jual_plat tjp')
-                ->select('COALESCE(SUM(tjp.nominal), 0) as total_cash')
-                ->join('tbl_trans_jual tj', 'tj.id = tjp.id_penjualan', 'inner')
-                ->join('tbl_m_platform p', 'p.id = tjp.id_platform', 'left')
-                ->where('tj.id_shift', $shift_id)
-                ->where('tj.status', '1')
-                ->where('(p.platform LIKE "%tunai%" OR p.platform LIKE "%cash%" OR tjp.platform LIKE "%tunai%" OR tjp.platform LIKE "%cash%")')
-                ->get()
-                ->getRowArray();
-
-            $actualSalesCashTotal = (float)($cashSalesTotal['total_cash'] ?? 0);
-
-            $expected_cash = $shiftData['open_float'] + $actualSalesCashTotal + $shiftData['petty_in_total'] - $shiftData['petty_out_total'];
-            $diff_cash = $counted_cash_formatted - $expected_cash;
-
-            $updateData = [
-                'user_close_id' => $user_close_id,
-                'end_at' => date('Y-m-d H:i:s'),
-                'counted_cash' => $counted_cash_formatted,
-                'sales_cash_total' => $actualSalesCashTotal, // Update with actual cash sales
-                'expected_cash' => $expected_cash,
-                'diff_cash' => $diff_cash,
-                'status' => 'closed',
-                'notes' => $notes,
-                'catatan_shift' => $catatan_shift
-            ];
-
-            if ($this->shiftModel->update($shift_id, $updateData)) {
-                session()->setFlashdata('success', 'Shift berhasil ditutup');
-                // Redirect to print report page
-                return redirect()->to('/transaksi/shift/print/' . $shift_id);
-            } else {
-                session()->setFlashdata('error', 'Gagal menutup shift');
+            $pettySummary = ['total_in' => 0, 'total_out' => 0];
+            try {
+                $pettySummary = $this->pettyModel->getPettyCashSummaryByShift((int) $shift_id);
+            } catch (\Exception $e) {
+                log_message('error', 'Petty cash at close: ' . $e->getMessage());
             }
+
+            $ok = $this->shiftModel->closeShiftWithTotals(
+                (int) $shift_id,
+                (int) $user_close_id,
+                $counted_cash_formatted,
+                (string) ($notes ?? ''),
+                (string) ($catatan_shift ?? ''),
+                (float) ($pettySummary['total_in'] ?? 0),
+                (float) ($pettySummary['total_out'] ?? 0)
+            );
+
+            if ($ok) {
+                session()->setFlashdata('success', 'Shift berhasil ditutup');
+
+                return redirect()->to('/transaksi/shift/print/' . $shift_id);
+            }
+            session()->setFlashdata('error', 'Gagal menutup shift');
         } else {
             session()->setFlashdata('error', 'Validasi gagal: ' . implode(', ', $this->validator->getErrors()));
         }
@@ -652,6 +680,13 @@ class Shift extends BaseController
             }
         }
 
+        $draftSales = [];
+        try {
+            $draftSales = $this->transJualModel->getDraftSalesByShift($shift_id);
+        } catch (\Exception $e) {
+            log_message('error', 'Draft sales error: ' . $e->getMessage());
+        }
+
         $data = array_merge($this->data, [
             'title'              => 'Detail Shift',
             'shift'              => $shift,
@@ -665,9 +700,67 @@ class Shift extends BaseController
             'recentTransactions' => $recentTransactions,
             'pettyEntries'       => $pettyEntries,
             'salesEntries'       => $salesEntries,
+            'draftSales'         => $draftSales,
         ]);
         
         return view('admin-lte-3/shift/view', $data);
+    }
+
+    /**
+     * Delete a draft sale that belongs to this shift (POST: penjualan_id).
+     */
+    public function deleteDraftSale($shift_id)
+    {
+        if (!$this->ionAuth->loggedIn()) {
+            session()->setFlashdata('error', 'Session telah berakhir. Silakan login kembali.');
+            return redirect()->to('/auth/login');
+        }
+
+        $penjualan_id = $this->request->getPost('penjualan_id');
+        if (empty($penjualan_id)) {
+            session()->setFlashdata('error', 'ID transaksi tidak valid.');
+            return redirect()->to('/transaksi/shift/view/' . $shift_id);
+        }
+
+        $shift = $this->shiftModel->find($shift_id);
+        if (!$shift) {
+            session()->setFlashdata('error', 'Shift tidak ditemukan.');
+            return redirect()->to('/transaksi/shift');
+        }
+
+        $draft = $this->transJualModel->find($penjualan_id);
+        if (!$draft || (string) $draft->status !== '0') {
+            session()->setFlashdata('error', 'Hanya transaksi draft yang dapat dihapus.');
+            return redirect()->to('/transaksi/shift/view/' . $shift_id);
+        }
+
+        if ((int) $draft->id_shift !== (int) $shift_id) {
+            session()->setFlashdata('error', 'Transaksi tidak termasuk shift ini.');
+            return redirect()->to('/transaksi/shift/view/' . $shift_id);
+        }
+
+        $userId = $this->ionAuth->user()->row()->id;
+        $isOwner = (int) $draft->id_user === (int) $userId;
+        $isAdmin = $this->ionAuth->isAdmin() || $this->ionAuth->inGroup('admin');
+        if (! $isOwner && ! $isAdmin) {
+            session()->setFlashdata('error', 'Anda tidak memiliki akses untuk menghapus draft ini.');
+            return redirect()->to('/transaksi/shift/view/' . $shift_id);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+        $this->transJualDetModel->where('id_penjualan', $penjualan_id)->delete();
+        $this->transJualPlatModel->where('id_penjualan', $penjualan_id)->delete();
+        $this->transJualModel->delete($penjualan_id);
+        $db->transComplete();
+
+        if ($db->transStatus() === false) {
+            session()->setFlashdata('error', 'Gagal menghapus draft.');
+        } else {
+            session()->setFlashdata('success', 'Draft transaksi berhasil dihapus.');
+        }
+
+        return redirect()->to('/transaksi/shift/view/' . $shift_id);
     }
 
     public function checkShiftStatus()
@@ -920,6 +1013,7 @@ class Shift extends BaseController
         $shift_id = $this->request->getPost('shift_id');
         $counted_cash = $this->request->getPost('counted_cash');
         $notes = $this->request->getPost('notes') ?? '';
+        $catatan_shift = $this->request->getPost('catatan_shift') ?? '';
         
         // Format counted_cash to database format
         if (is_string($counted_cash)) {
@@ -968,19 +1062,44 @@ class Shift extends BaseController
             ]);
         }
 
+        $draftCount = $this->transJualModel->where('id_shift', $shift_id)->where('status', '0')->countAllResults();
+        if ($draftCount > 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Masih ada transaksi draft. Hapus atau selesaikan draft sebelum menutup shift.',
+            ]);
+        }
+
         $user_close_id = $this->ionAuth->user()->row()->id;
-        
-        if ($this->shiftModel->closeShift($shift_id, $user_close_id, $counted_cash, $notes)) {
+
+        $pettySummary = ['total_in' => 0, 'total_out' => 0];
+        try {
+            $pettySummary = $this->pettyModel->getPettyCashSummaryByShift((int) $shift_id);
+        } catch (\Exception $e) {
+            log_message('error', 'Petty cash at API close: ' . $e->getMessage());
+        }
+
+        $ok = $this->shiftModel->closeShiftWithTotals(
+            (int) $shift_id,
+            (int) $user_close_id,
+            (float) $counted_cash,
+            (string) $notes,
+            (string) $catatan_shift,
+            (float) ($pettySummary['total_in'] ?? 0),
+            (float) ($pettySummary['total_out'] ?? 0)
+        );
+
+        if ($ok) {
             return $this->response->setJSON([
                 'success' => true,
                 'message' => 'Shift berhasil ditutup'
             ]);
-        } else {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Gagal menutup shift'
-            ]);
         }
+
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Gagal menutup shift'
+        ]);
     }
 
     /**
@@ -1062,35 +1181,7 @@ class Shift extends BaseController
         // Get payment breakdown
         $paymentBreakdown = $this->shiftModel->getShiftPaymentBreakdown($shift_id);
 
-        // Get transaction statistics
-        $db = \Config\Database::connect();
-        $transactionStats = $db->table('tbl_trans_jual')
-            ->select('
-                COUNT(*) as total_transactions,
-                COALESCE(SUM(jml_gtotal), 0) as total_revenue,
-                COALESCE(SUM(jml_bayar), 0) as total_payment_received
-            ')
-            ->where('id_shift', $shift_id)
-            ->where('status', '1')
-            ->get()
-            ->getRowArray();
-        
-        // Get refund total if column exists
-        $transactionStats['total_refund'] = 0;
-        try {
-            $refundQuery = $db->query("SHOW COLUMNS FROM tbl_trans_jual LIKE 'jml_refund'");
-            if ($refundQuery->getNumRows() > 0) {
-                $refundResult = $db->table('tbl_trans_jual')
-                    ->select('COALESCE(SUM(jml_refund), 0) as total_refund')
-                    ->where('id_shift', $shift_id)
-                    ->where('status', '1')
-                    ->get()
-                    ->getRowArray();
-                $transactionStats['total_refund'] = (float)($refundResult['total_refund'] ?? 0);
-            }
-        } catch (\Exception $e) {
-            // Column doesn't exist, refund total is 0
-        }
+        $transactionStats = $this->shiftModel->getShiftSalesAggregates((int) $shift_id);
 
         // Get Pengaturan for footer
         $pengaturanModel = new \App\Models\PengaturanModel();

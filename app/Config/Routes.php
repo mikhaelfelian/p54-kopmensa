@@ -271,6 +271,16 @@ $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => '
     $routes->get('gudang/template', 'Gudang::downloadTemplate');
 });
 
+// Jadwal shift (master referensi jam operasional per outlet)
+$routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
+    $routes->get('shift-schedule', 'ShiftSchedule::index');
+    $routes->get('shift-schedule/create', 'ShiftSchedule::create');
+    $routes->post('shift-schedule/store', 'ShiftSchedule::store');
+    $routes->get('shift-schedule/edit/(:num)', 'ShiftSchedule::edit/$1');
+    $routes->post('shift-schedule/update/(:num)', 'ShiftSchedule::update/$1');
+    $routes->post('shift-schedule/delete/(:num)', 'ShiftSchedule::delete/$1');
+});
+
 // Satuan routes
 $routes->group('master', ['namespace' => 'App\Controllers\Master', 'filter' => 'auth'], function ($routes) {
     $routes->get('satuan', 'Satuan::index');
@@ -388,6 +398,7 @@ $routes->group('transaksi/shift', ['namespace' => 'App\Controllers\Transaksi', '
     $routes->get('continue', 'Shift::continue_shift');
     $routes->get('approve/(:num)', 'Shift::approveShift/$1');
     $routes->get('view/(:num)', 'Shift::viewShift/$1');
+    $routes->post('draft/delete/(:num)', 'Shift::deleteDraftSale/$1');
     $routes->get('print/(:num)', 'Shift::printShiftReport/$1');
     $routes->get('check-status', 'Shift::checkShiftStatus');
     $routes->get('summary', 'Shift::getShiftSummary');

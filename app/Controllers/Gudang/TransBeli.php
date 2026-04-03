@@ -48,15 +48,76 @@ class TransBeli extends BaseController
         $currentPage = $this->request->getVar('page_transbeli') ?? 1;
         $perPage = $this->pengaturan->pagination_limit;
 
-        // Get completed purchases (status = 1)
-        $transactions = $this->transBeliModel->select('
+        $noNota      = $this->request->getGet('no_nota');
+        $startDate   = $this->request->getGet('start_date');
+        $endDate     = $this->request->getGet('end_date');
+        $noPo        = $this->request->getGet('no_po');
+        $supplierKw  = $this->request->getGet('supplier');
+        $statusPpn   = $this->request->getGet('status_ppn');
+        $statusTerima = $this->request->getGet('status_terima');
+        $idGudang    = $this->request->getGet('id_gudang');
+        $keyword     = $this->request->getGet('keyword');
+
+        $builder = $this->transBeliModel->select('
                 tbl_trans_beli.*,
                 tbl_m_supplier.nama as supplier_nama
             ')
             ->join('tbl_m_supplier', 'tbl_m_supplier.id = tbl_trans_beli.id_supplier', 'left')
-            ->where('tbl_trans_beli.status_nota', '1')
+            ->where('tbl_trans_beli.status_nota', '1');
+
+        if ($noNota) {
+            $builder->like('tbl_trans_beli.no_nota', $noNota);
+        }
+        if ($keyword) {
+            $builder->groupStart()
+                ->like('tbl_trans_beli.no_nota', $keyword)
+                ->orLike('tbl_trans_beli.no_po', $keyword)
+                ->orLike('tbl_m_supplier.nama', $keyword)
+                ->groupEnd();
+        }
+        if ($startDate) {
+            $builder->where('tbl_trans_beli.tgl_masuk >=', $startDate);
+        }
+        if ($endDate) {
+            $builder->where('tbl_trans_beli.tgl_masuk <=', $endDate);
+        }
+        if ($noPo) {
+            $builder->like('tbl_trans_beli.no_po', $noPo);
+        }
+        if ($supplierKw) {
+            $builder->like('tbl_m_supplier.nama', $supplierKw);
+        }
+        if ($statusPpn !== null && $statusPpn !== '') {
+            $builder->where('tbl_trans_beli.status_ppn', $statusPpn);
+        }
+        if ($statusTerima !== null && $statusTerima !== '') {
+            $builder->where('tbl_trans_beli.status_terima', $statusTerima);
+        }
+        if ($idGudang !== null && $idGudang !== '') {
+            $db     = \Config\Database::connect();
+            $idRows = $db->table('tbl_trans_beli_det')
+                ->select('id_pembelian')
+                ->where('id_gudang', (int) $idGudang)
+                ->groupBy('id_pembelian')
+                ->get()
+                ->getResultArray();
+            $idList = array_column($idRows, 'id_pembelian');
+            if ($idList !== []) {
+                $builder->whereIn('tbl_trans_beli.id', $idList);
+            } else {
+                $builder->where('tbl_trans_beli.id', 0);
+            }
+        }
+
+        $transactions = $builder->orderBy('tbl_trans_beli.tgl_masuk', 'DESC')
             ->paginate($perPage, 'transbeli');
 
+        $this->transBeliModel->pager->only([
+            'no_nota', 'start_date', 'end_date', 'no_po', 'supplier',
+            'status_ppn', 'status_terima', 'id_gudang', 'keyword',
+        ]);
+
+        $gudangModel = new GudangModel();
         $data = [
             'title'         => 'Penerimaan Barang',
             'Pengaturan'    => $this->pengaturan,
@@ -65,6 +126,7 @@ class TransBeli extends BaseController
             'pager'         => $this->transBeliModel->pager,
             'currentPage'   => $currentPage,
             'perPage'       => $perPage,
+            'gudangList'    => $gudangModel->where('status', '1')->where('status_hps', '0')->orderBy('nama', 'ASC')->findAll(),
         ];
 
         return $this->view($this->theme->getThemePath() . '/gudang/penerimaan/index', $data);

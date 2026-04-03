@@ -223,12 +223,13 @@ class Transfer extends BaseController
             $rules['id_gd_tujuan'] = 'required';
         } elseif ($tipe == '3') { // Stok Keluar
             $rules['id_gd_asal'] = 'required';
-        } elseif ($tipe == '4') { // Pindah Outlet
-            $rules['id_outlet'] = 'required';
+        } elseif ($tipe == '4') { // Pindah Outlet (antar outlet)
+            $rules['id_outlet_asal'] = 'required';
+            $rules['id_outlet_tujuan'] = 'required';
         }
 
         if (!$this->validate($rules)) {
-            return redirect()->to(base_url('gudang/transfer'))->withInput()->with('errors', $this->validator->getErrors());
+            return redirect()->to(base_url('gudang/transfer/create'))->withInput()->with('errors', $this->validator->getErrors());
         }
 
         // Get form data using explicit variable assignment pattern
@@ -236,15 +237,29 @@ class Transfer extends BaseController
         $tgl_masuk   = $this->request->getPost('tgl_masuk');
         $id_gd_asal  = $this->request->getPost('id_gd_asal');
         $id_gd_tujuan = $this->request->getPost('id_gd_tujuan');
-        $id_outlet   = $this->request->getPost('id_outlet');
-        $keterangan  = $this->request->getPost('keterangan');
+        $id_outlet        = $this->request->getPost('id_outlet');
+        $id_outlet_asal   = $this->request->getPost('id_outlet_asal');
+        $id_outlet_tujuan = $this->request->getPost('id_outlet_tujuan');
+        $keterangan       = $this->request->getPost('keterangan');
+
+        $gdAsal   = (int) ($id_gd_asal ?: 0);
+        $gdTujuan = (int) ($id_gd_tujuan ?: 0);
+        if ($tipe == '4') {
+            $gdAsal   = (int) ($id_outlet_asal ?: 0);
+            $gdTujuan = (int) ($id_outlet_tujuan ?: 0);
+            if ($gdAsal > 0 && $gdTujuan > 0 && $gdAsal === $gdTujuan) {
+                return redirect()->to(base_url('gudang/transfer/create'))->withInput()
+                    ->with('error', 'Outlet asal dan tujuan tidak boleh sama.');
+            }
+        }
 
         $data = [
             'id_user'      => $id_user,
             'tgl_masuk'    => tgl_indo_sys($tgl_masuk),
             'tipe'         => $tipe,
-            'id_gd_asal'   => $id_gd_asal ?: 0,
-            'id_gd_tujuan' => $id_gd_tujuan ?: $id_outlet,
+            'id_gd_asal'   => $gdAsal,
+            'id_gd_tujuan' => $tipe == '4' ? $gdTujuan : ($id_gd_tujuan ?: $id_outlet ?: 0),
+            'id_outlet'    => $tipe == '4' ? 0 : ($id_outlet ?: 0),
             'keterangan'   => $keterangan,
             'status_nota'  => '0', // Draft
             'status_terima'=> '0', // Belum
@@ -271,9 +286,11 @@ class Transfer extends BaseController
             return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
         }
 
-        $mutasi     = $this->transMutasiModel->find($id);
-        $gd_asal    = $this->gudangModel->find($mutasi->id_gd_asal)->nama;
-        $gd_tujuan  = $this->gudangModel->find($mutasi->id_gd_tujuan)->nama;
+        $mutasi = $this->transMutasiModel->find($id);
+        $rowAsal = $mutasi->id_gd_asal ? $this->gudangModel->find($mutasi->id_gd_asal) : null;
+        $rowTuj  = $mutasi->id_gd_tujuan ? $this->gudangModel->find($mutasi->id_gd_tujuan) : null;
+        $gd_asal   = $rowAsal ? ($rowAsal->nama ?? $rowAsal->gudang ?? '-') : '-';
+        $gd_tujuan = $rowTuj ? ($rowTuj->nama ?? $rowTuj->gudang ?? '-') : '-';
 
         // Get transfer details
         $transferDetails = $this->getTransferDetails($id);
@@ -303,6 +320,9 @@ class Transfer extends BaseController
         if (!$transfer) {
             return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
         }
+        if ((string) $transfer->status_nota !== '0') {
+            return redirect()->to(base_url('gudang/transfer'))->with('error', 'Hanya transfer berstatus draft yang dapat diedit.');
+        }
 
         $data = [
             'title'       => 'Edit Transfer/Mutasi',
@@ -327,6 +347,9 @@ class Transfer extends BaseController
         if (!$transfer) {
             return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
         }
+        if ((string) $transfer->status_nota !== '0') {
+            return redirect()->to(base_url('gudang/transfer'))->with('error', 'Hanya transfer berstatus draft yang dapat diubah.');
+        }
 
         // Get form data first
         $tipe = $this->request->getPost('tipe');
@@ -345,19 +368,34 @@ class Transfer extends BaseController
             $rules['id_gd_tujuan'] = 'required';
         } elseif ($tipe == '3') { // Stok Keluar
             $rules['id_gd_asal'] = 'required';
+        } elseif ($tipe == '4') {
+            $rules['id_outlet_asal'] = 'required';
+            $rules['id_outlet_tujuan'] = 'required';
         }
 
         if (!$this->validate($rules)) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        $id_outlet_asal   = $this->request->getPost('id_outlet_asal');
+        $id_outlet_tujuan = $this->request->getPost('id_outlet_tujuan');
+        $gdAsal           = (int) ($this->request->getPost('id_gd_asal') ?: 0);
+        $gdTujuan         = (int) ($this->request->getPost('id_gd_tujuan') ?: 0);
+        if ($tipe == '4') {
+            $gdAsal   = (int) ($id_outlet_asal ?: 0);
+            $gdTujuan = (int) ($id_outlet_tujuan ?: 0);
+            if ($gdAsal > 0 && $gdTujuan > 0 && $gdAsal === $gdTujuan) {
+                return redirect()->back()->withInput()->with('error', 'Outlet asal dan tujuan tidak boleh sama.');
+            }
+        }
+
         $data = [
-            'tgl_masuk' => tgl_indo_sys($this->request->getPost('tgl_masuk')),
-            'tipe' => $tipe,
-            'id_gd_asal' => $this->request->getPost('id_gd_asal') ?: 0,
-            'id_gd_tujuan' => $this->request->getPost('id_gd_tujuan') ?: 0,
-            'id_outlet' => $this->request->getPost('id_outlet') ?: 0,
-            'keterangan' => $this->request->getPost('keterangan'),
+            'tgl_masuk'    => tgl_indo_sys($this->request->getPost('tgl_masuk')),
+            'tipe'         => $tipe,
+            'id_gd_asal'   => $gdAsal,
+            'id_gd_tujuan' => $tipe == '4' ? $gdTujuan : (int) ($this->request->getPost('id_gd_tujuan') ?: $this->request->getPost('id_outlet') ?: 0),
+            'id_outlet'    => $tipe == '4' ? 0 : (int) ($this->request->getPost('id_outlet') ?: 0),
+            'keterangan'   => $this->request->getPost('keterangan'),
         ];
 
         try {
@@ -375,9 +413,14 @@ class Transfer extends BaseController
             return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
         }
 
+        if ((string) $transfer->status_nota !== '0') {
+            return redirect()->to(base_url('gudang/transfer'))->with('error', 'Hanya draft yang dapat dihapus.');
+        }
+
         try {
+            $this->transMutasiDetModel->where('id_mutasi', $id)->delete();
             $this->transMutasiModel->delete($id);
-            return redirect()->to(base_url('gudang/transfer'))->with('success', 'Data transfer berhasil dihapus.');
+            return redirect()->to(base_url('gudang/transfer'))->with('success', 'Data transfer draft berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus data transfer: ' . $e->getMessage());
         }
@@ -394,9 +437,20 @@ class Transfer extends BaseController
         if (!$transfer) {
             return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
         }
+        if ((string) $transfer->status_nota !== '0') {
+            return redirect()->to(base_url('gudang/transfer'))->with('error', 'Hanya transfer draft yang dapat diisi item.');
+        }
 
-        // Get items for the source gudang
-        $items = $this->itemStokModel->select('
+        if ((string) $transfer->tipe === '2' && empty((int) $transfer->id_gd_tujuan)) {
+            return redirect()->to(base_url('gudang/transfer/edit/' . $id))->with('error', 'Set gudang tujuan terlebih dahulu untuk Stok Masuk.');
+        }
+
+        // Stok Masuk: list stok di gudang tujuan; lainnya: gudang asal
+        $gudangStokId = (string) $transfer->tipe === '2'
+            ? (int) $transfer->id_gd_tujuan
+            : (int) $transfer->id_gd_asal;
+
+        $stokBuilder = $this->itemStokModel->select('
                 tbl_m_item_stok.*,
                 tbl_m_item.kode as item_kode,
                 tbl_m_item.item as item_name,
@@ -404,10 +458,12 @@ class Transfer extends BaseController
             ')
             ->join('tbl_m_item', 'tbl_m_item.id = tbl_m_item_stok.id_item', 'left')
             ->join('tbl_m_satuan', 'tbl_m_satuan.id = tbl_m_item.id_satuan', 'left')
-            ->where('tbl_m_item_stok.id_gudang', $transfer->id_gd_asal)
-            ->where('tbl_m_item_stok.status', '1')
-            ->where('tbl_m_item_stok.jml >', 0)
-            ->findAll();
+            ->where('tbl_m_item_stok.id_gudang', $gudangStokId)
+            ->where('tbl_m_item_stok.status', '1');
+        if ((string) $transfer->tipe !== '2') {
+            $stokBuilder->where('tbl_m_item_stok.jml >', 0);
+        }
+        $items = $stokBuilder->findAll();
 
         // Get gudang names safely (avoid error if property not exist)
         $gudangAsal = $this->gudangModel->find($transfer->id_gd_asal);
@@ -446,7 +502,7 @@ class Transfer extends BaseController
             'user'        => $this->ionAuth->user()->row(),
             'transfer'    => $transfer,
             'items'       => $items,
-            'gudang'      => $transfer->gudang_asal_name,
+            'gudang'      => (string) $transfer->tipe === '2' ? $transfer->gudang_tujuan_name : $transfer->gudang_asal_name,
             'breadcrumbs' => '
                 <li class="breadcrumb-item"><a href="' . base_url() . '">Beranda</a></li>
                 <li class="breadcrumb-item"><a href="' . base_url('gudang/transfer') . '">Transfer</a></li>
@@ -462,6 +518,9 @@ class Transfer extends BaseController
         $transfer = $this->transMutasiModel->find($id);
         if (!$transfer) {
             return redirect()->to(base_url('gudang/transfer'))->with('error', 'Data transfer tidak ditemukan.');
+        }
+        if ((string) $transfer->status_nota !== '0') {
+            return redirect()->to(base_url('gudang/transfer'))->with('error', 'Transfer ini sudah diproses atau tidak dapat diproses ulang.');
         }
 
         // Get form data

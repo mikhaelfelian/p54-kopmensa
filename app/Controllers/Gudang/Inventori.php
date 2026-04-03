@@ -99,45 +99,19 @@ class Inventori extends BaseController
             $pager = \Config\Services::pager();
             $pager->store('items', $curr_page, $per_page, $totalRows, 0);
         } else {
-            // Follow Item.php pattern exactly
-            $this->itemModel->where('tbl_m_item.status_hps', '0');
-            $this->itemModel->where('tbl_m_item.status_stok', '1'); // Only stockable items
-
-            if ($kat) {
-                $this->itemModel->where('tbl_m_item.id_kategori', $kat);
-            }
-            if ($merk) {
-                $this->itemModel->where('tbl_m_item.id_merk', $merk);
-            }
-            if ($stok !== null && $stok !== '') {
-                $this->itemModel->where('tbl_m_item.status_stok', $stok);
-            }
-            if ($keyword) {
-                $this->itemModel->groupStart()
-                    ->like('tbl_m_item.item', $keyword)
-                    ->orLike('tbl_m_item.kode', $keyword)
-                    ->orLike('tbl_m_item.barcode', $keyword)
-                    ->orLike('tbl_m_item.deskripsi', $keyword)
-                    ->groupEnd();
-            }
-            
-            // Apply min stock filter
-            if ($min_stok_operator && $min_stok_value !== '') {
-                $this->itemModel->where("tbl_m_item.jml_min {$min_stok_operator}", $min_stok_value);
-            }
-            
-            // Apply harga beli filter
-            if ($harga_beli_operator && $harga_beli_value !== '') {
-                $this->itemModel->where("tbl_m_item.harga_beli {$harga_beli_operator}", format_angka_db($harga_beli_value));
-            }
-            
-            // Apply harga jual filter
-            if ($harga_jual_operator && $harga_jual_value !== '') {
-                $this->itemModel->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
-            }
-
-            // Follow Item.php pattern exactly - pass parameters like Item.php does
-            $items = $this->itemModel->getItemStocksWithRelations($per_page, $keyword, $curr_page, $kat, $stok, null);
+            $this->itemModel = $this->buildGlobalInventoriQuery(
+                $keyword,
+                $kat,
+                $merk,
+                $stok,
+                $min_stok_operator,
+                $min_stok_value,
+                $harga_beli_operator,
+                $harga_beli_value,
+                $harga_jual_operator,
+                $harga_jual_value
+            );
+            $items = $this->itemModel->paginate($per_page, 'items', (int) $curr_page);
             $pager = $this->itemModel->pager;
         }
 
@@ -219,51 +193,40 @@ class Inventori extends BaseController
             $outlet_name = $outlet ? $outlet->nama : 'outlet';
             $filename_prefix = 'inventori_' . strtolower(str_replace(' ', '_', $outlet_name)) . '_';
         } else {
-            // Use original ItemModel filtering for all warehouses
-            $this->itemModel->where('tbl_m_item.status_hps', '0');
-            $this->itemModel->where('tbl_m_item.status_stok', '1'); // Only stockable items
+            $items = $this->buildGlobalInventoriQuery(
+                $keyword,
+                $kat,
+                $merk,
+                $stok,
+                $min_stok_operator,
+                $min_stok_value,
+                $harga_beli_operator,
+                $harga_beli_value,
+                $harga_jual_operator,
+                $harga_jual_value
+            )->findAll();
 
-            if ($kat) {
-                $this->itemModel->where('tbl_m_item.id_kategori', $kat);
-            }
-            if ($merk) {
-                $this->itemModel->where('tbl_m_item.id_merk', $merk);
-            }
-            if ($stok !== null && $stok !== '') {
-                $this->itemModel->where('tbl_m_item.status_stok', $stok);
-            }
-            if ($keyword) {
-                $this->itemModel->groupStart()
-                    ->like('tbl_m_item.item', $keyword)
-                    ->orLike('tbl_m_item.kode', $keyword)
-                    ->orLike('tbl_m_item.barcode', $keyword)
-                    ->orLike('tbl_m_item.deskripsi', $keyword)
-                    ->groupEnd();
-            }
-            
-            // Apply min stock filter
-            if ($min_stok_operator && $min_stok_value !== '') {
-                $this->itemModel->where("tbl_m_item.jml_min {$min_stok_operator}", $min_stok_value);
-            }
-            
-            // Apply harga beli filter
-            if ($harga_beli_operator && $harga_beli_value !== '') {
-                $this->itemModel->where("tbl_m_item.harga_beli {$harga_beli_operator}", format_angka_db($harga_beli_value));
-            }
-            
-            // Apply harga jual filter
-            if ($harga_jual_operator && $harga_jual_value !== '') {
-                $this->itemModel->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
-            }
-
-            // Get all filtered data (no pagination)
-            $items = $this->itemModel->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
-                ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
-                ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
-                ->orderBy('tbl_m_item.id', 'DESC')
-                ->findAll();
-            
             $filename_prefix = 'inventori_';
+        }
+
+        // Total stok per item (global list) — sama dengan tampilan grid
+        $stokSumByItem = [];
+        if (! ($outlet_filter && is_numeric($outlet_filter)) && $items !== []) {
+            $ids = array_map(static function ($it) {
+                return (int) (is_object($it) ? $it->id : $it['id']);
+            }, $items);
+            $ids = array_values(array_filter(array_unique($ids)));
+            if ($ids !== []) {
+                $rows = \Config\Database::connect()->table('tbl_m_item_stok')
+                    ->select('id_item, SUM(jml) AS total_stok')
+                    ->whereIn('id_item', $ids)
+                    ->groupBy('id_item')
+                    ->get()
+                    ->getResultArray();
+                foreach ($rows as $r) {
+                    $stokSumByItem[(int) $r['id_item']] = (float) ($r['total_stok'] ?? 0);
+                }
+            }
         }
 
         // Create Excel file
@@ -273,7 +236,8 @@ class Inventori extends BaseController
         // Set title
         $title = ($outlet_filter && is_numeric($outlet_filter)) ? 'DATA INVENTORI OUTLET' : 'DATA INVENTORI';
         $sheet->setCellValue('A1', $title);
-        $sheet->mergeCells('A1:L1');
+        $mergeEnd = ($outlet_filter && is_numeric($outlet_filter)) ? 'K' : 'L';
+        $sheet->mergeCells('A1:' . $mergeEnd . '1');
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
 
@@ -285,8 +249,8 @@ class Inventori extends BaseController
             ];
         } else {
             $headers = [
-                'No', 'Kode', 'Barcode', 'Nama Item', 'Kategori', 'Merk', 'Deskripsi', 
-                'Stok Min', 'Harga Beli', 'Harga Jual', 'Status Item'
+                'No', 'Kode', 'Barcode', 'Nama Item', 'Kategori', 'Merk', 'Deskripsi',
+                'Stok', 'Stok Min', 'Harga Beli', 'Harga Jual', 'Status Item',
             ];
         }
 
@@ -316,7 +280,8 @@ class Inventori extends BaseController
                 $sheet->setCellValue('J' . $row, format_angka($item->harga_beli ?? 0));
                 $sheet->setCellValue('K' . $row, format_angka($item->harga_jual ?? 0));
             } else {
-                // Regular data format
+                $iid = (int) ($item->id ?? 0);
+                $totStok = $stokSumByItem[$iid] ?? 0;
                 $sheet->setCellValue('A' . $row, $no);
                 $sheet->setCellValue('B' . $row, $item->kode ?? '');
                 $sheet->setCellValue('C' . $row, $item->barcode ?? '');
@@ -324,10 +289,11 @@ class Inventori extends BaseController
                 $sheet->setCellValue('E' . $row, $item->kategori ?? '');
                 $sheet->setCellValue('F' . $row, $item->merk ?? '');
                 $sheet->setCellValue('G' . $row, $item->deskripsi ?? '');
-                $sheet->setCellValue('H' . $row, $item->jml_min ?? 0);
-                $sheet->setCellValue('I' . $row, format_angka($item->harga_beli ?? 0));
-                $sheet->setCellValue('J' . $row, format_angka($item->harga_jual ?? 0));
-                $sheet->setCellValue('K' . $row, isset($item->status) && $item->status == '1' ? 'Aktif' : 'Non Aktif');
+                $sheet->setCellValue('H' . $row, $totStok);
+                $sheet->setCellValue('I' . $row, $item->jml_min ?? 0);
+                $sheet->setCellValue('J' . $row, format_angka($item->harga_beli ?? 0));
+                $sheet->setCellValue('K' . $row, format_angka($item->harga_jual ?? 0));
+                $sheet->setCellValue('L' . $row, isset($item->status) && $item->status == '1' ? 'Aktif' : 'Non Aktif');
             }
             
             $row++;
@@ -335,7 +301,7 @@ class Inventori extends BaseController
         }
 
         // Auto size columns
-        $maxCol = ($outlet_filter && is_numeric($outlet_filter)) ? 'K' : 'K';
+        $maxCol = ($outlet_filter && is_numeric($outlet_filter)) ? 'K' : 'L';
         foreach (range('A', $maxCol) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -552,4 +518,59 @@ class Inventori extends BaseController
             return redirect()->back()->with('error', 'Gagal mengupdate stok: ' . $e->getMessage());
         }
     }
-} 
+
+    /**
+     * Global inventori query (non-outlet): same filters and joins for grid + Excel export.
+     */
+    protected function buildGlobalInventoriQuery(
+        string $keyword,
+        $kat,
+        $merk,
+        $stok,
+        string $min_stok_operator,
+        string $min_stok_value,
+        string $harga_beli_operator,
+        string $harga_beli_value,
+        string $harga_jual_operator,
+        string $harga_jual_value
+    ): ItemModel {
+        $m = new ItemModel();
+        $m->select('tbl_m_item.*, tbl_m_kategori.kategori, tbl_m_merk.merk')
+            ->join('tbl_m_kategori', 'tbl_m_kategori.id = tbl_m_item.id_kategori', 'left')
+            ->join('tbl_m_merk', 'tbl_m_merk.id = tbl_m_item.id_merk', 'left')
+            ->where('tbl_m_item.status_hps', '0')
+            ->where('tbl_m_item.status_stok', '1')
+            ->orderBy('tbl_m_item.id', 'DESC');
+
+        if ($kat) {
+            $m->where('tbl_m_item.id_kategori', $kat);
+        }
+        if ($merk) {
+            $m->where('tbl_m_item.id_merk', $merk);
+        }
+        if ($stok !== null && $stok !== '') {
+            $m->where('tbl_m_item.status_stok', $stok);
+        }
+        if ($keyword !== '') {
+            $m->groupStart()
+                ->like('tbl_m_item.item', $keyword)
+                ->orLike('tbl_m_item.kode', $keyword)
+                ->orLike('tbl_m_item.barcode', $keyword)
+                ->orLike('tbl_m_item.deskripsi', $keyword)
+                ->orLike('tbl_m_kategori.kategori', $keyword)
+                ->orLike('tbl_m_merk.merk', $keyword)
+                ->groupEnd();
+        }
+        if ($min_stok_operator && $min_stok_value !== '') {
+            $m->where("tbl_m_item.jml_min {$min_stok_operator}", $min_stok_value);
+        }
+        if ($harga_beli_operator && $harga_beli_value !== '') {
+            $m->where("tbl_m_item.harga_beli {$harga_beli_operator}", format_angka_db($harga_beli_value));
+        }
+        if ($harga_jual_operator && $harga_jual_value !== '') {
+            $m->where("tbl_m_item.harga_jual {$harga_jual_operator}", format_angka_db($harga_jual_value));
+        }
+
+        return $m;
+    }
+}
